@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"systemMessage\": \"🔗 Acesso ao repositório: https://github.com/barretoigor2025/Rpg-Online\"}'"
+          }
+        ]
+      }
+    ]
+  }
+}
