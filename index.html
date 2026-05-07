@@ -538,6 +538,51 @@
     .status-diff.neg{color:var(--red)}
     .status-diff.pos{color:var(--green)}
     .status-efeito{font-size:9px;color:#f39c12;flex-shrink:0;letter-spacing:.5px;border:1px solid rgba(243,156,18,.3);border-radius:3px;padding:1px 4px}
+
+    /* Painel flutuante de inimigos */
+    #float-ini-btn{
+      position:fixed;right:0;top:44%;transform:translateY(-50%);
+      z-index:92;background:rgba(150,25,25,.92);border:none;border-radius:8px 0 0 8px;
+      padding:11px 7px;cursor:pointer;display:none;flex-direction:column;
+      align-items:center;gap:3px;box-shadow:-2px 0 12px rgba(0,0,0,.5);
+      transition:background .2s;
+    }
+    #float-ini-btn:active{background:rgba(110,15,15,.95)}
+    #float-ini-btn .fib-icon{font-size:20px;line-height:1}
+    #float-ini-btn .fib-count{
+      font-size:10px;font-weight:bold;color:#fff;
+      background:rgba(0,0,0,.4);border-radius:8px;padding:1px 5px;min-width:16px;text-align:center;
+    }
+    #float-ini-panel{
+      position:fixed;right:-250px;top:50%;transform:translateY(-50%);
+      z-index:91;background:var(--surface);
+      border:1px solid rgba(180,30,30,.3);border-right:none;
+      border-radius:10px 0 0 10px;padding:14px 12px;width:240px;
+      max-height:68vh;overflow-y:auto;
+      transition:right .28s cubic-bezier(.4,0,.2,1);
+      box-shadow:-4px 0 24px rgba(0,0,0,.65);
+    }
+    #float-ini-panel::-webkit-scrollbar{width:3px}
+    #float-ini-panel::-webkit-scrollbar-thumb{background:rgba(180,30,30,.3);border-radius:2px}
+    #float-ini-panel.open{right:0}
+    .fip-header{
+      display:flex;align-items:center;justify-content:space-between;
+      margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(180,30,30,.2);
+    }
+    .fip-title{font-size:10px;color:#e05050;letter-spacing:2px;font-weight:bold}
+    .fip-close{background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:0 2px;line-height:1}
+    .fip-row{
+      display:flex;align-items:center;gap:9px;
+      padding:8px 0;border-bottom:1px solid rgba(180,30,30,.1);
+    }
+    .fip-row:last-child{border-bottom:none}
+    .fip-icon{font-size:24px;flex-shrink:0;width:28px;text-align:center}
+    .fip-info{flex:1;min-width:0}
+    .fip-nome{font-size:12px;color:var(--text);font-weight:bold;margin-bottom:4px}
+    .fip-bar{height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+    .fip-fill{height:100%;border-radius:3px;transition:width .4s}
+    .fip-hp{font-size:11px;font-weight:bold;flex-shrink:0;min-width:44px;text-align:right}
+    .fip-empty{font-size:12px;color:var(--text3);font-style:italic;text-align:center;padding:12px 0}
   </style>
 </head>
 <body>
@@ -700,6 +745,19 @@
       <button class="btn btn-primary" id="btn-enviar" onclick="enviarAcoes()" style="display:none">⚔️ Encerrar Turno</button>
     </div>
   </div>
+</div>
+
+<!-- ═══════ PAINEL FLUTUANTE: INIMIGOS ═══════ -->
+<button id="float-ini-btn" onclick="toggleInimigosPanel()">
+  <span class="fib-icon">👹</span>
+  <span class="fib-count" id="float-ini-count">0</span>
+</button>
+<div id="float-ini-panel">
+  <div class="fip-header">
+    <span class="fip-title">⚔️ INIMIGOS</span>
+    <button class="fip-close" onclick="toggleInimigosPanel()">✕</button>
+  </div>
+  <div id="float-ini-list"></div>
 </div>
 
 <!-- ═══════════════════ MODAL: AÇÃO ═══════════════════ -->
@@ -1183,6 +1241,7 @@ function irParaJogo(codigo) {
     renderizarHistoria(data.historia);
     atualizarInputArea(eu, data.config.estado, jogadores);
     atualizarBotaoIniciar(data);
+    atualizarFloatInimigos(data.inimigos);
 
     // Host: verifica se todos enviaram
     if(amIHost && data.config.estado === 'aguardando' && !chamandoIA) {
@@ -1402,6 +1461,44 @@ window.fecharFicha = function() {
 document.getElementById('modal-ficha').addEventListener('click', e => {
   if(e.target === document.getElementById('modal-ficha')) fecharFicha();
 });
+
+// ─── Painel flutuante de inimigos ─────────────────────────────
+let _iniPanelOpen = false;
+
+window.toggleInimigosPanel = function() {
+  _iniPanelOpen = !_iniPanelOpen;
+  document.getElementById('float-ini-panel').classList.toggle('open', _iniPanelOpen);
+};
+
+function atualizarFloatInimigos(inimigos) {
+  const visiveis = Object.values(inimigos || {}).filter(i => i.visivel !== false && i.hp > 0);
+  const btn  = document.getElementById('float-ini-btn');
+  const list = document.getElementById('float-ini-list');
+  const cnt  = document.getElementById('float-ini-count');
+
+  btn.style.display = visiveis.length > 0 ? 'flex' : 'none';
+  cnt.textContent   = visiveis.length;
+
+  if(visiveis.length === 0) {
+    _iniPanelOpen = false;
+    document.getElementById('float-ini-panel').classList.remove('open');
+  }
+
+  list.innerHTML = visiveis.length === 0
+    ? '<div class="fip-empty">Nenhum inimigo à vista</div>'
+    : visiveis.map(ini => {
+        const pct = Math.max(0, Math.min(100, Math.round((ini.hp / ini.maxHp) * 100)));
+        const cor = pct > 55 ? '#e74c3c' : pct > 25 ? '#f39c12' : '#8b0000';
+        return `<div class="fip-row">
+          <span class="fip-icon">${ini.icon||'👿'}</span>
+          <div class="fip-info">
+            <div class="fip-nome">${ini.nome}</div>
+            <div class="fip-bar"><div class="fip-fill" style="width:${pct}%;background:${cor}"></div></div>
+          </div>
+          <span class="fip-hp" style="color:${cor}">${ini.hp}/${ini.maxHp}</span>
+        </div>`;
+      }).join('');
+}
 
 // ─── Botões de ação rápida ─────────────────────────────────────
 // ─── Modal de ação ────────────────────────────────────────────
