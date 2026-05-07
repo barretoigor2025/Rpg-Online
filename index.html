@@ -1107,7 +1107,7 @@ function atualizarStatusBar(jogadores, rodada, estado) {
   bar.innerHTML = `<span class="status-rodada-lbl">RODADA ${rodada||'—'}</span>`;
   Object.entries(jogadores).forEach(([uid, j]) => {
     const online  = j.ativo !== false;
-    const done    = (j.acao1 !== null && j.acao2 !== null) || !j.vivo || !j.consciente;
+    const done    = (j.acao1 != null && j.acao2 != null) || !j.vivo || !j.consciente;
     const atrasado = online && !done && estado === 'aguardando';
     const dotCls  = !online ? 'r' : atrasado ? 'y' : 'g';
     const cls = CLASSES[j.classe] || {};
@@ -1184,7 +1184,7 @@ function atualizarInputArea(eu, estado, jogadores) {
   const slots = document.getElementById('acao-slots');
 
   const jaMorto  = !eu.vivo || !eu.consciente;
-  const jaEnviou = eu.acao1 !== null;
+  const jaEnviou = eu.acao1 != null;
   const narrando = estado === 'narrando' || estado === 'iniciando';
 
   mn.style.display  = narrando ? 'flex'  : 'none';
@@ -1230,7 +1230,7 @@ window.narrarAgora = async function() {
 function verificarRodada(jogadores, data) {
   const ativos = Object.values(jogadores).filter(j => j.ativo && j.vivo && j.consciente);
   if(ativos.length === 0) return;
-  const todos = ativos.every(j => j.acao1 !== null && j.acao2 !== null);
+  const todos = ativos.every(j => j.acao1 != null && j.acao2 != null);
   if(todos) chamarIA(jogadores, data);
 }
 
@@ -1344,7 +1344,7 @@ async function chamarIA(jogadores, data) {
       .map(j => {
         if(!j.vivo) return `${j.nome}: (morto, sem ação)`;
         if(!j.consciente) return `${j.nome}: (inconsciente, sem ação)`;
-        return `${j.nome}: [Principal] ${j.acao1}  [Bônus] ${j.acao2}`;
+        return `${j.nome}: [Principal] ${j.acao1 || '(nenhuma)'}  [Bônus] ${j.acao2 || '(nenhuma)'}`;
       }).join('\n');
 
     const histSnap = await get(ref(db, `salas/${mySala}/historia`));
