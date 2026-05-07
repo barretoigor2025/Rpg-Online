@@ -1124,8 +1124,9 @@ function atualizarStatusBar(jogadores, rodada, estado) {
   const btnNarrar = document.getElementById('btn-narrar-agora');
   const todosEnviaram = Object.values(jogadores)
     .filter(j => j.ativo && j.vivo && j.consciente)
-    .every(j => j.acao1 !== null && j.acao2 !== null);
+    .every(j => j.acao1 != null && j.acao2 != null);
   btnNarrar.style.display = (amIHost && estado === 'aguardando') ? 'block' : 'none';
+  btnNarrar.disabled     = !todosEnviaram;
   btnNarrar.style.background = todosEnviaram ? 'var(--gold)' : '';
   btnNarrar.style.color      = todosEnviaram ? '#1a0d00'     : '';
   btnNarrar.style.fontWeight = todosEnviaram ? 'bold'        : '';
@@ -1223,6 +1224,9 @@ window.narrarAgora = async function() {
   if(!snap.exists()) return;
   const data = snap.val();
   if(data.config.estado !== 'aguardando') return;
+  const ativos = Object.values(data.jogadores || {}).filter(j => j.ativo && j.vivo && j.consciente);
+  const todos  = ativos.every(j => j.acao1 != null && j.acao2 != null);
+  if(!todos) { toast('Aguardando todos os jogadores enviarem suas ações...'); return; }
   chamarIA(data.jogadores, data);
 };
 
