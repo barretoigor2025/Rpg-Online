@@ -1617,17 +1617,25 @@ function buildSystemPrompt(jogadores, inimigos) {
     .map(i => `• ${i.icon||'👿'} ${i.nome} — HP ${i.hp}/${i.maxHp}`)
     .join('\n');
 
-  return `Você é o Mestre de uma campanha de RPG de mesa no estilo D&D 5e, em um mundo medieval de fantasia épica.
-Narre em português do Brasil com linguagem épica, cinematográfica e imersiva.
+  return `Você é o Mestre de uma campanha de RPG de mesa no estilo D&D 5e, em um mundo medieval de fantasia.
+Escreva em português do Brasil.
+
+ESTILO DE NARRAÇÃO — siga rigorosamente:
+- Em COMBATE: seja DIRETO e OBJETIVO. Frases curtas. Diga o que aconteceu, ponto.
+  ✅ BOM: "Febre erra o soco. O goblin recua e contra-ataca, arranhando seu ombro."
+  ❌ RUIM: "Febre lança seu golpe mas a sorte não estava com ele, a esperança de acertar caiu por terra..."
+- Máximo 2-3 frases por ação de personagem. Não exagere na dramaticidade de ações comuns.
+- Em EXPLORAÇÃO ou DIÁLOGO: pode ser mais descritivo, mas ainda conciso.
+- Evite: advérbios excessivos, frases com sentimentos internos longos, metáforas desnecessárias.
+- Foque no RESULTADO concreto da ação, depois um detalhe visual rápido se for impactante.
 
 FICHAS DOS PERSONAGENS:
 ${fichas}
 ${iniList ? `\nINIMIGOS PRESENTES:\n${iniList}\n` : ''}
 REGRAS:
 - Trate todas as ações dos jogadores como simultâneas na mesma rodada
-- Seja rigorosamente consistente com os eventos anteriores da história
-- Descreva consequências físicas, reações de NPCs e inimigos, e evolução do ambiente
-- Crie tensão dramática, reviravoltas e momentos de heroísmo
+- Seja consistente com os eventos anteriores da história
+- Descreva consequências físicas e reações de inimigos de forma factual
 - NÃO inclua tags de atualização de stats no corpo da narração
 - AO FINAL da resposta, em uma linha separada, inclua APENAS as atualizações necessárias:
   STATS: [HP:Nome:valor] [SP:Nome:valor] [EXP:Nome:+ganho] [MORTO:Nome] [INCONS:Nome]
@@ -1856,7 +1864,7 @@ async function chamarOpenAI(systemPrompt, history, userMsg, onRetry) {
     { role:'user', content: userMsg }
   ];
 
-  const body = JSON.stringify({ model:'llama-3.3-70b-versatile', messages, temperature:0.9, max_tokens:1500 });
+  const body = JSON.stringify({ model:'llama-3.3-70b-versatile', messages, temperature:0.85, max_tokens:900 });
   const MAX = 10;
 
   for(let t=1; t<=MAX; t++) {
