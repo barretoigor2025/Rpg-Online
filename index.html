@@ -1,1070 +1,1702 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ragnarok RPG — Crônicas de Arendel</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>RPG Online — Sala Virtual</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { height: 100%; }
-    body { height: 100%; font-family: 'IM Fell English', Georgia, serif; }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { border-radius: 3px; }
-    textarea { font-family: inherit; }
-    button { font-family: inherit; cursor: pointer; }
-    button:focus, textarea:focus { outline: none; }
-
-    @keyframes fadeUp    { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes slideUp   { from{transform:translateY(100%);opacity:0} to{transform:translateY(0);opacity:1} }
-    @keyframes fadeIn    { from{opacity:0} to{opacity:1} }
-    @keyframes flicker   { 0%,100%{opacity:1} 92%{opacity:.96} 95%{opacity:.88} 97%{opacity:.95} }
-    @keyframes dotBounce { 0%,100%{transform:translateY(0);opacity:.4} 50%{transform:translateY(-5px);opacity:1} }
-
-    /* dvh = dynamic viewport height: desconta barra de navegação do mobile */
-    #app { height: 100vh; height: 100dvh; display: flex; flex-direction: column; max-width: 780px; margin: 0 auto; overflow: hidden; }
-
-    #topbar {
-      flex-shrink: 0; padding: 8px 14px; display: flex;
-      align-items: center; gap: 12px;
-      border-bottom-width: 2px; border-bottom-style: solid;
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    :root{
+      --bg:#0d0905;--surface:#1e1508;--surface2:#2a1f10;
+      --border:#7a5500;--gold:#d4a843;--gold2:#f0c866;
+      --text:#f0e4c8;--text2:#a89060;--text3:#6a5830;
+      --hp:#c0392b;--sp:#2471a3;--exp:#1e8449;
+      --green:#27ae60;--red:#e74c3c;
+      --r:8px;
     }
-    #avatar-btn {
-      width: 42px; height: 42px; border-radius: 50%; font-size: 20px; border: 2px solid;
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: box-shadow 0.3s;
+    html,body{height:100%;font-family:Georgia,serif;background:var(--bg);color:var(--text);overflow:hidden}
+    .screen{display:none;min-height:100vh;min-height:100dvh}
+    .screen.active{display:flex;flex-direction:column}
+
+    /* ── INPUTS GLOBAIS ── */
+    input,select,textarea{
+      width:100%;background:#0d0905;border:1px solid var(--border);
+      color:var(--text);font-family:inherit;font-size:16px;
+      padding:10px 12px;border-radius:var(--r);outline:none;
+      -webkit-appearance:none;appearance:none;
     }
-    #bars-area { flex: 1; min-width: 0; }
-    .bar-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
-    .bar-label { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 1px; width: 14px; }
-    .bar-track { flex: 1; height: 6px; border-radius: 2px; overflow: hidden; border: 1px solid rgba(0,0,0,0.2); box-shadow: inset 0 1px 2px rgba(0,0,0,0.3); position: relative; }
-    .bar-fill  { height: 100%; border-radius: 2px; transition: width 0.6s ease; position: relative; }
-    .bar-fill::before { content:''; position:absolute; inset:0; background:repeating-linear-gradient(90deg,transparent,transparent 8px,rgba(255,255,255,0.05) 8px,rgba(255,255,255,0.05) 9px); }
-    .bar-fill::after  { content:''; position:absolute; top:0; left:0; right:0; height:40%; background:rgba(255,255,255,0.13); }
-    .bar-val { font-family: 'Cinzel', serif; font-size: 8px; width: 38px; text-align: right; }
-    #char-name-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 5px; }
-    #char-name  { font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700; letter-spacing: 1px; }
-    #char-level { font-size: 10px; }
-    #flash-msg  { margin-left: auto; font-size: 11px; font-weight: bold; font-family: 'Cinzel', serif; animation: fadeUp 0.3s ease; display: none; }
-    #controls { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
-    #audio-btn  { background: transparent; border: 1px solid; border-radius: 2px; font-size: 14px; padding: 4px 7px; }
-    #theme-sel  { border: 1px solid; border-radius: 2px; font-size: 10px; padding: 4px 6px; }
-
-    #chat { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 18px 8px; display: flex; flex-direction: column; gap: 0; }
-    #empty-msg { text-align: center; margin-top: 60px; font-size: 15px; line-height: 2.5; font-style: italic; }
-    .msg-mestre { animation: fadeUp 0.4s ease; margin-bottom: 12px; }
-    .msg-mestre-inner { border: 1px solid; border-radius: 2px; padding: 18px 22px; box-shadow: inset 0 0 20px rgba(139,90,43,0.05); position: relative; }
-    .msg-mestre-label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px; margin-bottom: 10px; text-transform: uppercase; }
-    .msg-mestre-text  { font-size: 15px; line-height: 1.9; font-style: italic; white-space: pre-wrap; }
-    .msg-jogador { text-align: right; margin-bottom: 16px; padding-left: 20%; animation: fadeUp 0.4s ease; }
-    .msg-jogador-inner { display: inline-block; border: 1px solid; border-radius: 2px; padding: 10px 16px; font-size: 14px; }
-    .msg-jogador-label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px; margin-bottom: 6px; text-align: left; }
-    .msg-erro { border: 1px solid rgba(139,0,0,0.4); border-radius: 2px; padding: 12px 16px; font-size: 13px; margin-bottom: 12px; background: rgba(139,0,0,0.1); color: #8b1a1a; animation: fadeUp 0.3s ease; }
-
-    .inimigo-bar { border: 1px solid; border-radius: 2px; padding: 8px 12px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
-    .inimigo-nome { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 1px; font-weight: 700; margin-bottom: 3px; }
-    .inimigo-hp   { font-family: 'Cinzel', serif; font-size: 9px; margin-top: 2px; }
-
-    #loading-row { display: none; align-items: center; gap: 10px; padding: 14px 20px; font-size: 13px; font-style: italic; }
-    .dot { width: 5px; height: 5px; border-radius: 50%; display: inline-block; }
-    .dot:nth-child(1){animation:dotBounce 1.2s ease-in-out 0s infinite}
-    .dot:nth-child(2){animation:dotBounce 1.2s ease-in-out 0.2s infinite}
-    .dot:nth-child(3){animation:dotBounce 1.2s ease-in-out 0.4s infinite}
-
-    #aguarda-bar { display: none; margin: 0 16px 6px; padding: 8px 14px; border: 1px solid; border-radius: 2px; align-items: center; gap: 8px; font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 1px; animation: fadeUp 0.3s ease; }
-
-    #acao-tag { display: none; margin: 0 16px 4px; padding: 7px 12px; border: 1px solid; border-radius: 2px; align-items: center; gap: 8px; font-size: 12px; animation: fadeUp 0.2s ease; }
-    #acao-tag-label { flex: 1; font-family: 'Cinzel', serif; letter-spacing: 0.5px; }
-    #acao-tag-close { background: none; border: none; font-size: 14px; padding: 0; }
-
-    #action-bar { flex-shrink: 0; padding: 10px 14px 14px; border-top: 2px solid; }
-    #seal-btns  { display: flex; gap: 10px; margin-bottom: 10px; justify-content: center; }
-    .seal-round { width: 52px; height: 52px; border-radius: 50%; border: none; font-size: 22px; transition: all 0.15s; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    #input-row  { display: flex; gap: 8px; align-items: flex-end; }
-    #action-input { flex: 1; padding: 10px 14px; border: 1px solid; border-radius: 2px; font-size: 14px; resize: none; line-height: 1.6; box-shadow: inset 0 1px 4px rgba(139,90,43,0.1); }
-    #send-btn   { width: 52px; height: 52px; border-radius: 50%; border: none; font-size: 22px; transition: all 0.15s; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-
-    #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 50; align-items: flex-end; justify-content: center; animation: fadeIn 0.2s ease; backdrop-filter: blur(3px); }
-    #modal-overlay.open { display: flex; }
-    #modal-box { width: 100%; max-width: 780px; max-height: 82vh; overflow-y: auto; border: 2px solid; border-bottom: none; border-radius: 6px 6px 0 0; padding: 24px 20px 32px; animation: slideUp 0.35s cubic-bezier(0.34,1.3,0.64,1); box-shadow: 0 -8px 40px rgba(0,0,0,0.4); }
-    #modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
-    #modal-title  { font-family: 'Cinzel Decorative', serif; font-size: 16px; letter-spacing: 2px; }
-    #modal-close  { border: 1px solid; border-radius: 2px; font-size: 14px; padding: 4px 10px; }
-
-    .section-title  { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; border-bottom: 1px solid; padding-bottom: 4px; margin-bottom: 8px; margin-top: 12px; }
-    .stat-grid-6    { display: grid; grid-template-columns: repeat(6,1fr); gap: 6px; margin-bottom: 12px; }
-    .stat-grid-2    { display: grid; grid-template-columns: repeat(2,1fr); gap: 6px; margin-bottom: 12px; }
-    .stat-box       { border: 1px solid; border-radius: 2px; padding: 8px 4px; text-align: center; }
-    .stat-box-label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 1px; }
-    .stat-box-val   { font-family: 'Cinzel', serif; font-size: 20px; font-weight: bold; }
-    .stat-row       { border: 1px solid; border-radius: 2px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; }
-    .stat-row-lbl   { font-family: 'Cinzel', serif; font-size: 11px; }
-    .stat-row-val   { font-family: 'Cinzel', serif; font-size: 14px; font-weight: bold; }
-    .equip-item     { border: 1px solid; border-radius: 2px; padding: 8px 12px; font-family: 'Cinzel', serif; font-size: 13px; margin-bottom: 5px; }
-    .skill-btn      { width: 100%; padding: 14px 16px; border-radius: 2px; border: 1px solid; text-align: left; transition: all 0.15s; margin-bottom: 8px; cursor: pointer; }
-    .skill-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .skill-nome     { font-family: 'Cinzel', serif; font-weight: 700; font-size: 14px; letter-spacing: 1px; }
-    .skill-info     { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px; }
-    .skill-desc     { font-size: 12px; font-style: italic; padding-left: 32px; margin-top: 4px; }
-
-    #intro { min-height: 100vh; min-height: 100dvh; display: flex; align-items: flex-start; justify-content: center; padding: 24px; font-family: 'IM Fell English', Georgia, serif; overflow-y: auto; }
-    #intro-inner    { max-width: 460px; width: 100%; }
-    #intro-logo     { text-align: center; margin-bottom: 28px; }
-    #intro-pretitle { font-size: 13px; letter-spacing: 6px; text-transform: uppercase; margin-bottom: 8px; }
-    #intro-title    { font-family: 'Cinzel Decorative', serif; font-size: clamp(28px,6vw,42px); letter-spacing: 3px; line-height: 1.2; }
-    #intro-subtitle { font-size: 11px; letter-spacing: 5px; text-transform: uppercase; margin-top: 6px; }
-    #intro-ornament { margin: 14px auto; font-size: 20px; letter-spacing: 8px; }
-    #intro-card     { border: 2px solid; border-radius: 4px; padding: 28px 24px; margin-bottom: 24px; position: relative; }
-    .corner-gem     { position: absolute; font-size: 14px; line-height: 1; }
-    #intro-char     { text-align: center; margin-bottom: 20px; }
-    #intro-avatar   { font-size: 48px; margin-bottom: 6px; animation: flicker 4s ease infinite; }
-    #intro-char-name  { font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; letter-spacing: 2px; }
-    #intro-char-class { font-size: 12px; letter-spacing: 3px; text-transform: uppercase; margin-top: 3px; }
-    #intro-divider  { text-align: center; font-size: 14px; letter-spacing: 4px; margin-bottom: 16px; }
-    #intro-themes   { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
-    .theme-btn      { padding: 6px 12px; border-radius: 2px; border: 1px solid; font-size: 11px; transition: all 0.2s; }
-
-    #intro-start {
-      width: 100%; padding: 18px; border-radius: 14px; border: none;
-      font-family: 'Cinzel', serif; font-size: 16px; font-weight: 700;
-      letter-spacing: 4px; text-transform: uppercase; color: #fff;
-      background: linear-gradient(135deg,#7c1a1a,#8b1a1a);
-      box-shadow: 0 8px 32px rgba(139,26,26,0.5);
-      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-      transition: transform 0.15s, box-shadow 0.15s; cursor: pointer;
+    input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+    select option{background:#1e1508}
+    .btn{
+      padding:12px 16px;border:none;border-radius:var(--r);
+      font-family:inherit;font-size:15px;cursor:pointer;
+      transition:opacity .15s;letter-spacing:.5px;
     }
-    #intro-start:hover  { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(139,26,26,0.7); }
-    #intro-start:active { transform: translateY(1px); }
+    .btn:active{opacity:.75}
+    .btn-primary{background:var(--gold);color:#1a0d00;font-weight:bold}
+    .btn-secondary{background:transparent;border:1px solid var(--border);color:var(--text)}
+    .btn-danger{background:#7b241c;color:#fff;border:none}
+    .btn:disabled{opacity:.4;cursor:not-allowed}
+    label{font-size:11px;color:var(--text2);letter-spacing:1.5px;display:block;margin-bottom:6px}
 
-    #api-key-section { margin-top: 16px; padding-top: 14px; border-top: 1px solid; }
-    #api-key-input {
-      width: 100%; padding: 10px 12px; border-radius: 2px; border: 1px solid;
-      font-size: 12px; font-family: inherit; margin-bottom: 5px; transition: border-color 0.2s;
+    /* ── TELA ENTRADA ── */
+    #screen-entry{
+      align-items:center;justify-content:center;padding:16px;
+      background:radial-gradient(ellipse at 50% 30%,#2a1a08 0%,#0d0905 70%);
+      overflow-y:auto;
     }
-    #api-key-input:focus { outline: none; }
-    #api-key-hint { font-size: 10px; text-align: center; opacity: 0.6; }
+    .entry-box{width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px}
+    .entry-logo{text-align:center;padding:4px 0}
+    .entry-logo .icon{font-size:40px;display:block;margin-bottom:6px}
+    .entry-logo h1{font-size:22px;color:var(--gold);letter-spacing:3px}
+    .entry-logo p{font-size:10px;color:var(--text2);letter-spacing:2px;margin-top:3px}
+    /* Abas Criar / Entrar */
+    .entry-tabs{display:flex;gap:0;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+    .entry-tab{
+      flex:1;padding:11px 8px;text-align:center;font-family:inherit;font-size:14px;
+      background:transparent;border:none;color:var(--text2);cursor:pointer;
+      letter-spacing:.5px;transition:background .15s,color .15s;
+    }
+    .entry-tab.active{background:var(--gold);color:#1a0d00;font-weight:bold}
+    .entry-panel{
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;
+    }
+    /* Entrar panel */
+    .join-big input{
+      text-transform:uppercase;letter-spacing:8px;text-align:center;
+      font-size:28px;font-weight:bold;padding:14px;
+    }
+    .classe-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+    .classe-card{
+      background:#0d0905;border:2px solid var(--border);border-radius:var(--r);
+      padding:9px 6px;cursor:pointer;text-align:center;transition:border-color .15s;
+    }
+    .classe-card:active{opacity:.8}
+    .classe-card.selected{border-color:var(--gold);background:#1e1508}
+    .classe-card .ci{font-size:22px;display:block;margin-bottom:3px}
+    .classe-card .cn{font-size:12px;font-weight:bold;color:var(--text)}
+    .classe-card .cd{font-size:10px;color:var(--text2);margin-top:1px;line-height:1.3}
+    .classe-card .cs{font-size:10px;color:var(--text3);margin-top:2px}
 
-    /* ── RESPONSIVIDADE MOBILE ── */
-    @media (max-width: 480px) {
-      /* Intro */
-      #intro { padding: 16px; align-items: flex-start; }
-      #intro-inner { padding-bottom: 24px; }
-      #intro-logo { margin-bottom: 18px; }
-      #intro-ornament { font-size: 16px; margin: 8px auto; }
-      #intro-card { padding: 18px 14px; margin-bottom: 16px; }
-      #intro-avatar { font-size: 36px; }
-      #intro-char-name { font-size: 18px; }
-      #intro-char { margin-bottom: 14px; }
-      #intro-divider { margin-bottom: 10px; }
-      .stat-box-val { font-size: 16px; }
-      #intro-start { padding: 14px; font-size: 14px; letter-spacing: 2px; }
-      #intro-themes { flex-wrap: wrap; }
+    /* ── TELA LOBBY ── */
+    #screen-lobby{
+      align-items:center;justify-content:center;padding:20px;
+      background:radial-gradient(ellipse at 50% 30%,#2a1a08 0%,#0d0905 70%);
+      overflow-y:auto;
+    }
+    .lobby-box{width:100%;max-width:420px;display:flex;flex-direction:column;gap:16px}
+    .sala-code-card{
+      background:var(--surface);border:2px solid var(--gold);
+      border-radius:var(--r);padding:20px;text-align:center;
+    }
+    .sala-code-card .lbl{font-size:11px;color:var(--text2);letter-spacing:2px;margin-bottom:8px}
+    .sala-code-card .code{font-size:52px;color:var(--gold2);letter-spacing:14px;font-weight:bold;line-height:1}
+    .sala-code-card .hint{font-size:11px;color:var(--text3);margin-top:10px}
+    .players-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+    .players-card .title{font-size:11px;color:var(--text2);letter-spacing:2px;margin-bottom:12px}
+    .player-row{
+      display:flex;align-items:center;gap:10px;
+      padding:10px 0;border-bottom:1px solid rgba(122,85,0,.2);
+    }
+    .player-row:last-child{border-bottom:none}
+    .player-avatar{
+      width:36px;height:36px;background:var(--surface2);border:1px solid var(--border);
+      border-radius:50%;display:flex;align-items:center;justify-content:center;
+      font-size:16px;flex-shrink:0;
+    }
+    .player-info{flex:1}
+    .player-nome{font-size:14px;font-weight:bold}
+    .player-classe{font-size:11px;color:var(--text2)}
+    .badge{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:bold}
+    .badge-host{background:var(--gold);color:#1a0d00}
+    .badge-you{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+    .badge-morto{background:#7b241c;color:#fff}
+    .lobby-status{text-align:center;font-size:13px;color:var(--text2);font-style:italic;padding:6px}
+    .online-dot{
+      width:9px;height:9px;border-radius:50%;flex-shrink:0;
+      background:#555;transition:background .3s;
+    }
+    .online-dot.on{background:var(--green);box-shadow:0 0 5px var(--green)}
 
-      /* Topbar compacta */
-      #topbar { padding: 6px 10px; gap: 8px; }
-      #avatar-btn { width: 36px; height: 36px; font-size: 16px; }
-      #char-name { font-size: 12px; }
-      .bar-row { margin-bottom: 2px; }
-      .bar-track { height: 5px; }
-      .bar-val { font-size: 7px; width: 32px; }
-      #audio-btn { font-size: 12px; padding: 3px 5px; }
-      #theme-sel { font-size: 9px; padding: 3px 4px; }
+    /* ── TELA JOGO ── */
+    #screen-game{height:100vh;height:100dvh;overflow:hidden}
 
-      /* Chat */
-      #chat { padding: 12px 12px 6px; }
-      .msg-mestre-inner { padding: 12px 14px; }
-      .msg-mestre-text { font-size: 14px; line-height: 1.7; }
-
-      /* Barra de ações */
-      #action-bar { padding: 8px 10px 10px; }
-      #seal-btns { gap: 6px; margin-bottom: 8px; }
-      .seal-round { width: 44px; height: 44px; font-size: 19px; }
-      #send-btn   { width: 44px; height: 44px; font-size: 19px; }
-      #action-input { padding: 8px 10px; font-size: 13px; }
-
-      /* Modal */
-      #modal-box { padding: 16px 14px 24px; max-height: 88vh; max-height: 88dvh; }
-      #modal-title { font-size: 13px; }
-      .stat-grid-6 { grid-template-columns: repeat(3,1fr); }
+    /* Topbar */
+    #topbar{
+      background:rgba(13,9,5,.97);border-bottom:1px solid var(--border);
+      padding:8px 12px;display:flex;align-items:center;gap:10px;flex-shrink:0;
+    }
+    .ficha-mini{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+    .ficha-nome{font-size:13px;font-weight:bold;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .bars{display:flex;gap:6px}
+    .bar-w{flex:1;display:flex;flex-direction:column;gap:2px}
+    .bar-lbl{font-size:9px;color:var(--text2);letter-spacing:.5px;display:flex;justify-content:space-between}
+    .bar-track{height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+    .bar-fill{height:100%;border-radius:3px;transition:width .5s}
+    .bar-hp .bar-fill{background:var(--hp)}
+    .bar-sp .bar-fill{background:var(--sp)}
+    .bar-exp .bar-fill{background:var(--exp)}
+    .sala-chip{
+      font-size:11px;color:var(--text2);background:rgba(122,85,0,.15);
+      padding:4px 9px;border-radius:12px;border:1px solid var(--border);
+      white-space:nowrap;flex-shrink:0;cursor:pointer;
     }
 
-    @media (max-width: 360px) {
-      .seal-round { width: 38px; height: 38px; font-size: 16px; }
-      #send-btn   { width: 38px; height: 38px; font-size: 16px; }
-      #seal-btns  { gap: 4px; }
-      #intro-card { padding: 14px 10px; }
+    /* Historia */
+    #historia{
+      flex:1;overflow-y:auto;padding:12px;
+      display:flex;flex-direction:column;gap:10px;
+      scroll-behavior:smooth;
+    }
+    #historia::-webkit-scrollbar{width:3px}
+    #historia::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+    .msg-empty{
+      text-align:center;padding:40px 20px;color:var(--text3);
+      font-style:italic;font-size:14px;line-height:2.2;
+      display:flex;flex-direction:column;align-items:center;gap:14px;
+    }
+    .msg-empty .emj{font-size:42px;opacity:.35}
+    .msg-empty .retry-info{
+      font-size:13px;color:var(--gold);font-style:normal;
+      display:flex;flex-direction:column;align-items:center;gap:8px;width:200px;
+    }
+    .msg-empty .retry-bar{
+      height:5px;width:100%;background:rgba(122,85,0,.25);border-radius:2px;overflow:hidden;
+    }
+    .msg-empty .retry-fill{
+      height:100%;background:var(--gold);border-radius:2px;
+      transition:width .3s;
+    }
+    #btn-iniciar-narrar{
+      display:none;padding:12px 28px;background:var(--gold);color:#1a0d00;
+      border:none;border-radius:var(--r);font-family:inherit;font-size:15px;
+      font-weight:bold;cursor:pointer;letter-spacing:.5px;
+    }
+    #btn-iniciar-narrar:active{opacity:.8}
+    .msg-mestre{
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--r);padding:12px 14px;font-size:14px;line-height:1.75;
+    }
+    .msg-mestre-lbl{font-size:10px;color:var(--gold);letter-spacing:2px;margin-bottom:7px;display:flex;align-items:center;gap:6px}
+    .msg-acoes{
+      background:rgba(122,85,0,.08);border:1px solid rgba(122,85,0,.25);
+      border-radius:var(--r);padding:10px 14px;
+    }
+    .msg-acoes-lbl{font-size:10px;color:var(--text3);letter-spacing:1px;margin-bottom:6px}
+    .msg-acao-item{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:2px}
+    .msg-acao-item strong{color:var(--text)}
+    .rodada-sep{
+      display:flex;align-items:center;gap:10px;
+      font-size:10px;color:var(--text3);letter-spacing:2px;
+      padding:4px 0;
+    }
+    .rodada-sep::before,.rodada-sep::after{content:'';flex:1;height:1px;background:rgba(122,85,0,.2)}
+
+    /* Status rodada — jogadores verticais */
+    #status-bar{
+      background:rgba(13,9,5,.95);border-top:1px solid rgba(122,85,0,.2);
+      padding:6px 10px;display:flex;align-items:center;gap:8px;
+      flex-shrink:0;overflow-x:auto;scrollbar-width:none;
+    }
+    #status-bar::-webkit-scrollbar{display:none}
+    .status-rodada-lbl{font-size:10px;color:var(--text3);letter-spacing:1px;white-space:nowrap;flex-shrink:0}
+    .sj{
+      display:flex;align-items:center;gap:5px;flex-shrink:0;
+      background:rgba(30,21,8,.8);border:1px solid rgba(122,85,0,.25);
+      border-radius:10px;padding:3px 8px 3px 4px;
+    }
+    .sj.done{border-color:var(--green)}
+    .sj.offline{opacity:.5}
+    .sj-av{
+      width:22px;height:22px;border-radius:50%;display:flex;align-items:center;
+      justify-content:center;font-size:13px;flex-shrink:0;
+    }
+    .sj-nome{font-size:11px;color:var(--text);white-space:nowrap}
+    .sj.done .sj-nome{color:var(--green)}
+    .sj-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .sj-dot.g{background:var(--green);box-shadow:0 0 4px var(--green)}
+    .sj-dot.y{background:#f39c12;box-shadow:0 0 4px #f39c12}
+    .sj-dot.r{background:var(--red)}
+
+    /* Botões de ação */
+    .acao-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+    .acao-btn{
+      font-size:13px;padding:9px 4px;border-radius:var(--r);cursor:pointer;
+      background:rgba(122,85,0,.15);border:1px solid var(--border);color:var(--text);
+      font-family:inherit;transition:background .15s;text-align:center;line-height:1.3;
+    }
+    .acao-btn:active{background:rgba(122,85,0,.45)}
+    .acao-btn:disabled{opacity:.35;cursor:not-allowed}
+    .acao-btn .ab-icon{font-size:18px;display:block;margin-bottom:2px}
+    .acao-btn .ab-lbl{font-size:10px;letter-spacing:.5px}
+
+    /* Slots de ação confirmada */
+    .acao-slots{display:flex;flex-direction:column;gap:5px}
+    .acao-slot{
+      display:flex;align-items:center;gap:8px;
+      background:rgba(122,85,0,.08);border:1px dashed rgba(122,85,0,.3);
+      border-radius:var(--r);padding:7px 10px;min-height:36px;
+    }
+    .acao-slot.preenchida{border-style:solid;border-color:var(--gold);background:rgba(122,85,0,.15)}
+    .acao-slot-num{font-size:10px;color:var(--text3);letter-spacing:1px;flex-shrink:0;width:14px}
+    .acao-slot-texto{flex:1;font-size:12px;color:var(--text);line-height:1.4}
+    .acao-slot-vazia{flex:1;font-size:12px;color:var(--text3);font-style:italic}
+    .acao-slot-del{background:transparent;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:0 2px;flex-shrink:0}
+
+    /* Modal de ação */
+    #modal-acao{
+      display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);
+      z-index:102;align-items:flex-end;justify-content:center;
+    }
+    #modal-acao.open{display:flex}
+    .acao-sheet{
+      background:var(--surface);border:1px solid var(--border);
+      border-top:2px solid var(--gold);border-radius:16px 16px 0 0;
+      padding:20px;width:100%;max-width:500px;
+      display:flex;flex-direction:column;gap:14px;
+    }
+    .acao-sheet-title{font-size:18px;color:var(--gold);display:flex;align-items:center;gap:10px}
+    .acao-sheet label{font-size:11px;color:var(--text2);letter-spacing:1px;margin-bottom:4px}
+    .acao-sheet textarea{height:72px;resize:none;font-size:15px}
+    .acao-sheet input[type=text]{font-size:15px}
+    .acao-sheet-footer{display:flex;gap:8px}
+    .acao-sheet-footer .btn{flex:1}
+
+    /* Modal ficha */
+    #modal-ficha{
+      display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+      z-index:101;align-items:flex-end;justify-content:center;
+    }
+    #modal-ficha.open{display:flex}
+    .ficha-sheet{
+      background:var(--surface);border:1px solid var(--border);
+      border-top:2px solid var(--gold);border-radius:16px 16px 0 0;
+      padding:20px;width:100%;max-width:500px;
+      display:flex;flex-direction:column;gap:14px;max-height:80vh;overflow-y:auto;
+    }
+    .ficha-header{display:flex;align-items:center;gap:14px}
+    .ficha-avatar-big{
+      width:56px;height:56px;border-radius:50%;display:flex;align-items:center;
+      justify-content:center;font-size:28px;border:2px solid var(--gold);flex-shrink:0;
+    }
+    .ficha-header-info h2{font-size:18px;color:var(--gold)}
+    .ficha-header-info p{font-size:12px;color:var(--text2);margin-top:2px}
+    .ficha-stat-row{display:flex;flex-direction:column;gap:6px}
+    .ficha-stat{display:flex;align-items:center;gap:10px}
+    .ficha-stat-lbl{font-size:11px;color:var(--text2);letter-spacing:1px;width:36px}
+    .ficha-stat-bar{flex:1;height:10px;background:rgba(255,255,255,.07);border-radius:5px;overflow:hidden}
+    .ficha-stat-fill{height:100%;border-radius:5px}
+    .ficha-stat-val{font-size:11px;color:var(--text);width:60px;text-align:right}
+    .ficha-section-title{font-size:10px;color:var(--text3);letter-spacing:2px;border-bottom:1px solid rgba(122,85,0,.2);padding-bottom:4px}
+    .ficha-inv{font-size:13px;color:var(--text2);font-style:italic;line-height:1.6}
+    .ficha-close{align-self:center;font-size:12px;color:var(--text3);padding:8px 24px;cursor:pointer;letter-spacing:1px}
+
+    /* Avatar topbar */
+    .top-avatar{
+      width:34px;height:34px;border-radius:50%;display:flex;align-items:center;
+      justify-content:center;font-size:18px;flex-shrink:0;cursor:pointer;
+      border:2px solid var(--border);
+    }
+    .top-avatar:active{opacity:.7}
+
+    /* Area acao */
+    #area-acao{
+      background:rgba(13,9,5,.97);border-top:1px solid var(--border);
+      padding:10px 12px;flex-shrink:0;display:flex;flex-direction:column;gap:8px;
+    }
+    .acoes-row{display:flex;gap:8px}
+    .acao-w{flex:1;display:flex;flex-direction:column;gap:4px}
+    textarea.acao{
+      height:54px;resize:none;font-size:14px;padding:8px 10px;line-height:1.4;
+      scrollbar-width:none;
+    }
+    textarea.acao::-webkit-scrollbar{display:none}
+    .acao-footer{display:flex;align-items:center;gap:8px}
+    #msg-narrando{
+      display:none;align-items:center;gap:8px;
+      font-size:12px;color:var(--gold);font-style:italic;
+    }
+    #msg-enviado{display:none;font-size:12px;color:var(--green)}
+    #msg-inconsciente{display:none;font-size:12px;color:var(--red);font-style:italic}
+    .dots-wrap{display:flex;gap:4px}
+    .dot-a{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:blink 1.2s infinite}
+    .dot-a:nth-child(2){animation-delay:.2s}
+    .dot-a:nth-child(3){animation-delay:.4s}
+    @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+
+    /* Modal API Key */
+    #modal-key{
+      display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);
+      z-index:100;align-items:center;justify-content:center;padding:20px;
+    }
+    #modal-key.open{display:flex}
+    .modal-box{
+      background:var(--surface);border:1px solid var(--gold);
+      border-radius:var(--r);padding:24px;width:100%;max-width:400px;
+      display:flex;flex-direction:column;gap:14px;
+    }
+    .modal-box h2{font-size:16px;color:var(--gold)}
+    .modal-box p{font-size:13px;color:var(--text2);line-height:1.6}
+
+    /* Modal Morto */
+    #modal-morto{
+      display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);
+      z-index:99;align-items:center;justify-content:center;padding:20px;
+    }
+    #modal-morto.open{display:flex}
+    .morto-box{text-align:center;max-width:320px}
+    .morto-box .emj{font-size:64px;display:block;margin-bottom:16px}
+    .morto-box h2{font-size:22px;color:var(--red);margin-bottom:8px}
+    .morto-box p{font-size:14px;color:var(--text2);line-height:1.6}
+
+    /* Modal Skill Tree */
+    #modal-skill{
+      display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);
+      z-index:103;align-items:flex-end;justify-content:center;
+    }
+    #modal-skill.open{display:flex}
+    .skill-sheet{
+      background:var(--surface);border:1px solid var(--border);
+      border-top:2px solid var(--gold);border-radius:16px 16px 0 0;
+      padding:0;width:100%;max-width:500px;max-height:88vh;
+      display:flex;flex-direction:column;overflow:hidden;
+    }
+    .skill-sheet-head{
+      padding:16px 18px 12px;border-bottom:1px solid rgba(122,85,0,.25);
+      display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+    }
+    .skill-sheet-head h2{font-size:16px;color:var(--gold)}
+    .skill-sheet-head p{font-size:11px;color:var(--text2);margin-top:2px}
+    .skill-sheet-close{background:transparent;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:4px}
+    .skill-tree{overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:16px;flex:1}
+    .skill-tree::-webkit-scrollbar{width:3px}
+    .skill-tree::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+    .skill-nivel{display:flex;flex-direction:column;gap:8px}
+    .skill-nivel-lbl{
+      font-size:10px;letter-spacing:2px;color:var(--text3);
+      display:flex;align-items:center;gap:8px;
+    }
+    .skill-nivel-lbl::after{content:'';flex:1;height:1px;background:rgba(122,85,0,.2)}
+    .skill-nivel-lbl.locked{color:#3a3020}
+    .skill-cards{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+    .skill-card{
+      background:#0d0905;border:1px solid var(--border);border-radius:var(--r);
+      padding:10px;cursor:pointer;transition:border-color .15s,background .15s;
+      display:flex;flex-direction:column;gap:4px;
+    }
+    .skill-card:active{opacity:.8}
+    .skill-card.unlocked:hover,.skill-card.unlocked:focus{border-color:var(--gold);background:rgba(122,85,0,.15)}
+    .skill-card.locked{opacity:.38;cursor:not-allowed;border-style:dashed}
+    .skill-card-top{display:flex;align-items:center;gap:7px}
+    .skill-card-icon{font-size:20px;flex-shrink:0}
+    .skill-card-nome{font-size:12px;font-weight:bold;color:var(--text);line-height:1.2}
+    .skill-card-sp{font-size:10px;color:var(--sp);margin-top:1px}
+    .skill-card-desc{font-size:10px;color:var(--text2);line-height:1.4;margin-top:2px}
+    .skill-card-lock{font-size:9px;color:var(--text3);margin-top:3px}
+    /* Phase 2: detalhe da skill */
+    .skill-detail-panel{
+      padding:18px;display:flex;flex-direction:column;gap:14px;
+      display:none;
+    }
+    .skill-detail-panel.active{display:flex}
+    .skill-selected-card{
+      display:flex;align-items:center;gap:12px;
+      background:rgba(122,85,0,.12);border:1px solid var(--border);
+      border-radius:var(--r);padding:12px;
+    }
+    .skill-selected-icon{font-size:32px}
+    .skill-selected-info h3{font-size:15px;color:var(--gold)}
+    .skill-selected-info p{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.4}
+    .skill-detail-footer{display:flex;gap:8px}
+    .skill-detail-footer .btn{flex:1}
+
+    /* Toast */
+    #toast{
+      display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+      background:#7b241c;color:#fff;padding:10px 20px;border-radius:var(--r);
+      font-size:13px;z-index:200;max-width:90%;text-align:center;pointer-events:none;
+    }
+
+    /* Narrar agora btn (host) */
+    #btn-narrar-agora{
+      font-size:11px;padding:5px 10px;border-radius:10px;
+      background:rgba(212,168,67,.15);border:1px solid var(--border);color:var(--gold);
+      display:none;flex-shrink:0;
     }
   </style>
 </head>
 <body>
 
-<!-- ═══════════════════ TELA INTRO ═══════════════════ -->
-<div id="intro">
-  <div id="intro-inner">
-    <div id="intro-logo">
-      <div id="intro-pretitle">— Crônicas de —</div>
-      <div id="intro-title">Ragnarok</div>
-      <div id="intro-subtitle">Sistema GURPS · Campanha Épica</div>
-      <div id="intro-ornament">⚜️ ✦ ⚜️</div>
+<!-- ═══════════════════ TELA: ENTRADA ═══════════════════ -->
+<div id="screen-entry" class="screen active">
+  <div class="entry-box">
+    <div class="entry-logo">
+      <span class="icon">⚔️</span>
+      <h1>RPG ONLINE</h1>
+      <p>SALA VIRTUAL DE CAMPANHA</p>
     </div>
 
-    <div id="intro-card">
-      <span class="corner-gem" style="top:6px;left:8px">✦</span>
-      <span class="corner-gem" style="top:6px;right:8px">✦</span>
-      <span class="corner-gem" style="bottom:6px;left:8px">✦</span>
-      <span class="corner-gem" style="bottom:6px;right:8px">✦</span>
-
-      <div id="intro-char">
-        <div id="intro-avatar">🧙‍♂️</div>
-        <div id="intro-char-name">Arendel</div>
-        <div id="intro-char-class">Mago · Nível 10</div>
-      </div>
-
-      <div id="intro-divider">— ✦ —</div>
-
-      <div class="stat-grid-6" id="intro-attrs"></div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px" id="intro-status"></div>
-
-      <div id="api-key-section">
-        <div class="section-title" id="api-key-title" style="margin-top:0">🔑 Chave Google Gemini</div>
-        <input id="api-key-input" type="password" placeholder="AIzaSy..."/>
-        <div id="api-key-hint">Gratuito em aistudio.google.com · Salva no navegador</div>
-      </div>
+    <!-- Abas -->
+    <div class="entry-tabs">
+      <button class="entry-tab active" id="tab-criar" onclick="setTab('criar')">⚔️ Criar Sala</button>
+      <button class="entry-tab" id="tab-entrar" onclick="setTab('entrar')">🚪 Entrar em Sala</button>
     </div>
 
-    <button id="intro-start" onclick="iniciarCampanha()">⚔️ Iniciar Campanha</button>
-    <div id="intro-themes"></div>
+    <!-- Painel CRIAR -->
+    <div class="entry-panel" id="panel-criar">
+      <div>
+        <label>SEU NOME DE HERÓI</label>
+        <input id="inp-nome" type="text" placeholder="Como te chamam, aventureiro?" maxlength="18" autocomplete="off">
+      </div>
+      <div>
+        <label>SUA CLASSE</label>
+        <div class="classe-grid" id="classe-grid"></div>
+      </div>
+      <button class="btn btn-primary" onclick="criarSala()">⚔️ Criar Nova Sala</button>
+    </div>
+
+    <!-- Painel ENTRAR -->
+    <div class="entry-panel" id="panel-entrar" style="display:none">
+      <div>
+        <label>SEU NOME DE HERÓI</label>
+        <input id="inp-nome2" type="text" placeholder="Como te chamam, aventureiro?" maxlength="18" autocomplete="off">
+      </div>
+      <div>
+        <label>SUA CLASSE</label>
+        <select id="sel-classe2">
+          <option value="guerreiro">⚔️ Guerreiro — HP Alto / SP Médio</option>
+          <option value="mago">🔮 Mago — HP Baixo / SP Alto</option>
+          <option value="ladino">🗡️ Ladino — HP Médio / SP Médio</option>
+          <option value="clerigo">✨ Clérigo — HP Médio / SP Alto</option>
+          <option value="barbaro">🪓 Bárbaro — HP Muito Alto / SP Baixo</option>
+          <option value="arqueiro">🏹 Arqueiro — HP Médio / SP Médio</option>
+        </select>
+      </div>
+      <div class="join-big">
+        <label>CÓDIGO DA SALA</label>
+        <input id="inp-codigo" type="text" placeholder="RUNE" maxlength="4" autocomplete="off">
+      </div>
+      <button class="btn btn-primary" onclick="entrarSala()">🚪 Entrar na Sala</button>
+    </div>
   </div>
 </div>
 
-<!-- ═══════════════════ TELA DE JOGO ═══════════════════ -->
-<div id="app" style="display:none">
+<!-- ═══════════════════ TELA: LOBBY ═══════════════════ -->
+<div id="screen-lobby" class="screen">
+  <div class="lobby-box">
+    <div class="sala-code-card">
+      <div class="lbl">CÓDIGO DA SALA</div>
+      <div class="code" id="lobby-code">----</div>
+      <div class="hint">Compartilhe este código com seus amigos</div>
+    </div>
 
+    <div class="players-card">
+      <div class="title">AVENTUREIROS NA SALA</div>
+      <div id="lista-jogadores"></div>
+      <div style="font-size:10px;color:var(--text3);margin-top:10px;display:flex;align-items:center;gap:5px">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block"></span> online
+        &nbsp;
+        <span style="width:7px;height:7px;border-radius:50%;background:#555;display:inline-block"></span> ausente
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="btn-iniciar" onclick="iniciarJogo()" style="display:none">
+      ⚔️ Iniciar Aventura
+    </button>
+    <div class="lobby-status" id="lobby-status">Aguardando o anfitrião iniciar...</div>
+    <button class="btn btn-danger" onclick="sairDaSala()" style="margin-top:4px">← Sair da Sala</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ TELA: JOGO ═══════════════════ -->
+<div id="screen-game" class="screen">
   <div id="topbar">
-    <button id="avatar-btn" onclick="abrirModal('ficha')" title="Ver ficha">🔮</button>
-    <div id="bars-area">
-      <div id="char-name-row">
-        <span id="char-name">Arendel</span>
-        <span id="char-level">Lv.10</span>
-        <span id="flash-msg"></span>
-      </div>
-      <div class="bar-row">
-        <span class="bar-label" id="hp-label">HP</span>
-        <div class="bar-track" id="hp-track"><div class="bar-fill" id="hp-fill" style="width:100%"></div></div>
-        <span class="bar-val" id="hp-val">80/80</span>
-      </div>
-      <div class="bar-row">
-        <span class="bar-label" id="sp-label">SP</span>
-        <div class="bar-track" id="sp-track"><div class="bar-fill" id="sp-fill" style="width:100%"></div></div>
-        <span class="bar-val" id="sp-val">90/90</span>
-      </div>
-      <div class="bar-row">
-        <span class="bar-label" id="exp-label">EXP</span>
-        <div class="bar-track" id="exp-track"><div class="bar-fill" id="exp-fill" style="width:0%"></div></div>
-        <span class="bar-val" id="exp-val">0/500</span>
+    <div class="top-avatar" id="top-avatar" onclick="abrirFicha()">⚔️</div>
+    <div class="ficha-mini" onclick="abrirFicha()" style="cursor:pointer">
+      <div class="ficha-nome" id="top-nome">Herói</div>
+      <div class="bars">
+        <div class="bar-w bar-hp">
+          <div class="bar-lbl"><span>HP</span><span id="top-hp">—</span></div>
+          <div class="bar-track"><div class="bar-fill" id="bfhp" style="width:100%"></div></div>
+        </div>
+        <div class="bar-w bar-sp">
+          <div class="bar-lbl"><span>SP</span><span id="top-sp">—</span></div>
+          <div class="bar-track"><div class="bar-fill" id="bfsp" style="width:100%"></div></div>
+        </div>
+        <div class="bar-w bar-exp">
+          <div class="bar-lbl"><span>EXP</span><span id="top-exp">0</span></div>
+          <div class="bar-track"><div class="bar-fill" id="bfexp" style="width:0%"></div></div>
+        </div>
       </div>
     </div>
-    <div id="controls">
-      <button id="audio-btn" onclick="toggleAudio()">🔊</button>
-      <select id="theme-sel" onchange="setTema(this.value)">
-        <option value="pergaminho">📜 Pergaminho</option>
-        <option value="dark">🔥 Épico Dark</option>
-        <option value="pedra">⚔️ Masmorra</option>
-      </select>
+    <div class="sala-chip" id="top-sala" onclick="copiarCodigo()">----</div>
+    <button onclick="sairDaSala()" title="Sair da sala" style="background:transparent;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px;flex-shrink:0">⬅️</button>
+  </div>
+
+  <div id="historia">
+    <div class="msg-empty" id="historia-empty">
+      <span class="emj">📜</span>
+      <span id="empty-txt">A aventura está prestes a começar...</span>
+      <div class="retry-info" id="retry-info" style="display:none">
+        <span id="retry-txt">Conectando...</span>
+        <div class="retry-bar"><div class="retry-fill" id="retry-fill" style="width:0%"></div></div>
+      </div>
+      <button id="btn-iniciar-narrar" onclick="hostIniciarOuRetentar()">🎲 Iniciar Aventura</button>
     </div>
   </div>
 
-  <div id="chat">
-    <div id="empty-msg">
-      <div style="font-size:36px;margin-bottom:12px;opacity:.4">📜</div>
-      O Mestre prepara sua pena...<br/>
-      <span style="font-size:12px;letter-spacing:2px">a história aguarda</span>
-    </div>
-    <div id="loading-row">
-      <div style="display:flex;gap:5px">
-        <span class="dot" id="d1"></span>
-        <span class="dot" id="d2"></span>
-        <span class="dot" id="d3"></span>
+  <div id="status-bar">
+    <span class="status-rodada-lbl">RODADA —</span>
+  </div>
+
+  <div id="area-acao">
+    <!-- Slots de ação confirmada -->
+    <div class="acao-slots" id="acao-slots" style="display:none">
+      <div class="acao-slot" id="slot1">
+        <span class="acao-slot-num">①</span>
+        <span class="acao-slot-vazia">Escolha uma ação abaixo...</span>
       </div>
-      <span id="loading-text">O Mestre consulta os pergaminhos...</span>
+      <div class="acao-slot" id="slot2">
+        <span class="acao-slot-num">②</span>
+        <span class="acao-slot-vazia">Segunda ação (opcional)...</span>
+      </div>
     </div>
-  </div>
-
-  <div id="aguarda-bar">
-    <span>⚜️</span>
-    <span>Aguardando sua decisão, aventureiro...</span>
-  </div>
-
-  <div id="acao-tag">
-    <span id="acao-tag-emoji"></span>
-    <span id="acao-tag-label"></span>
-    <button id="acao-tag-close" onclick="clearAcaoTag()">✕</button>
-  </div>
-
-  <div id="action-bar">
-    <div id="seal-btns">
-      <button class="seal-round" id="btn-falar"  onclick="selecionarFala()"        title="Falar">💬</button>
-      <button class="seal-round" id="btn-atacar" onclick="selecionarAtaque()"      title="Atacar">⚔️</button>
-      <button class="seal-round" id="btn-skills" onclick="abrirModal('skills')"    title="Skills">✨</button>
-      <button class="seal-round" id="btn-ficha"  onclick="abrirModal('ficha')"     title="Ficha">📜</button>
-      <button class="seal-round" id="btn-fugir"  onclick="selecionarFuga()"        title="Fugir">🏃</button>
+    <!-- Botões de ação -->
+    <div class="acao-btns" id="acao-btns" style="display:none">
+      <button class="acao-btn" onclick="abrirModalAcao('falar')"><span class="ab-icon">💬</span><span class="ab-lbl">FALAR</span></button>
+      <button class="acao-btn" onclick="abrirModalAcao('atacar')"><span class="ab-icon">⚔️</span><span class="ab-lbl">ATACAR</span></button>
+      <button class="acao-btn" onclick="abrirArvoreSkills()"><span class="ab-icon">✨</span><span class="ab-lbl">SKILL</span></button>
+      <button class="acao-btn" onclick="abrirModalAcao('defender')"><span class="ab-icon">🛡️</span><span class="ab-lbl">DEFENDER</span></button>
+      <button class="acao-btn" onclick="abrirModalAcao('mover')"><span class="ab-icon">🏃</span><span class="ab-lbl">MOVER</span></button>
+      <button class="acao-btn" onclick="abrirModalAcao('livre')"><span class="ab-icon">🎯</span><span class="ab-lbl">LIVRE</span></button>
     </div>
-    <div id="input-row">
-      <textarea id="action-input" rows="2" placeholder="Descreva livremente sua ação..."></textarea>
-      <button id="send-btn" onclick="enviarAcao()" title="Enviar">⚔️</button>
+    <!-- Footer -->
+    <div class="acao-footer">
+      <div id="msg-narrando">
+        <div class="dots-wrap">
+          <div class="dot-a"></div><div class="dot-a"></div><div class="dot-a"></div>
+        </div>
+        O Mestre narra...
+      </div>
+      <div id="msg-enviado">✅ Ações enviadas! Aguardando todos...</div>
+      <div id="msg-inconsciente">💀 Você está inconsciente ou morto.</div>
+      <div style="flex:1"></div>
+      <button class="btn btn-secondary" id="btn-narrar-agora" onclick="narrarAgora()">Narrar agora</button>
+      <button class="btn btn-primary" id="btn-enviar" onclick="enviarAcoes()" style="display:none">Enviar ⚔️</button>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════ MODAL ═══════════════════ -->
-<div id="modal-overlay" onclick="fecharModal()">
-  <div id="modal-box" onclick="event.stopPropagation()">
-    <div id="modal-header">
-      <h2 id="modal-title"></h2>
-      <button id="modal-close" onclick="fecharModal()">✕ Fechar</button>
+<!-- ═══════════════════ MODAL: AÇÃO ═══════════════════ -->
+<div id="modal-acao">
+  <div class="acao-sheet">
+    <div class="acao-sheet-title" id="modal-acao-title">⚔️ Atacar</div>
+    <div>
+      <label id="modal-acao-lbl1">DESCREVA SUA AÇÃO</label>
+      <textarea id="modal-acao-txt" placeholder=""></textarea>
     </div>
-    <div id="modal-content"></div>
+    <div>
+      <label id="modal-acao-lbl2">DETALHE ADICIONAL (opcional)</label>
+      <input type="text" id="modal-acao-detalhe" placeholder="">
+    </div>
+    <div class="acao-sheet-footer">
+      <button class="btn btn-secondary" onclick="fecharModalAcao()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarAcao()">Confirmar ação</button>
+    </div>
   </div>
 </div>
 
-<script>
+<!-- ═══════════════════ MODAL: FICHA ═══════════════════ -->
+<div id="modal-ficha">
+  <div class="ficha-sheet">
+    <div class="ficha-header">
+      <div class="ficha-avatar-big" id="ficha-avatar-big">⚔️</div>
+      <div class="ficha-header-info">
+        <h2 id="ficha-nome-full">Herói</h2>
+        <p id="ficha-classe-full">Classe</p>
+      </div>
+    </div>
+    <div class="ficha-section-title">ATRIBUTOS</div>
+    <div class="ficha-stat-row">
+      <div class="ficha-stat">
+        <span class="ficha-stat-lbl">HP</span>
+        <div class="ficha-stat-bar"><div class="ficha-stat-fill" id="fich-bfhp" style="background:var(--hp);width:100%"></div></div>
+        <span class="ficha-stat-val" id="fich-hp">—</span>
+      </div>
+      <div class="ficha-stat">
+        <span class="ficha-stat-lbl">SP</span>
+        <div class="ficha-stat-bar"><div class="ficha-stat-fill" id="fich-bfsp" style="background:var(--sp);width:100%"></div></div>
+        <span class="ficha-stat-val" id="fich-sp">—</span>
+      </div>
+      <div class="ficha-stat">
+        <span class="ficha-stat-lbl">EXP</span>
+        <div class="ficha-stat-bar"><div class="ficha-stat-fill" id="fich-bfexp" style="background:var(--exp);width:0%"></div></div>
+        <span class="ficha-stat-val" id="fich-exp">0</span>
+      </div>
+    </div>
+    <div class="ficha-section-title">INVENTÁRIO</div>
+    <div class="ficha-inv" id="ficha-inv">Nenhum item ainda. Explore o mundo para encontrar equipamentos e tesouros.</div>
+    <div class="ficha-close" onclick="fecharFicha()">▼ FECHAR</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MODAL: API KEY ═══════════════════ -->
+<div id="modal-key">
+  <div class="modal-box">
+    <h2>🔑 Chave da API OpenAI</h2>
+    <p>Cole sua chave da API OpenAI. Você encontra em <strong>platform.openai.com/api-keys</strong> — é diferente da assinatura ChatGPT Plus.</p>
+    <div>
+      <label>COLE SUA CHAVE AQUI</label>
+      <input id="inp-key" type="password" placeholder="sk-..." autocomplete="off">
+    </div>
+    <button class="btn btn-primary" onclick="salvarKey()">Salvar e Continuar</button>
+    <p style="font-size:11px;color:var(--text3)">
+      A chave começa com "sk-". Nunca compartilhe com ninguém.
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════════════ MODAL: MORTO ═══════════════════ -->
+<div id="modal-morto">
+  <div class="morto-box">
+    <span class="emj">💀</span>
+    <h2>Você caiu em batalha</h2>
+    <p style="color:var(--text2);font-size:14px;line-height:1.7">
+      Seus companheiros continuam a luta.<br>
+      Você pode observar o restante da aventura.
+    </p>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+import { getDatabase, ref, set, get, push, update, onValue, onDisconnect, serverTimestamp, remove }
+  from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js';
+
 // ═══════════════════════════════════════════════════════════════
-//  TEMAS
+//  FIREBASE
 // ═══════════════════════════════════════════════════════════════
-const TEMAS = {
-  pergaminho: {
-    bg:"radial-gradient(ellipse at 20% 30%,rgba(139,90,43,.08) 0%,transparent 50%),radial-gradient(ellipse at 80% 70%,rgba(101,67,33,.06) 0%,transparent 50%),linear-gradient(135deg,#f4e4c1 0%,#ede0b0 40%,#f0dfa8 70%,#e8d89a 100%)",
-    papel:"#f9f0d8", papelBorda:"#c8a96e",
-    tinta:"#2c1a0e", tintaleve:"#5c3d1e", tintafade:"#8b6340",
-    dourado:"#b8860b", douradoclaro:"#d4a017",
-    acento:"#8b1a1a", acentoclaro:"#c0392b",
-    seloCor:"#8b1a1a", seloSombra:"#5c0f0f",
-    hpBar:"linear-gradient(90deg,#5c1a00,#8b2500,#c0392b)",
-    spBar:"linear-gradient(90deg,#0a2a5c,#1a4a8b,#2980b9)",
-    expBar:"linear-gradient(90deg,#3d2600,#7a4f00,#d4a017)",
-    madeiraBase:"#4a2800",
-    hpCor:"#8b1a1a", spCor:"#1a4a8b", expCor:"#b8860b",
-    msgBg:"rgba(249,240,216,0.85)", msgBorder:"rgba(200,169,110,0.6)",
-    jogBg:"rgba(139,26,26,0.1)", jogBorder:"rgba(139,26,26,0.3)",
-    inimBg:"rgba(139,26,26,0.07)", inimBorder:"rgba(139,26,26,0.35)", inimNomeCor:"#8b1a1a",
-    aguardaBg:"rgba(249,240,216,0.8)", aguardaBorder:"#b8860b", aguardaCor:"#6b4e00",
-    tagBg:"rgba(139,26,26,0.1)", tagBorder:"rgba(139,26,26,0.4)", tagCor:"#5c3d1e",
-    loadCor:"#8b6340",
-    sealBg:"radial-gradient(circle at 38% 32%,#c0392b,#8b1a1a,#5c0f0f)",
-    sealActiveBg:"radial-gradient(circle at 38% 32%,#d4a017,#b8860b,#b8860b88)",
-    sealSombra:"#5c0f0f",
-    inputBg:"rgba(249,240,216,0.8)", inputBorder:"#c8a96e", inputCor:"#2c1a0e",
-    topbarBg:"rgba(249,240,216,0.95)", topbarBorder:"#c8a96e",
-    actionBarBg:"rgba(249,240,216,0.95)", actionBarBorder:"#c8a96e",
-    modalBg:"#f2e2b8", modalBorder:"#c8a96e",
-    statBg:"rgba(139,90,43,0.07)", statBorder:"#c8a96e",
-    scrollThumb:"#c8a96e", emptyColor:"#8b6340",
-    introPreCor:"#8b6340", introTitleCor:"#2c1a0e", introTitleShadow:"#c8a96e",
-    introCardBg:"#f9f0d8", introCardBorder:"#c8a96e",
-    introCardShadow:"4px 4px 0 #c8a96e,8px 8px 0 rgba(139,90,43,.15)",
-    cornerGemCor:"#b8860b", dividerCor:"#b8860b",
-    introStartBg:"linear-gradient(135deg,#8b1a1a,#a52020)",
-    introStartShadow:"rgba(139,26,26,0.5)",
-    themeBtnBg:"transparent", themeBtnBorder:"#c8a96e", themeBtnCor:"#8b6340",
-    themeBtnActiveBg:"#2c1a0e", themeBtnActiveCor:"#f9f0d8",
-  },
-  dark: {
-    bg:"linear-gradient(135deg,#0d0d0d 0%,#1a0a00 50%,#0d0d0d 100%)",
-    papel:"#1a1008", papelBorda:"#8b6000",
-    tinta:"#f0e0b0", tintaleve:"#c8a870", tintafade:"#7a6040",
-    dourado:"#d4a017", douradoclaro:"#f0c040",
-    acento:"#c0392b", acentoclaro:"#e74c3c",
-    seloCor:"#8b0000", seloSombra:"#3d0000",
-    hpBar:"linear-gradient(90deg,#5c0000,#8b0000,#c0392b)",
-    spBar:"linear-gradient(90deg,#002040,#004080,#0066cc)",
-    expBar:"linear-gradient(90deg,#3d2000,#7a4000,#d4a017)",
-    madeiraBase:"#2a1400",
-    hpCor:"#c0392b", spCor:"#2980b9", expCor:"#d4a017",
-    msgBg:"rgba(26,16,8,0.9)", msgBorder:"rgba(139,96,0,0.5)",
-    jogBg:"rgba(192,57,43,0.12)", jogBorder:"rgba(192,57,43,0.3)",
-    inimBg:"rgba(192,57,43,0.08)", inimBorder:"rgba(192,57,43,0.4)", inimNomeCor:"#e74c3c",
-    aguardaBg:"rgba(26,16,8,0.9)", aguardaBorder:"#d4a017", aguardaCor:"#d4a017",
-    tagBg:"rgba(192,57,43,0.1)", tagBorder:"rgba(192,57,43,0.4)", tagCor:"#c8a870",
-    loadCor:"#7a6040",
-    sealBg:"radial-gradient(circle at 38% 32%,#e74c3c,#8b0000,#3d0000)",
-    sealActiveBg:"radial-gradient(circle at 38% 32%,#f0c040,#d4a017,#d4a01788)",
-    sealSombra:"#3d0000",
-    inputBg:"rgba(26,16,8,0.8)", inputBorder:"#8b6000", inputCor:"#f0e0b0",
-    topbarBg:"rgba(13,13,13,0.95)", topbarBorder:"#8b6000",
-    actionBarBg:"rgba(13,13,13,0.95)", actionBarBorder:"#8b6000",
-    modalBg:"#1a1008", modalBorder:"#8b6000",
-    statBg:"rgba(139,96,0,0.08)", statBorder:"#8b6000",
-    scrollThumb:"#8b6000", emptyColor:"#7a6040",
-    introPreCor:"#7a6040", introTitleCor:"#f0e0b0", introTitleShadow:"transparent",
-    introCardBg:"#1a1008", introCardBorder:"#8b6000",
-    introCardShadow:"4px 4px 0 #3d2800",
-    cornerGemCor:"#d4a017", dividerCor:"#d4a017",
-    introStartBg:"linear-gradient(135deg,#8b0000,#c0392b)",
-    introStartShadow:"rgba(139,0,0,0.5)",
-    themeBtnBg:"transparent", themeBtnBorder:"#8b6000", themeBtnCor:"#7a6040",
-    themeBtnActiveBg:"#f0e0b0", themeBtnActiveCor:"#1a1008",
-  },
-  pedra: {
-    bg:"linear-gradient(135deg,#1c1c1e 0%,#0f1a0f 50%,#1a1c18 100%)",
-    papel:"#1e221e", papelBorda:"#3a5a3a",
-    tinta:"#c8ddc8", tintaleve:"#8aaa8a", tintafade:"#4a6a4a",
-    dourado:"#7aaa5a", douradoclaro:"#9acc7a",
-    acento:"#2d6a2d", acentoclaro:"#3d8a3d",
-    seloCor:"#2d5a2d", seloSombra:"#0f2a0f",
-    hpBar:"linear-gradient(90deg,#1a3a00,#2d6a00,#3d8a1a)",
-    spBar:"linear-gradient(90deg,#001a3a,#003a6a,#005a9a)",
-    expBar:"linear-gradient(90deg,#1a2a00,#3a5a00,#5a8a1a)",
-    madeiraBase:"#0a1a0a",
-    hpCor:"#3d8a1a", spCor:"#005a9a", expCor:"#7aaa5a",
-    msgBg:"rgba(30,34,30,0.9)", msgBorder:"rgba(58,90,58,0.5)",
-    jogBg:"rgba(45,106,45,0.12)", jogBorder:"rgba(45,106,45,0.3)",
-    inimBg:"rgba(45,106,45,0.08)", inimBorder:"rgba(45,106,45,0.4)", inimNomeCor:"#3d8a3d",
-    aguardaBg:"rgba(30,34,30,0.9)", aguardaBorder:"#7aaa5a", aguardaCor:"#7aaa5a",
-    tagBg:"rgba(45,106,45,0.1)", tagBorder:"rgba(45,106,45,0.4)", tagCor:"#8aaa8a",
-    loadCor:"#4a6a4a",
-    sealBg:"radial-gradient(circle at 38% 32%,#3d8a3d,#2d5a2d,#0f2a0f)",
-    sealActiveBg:"radial-gradient(circle at 38% 32%,#9acc7a,#7aaa5a,#7aaa5a88)",
-    sealSombra:"#0f2a0f",
-    inputBg:"rgba(30,34,30,0.8)", inputBorder:"#3a5a3a", inputCor:"#c8ddc8",
-    topbarBg:"rgba(28,28,30,0.95)", topbarBorder:"#3a5a3a",
-    actionBarBg:"rgba(28,28,30,0.95)", actionBarBorder:"#3a5a3a",
-    modalBg:"#1a221a", modalBorder:"#3a5a3a",
-    statBg:"rgba(58,90,58,0.08)", statBorder:"#3a5a3a",
-    scrollThumb:"#3a5a3a", emptyColor:"#4a6a4a",
-    introPreCor:"#4a6a4a", introTitleCor:"#c8ddc8", introTitleShadow:"transparent",
-    introCardBg:"#1e221e", introCardBorder:"#3a5a3a",
-    introCardShadow:"4px 4px 0 #0f1a0f",
-    cornerGemCor:"#7aaa5a", dividerCor:"#7aaa5a",
-    introStartBg:"linear-gradient(135deg,#2d5a2d,#3d8a3d)",
-    introStartShadow:"rgba(45,90,45,0.5)",
-    themeBtnBg:"transparent", themeBtnBorder:"#3a5a3a", themeBtnCor:"#4a6a4a",
-    themeBtnActiveBg:"#c8ddc8", themeBtnActiveCor:"#1e221e",
-  },
+const app = initializeApp({
+  apiKey:            "AIzaSyAsn9ZFJP6QWFesfls9anBAJbAqcDMfnqg",
+  authDomain:        "rpg-online-ad73f.firebaseapp.com",
+  databaseURL:       "https://rpg-online-ad73f-default-rtdb.firebaseio.com",
+  projectId:         "rpg-online-ad73f",
+  storageBucket:     "rpg-online-ad73f.firebasestorage.app",
+  messagingSenderId: "1031450807961",
+  appId:             "1:1031450807961:web:369342194731ad0ae37208"
+});
+const db = getDatabase(app);
+
+// ═══════════════════════════════════════════════════════════════
+//  CLASSES
+// ═══════════════════════════════════════════════════════════════
+const CLASSES = {
+  guerreiro: { nome:'Guerreiro', icon:'⚔️', avatar:'🤺', cor:'#8b4513', hp:120, sp:60,  desc:'Mestre do combate corpo a corpo',   stats:'HP Alto / SP Médio' },
+  mago:      { nome:'Mago',      icon:'🔮', avatar:'🧙', cor:'#4a235a', hp:60,  sp:120, desc:'Conjurador de magias arcanas',       stats:'HP Baixo / SP Alto' },
+  ladino:    { nome:'Ladino',    icon:'🗡️', avatar:'🥷', cor:'#1a2a1a', hp:80,  sp:80,  desc:'Especialista em furtividade',        stats:'HP Médio / SP Médio' },
+  clerigo:   { nome:'Clérigo',   icon:'✨', avatar:'😇', cor:'#1a3a4a', hp:90,  sp:100, desc:'Curandeiro e protetor divino',       stats:'HP Médio / SP Alto' },
+  barbaro:   { nome:'Bárbaro',   icon:'🪓', avatar:'😤', cor:'#5a1a1a', hp:150, sp:40,  desc:'Guerreiro da fúria selvagem',        stats:'HP Muito Alto / SP Baixo' },
+  arqueiro:  { nome:'Arqueiro',  icon:'🏹', avatar:'🧝', cor:'#1a3a1a', hp:85,  sp:70,  desc:'Atirador preciso à distância',       stats:'HP Médio / SP Médio' },
 };
 
 // ═══════════════════════════════════════════════════════════════
-//  PERSONAGEM
+//  ESTADO LOCAL
 // ═══════════════════════════════════════════════════════════════
-const CHAR = {
-  nome:"Arendel", classe:"Mago", nivel:10,
-  atributos:{FOR:6,AGI:8,VIT:8,INT:18,DES:12,SOR:10},
-  maxHp:80, maxSp:90, maxExp:500,
-  def:13, matk:36, hit:24, flee:16, crit:3,
-  equipamentos:["🪄 Cajado de Carvalho (+5 MATK)","🥋 Robe de Estudioso (+5 DEF)","📿 Amuleto Arcano"],
-  skills:[
-    {id:"fb",nome:"Fire Bolt",  emoji:"🔥",custo:10,nivel:3,desc:"Dano = MATK × Lv3 = 108. Custo: 10 SP"},
-    {id:"cb",nome:"Cold Bolt",  emoji:"❄️",custo:8, nivel:2,desc:"Dano = MATK × Lv2 = 72. Pode lentificar. Custo: 8 SP"},
-    {id:"fd",nome:"Frost Diver",emoji:"🧊",custo:20,nivel:1,desc:"Dano = MATK × Lv1 = 36. Congela inimigo. Custo: 20 SP"},
-    {id:"sg",nome:"Sight",      emoji:"👁️",custo:10,nivel:1,desc:"Revela inimigos e armadilhas ocultas. Custo: 10 SP"},
+let myUid    = localStorage.getItem('rpg_uid')    || crypto.randomUUID();
+let mySala   = localStorage.getItem('rpg_sala')   || null;
+let myNome   = localStorage.getItem('rpg_nome')   || '';
+let myClasse = localStorage.getItem('rpg_classe') || 'guerreiro';
+let amIHost  = false;
+let chamandoIA = false;
+let renderedHistKeys = new Set();
+let unsubSala = null;
+
+localStorage.setItem('rpg_uid', myUid);
+
+// ═══════════════════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function toast(msg, dur=3500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.style.display='none', dur);
+}
+
+function getApiKey() { return localStorage.getItem('rpg_openai_key') || ''; }
+
+function codigoAleatorio() {
+  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:4}, () => c[Math.floor(Math.random()*c.length)]).join('');
+}
+
+window.copiarCodigo = function() {
+  if(!mySala) return;
+  navigator.clipboard?.writeText(mySala).then(() => toast(`Código "${mySala}" copiado!`));
+};
+
+window.sairDaSala = async function() {
+  if(!confirm('Sair da sala e voltar ao início?')) return;
+  if(unsubSala) { unsubSala(); unsubSala = null; }
+  if(mySala && myUid) {
+    try { await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), { ativo: false }); } catch {}
+  }
+  mySala = null;
+  localStorage.removeItem('rpg_sala');
+  renderedHistKeys = new Set();
+  showScreen('screen-entry');
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  ABAS ENTRADA
+// ═══════════════════════════════════════════════════════════════
+window.setTab = function(tab) {
+  document.getElementById('panel-criar').style.display  = tab==='criar'  ? 'flex' : 'none';
+  document.getElementById('panel-entrar').style.display = tab==='entrar' ? 'flex' : 'none';
+  document.getElementById('tab-criar').classList.toggle('active',  tab==='criar');
+  document.getElementById('tab-entrar').classList.toggle('active', tab==='entrar');
+  // Sincroniza nome entre painéis
+  if(tab==='entrar') {
+    const n = document.getElementById('inp-nome').value;
+    if(n) document.getElementById('inp-nome2').value = n;
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  BUILD CLASSE GRID
+// ═══════════════════════════════════════════════════════════════
+function buildClasseGrid() {
+  const grid = document.getElementById('classe-grid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  Object.entries(CLASSES).forEach(([key, cls]) => {
+    const div = document.createElement('div');
+    div.className = 'classe-card' + (key === myClasse ? ' selected' : '');
+    div.dataset.classe = key;
+    div.innerHTML = `<span class="ci">${cls.icon}</span><div class="cn">${cls.nome}</div><div class="cd">${cls.desc}</div><div class="cs">${cls.stats}</div>`;
+    div.onclick = () => {
+      document.querySelectorAll('.classe-card').forEach(c => c.classList.remove('selected'));
+      div.classList.add('selected');
+      myClasse = key;
+    };
+    grid.appendChild(div);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  API KEY MODAL
+// ═══════════════════════════════════════════════════════════════
+let keyCallback = null;
+function pedirApiKey(cb) {
+  keyCallback = cb;
+  document.getElementById('modal-key').classList.add('open');
+}
+window.salvarKey = function() {
+  const v = document.getElementById('inp-key').value.trim();
+  if(!v) { toast('Cole a chave antes de salvar'); return; }
+  localStorage.setItem('rpg_openai_key', v);
+  document.getElementById('modal-key').classList.remove('open');
+  if(keyCallback) { keyCallback(); keyCallback=null; }
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  CRIAR SALA
+// ═══════════════════════════════════════════════════════════════
+window.criarSala = async function() {
+  const nome = document.getElementById('inp-nome').value.trim();
+  if(!nome) { toast('Digite seu nome de herói!'); return; }
+  myNome = nome;
+  localStorage.setItem('rpg_nome', nome);
+  localStorage.setItem('rpg_classe', myClasse);
+
+  const codigo = codigoAleatorio();
+  mySala = codigo;
+  localStorage.setItem('rpg_sala', codigo);
+
+  const cls = CLASSES[myClasse];
+  await set(ref(db, `salas/${codigo}`), {
+    config: { host: myUid, estado: 'lobby', rodada: 0, criadoEm: serverTimestamp() },
+    jogadores: {
+      [myUid]: {
+        nome, classe: myClasse,
+        hp: cls.hp, maxHp: cls.hp,
+        sp: cls.sp, maxSp: cls.sp,
+        exp: 0, ativo: true, vivo: true, consciente: true,
+        acao1: null, acao2: null,
+        joinedAt: serverTimestamp()
+      }
+    }
+  });
+
+  onDisconnect(ref(db, `salas/${codigo}/jogadores/${myUid}/ativo`)).set(false);
+  irParaLobby(codigo);
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  ENTRAR EM SALA
+// ═══════════════════════════════════════════════════════════════
+window.entrarSala = async function() {
+  const nome = (document.getElementById('inp-nome2').value || document.getElementById('inp-nome').value).trim();
+  myClasse = document.getElementById('sel-classe2').value || myClasse;
+  const codigo = document.getElementById('inp-codigo').value.trim().toUpperCase();
+  if(!nome)          { toast('Digite seu nome de herói!'); return; }
+  if(codigo.length !== 4) { toast('O código tem 4 letras'); return; }
+
+  const snap = await get(ref(db, `salas/${codigo}`));
+  if(!snap.exists())       { toast('Sala não encontrada!'); return; }
+
+  const salaData = snap.val();
+  if(salaData.config.estado !== 'lobby') { toast('Esta partida já começou!'); return; }
+
+  myNome = nome;
+  localStorage.setItem('rpg_nome', nome);
+  localStorage.setItem('rpg_classe', myClasse);
+  mySala = codigo;
+  localStorage.setItem('rpg_sala', codigo);
+
+  const cls = CLASSES[myClasse];
+  await set(ref(db, `salas/${codigo}/jogadores/${myUid}`), {
+    nome, classe: myClasse,
+    hp: cls.hp, maxHp: cls.hp,
+    sp: cls.sp, maxSp: cls.sp,
+    exp: 0, ativo: true, vivo: true, consciente: true,
+    acao1: null, acao2: null,
+    joinedAt: serverTimestamp()
+  });
+
+  onDisconnect(ref(db, `salas/${codigo}/jogadores/${myUid}/ativo`)).set(false);
+  irParaLobby(codigo);
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  LOBBY
+// ═══════════════════════════════════════════════════════════════
+function irParaLobby(codigo) {
+  showScreen('screen-lobby');
+  document.getElementById('lobby-code').textContent = codigo;
+
+  if(unsubSala) unsubSala();
+  unsubSala = onValue(ref(db, `salas/${codigo}`), snap => {
+    if(!snap.exists()) return;
+    const data = snap.val();
+    const jogadores = data.jogadores || {};
+    const host = data.config.host;
+    amIHost = (myUid === host);
+
+    // Lista de jogadores
+    const lista = document.getElementById('lista-jogadores');
+    lista.innerHTML = '';
+    Object.entries(jogadores).forEach(([uid, j]) => {
+      const cls = CLASSES[j.classe] || {};
+      const online = j.ativo !== false;
+      const div = document.createElement('div');
+      div.className = 'player-row';
+      div.innerHTML = `
+        <div class="online-dot ${online?'on':''}"></div>
+        <div class="player-avatar">${cls.icon||'?'}</div>
+        <div class="player-info">
+          <div class="player-nome">${j.nome}</div>
+          <div class="player-classe">${cls.nome||j.classe} · ${online?'<span style="color:var(--green)">online</span>':'<span style="color:#555">ausente</span>'}</div>
+        </div>
+        ${uid===host ? '<span class="badge badge-host">Anfitrião</span>' : ''}
+        ${uid===myUid ? '<span class="badge badge-you">você</span>' : ''}
+      `;
+      lista.appendChild(div);
+    });
+
+    document.getElementById('btn-iniciar').style.display    = amIHost ? 'block' : 'none';
+    document.getElementById('lobby-status').style.display   = amIHost ? 'none'  : 'block';
+
+    // Jogo iniciou
+    if(data.config.estado !== 'lobby') {
+      unsubSala();
+      irParaJogo(codigo);
+    }
+  });
+}
+
+window.iniciarJogo = async function() {
+  if(!amIHost) return;
+  if(!getApiKey()) { pedirApiKey(() => iniciarJogo()); return; }
+  await update(ref(db, `salas/${mySala}/config`), { estado: 'iniciando' });
+  chamarIAInicio();
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  JOGO PRINCIPAL
+// ═══════════════════════════════════════════════════════════════
+function irParaJogo(codigo) {
+  showScreen('screen-game');
+  document.getElementById('top-sala').textContent = codigo;
+
+  if(unsubSala) unsubSala();
+  unsubSala = onValue(ref(db, `salas/${codigo}`), snap => {
+    if(!snap.exists()) return;
+    const data = snap.val();
+    const jogadores = data.jogadores || {};
+    const eu = jogadores[myUid];
+    if(!eu) return;
+
+    amIHost = (data.config.host === myUid);
+
+    atualizarTopbar(eu);
+    atualizarStatusBar(jogadores, data.config.rodada, data.config.estado);
+    renderizarHistoria(data.historia);
+    atualizarInputArea(eu, data.config.estado, jogadores);
+    atualizarBotaoIniciar(data);
+
+    // Host: verifica se todos enviaram
+    if(amIHost && data.config.estado === 'aguardando' && !chamandoIA) {
+      verificarRodada(jogadores, data);
+    }
+  });
+}
+
+function atualizarBotaoIniciar(data) {
+  const btn = document.getElementById('btn-iniciar-narrar');
+  const semHistoria = !data.historia || Object.keys(data.historia).length === 0;
+  const estado = data.config.estado;
+  // Host vê o botão quando não há história e não está narrando
+  const mostrar = amIHost && semHistoria && !chamandoIA &&
+    (estado === 'lobby' || estado === 'aguardando');
+  btn.style.display = mostrar ? 'block' : 'none';
+  if(!semHistoria) document.getElementById('historia-empty').style.display = 'none';
+}
+
+window.hostIniciarOuRetentar = async function() {
+  if(!amIHost || chamandoIA) return;
+  if(!getApiKey()) { pedirApiKey(() => hostIniciarOuRetentar()); return; }
+  await update(ref(db, `salas/${mySala}/config`), { estado: 'iniciando' });
+  chamarIAInicio();
+};
+
+// ─── Topbar ────────────────────────────────────────────────────
+let _meuEuCache = null;
+
+function atualizarTopbar(eu) {
+  _meuEuCache = eu;
+  const cls = CLASSES[eu.classe] || {};
+  const av = document.getElementById('top-avatar');
+  av.textContent = cls.avatar || cls.icon || '⚔️';
+  av.style.background = cls.cor || 'var(--surface2)';
+  document.getElementById('top-nome').textContent = eu.nome;
+  const hp = Math.max(0,eu.hp), mhp = eu.maxHp;
+  const sp = Math.max(0,eu.sp), msp = eu.maxSp;
+  const exp = eu.exp || 0;
+  document.getElementById('top-hp').textContent  = `${hp}/${mhp}`;
+  document.getElementById('top-sp').textContent  = `${sp}/${msp}`;
+  document.getElementById('top-exp').textContent = exp;
+  document.getElementById('bfhp').style.width  = `${(hp/mhp)*100}%`;
+  document.getElementById('bfsp').style.width  = `${(sp/msp)*100}%`;
+  document.getElementById('bfexp').style.width = `${Math.min(exp%100,100)}%`;
+}
+
+window.abrirFicha = function() {
+  const eu = _meuEuCache; if(!eu) return;
+  const cls = CLASSES[eu.classe] || {};
+  const av = document.getElementById('ficha-avatar-big');
+  av.textContent = cls.avatar || cls.icon || '⚔️';
+  av.style.background = cls.cor || 'var(--surface2)';
+  document.getElementById('ficha-nome-full').textContent = eu.nome;
+  document.getElementById('ficha-classe-full').textContent = `${cls.nome||eu.classe} · Nível ${Math.floor((eu.exp||0)/100)+1}`;
+  const hp=Math.max(0,eu.hp), sp=Math.max(0,eu.sp), exp=eu.exp||0;
+  document.getElementById('fich-hp').textContent  = `${hp} / ${eu.maxHp}`;
+  document.getElementById('fich-sp').textContent  = `${sp} / ${eu.maxSp}`;
+  document.getElementById('fich-exp').textContent = `${exp} XP`;
+  document.getElementById('fich-bfhp').style.width  = `${(hp/eu.maxHp)*100}%`;
+  document.getElementById('fich-bfsp').style.width  = `${(sp/eu.maxSp)*100}%`;
+  document.getElementById('fich-bfexp').style.width = `${Math.min(exp%100,100)}%`;
+  document.getElementById('modal-ficha').classList.add('open');
+};
+window.fecharFicha = function() {
+  document.getElementById('modal-ficha').classList.remove('open');
+};
+document.getElementById('modal-ficha').addEventListener('click', e => {
+  if(e.target === document.getElementById('modal-ficha')) fecharFicha();
+});
+
+// ─── Botões de ação rápida ─────────────────────────────────────
+// ─── Modal de ação ────────────────────────────────────────────
+const TIPOS_ACAO = {
+  falar:    { titulo:'💬 Falar',      lbl1:'O QUE SEU PERSONAGEM DIZ?',    ph1:'Digite a fala...',             lbl2:'COMO? (TOM, EXPRESSÃO)',        ph2:'gritando, rindo, sussurrando...' },
+  atacar:   { titulo:'⚔️ Atacar',     lbl1:'O QUE / QUEM VOCÊ ATACA?',     ph1:'Descreva o alvo...',           lbl2:'COMO? COM QUÊ? (DETALHE)',      ph2:'com um chute, pela costas...' },
+  skill:    { titulo:'✨ Skill',       lbl1:'QUAL HABILIDADE VOCÊ USA?',     ph1:'Nome ou descrição da skill...', lbl2:'COMO VOCÊ A APLICA?',           ph2:'detalhe de uso...' },
+  defender: { titulo:'🛡️ Defender',  lbl1:'COMO VOCÊ SE DEFENDE?',         ph1:'Descreva sua defesa...',       lbl2:'DETALHE ADICIONAL',             ph2:'usando o escudo, recuando...' },
+  mover:    { titulo:'🏃 Mover',      lbl1:'PARA ONDE VOCÊ SE MOVE?',       ph1:'Destino ou direção...',        lbl2:'COMO? (DETALHE)',               ph2:'furtivamente, correndo...' },
+  livre:    { titulo:'🎯 Ação Livre',  lbl1:'O QUE VOCÊ FAZ?',              ph1:'Descreva livremente...',       lbl2:'DETALHE ADICIONAL (OPCIONAL)',  ph2:'mais detalhes...' },
+};
+
+let _tipoAcaoAtual = null;
+let _slots = [null, null]; // acao1, acao2
+
+window.abrirModalAcao = function(tipo) {
+  if(document.getElementById('acao-btns').style.display === 'none') return;
+  _tipoAcaoAtual = tipo;
+  const t = TIPOS_ACAO[tipo];
+  document.getElementById('modal-acao-title').textContent = t.titulo;
+  document.getElementById('modal-acao-lbl1').textContent  = t.lbl1;
+  document.getElementById('modal-acao-txt').placeholder   = t.ph1;
+  document.getElementById('modal-acao-txt').value         = '';
+  document.getElementById('modal-acao-lbl2').textContent  = t.lbl2;
+  document.getElementById('modal-acao-detalhe').placeholder = t.ph2;
+  document.getElementById('modal-acao-detalhe').value     = '';
+  document.getElementById('modal-acao').classList.add('open');
+  setTimeout(() => document.getElementById('modal-acao-txt').focus(), 100);
+};
+
+window.fecharModalAcao = function() {
+  document.getElementById('modal-acao').classList.remove('open');
+};
+
+window.confirmarAcao = function() {
+  const txt     = document.getElementById('modal-acao-txt').value.trim();
+  const detalhe = document.getElementById('modal-acao-detalhe').value.trim();
+  if(!txt) { toast('Descreva a ação antes de confirmar!'); return; }
+  const t = TIPOS_ACAO[_tipoAcaoAtual];
+  const acaoFinal = detalhe ? `${t.titulo}: ${txt} (${detalhe})` : `${t.titulo}: ${txt}`;
+  // Preenche primeiro slot vazio
+  if(_slots[0] === null) { _slots[0] = acaoFinal; }
+  else if(_slots[1] === null) { _slots[1] = acaoFinal; }
+  else { _slots[0] = _slots[1]; _slots[1] = acaoFinal; } // substitui a última
+  renderizarSlots();
+  fecharModalAcao();
+};
+
+window.limparSlot = function(idx) {
+  _slots[idx] = null;
+  renderizarSlots();
+};
+
+function renderizarSlots() {
+  [0,1].forEach(i => {
+    const slot = document.getElementById(`slot${i+1}`);
+    if(_slots[i]) {
+      slot.className = 'acao-slot preenchida';
+      slot.innerHTML = `
+        <span class="acao-slot-num">${i===0?'①':'②'}</span>
+        <span class="acao-slot-texto">${_slots[i]}</span>
+        <button class="acao-slot-del" onclick="limparSlot(${i})">✕</button>`;
+    } else {
+      slot.className = 'acao-slot';
+      slot.innerHTML = `
+        <span class="acao-slot-num">${i===0?'①':'②'}</span>
+        <span class="acao-slot-vazia">${i===0?'Escolha uma ação abaixo...':'Segunda ação (opcional)...'}</span>`;
+    }
+  });
+}
+
+document.getElementById('modal-acao').addEventListener('click', e => {
+  if(e.target === document.getElementById('modal-acao')) fecharModalAcao();
+});
+
+// ─── Status bar ────────────────────────────────────────────────
+function atualizarStatusBar(jogadores, rodada, estado) {
+  const bar = document.getElementById('status-bar');
+  bar.innerHTML = `<span class="status-rodada-lbl">RODADA ${rodada||'—'}</span>`;
+  Object.entries(jogadores).forEach(([uid, j]) => {
+    const online  = j.ativo !== false;
+    const done    = (j.acao1 !== null && j.acao2 !== null) || !j.vivo || !j.consciente;
+    const atrasado = online && !done && estado === 'aguardando';
+    const dotCls  = !online ? 'r' : atrasado ? 'y' : 'g';
+    const cls = CLASSES[j.classe] || {};
+    const chip = document.createElement('div');
+    chip.className = `sj ${done?'done':''} ${!online?'offline':''}`;
+    chip.innerHTML = `
+      <div class="sj-av" style="background:${cls.cor||'#333'}">${cls.avatar||cls.icon||'?'}</div>
+      <span class="sj-nome">${j.nome}${done?' ✓':''}</span>
+      <span class="sj-dot ${dotCls}"></span>`;
+    bar.appendChild(chip);
+  });
+
+  // Botão narrar agora (host)
+  const btnNarrar = document.getElementById('btn-narrar-agora');
+  const todosEnviaram = Object.values(jogadores)
+    .filter(j => j.ativo && j.vivo && j.consciente)
+    .every(j => j.acao1 !== null && j.acao2 !== null);
+  btnNarrar.style.display = (amIHost && estado === 'aguardando') ? 'block' : 'none';
+  btnNarrar.style.background = todosEnviaram ? 'var(--gold)' : '';
+  btnNarrar.style.color      = todosEnviaram ? '#1a0d00'     : '';
+  btnNarrar.style.fontWeight = todosEnviaram ? 'bold'        : '';
+}
+
+// ─── Historia ──────────────────────────────────────────────────
+function renderizarHistoria(historia) {
+  if(!historia) return;
+  const entries = Object.entries(historia)
+    .map(([k,v]) => ({k,...v}))
+    .sort((a,b) => (a.ts||0)-(b.ts||0));
+
+  if(entries.length === 0) return;
+  document.getElementById('historia-empty').style.display = 'none';
+  const el = document.getElementById('historia');
+
+  entries.forEach(entry => {
+    if(renderedHistKeys.has(entry.k)) return;
+    renderedHistKeys.add(entry.k);
+
+    const div = document.createElement('div');
+    if(entry.role === 'rodada') {
+      div.className = 'rodada-sep';
+      div.textContent = `RODADA ${entry.content}`;
+    } else if(entry.role === 'model') {
+      div.className = 'msg-mestre';
+      div.innerHTML = `<div class="msg-mestre-lbl">⚔️ MESTRE</div>${formatarTexto(entry.content)}`;
+    } else {
+      div.className = 'msg-acoes';
+      div.innerHTML = `<div class="msg-acoes-lbl">AÇÕES DOS AVENTUREIROS</div>` +
+        entry.content.split('\n').filter(l=>l.trim()).map(l => {
+          const [nome, ...rest] = l.split(':');
+          return `<div class="msg-acao-item"><strong>${nome}:</strong>${rest.join(':')}</div>`;
+        }).join('');
+    }
+    el.appendChild(div);
+  });
+
+  el.scrollTop = el.scrollHeight;
+}
+
+function formatarTexto(t) {
+  return t
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g,'<em>$1</em>')
+    .split('\n').join('<br>');
+}
+
+// ─── Input area ────────────────────────────────────────────────
+function atualizarInputArea(eu, estado, jogadores) {
+  const btn = document.getElementById('btn-enviar');
+  const mn  = document.getElementById('msg-narrando');
+  const me  = document.getElementById('msg-enviado');
+  const mi  = document.getElementById('msg-inconsciente');
+  const btns  = document.getElementById('acao-btns');
+  const slots = document.getElementById('acao-slots');
+
+  const jaMorto  = !eu.vivo || !eu.consciente;
+  // Bloqueado apenas se já enviou ao Firebase OU está morto
+  const jaEnviou = eu.acao1 !== null;
+  const bloqueado = jaEnviou || jaMorto;
+
+  // Indicador informativo de narração (não bloqueia)
+  const narrando = estado === 'narrando' || estado === 'iniciando';
+  mn.style.display   = narrando   ? 'flex'  : 'none';
+  me.style.display   = jaEnviou   ? 'block' : 'none';
+  mi.style.display   = jaMorto    ? 'block' : 'none';
+  btn.style.display  = bloqueado  ? 'none'  : 'block';
+  btns.style.display = bloqueado  ? 'none'  : 'grid';
+  slots.style.display= bloqueado  ? 'none'  : 'flex';
+
+  // Limpa slots quando Firebase zera as ações (nova rodada)
+  if(!jaEnviou && !jaMorto) { _slots=[null,null]; renderizarSlots(); }
+  if(!eu.vivo) document.getElementById('modal-morto').classList.add('open');
+}
+
+// ─── Enviar ações ──────────────────────────────────────────────
+window.enviarAcoes = async function() {
+  if(!_slots[0]) { toast('Defina pelo menos a primeira ação!'); return; }
+  await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), {
+    acao1: _slots[0],
+    acao2: _slots[1] || '(sem segunda ação)'
+  });
+};
+
+// ─── Narrar agora (host forçado) ───────────────────────────────
+window.narrarAgora = async function() {
+  if(!amIHost || chamandoIA) return;
+  const snap = await get(ref(db, `salas/${mySala}`));
+  if(!snap.exists()) return;
+  const data = snap.val();
+  if(data.config.estado !== 'aguardando') return;
+  chamarIA(data.jogadores, data);
+};
+
+// ─── Verificar rodada ──────────────────────────────────────────
+function verificarRodada(jogadores, data) {
+  const ativos = Object.values(jogadores).filter(j => j.ativo && j.vivo && j.consciente);
+  if(ativos.length === 0) return;
+  const todos = ativos.every(j => j.acao1 !== null && j.acao2 !== null);
+  if(todos) chamarIA(jogadores, data);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  IA — GEMINI
+// ═══════════════════════════════════════════════════════════════
+function buildSystemPrompt(jogadores) {
+  const fichas = Object.values(jogadores).map(j => {
+    const cls = CLASSES[j.classe];
+    const status = !j.vivo ? '(MORTO)' : !j.consciente ? '(INCONSCIENTE)' : '';
+    return `• ${j.nome} [${cls?.nome||j.classe}] ${status} — HP ${j.hp}/${j.maxHp} | SP ${j.sp}/${j.maxSp} | EXP ${j.exp}`;
+  }).join('\n');
+
+  return `Você é o Mestre de uma campanha de RPG de mesa no estilo D&D 5e, em um mundo medieval de fantasia épica.
+Narre em português do Brasil com linguagem épica, cinematográfica e imersiva.
+
+FICHAS DOS PERSONAGENS:
+${fichas}
+
+REGRAS:
+- Trate todas as ações dos jogadores como simultâneas na mesma rodada
+- Seja rigorosamente consistente com os eventos anteriores da história
+- Descreva consequências físicas, reações de NPCs e inimigos, e evolução do ambiente
+- Crie tensão dramática, reviravoltas e momentos de heroísmo
+- NÃO inclua tags de atualização de stats no corpo da narração
+- AO FINAL da resposta, em uma linha separada, inclua APENAS as atualizações necessárias:
+  STATS: [HP:Nome:novoValor] [SP:Nome:novoValor] [EXP:Nome:+ganho] [MORTO:Nome] [INCONS:Nome]
+- Exemplo: STATS: [HP:Igor:95] [SP:Mago:110] [EXP:Igor:+20] [EXP:Mago:+20]
+- Seja generoso com EXP (mínimo +10 por rodada de ação)
+- HP e SP devem ser valores absolutos (não delta)`;
+}
+
+function mostrarRetryUI(tentativa, totalMs) {
+  const info = document.getElementById('retry-info');
+  const txt  = document.getElementById('retry-txt');
+  const fill = document.getElementById('retry-fill');
+  if(!info) return;
+  info.style.display = 'block';
+  const pct = Math.round((tentativa-1)/10*100);
+  fill.style.width = pct+'%';
+  const seg = Math.round(totalMs/1000);
+  txt.textContent = `Tentativa ${tentativa}/10… aguardando ${seg}s`;
+}
+
+function ocultarRetryUI() {
+  const info = document.getElementById('retry-info');
+  const fill = document.getElementById('retry-fill');
+  if(!info) return;
+  info.style.display = 'none';
+  fill.style.width = '0%';
+}
+
+async function chamarIAInicio() {
+  if(chamandoIA) return;
+  chamandoIA = true;
+  const btn = document.getElementById('btn-iniciar-narrar');
+  if(btn) btn.style.display = 'none';
+
+  try {
+    const snap = await get(ref(db, `salas/${mySala}`));
+    const data = snap.val();
+    const jogadores = data.jogadores || {};
+
+    await update(ref(db, `salas/${mySala}/config`), { estado: 'narrando' });
+
+    const nomes = Object.values(jogadores)
+      .map(j => `${j.nome} (${CLASSES[j.classe]?.nome||j.classe})`)
+      .join(', ');
+
+    const prompt = `Inicie uma campanha épica de RPG medieval estilo D&D para: ${nomes}.
+Crie uma abertura cinematográfica: descreva o cenário, o clima, e apresente uma situação de perigo ou mistério que una os personagens. Termine deixando claro o primeiro desafio que eles enfrentam e aguardando suas ações.
+STATS: (nenhuma atualização no início)`;
+
+    const resposta = await chamarOpenAI(buildSystemPrompt(jogadores), [], prompt, mostrarRetryUI);
+
+    ocultarRetryUI();
+
+    if(!resposta) {
+      await update(ref(db, `salas/${mySala}/config`), { estado: 'lobby' });
+      if(amIHost && btn) btn.style.display = 'block';
+      return;
+    }
+
+    const ts = Date.now();
+    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparStats(resposta), ts });
+    await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando', rodada: 1 });
+  } finally {
+    chamandoIA = false;
+    ocultarRetryUI();
+  }
+}
+
+async function chamarIA(jogadores, data) {
+  if(chamandoIA) return;
+  chamandoIA = true;
+
+  try {
+    await update(ref(db, `salas/${mySala}/config`), { estado: 'narrando' });
+
+    const apiKey = getApiKey();
+    if(!apiKey) {
+      pedirApiKey(async () => {
+        await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
+      });
+      return;
+    }
+
+    const acoes = Object.values(jogadores)
+      .filter(j => j.ativo)
+      .map(j => {
+        if(!j.vivo) return `${j.nome}: (morto, sem ação)`;
+        if(!j.consciente) return `${j.nome}: (inconsciente, sem ação)`;
+        return `${j.nome}: [Principal] ${j.acao1}  [Bônus] ${j.acao2}`;
+      }).join('\n');
+
+    const histSnap = await get(ref(db, `salas/${mySala}/historia`));
+    const histRaw  = histSnap.val() || {};
+    const histArr  = Object.values(histRaw).sort((a,b)=>(a.ts||0)-(b.ts||0));
+    const gemHist  = histArr
+      .filter(e => e.role==='model' || e.role==='user')
+      .map(e => ({ role: e.role==='model'?'model':'user', parts:[{text:e.content}] }));
+
+    const rodada = data.config.rodada || 1;
+
+    await push(ref(db, `salas/${mySala}/historia`), { role:'rodada', content: String(rodada), ts: Date.now()-2 });
+    await push(ref(db, `salas/${mySala}/historia`), { role:'user', content: acoes, ts: Date.now()-1 });
+
+    const resposta = await chamarOpenAI(buildSystemPrompt(jogadores), gemHist, acoes, mostrarRetryUI);
+
+    ocultarRetryUI();
+
+    if(!resposta) {
+      await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
+      return;
+    }
+
+    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparStats(resposta), ts: Date.now() });
+    await processarStats(resposta, jogadores);
+
+    const ups = {};
+    Object.keys(jogadores).forEach(uid => {
+      ups[`salas/${mySala}/jogadores/${uid}/acao1`] = null;
+      ups[`salas/${mySala}/jogadores/${uid}/acao2`] = null;
+    });
+    ups[`salas/${mySala}/config/estado`] = 'aguardando';
+    ups[`salas/${mySala}/config/rodada`] = rodada + 1;
+    await update(ref(db), ups);
+  } finally {
+    chamandoIA = false;
+    ocultarRetryUI();
+  }
+}
+
+function limparStats(texto) {
+  return texto.replace(/\nSTATS:.*$/m,'').replace(/STATS:.*$/gm,'').trim();
+}
+
+async function processarStats(resposta, jogadores) {
+  const statsLine = resposta.match(/STATS:(.*)/);
+  if(!statsLine) return;
+  const tags = statsLine[1].matchAll(/\[(HP|SP|EXP|MORTO|INCONS):([^:]+):?([^\]]*)\]/g);
+  const ups = {};
+  for(const [,tipo,nome,valor] of tags) {
+    const uid = Object.keys(jogadores).find(u =>
+      jogadores[u].nome.toLowerCase() === nome.trim().toLowerCase()
+    );
+    if(!uid) continue;
+    const j = jogadores[uid];
+    const base = `salas/${mySala}/jogadores/${uid}`;
+    if(tipo==='HP') {
+      const v = parseInt(valor);
+      if(!isNaN(v)) ups[`${base}/hp`] = Math.max(0, Math.min(v, j.maxHp));
+    } else if(tipo==='SP') {
+      const v = parseInt(valor);
+      if(!isNaN(v)) ups[`${base}/sp`] = Math.max(0, Math.min(v, j.maxSp));
+    } else if(tipo==='EXP') {
+      const v = parseInt(valor.replace('+',''));
+      if(!isNaN(v)) ups[`${base}/exp`] = (j.exp||0)+v;
+    } else if(tipo==='MORTO') {
+      ups[`${base}/vivo`] = false; ups[`${base}/hp`] = 0;
+    } else if(tipo==='INCONS') {
+      ups[`${base}/consciente`] = false;
+    }
+  }
+  if(Object.keys(ups).length) await update(ref(db), ups);
+}
+
+async function chamarOpenAI(systemPrompt, history, userMsg, onRetry) {
+  const apiKey = getApiKey();
+  if(!apiKey) return null;
+
+  const messages = [
+    { role:'system', content: systemPrompt },
+    ...history.map(m => ({ role: m.role==='model' ? 'assistant' : 'user', content: m.parts?.[0]?.text || m.content || '' })),
+    { role:'user', content: userMsg }
+  ];
+
+  const body = JSON.stringify({ model:'gpt-4o-mini', messages, temperature:0.9, max_tokens:1500 });
+  const MAX = 10;
+
+  for(let t=1; t<=MAX; t++) {
+    if(t>1) {
+      const waitMs = Math.min(t*2000, 16000);
+      if(onRetry) onRetry(t, waitMs);
+      await new Promise(r=>setTimeout(r, waitMs));
+    }
+    try {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
+        body
+      });
+      const d = await res.json();
+      if(d.error) {
+        const msg = d.error.message || '';
+        if((/rate.limit|overload|529|503|timeout/i.test(msg)) && t<MAX) continue;
+        toast(`Erro IA: ${msg.substring(0,80)}`);
+        return null;
+      }
+      return d.choices?.[0]?.message?.content || '';
+    } catch(e) {
+      if(t===MAX){ toast('Erro de conexão com a IA após 10 tentativas'); return null; }
+    }
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RECONECTAR
+// ═══════════════════════════════════════════════════════════════
+async function tentarReconectar() {
+  if(!mySala || !myNome) return false;
+  try {
+    const snap = await get(ref(db, `salas/${mySala}`));
+    if(!snap.exists()) return false;
+    const data = snap.val();
+    if(!data.jogadores?.[myUid]) return false;
+
+    await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), { ativo: true });
+    onDisconnect(ref(db, `salas/${mySala}/jogadores/${myUid}/ativo`)).set(false);
+
+    if(data.config.estado === 'lobby') irParaLobby(mySala);
+    else irParaJogo(mySala);
+    return true;
+  } catch { return false; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SKILL TREE
+// ═══════════════════════════════════════════════════════════════
+const SKILLS = {
+  guerreiro: [
+    { nivel:1, nome:'Golpe Poderoso',    icon:'⚔️',  sp:10, desc:'Concentra força num golpe devastador que ignora parte da defesa.' },
+    { nivel:1, nome:'Postura Defensiva', icon:'🛡️',  sp:8,  desc:'Adota postura que reduz o dano recebido por uma rodada.' },
+    { nivel:1, nome:'Provocar',          icon:'😤',  sp:5,  desc:'Atrai a atenção dos inimigos, protegendo os aliados.' },
+    { nivel:2, nome:'Investida',         icon:'🐂',  sp:15, desc:'Avança em alta velocidade causando dano e empurrando o alvo.' },
+    { nivel:2, nome:'Desarmar',          icon:'🤜',  sp:12, desc:'Tenta arrancar a arma das mãos do inimigo.' },
+    { nivel:2, nome:'Contra-Ataque',     icon:'↩️',  sp:15, desc:'Prepara um revide imediato ao próximo ataque recebido.' },
+    { nivel:3, nome:'Fúria de Combate',  icon:'💢',  sp:22, desc:'Entra em frenesi desferindo múltiplos golpes rápidos.' },
+    { nivel:3, nome:'Golpe Devastador',  icon:'💥',  sp:28, desc:'Ataque capaz de quebrar armaduras e atordoar.' },
+    { nivel:3, nome:'Bastião',           icon:'🏰',  sp:20, desc:'Cria uma linha de defesa, protegendo todos os aliados próximos.' },
+    { nivel:5, nome:'Redemoinho',        icon:'🌀',  sp:38, desc:'Gira com a arma atingindo todos os inimigos ao redor.' },
+    { nivel:5, nome:'Lâmina da Ruína',   icon:'🗡️',  sp:45, desc:'Golpe lendário que corta a própria realidade.' },
+  ],
+  mago: [
+    { nivel:1, nome:'Míssil Mágico',     icon:'💫',  sp:8,  desc:'Projétil arcano de energia pura que nunca erra o alvo.' },
+    { nivel:1, nome:'Faísca Ardente',    icon:'🔥',  sp:10, desc:'Lança uma faísca de fogo que pode incendiar o alvo.' },
+    { nivel:1, nome:'Choque Glacial',    icon:'❄️',  sp:10, desc:'Jato de gelo que pode congelar parcialmente o alvo.' },
+    { nivel:2, nome:'Bola de Fogo',      icon:'🔥',  sp:22, desc:'Esfera de fogo que explode em área ao atingir o alvo.' },
+    { nivel:2, nome:'Escudo Arcano',     icon:'🔮',  sp:18, desc:'Barreira mágica que absorve os próximos ataques.' },
+    { nivel:2, nome:'Raio',             icon:'⚡',  sp:20, desc:'Descarga elétrica que atinge em linha reta.' },
+    { nivel:3, nome:'Tempestade Arcana', icon:'🌩️',  sp:32, desc:'Invoca uma tempestade de energia mágica em área.' },
+    { nivel:3, nome:'Dissipar Magia',    icon:'✨',  sp:25, desc:'Cancela um feitiço ativo inimigo ou efeito mágico.' },
+    { nivel:3, nome:'Familiar',          icon:'🦉',  sp:28, desc:'Invoca um familiar para explorar, vigiar ou atacar.' },
+    { nivel:5, nome:'Parar o Tempo',     icon:'⏳',  sp:50, desc:'Suspende o tempo brevemente, agindo antes de todos.' },
+    { nivel:5, nome:'Toque da Morte',    icon:'💀',  sp:55, desc:'Magia necrótica que drena a vida do alvo diretamente.' },
+  ],
+  ladino: [
+    { nivel:1, nome:'Ataque Furtivo',    icon:'🥷',  sp:8,  desc:'Ataque preciso em pontos vitais causando dano extra.' },
+    { nivel:1, nome:'Fumaça',            icon:'💨',  sp:6,  desc:'Joga uma bomba de fumaça para dificultar visão inimiga.' },
+    { nivel:1, nome:'Desviar',           icon:'💨',  sp:5,  desc:'Reflexos aguçados para esquivar de ataques.' },
+    { nivel:2, nome:'Roubar',            icon:'💰',  sp:10, desc:'Tenta furtar um item do alvo sem ser notado.' },
+    { nivel:2, nome:'Veneno',            icon:'☠️',  sp:15, desc:'Aplica veneno na arma causando dano contínuo.' },
+    { nivel:2, nome:'Golpe Duplo',       icon:'⚡',  sp:18, desc:'Dois ataques rápidos em sequência.' },
+    { nivel:3, nome:'Desaparecer',       icon:'🌑',  sp:25, desc:'Some das vistas tornando-se invisível por uma rodada.' },
+    { nivel:3, nome:'Emboscada',         icon:'🎯',  sp:28, desc:'Prepara uma armadilha letal para o próximo inimigo.' },
+    { nivel:3, nome:'Sombras',           icon:'🕷️',  sp:22, desc:'Funde-se às sombras se movendo sem ser detectado.' },
+    { nivel:5, nome:'Assassínio',        icon:'🗡️',  sp:45, desc:'Golpe mortal em ponto vital com chances de abater instantaneamente.' },
+    { nivel:5, nome:'Sombra Viva',       icon:'👤',  sp:40, desc:'Cria uma ilusão perfeita de si mesmo como distração.' },
+  ],
+  clerigo: [
+    { nivel:1, nome:'Curar',             icon:'💚',  sp:12, desc:'Cura os ferimentos de um aliado usando energia divina.' },
+    { nivel:1, nome:'Bênção',            icon:'✨',  sp:8,  desc:'Abençoa um aliado aumentando seus ataques e defesas.' },
+    { nivel:1, nome:'Luz Sagrada',       icon:'☀️',  sp:10, desc:'Projeta luz sagrada que prejudica mortos-vivos.' },
+    { nivel:2, nome:'Purificar',         icon:'🌿',  sp:15, desc:'Remove venenos, maldições e efeitos negativos.' },
+    { nivel:2, nome:'Escudo Divino',     icon:'🛡️',  sp:18, desc:'Envolve um aliado em proteção divina.' },
+    { nivel:2, nome:'Punição Sagrada',   icon:'⚡',  sp:20, desc:'Raio de energia sagrada que queima o alvo.' },
+    { nivel:3, nome:'Cura em Área',      icon:'💚',  sp:30, desc:'Cura todos os aliados próximos simultaneamente.' },
+    { nivel:3, nome:'Ressurreição',      icon:'🔆',  sp:40, desc:'Traz de volta um aliado inconsciente com HP mínimo.' },
+    { nivel:3, nome:'Maldição',          icon:'🔮',  sp:25, desc:'Lança uma maldição enfraquecendo permanentemente o alvo.' },
+    { nivel:5, nome:'Milagre',           icon:'🌟',  sp:55, desc:'Chama a intervenção divina para um efeito extraordinário.' },
+    { nivel:5, nome:'Julgamento',        icon:'⚖️',  sp:48, desc:'Julgamento divino que pulveriza criaturas malignas.' },
+  ],
+  barbaro: [
+    { nivel:1, nome:'Fúria',             icon:'💢',  sp:0,  desc:'Entra em estado de fúria aumentando força e resistência.' },
+    { nivel:1, nome:'Golpe Selvagem',    icon:'🪓',  sp:8,  desc:'Ataque brutal sem técnica mas com força devastadora.' },
+    { nivel:1, nome:'Rugido',            icon:'😤',  sp:5,  desc:'Rugido aterrorizante que intimida inimigos próximos.' },
+    { nivel:2, nome:'Esmagar',           icon:'💥',  sp:15, desc:'Golpe que pode derrubar ou atordoar o alvo.' },
+    { nivel:2, nome:'Agarrar',           icon:'✊',  sp:10, desc:'Agarra o inimigo imobilizando-o.' },
+    { nivel:2, nome:'Resistência Bruta', icon:'🪨',  sp:12, desc:'Ignora parte do dano recebido pelo puro vigor.' },
+    { nivel:3, nome:'Berserker',         icon:'🔴',  sp:25, desc:'Fúria absoluta: ataca sem parar mas ignora defesa.' },
+    { nivel:3, nome:'Tremor',            icon:'🌍',  sp:28, desc:'Golpeia o chão causando tremor que derruba todos ao redor.' },
+    { nivel:3, nome:'Pele de Pedra',     icon:'🪨',  sp:20, desc:'Pele endurece como pedra reduzindo muito o dano.' },
+    { nivel:5, nome:'Caos',              icon:'🌪️',  sp:45, desc:'Destruição total: atinge tudo e todos ao redor.' },
+    { nivel:5, nome:'Avatar',            icon:'👹',  sp:55, desc:'Transforma-se num avatar de destruição por uma rodada.' },
+  ],
+  arqueiro: [
+    { nivel:1, nome:'Tiro Preciso',      icon:'🎯',  sp:8,  desc:'Mira cuidadosa que aumenta muito a precisão e dano.' },
+    { nivel:1, nome:'Tiro Rápido',       icon:'💨',  sp:6,  desc:'Solta uma flecha rapidamente sem perder posição.' },
+    { nivel:1, nome:'Marcar Alvo',       icon:'👁️',  sp:5,  desc:'Marca um inimigo para receber mais dano de todos.' },
+    { nivel:2, nome:'Flecha de Fogo',    icon:'🔥',  sp:15, desc:'Flecha envolta em chamas que incendeia o alvo.' },
+    { nivel:2, nome:'Chuva de Flechas',  icon:'🌧️',  sp:20, desc:'Lança diversas flechas em área atingindo vários alvos.' },
+    { nivel:2, nome:'Tiro Perfurante',   icon:'⬆️',  sp:18, desc:'Flecha que atravessa múltiplos inimigos em linha.' },
+    { nivel:3, nome:'Flecha Explosiva',  icon:'💥',  sp:28, desc:'Flecha com explosivo que causa dano em área.' },
+    { nivel:3, nome:'Tiro Paralisante',  icon:'⚡',  sp:25, desc:'Flecha especial que paralisa o alvo temporariamente.' },
+    { nivel:3, nome:'Olho de Águia',     icon:'🦅',  sp:22, desc:'Aguça a visão para atingir alvos em enorme distância.' },
+    { nivel:5, nome:'Tiro Impossível',   icon:'⭐',  sp:45, desc:'Flecha que dobra no ar para contornar obstáculos.' },
+    { nivel:5, nome:'Saraivada',         icon:'🌩️',  sp:50, desc:'Dezenas de flechas disparadas em frações de segundo.' },
   ],
 };
 
-// ═══════════════════════════════════════════════════════════════
-//  CHAVE API (localStorage — nunca hardcoded)
-// ═══════════════════════════════════════════════════════════════
-function getApiKey(){ return localStorage.getItem('rpg_gemini_key') || ''; }
-function saveApiKey(k){ if(k) localStorage.setItem('rpg_gemini_key', k.trim()); }
+let _skillSelecionada = null;
 
-// ═══════════════════════════════════════════════════════════════
-//  SYSTEM PROMPT
-// ═══════════════════════════════════════════════════════════════
-const SYSTEM_PROMPT = `Você é o Mestre de uma campanha épica de RPG estilo Ragnarok Online com regras GURPS. Narre em português brasileiro com drama, riqueza sensorial e tensão crescente. Use linguagem literária e evocativa, como um narrador de um romance de fantasia sombria.
+window.abrirArvoreSkills = function() {
+  if(!_meuEuCache) return;
+  const eu     = _meuEuCache;
+  const nivel  = Math.floor((eu.exp || 0) / 100) + 1;
+  const skills = SKILLS[eu.classe] || [];
+  const cls    = CLASSES[eu.classe] || {};
 
-PERSONAGEM JOGADOR — Arendel:
-Mago Lv10 | FOR:6 AGI:8 VIT:8 INT:18 DES:12 SOR:10
-HP:80 SP:90 MATK:36 DEF:13 HIT:24 FLEE:16 CRIT:3
-Skills: Fire Bolt Lv3(10SP,dano108) | Cold Bolt Lv2(8SP,dano72) | Frost Diver Lv1(20SP,dano36) | Sight Lv1(10SP)
-Equip: Cajado de Carvalho(+5MATK), Robe de Estudioso(+5DEF), Amuleto Arcano
+  document.getElementById('skill-sheet-sub').textContent =
+    `${cls.nome||eu.classe} · Nível ${nivel} · SP ${eu.sp}/${eu.maxSp}`;
 
-REGRAS MATEMÁTICAS:
-- Teste: simule 3d6 internamente. Resultado <= atributo = SUCESSO. Acima = FALHA.
-- Modificadores: Fácil+3 | Normal+0 | Difícil-3 | Muito difícil-6
-- Dano mágico = MATK × nível skill | Crítico = dano × 1.5 (quando SOR teste bem sucedido)
-- Acerto físico: chance% = HIT - FLEE + 50
-- Inimigos têm HP, ATK, DEF, FLEE definidos por você baseado no nível/tipo
+  // Agrupa por nível
+  const porNivel = {};
+  skills.forEach(s => { (porNivel[s.nivel] = porNivel[s.nivel]||[]).push(s); });
 
-FLUXO OBRIGATÓRIO:
-1. Narre a cena com riqueza e drama
-2. Quando houver combate ou ação com resultado matemático, mostre o cálculo brevemente entre parênteses ex: (3d6=11, INT18 — SUCESSO)
-3. Narre as consequências
-4. Se houver inimigo em cena, inclua ao final do parágrafo relevante: [INIMIGO:{"nome":"Goblin","hpAtual":35,"hpMax":50}]
-5. Quando houver mudança no status do jogador: [S:{"hp":-15,"sp":-10,"exp":30}]
-6. Quando precisar da ação do jogador, termine com: [A]
+  const lista = document.getElementById('skill-tree-lista');
+  lista.innerHTML = '';
 
-IMPORTANTE:
-- A história flui continuamente. Só pare com [A] quando precisar de decisão do jogador.
-- Seja criativo com eventos, NPCs, reviravoltas e perigos.
-- Comece na Taverna do Corvo Negro, uma noite de tempestade intensa.
-- Nunca quebre o personagem. Mantenha imersão total.`;
+  Object.keys(porNivel).sort((a,b)=>a-b).forEach(nv => {
+    const bloqueado = nivel < parseInt(nv);
+    const sec = document.createElement('div');
+    sec.className = 'skill-nivel';
 
-// ═══════════════════════════════════════════════════════════════
-//  ESTADO
-// ═══════════════════════════════════════════════════════════════
-let state = {
-  tema:"pergaminho",
-  hp:CHAR.maxHp, sp:CHAR.maxSp, exp:0,
-  historico:[],   // {role:"user"|"model", content:string}
-  inimigos:{},
-  acaoTag:null,
-  loading:false,
-  aguarda:false,
-  audioOn:true,
+    const lbl = document.createElement('div');
+    lbl.className = 'skill-nivel-lbl' + (bloqueado?' locked':'');
+    lbl.textContent = bloqueado ? `NÍVEL ${nv}  🔒 (requer nível ${nv})` : `NÍVEL ${nv}`;
+    sec.appendChild(lbl);
+
+    const cards = document.createElement('div');
+    cards.className = 'skill-cards';
+    porNivel[nv].forEach((sk, i) => {
+      const spok = eu.sp >= sk.sp;
+      const avail = !bloqueado && spok;
+      const card = document.createElement('div');
+      card.className = 'skill-card ' + (avail ? 'unlocked' : 'locked');
+      card.innerHTML = `
+        <div class="skill-card-top">
+          <span class="skill-card-icon">${sk.icon}</span>
+          <div>
+            <div class="skill-card-nome">${sk.nome}</div>
+            <div class="skill-card-sp">${sk.sp > 0 ? `${sk.sp} SP` : 'Grátis'}</div>
+          </div>
+        </div>
+        <div class="skill-card-desc">${sk.desc}</div>
+        ${bloqueado ? `<div class="skill-card-lock">🔒 Nível ${nv} necessário</div>` : ''}
+        ${!bloqueado && !spok ? `<div class="skill-card-lock">SP insuficiente</div>` : ''}
+      `;
+      if(avail) card.onclick = () => selecionarSkill(sk);
+      cards.appendChild(card);
+    });
+    sec.appendChild(cards);
+    lista.appendChild(sec);
+  });
+
+  // Mostra fase 1
+  document.getElementById('skill-tree-lista').style.display = '';
+  document.getElementById('skill-detail-panel').classList.remove('active');
+  document.getElementById('modal-skill').classList.add('open');
 };
 
-// ═══════════════════════════════════════════════════════════════
-//  TEMA
-// ═══════════════════════════════════════════════════════════════
-function applyTema(t) {
-  const T = TEMAS[t];
-  document.body.style.background = T.bg;
-  document.getElementById('intro').style.background = T.bg;
-
-  const topbar = document.getElementById('topbar');
-  topbar.style.background = T.topbarBg;
-  topbar.style.borderBottomColor = T.topbarBorder;
-
-  document.getElementById('char-name').style.color = T.tinta;
-  document.getElementById('char-level').style.color = T.tintafade;
-  ['hp','sp','exp'].forEach(b=>{
-    document.getElementById(b+'-label').style.color = T.tintafade;
-    document.getElementById(b+'-track').style.background = T.madeiraBase;
-  });
-  document.getElementById('hp-fill').style.background  = T.hpBar;
-  document.getElementById('sp-fill').style.background  = T.spBar;
-  document.getElementById('exp-fill').style.background = T.expBar;
-  document.getElementById('hp-val').style.color  = T.hpCor;
-  document.getElementById('sp-val').style.color  = T.spCor;
-  document.getElementById('exp-val').style.color = T.expCor;
-
-  const avBtn = document.getElementById('avatar-btn');
-  avBtn.style.background = `radial-gradient(circle, ${T.dourado}33, ${T.papelBorda}66)`;
-  avBtn.style.borderColor = T.dourado;
-
-  document.getElementById('audio-btn').style.borderColor = T.papelBorda;
-  document.getElementById('audio-btn').style.color = T.tintafade;
-  document.getElementById('theme-sel').style.background = T.papel;
-  document.getElementById('theme-sel').style.borderColor = T.papelBorda;
-  document.getElementById('theme-sel').style.color = T.tintafade;
-
-  document.getElementById('empty-msg').style.color = T.emptyColor;
-  document.getElementById('loading-text').style.color = T.loadCor;
-  document.getElementById('d1').style.background = T.dourado;
-  document.getElementById('d2').style.background = T.dourado;
-  document.getElementById('d3').style.background = T.dourado;
-
-  const ab = document.getElementById('aguarda-bar');
-  ab.style.background = T.aguardaBg;
-  ab.style.borderColor = T.aguardaBorder;
-  ab.style.color = T.aguardaCor;
-
-  const at = document.getElementById('acao-tag');
-  at.style.background = T.tagBg;
-  at.style.borderColor = T.tagBorder;
-  at.style.color = T.tagCor;
-  document.getElementById('acao-tag-close').style.color = T.tintafade;
-
-  const actBar = document.getElementById('action-bar');
-  actBar.style.background = T.actionBarBg;
-  actBar.style.borderTopColor = T.actionBarBorder;
-
-  document.querySelectorAll('.seal-round').forEach(btn=>{
-    btn.style.background = T.sealBg;
-    btn.style.boxShadow = `0 4px 0 ${T.sealSombra},0 5px 8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.25)`;
-  });
-  document.getElementById('send-btn').style.background = T.sealBg;
-  document.getElementById('send-btn').style.boxShadow = `0 4px 0 ${T.sealSombra},0 5px 8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.25)`;
-
-  const inp = document.getElementById('action-input');
-  inp.style.background = T.inputBg;
-  inp.style.borderColor = T.inputBorder;
-  inp.style.color = T.inputCor;
-
-  document.getElementById('modal-box').style.background = T.modalBg;
-  document.getElementById('modal-box').style.borderColor = T.modalBorder;
-  document.getElementById('modal-title').style.color = T.tinta;
-  document.getElementById('modal-close').style.borderColor = T.papelBorda;
-  document.getElementById('modal-close').style.color = T.tintafade;
-  document.getElementById('modal-close').style.background = `rgba(139,90,43,0.1)`;
-
-  const style = document.getElementById('scroll-style') || (()=>{
-    const s=document.createElement('style'); s.id='scroll-style'; document.head.appendChild(s); return s;
-  })();
-  style.textContent = `::-webkit-scrollbar-thumb{background:${T.scrollThumb}}`;
-
-  document.getElementById('intro-pretitle').style.color = T.introPreCor;
-  document.getElementById('intro-subtitle').style.color = T.introPreCor;
-  document.getElementById('intro-ornament').style.color = T.dourado;
-  const it = document.getElementById('intro-title');
-  it.style.color = T.introTitleCor;
-  it.style.textShadow = `2px 2px 0 ${T.introTitleShadow}`;
-  const ic = document.getElementById('intro-card');
-  ic.style.background = T.introCardBg;
-  ic.style.borderColor = T.introCardBorder;
-  ic.style.boxShadow = `inset 0 0 30px rgba(139,90,43,.1),${T.introCardShadow}`;
-  document.getElementById('intro-char-name').style.color = T.tinta;
-  document.getElementById('intro-char-class').style.color = T.tintafade;
-  document.getElementById('intro-divider').style.color = T.dividerCor;
-  document.querySelectorAll('.corner-gem').forEach(g=>g.style.color=T.cornerGemCor);
-  document.getElementById('intro-start').style.background = T.introStartBg;
-  document.getElementById('intro-start').style.boxShadow = `0 8px 32px ${T.introStartShadow}`;
-
-  // campo chave API
-  const apiInp = document.getElementById('api-key-input');
-  if(apiInp){ apiInp.style.background=T.inputBg; apiInp.style.borderColor=T.inputBorder; apiInp.style.color=T.inputCor; }
-  const apiSec = document.getElementById('api-key-section');
-  if(apiSec) apiSec.style.borderTopColor = T.papelBorda;
-  const apiTit = document.getElementById('api-key-title');
-  if(apiTit){ apiTit.style.color=T.tintafade; apiTit.style.borderBottomColor=T.papelBorda; }
-  const apiHint = document.getElementById('api-key-hint');
-  if(apiHint) apiHint.style.color = T.tintafade;
-
-  document.querySelectorAll('.theme-btn').forEach(btn=>{
-    const active = btn.dataset.tema === t;
-    btn.style.background   = active ? T.themeBtnActiveBg  : T.themeBtnBg;
-    btn.style.color        = active ? T.themeBtnActiveCor : T.themeBtnCor;
-    btn.style.borderColor  = T.themeBtnBorder;
-  });
-
-  document.querySelectorAll('.stat-box').forEach(el=>{ el.style.background=T.statBg; el.style.borderColor=T.statBorder; });
-  document.querySelectorAll('.stat-box-label').forEach(el=>el.style.color=T.tintafade);
-  document.querySelectorAll('.stat-box-val').forEach(el=>el.style.color=T.tinta);
-  document.querySelectorAll('.stat-row').forEach(el=>{ el.style.background=T.statBg; el.style.borderColor=T.statBorder; });
-  document.querySelectorAll('.stat-row-lbl').forEach(el=>el.style.color=T.tintafade);
-  document.querySelectorAll('.equip-item').forEach(el=>{ el.style.background=T.statBg; el.style.borderColor=T.statBorder; el.style.color=T.tintaleve; });
-  document.querySelectorAll('.section-title').forEach(el=>{ el.style.color=T.tintafade; el.style.borderBottomColor=T.papelBorda; });
-  document.querySelectorAll('.skill-btn').forEach(btn=>{
-    const pode = parseInt(btn.dataset.custo) <= state.sp;
-    btn.style.background  = pode ? T.statBg : 'transparent';
-    btn.style.borderColor = T.papelBorda;
-    btn.style.color       = pode ? T.tinta  : T.tintafade;
-  });
-  document.querySelectorAll('.msg-mestre-inner').forEach(el=>{
-    el.style.background=T.msgBg; el.style.borderColor=T.msgBorder;
-    el.style.boxShadow=`inset 0 0 20px rgba(139,90,43,.05),2px 2px 0 ${T.papelBorda}44`;
-  });
-  document.querySelectorAll('.msg-mestre-label').forEach(el=>el.style.color=T.tintafade);
-  document.querySelectorAll('.msg-mestre-text').forEach(el=>el.style.color=T.tinta);
-  document.querySelectorAll('.msg-jogador-inner').forEach(el=>{ el.style.background=T.jogBg; el.style.borderColor=T.jogBorder; el.style.color=T.tintaleve; });
-  document.querySelectorAll('.msg-jogador-label').forEach(el=>el.style.color=T.tintafade);
-  document.querySelectorAll('.inimigo-bar').forEach(el=>{ el.style.background=T.inimBg; el.style.borderColor=T.inimBorder; });
-  document.querySelectorAll('.inimigo-nome').forEach(el=>el.style.color=T.inimNomeCor);
-  document.querySelectorAll('.inimigo-hp').forEach(el=>el.style.color=T.tintafade);
+function selecionarSkill(sk) {
+  _skillSelecionada = sk;
+  document.getElementById('sk-icon').textContent  = sk.icon;
+  document.getElementById('sk-nome').textContent  = sk.nome;
+  document.getElementById('sk-desc').textContent  = sk.desc + (sk.sp > 0 ? ` (Custo: ${sk.sp} SP)` : '');
+  document.getElementById('sk-detalhe').value     = '';
+  document.getElementById('skill-tree-lista').style.display   = 'none';
+  document.getElementById('skill-detail-panel').classList.add('active');
+  setTimeout(() => document.getElementById('sk-detalhe').focus(), 100);
 }
 
-function setTema(t) {
-  state.tema = t;
-  document.getElementById('theme-sel').value = t;
-  applyTema(t);
-}
+window.voltarArvore = function() {
+  document.getElementById('skill-tree-lista').style.display   = '';
+  document.getElementById('skill-detail-panel').classList.remove('active');
+};
 
-// ═══════════════════════════════════════════════════════════════
-//  INTRO
-// ═══════════════════════════════════════════════════════════════
-function buildIntro() {
-  const T = TEMAS[state.tema];
+window.fecharSkillTree = function() {
+  document.getElementById('modal-skill').classList.remove('open');
+};
 
-  const attrsEl = document.getElementById('intro-attrs');
-  attrsEl.innerHTML = '';
-  Object.entries(CHAR.atributos).forEach(([k,v])=>{
-    attrsEl.innerHTML += `<div class="stat-box"><div class="stat-box-label">${k}</div><div class="stat-box-val">${v}</div></div>`;
-  });
+window.confirmarSkill = function() {
+  if(!_skillSelecionada) return;
+  const detalhe = document.getElementById('sk-detalhe').value.trim();
+  const acaoFinal = detalhe
+    ? `✨ ${_skillSelecionada.nome}: ${detalhe}`
+    : `✨ ${_skillSelecionada.nome}`;
+  if(_slots[0] === null) { _slots[0] = acaoFinal; }
+  else { _slots[1] = acaoFinal; }
+  renderizarSlots();
+  fecharSkillTree();
+};
 
-  document.getElementById('intro-status').innerHTML = `
-    <div class="stat-box"><div class="stat-box-label">❤️ HP</div><div class="stat-box-val" style="color:${T.hpCor}">${CHAR.maxHp}</div></div>
-    <div class="stat-box"><div class="stat-box-label">💙 SP</div><div class="stat-box-val" style="color:${T.spCor}">${CHAR.maxSp}</div></div>
-    <div class="stat-box"><div class="stat-box-label">⚡ MATK</div><div class="stat-box-val" style="color:${T.expCor}">${CHAR.matk}</div></div>`;
-
-  const themesEl = document.getElementById('intro-themes');
-  themesEl.innerHTML = '';
-  [['pergaminho','📜 Pergaminho'],['dark','🔥 Épico Dark'],['pedra','⚔️ Masmorra']].forEach(([k,nome])=>{
-    themesEl.innerHTML += `<button class="theme-btn" data-tema="${k}" onclick="setTema('${k}')">${nome}</button>`;
-  });
-
-  const saved = getApiKey();
-  if(saved) document.getElementById('api-key-input').value = saved;
-
-  applyTema(state.tema);
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  BARRAS
-// ═══════════════════════════════════════════════════════════════
-function updateBars() {
-  const T = TEMAS[state.tema];
-  const hpPct  = Math.max(0,(state.hp/CHAR.maxHp)*100);
-  const spPct  = Math.max(0,(state.sp/CHAR.maxSp)*100);
-  const expPct = Math.max(0,(state.exp/CHAR.maxExp)*100);
-  const hpCor  = hpPct>50?"#2d7a2d":hpPct>25?"#8b6000":T.acento;
-  document.getElementById('hp-fill').style.width  = hpPct+'%';
-  document.getElementById('sp-fill').style.width  = spPct+'%';
-  document.getElementById('exp-fill').style.width = expPct+'%';
-  document.getElementById('hp-val').textContent  = `${state.hp}/${CHAR.maxHp}`;
-  document.getElementById('sp-val').textContent  = `${state.sp}/${CHAR.maxSp}`;
-  document.getElementById('exp-val').textContent = `${state.exp}/${CHAR.maxExp}`;
-  document.getElementById('hp-val').style.color  = hpCor;
-}
-
-function showFlash(txt) {
-  const el = document.getElementById('flash-msg');
-  el.textContent = '⚡ '+txt;
-  el.style.display = 'inline';
-  setTimeout(()=>el.style.display='none', 3500);
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  STATUS
-// ═══════════════════════════════════════════════════════════════
-function aplicar(u) {
-  if(!u) return;
-  const p=[];
-  const clamp=(v,mn,mx)=>Math.max(mn,Math.min(mx,v));
-  if(u.hp!=null){state.hp=clamp(state.hp+u.hp,0,CHAR.maxHp); p.push(u.hp>0?`+${u.hp} HP`:`${u.hp} HP`);}
-  if(u.sp!=null){state.sp=clamp(state.sp+u.sp,0,CHAR.maxSp); p.push(u.sp>0?`+${u.sp} SP`:`${u.sp} SP`);}
-  if(u.exp!=null){state.exp+=u.exp; p.push(`+${u.exp} EXP`);}
-  updateBars();
-  if(p.length) showFlash(p.join(' · '));
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  PARSE
-// ═══════════════════════════════════════════════════════════════
-function parseS(t){
-  const m=t.match(/\[S:\s*(\{.*?\})\]/s);
-  if(!m) return null;
-  try{return JSON.parse(m[1])}catch{return null}
-}
-function parseInimigos(t){
-  const res=[]; const re=/\[INIMIGO:\s*(\{.*?\})\]/g; let m;
-  while((m=re.exec(t))!==null){try{res.push(JSON.parse(m[1]))}catch{}}
-  return res;
-}
-function cleanText(t){
-  return t.replace(/\[S:\s*\{.*?\}\]/gs,'').replace(/\[INIMIGO:\s*\{.*?\}\]/gs,'').replace(/\[A\]/g,'').trim();
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  ÁUDIO  (fix: vozes carregam assincronamente)
-// ═══════════════════════════════════════════════════════════════
-function toggleAudio(){
-  state.audioOn=!state.audioOn;
-  document.getElementById('audio-btn').textContent = state.audioOn?'🔊':'🔇';
-  if(!state.audioOn) window.speechSynthesis.cancel();
-}
-function falar(texto){
-  if(!state.audioOn) return;
-  window.speechSynthesis.cancel();
-  function _speak(){
-    const u = new SpeechSynthesisUtterance(texto.slice(0,600));
-    u.lang='pt-BR'; u.rate=0.88; u.pitch=0.8; u.volume=1;
-    const vozes = window.speechSynthesis.getVoices();
-    const voz = vozes.find(v=>v.lang.startsWith('pt')) || vozes[0];
-    if(voz) u.voice = voz;
-    window.speechSynthesis.speak(u);
-  }
-  if(window.speechSynthesis.getVoices().length > 0){ _speak(); }
-  else{ window.speechSynthesis.addEventListener('voiceschanged', _speak, {once:true}); }
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  CHAT RENDER
-// ═══════════════════════════════════════════════════════════════
-function appendMestre(texto, inis) {
-  const T = TEMAS[state.tema];
-  document.getElementById('empty-msg').style.display='none';
-
-  let inisHtml='';
-  if(inis && inis.length>0){
-    inis.forEach(ini=>{
-      state.inimigos[ini.nome]=ini;
-      const pct=Math.max(0,(ini.hpAtual/ini.hpMax)*100);
-      inisHtml+=`<div class="inimigo-bar" style="background:${T.inimBg};border-color:${T.inimBorder}">
-        <span style="font-size:18px">💀</span>
-        <div style="flex:1">
-          <div class="inimigo-nome" style="color:${T.inimNomeCor}">${ini.nome}</div>
-          <div style="height:8px;background:${T.madeiraBase};border-radius:2px;overflow:hidden;border:1px solid rgba(0,0,0,.2);position:relative">
-            <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#5c0000,#8b1a00,#b22222);border-radius:2px;transition:width .6s ease"></div>
-          </div>
-          <div class="inimigo-hp" style="color:${T.tintafade}">HP: ${ini.hpAtual}/${ini.hpMax}</div>
-        </div>
-      </div>`;
-    });
-  }
-
-  const div=document.createElement('div');
-  div.className='msg-mestre';
-  div.innerHTML=`<div class="msg-mestre-inner" style="background:${T.msgBg};border-color:${T.msgBorder};box-shadow:inset 0 0 20px rgba(139,90,43,.05),2px 2px 0 ${T.papelBorda}44">
-    ${inisHtml}
-    <div class="msg-mestre-label" style="color:${T.tintafade}">✦ O Mestre narra</div>
-    <p class="msg-mestre-text" style="color:${T.tinta}">${texto}</p>
-  </div>`;
-
-  const chat=document.getElementById('chat');
-  chat.insertBefore(div, document.getElementById('loading-row'));
-  chat.scrollTop=chat.scrollHeight;
-}
-
-function appendJogador(texto) {
-  const T = TEMAS[state.tema];
-  document.getElementById('empty-msg').style.display='none';
-  const div=document.createElement('div');
-  div.className='msg-jogador';
-  div.innerHTML=`<div class="msg-jogador-inner" style="background:${T.jogBg};border-color:${T.jogBorder};color:${T.tintaleve}">
-    <div class="msg-jogador-label" style="color:${T.tintafade}">⚔️ SUA AÇÃO</div>
-    ${texto}
-  </div>`;
-  const chat=document.getElementById('chat');
-  chat.insertBefore(div, document.getElementById('loading-row'));
-  chat.scrollTop=chat.scrollHeight;
-}
-
-function appendErro(texto) {
-  const div=document.createElement('div');
-  div.className='msg-erro';
-  div.textContent=texto;
-  const chat=document.getElementById('chat');
-  chat.insertBefore(div, document.getElementById('loading-row'));
-  chat.scrollTop=chat.scrollHeight;
-}
-
-function setLoading(on) {
-  state.loading=on;
-  document.getElementById('loading-row').style.display=on?'flex':'none';
-  document.getElementById('send-btn').disabled=on;
-}
-
-function setAguarda(on) {
-  state.aguarda=on;
-  document.getElementById('aguarda-bar').style.display=on?'flex':'none';
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  IA — Google Gemini (suporta CORS de browsers)
-// ═══════════════════════════════════════════════════════════════
-async function chamarIA(novoHist) {
-  const apiKey = getApiKey();
-  if(!apiKey){
-    appendErro('Insira sua chave Google Gemini na tela inicial para jogar.');
-    return;
-  }
-  setLoading(true); setAguarda(false);
-  try {
-    const contents = novoHist.map(m=>({
-      role: m.role,
-      parts: [{text: m.content}]
-    }));
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          system_instruction:{ parts:[{text:SYSTEM_PROMPT}] },
-          contents: contents,
-          generationConfig:{ maxOutputTokens:1024, temperature:0.88 }
-        })
-      }
-    );
-    const d = await res.json();
-    if(d.error) throw new Error(d.error.message || JSON.stringify(d.error));
-    if(!d.candidates || !d.candidates[0]) throw new Error('Filtro de segurança ativado. Tente reformular.');
-    const raw = d.candidates[0].content.parts[0].text;
-    const upd  = parseS(raw);
-    const inis = parseInimigos(raw);
-    const texto = cleanText(raw);
-    const pediu = raw.includes('[A]');
-    aplicar(upd);
-    if(inis.length>0) inis.forEach(i=>state.inimigos[i.nome]=i);
-    state.historico.push({role:'model', content:raw});
-    appendMestre(texto, inis);
-    setAguarda(pediu);
-    falar(texto);
-  } catch(err) {
-    appendErro('Erro: '+err.message);
-  } finally {
-    setLoading(false);
-    document.getElementById('action-input').focus();
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  INICIAR
-// ═══════════════════════════════════════════════════════════════
-async function iniciarCampanha() {
-  const inp = document.getElementById('api-key-input');
-  if(inp && inp.value.trim()) saveApiKey(inp.value.trim());
-  if(!getApiKey()){
-    if(inp){ inp.style.borderColor='#c0392b'; inp.focus(); }
-    return;
-  }
-  document.getElementById('intro').style.display='none';
-  document.getElementById('app').style.display='flex';
-  applyTema(state.tema);
-  updateBars();
-  const msg={role:'user', content:'Inicie a campanha. Apresente o cenário na Taverna do Corvo Negro numa noite de tempestade intensa. Crie atmosfera densa e misteriosa e termine com [A] pedindo minha primeira decisão.'};
-  state.historico=[msg];
-  await chamarIA([msg]);
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  AÇÃO TAG
-// ═══════════════════════════════════════════════════════════════
-function setAcaoTag(tag) {
-  state.acaoTag=tag;
-  const el=document.getElementById('acao-tag');
-  if(tag){
-    document.getElementById('acao-tag-emoji').textContent=tag.emoji;
-    document.getElementById('acao-tag-label').textContent=tag.label;
-    el.style.display='flex';
-    const inp=document.getElementById('action-input');
-    inp.placeholder = tag.label==='Fala' ? 'O que Arendel diz?...' : 'Descreva como quer agir...';
-    inp.focus();
-  } else {
-    el.style.display='none';
-    document.getElementById('action-input').placeholder='Descreva livremente sua ação...';
-  }
-  const btnAtacar=document.getElementById('btn-atacar');
-  const T=TEMAS[state.tema];
-  btnAtacar.style.background = (tag?.label==='Ataque Básico') ? T.sealActiveBg : T.sealBg;
-}
-
-function clearAcaoTag(){ setAcaoTag(null); }
-function selecionarFala()  { setAcaoTag({label:'Fala',        emoji:'💬',texto:''}); }
-function selecionarAtaque(){ setAcaoTag({label:'Ataque Básico',emoji:'⚔️',texto:'Ataco com o Cajado de Carvalho'}); }
-function selecionarFuga()  { setAcaoTag({label:'Fuga',        emoji:'🏃',texto:'Tento me afastar e fugir usando minha agilidade'}); }
-
-// ═══════════════════════════════════════════════════════════════
-//  ENVIAR
-// ═══════════════════════════════════════════════════════════════
-async function enviarAcao() {
-  const texto=document.getElementById('action-input').value.trim();
-  if(!texto && !state.acaoTag) return;
-  if(state.loading) return;
-
-  let acao='';
-  if(state.acaoTag?.label==='Fala'){
-    if(!texto) return;
-    acao=`Arendel diz em voz alta: "${texto}"`;
-  } else {
-    const partes=[];
-    if(state.acaoTag) partes.push(`[${state.acaoTag.label}] ${state.acaoTag.texto}`);
-    if(texto) partes.push(texto);
-    acao=partes.join(' — ');
-  }
-
-  document.getElementById('action-input').value='';
-  const displayTxt = state.acaoTag ? `${state.acaoTag.emoji} ${acao}` : acao;
-  setAcaoTag(null);
-  appendJogador(displayTxt);
-
-  const msg={role:'user', content:acao};
-  state.historico.push(msg);
-  await chamarIA(state.historico);
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  MODAL
-// ═══════════════════════════════════════════════════════════════
-function abrirModal(tipo) {
-  const T=TEMAS[state.tema];
-  const content=document.getElementById('modal-content');
-  const hpCor=state.hp/CHAR.maxHp>0.5?"#2d7a2d":state.hp/CHAR.maxHp>0.25?"#8b6000":T.acento;
-
-  if(tipo==='ficha'){
-    document.getElementById('modal-title').textContent='⚜️ Ficha do Personagem';
-    content.innerHTML=`
-      <div style="text-align:center;margin-bottom:20px">
-        <div style="font-size:48px;margin-bottom:6px">🧙‍♂️</div>
-        <div style="font-family:'Cinzel',serif;font-size:20px;font-weight:700;color:${T.tinta};letter-spacing:2px">${CHAR.nome}</div>
-        <div style="font-family:'Cinzel',serif;font-size:11px;color:${T.tintafade};letter-spacing:3px;text-transform:uppercase;margin-top:3px">${CHAR.classe} · Nível ${CHAR.nivel}</div>
-      </div>
-      <div class="section-title" style="color:${T.tintafade};border-bottom-color:${T.papelBorda}">Atributos</div>
-      <div class="stat-grid-6">
-        ${Object.entries(CHAR.atributos).map(([k,v])=>`
-          <div class="stat-box" style="background:${T.statBg};border-color:${T.statBorder}">
-            <div class="stat-box-label" style="color:${T.tintafade}">${k}</div>
-            <div class="stat-box-val" style="color:${T.tinta}">${v}</div>
-          </div>`).join('')}
-      </div>
-      <div class="section-title" style="color:${T.tintafade};border-bottom-color:${T.papelBorda}">Status de Combate</div>
-      <div class="stat-grid-2">
-        ${[['❤️ HP',`${state.hp}/${CHAR.maxHp}`,hpCor],['💙 SP',`${state.sp}/${CHAR.maxSp}`,'#1a4a8b'],
-           ['⚡ MATK',CHAR.matk,T.dourado],['🛡️ DEF',CHAR.def,T.tintaleve],
-           ['🎯 HIT',CHAR.hit,T.tintaleve],['🌀 FLEE',CHAR.flee,T.tintaleve],
-           ['✨ CRIT',CHAR.crit,T.tintaleve],['📊 EXP',`${state.exp}/${CHAR.maxExp}`,T.dourado],
-          ].map(([l,v,c])=>`
-          <div class="stat-row" style="background:${T.statBg};border-color:${T.statBorder}">
-            <span class="stat-row-lbl" style="color:${T.tintafade}">${l}</span>
-            <span class="stat-row-val" style="color:${c}">${v}</span>
-          </div>`).join('')}
-      </div>
-      <div class="section-title" style="color:${T.tintafade};border-bottom-color:${T.papelBorda}">Equipamentos</div>
-      ${CHAR.equipamentos.map(e=>`<div class="equip-item" style="background:${T.statBg};border-color:${T.statBorder};color:${T.tintaleve}">${e}</div>`).join('')}`;
-  } else {
-    document.getElementById('modal-title').textContent='⚜️ Grimório de Skills';
-    content.innerHTML=`
-      <div style="text-align:center;margin-bottom:16px;font-family:'Cinzel',serif;font-size:12px;color:${T.tintafade};letter-spacing:1px">
-        Mana atual: <span style="color:#1a5a8b;font-weight:bold">${state.sp}/${CHAR.maxSp} SP</span>
-      </div>
-      ${CHAR.skills.map(s=>{
-        const pode=state.sp>=s.custo;
-        return `<button class="skill-btn" data-custo="${s.custo}" onclick="escolherSkill('${s.id}')" ${!pode?'disabled':''} style="background:${pode?T.statBg:'transparent'};border-color:${T.papelBorda};color:${pode?T.tinta:T.tintafade}">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-            <span style="font-size:22px">${s.emoji}</span>
-            <div>
-              <div class="skill-nome" style="color:${pode?T.tinta:T.tintafade}">${s.nome}</div>
-              <div class="skill-info" style="color:${T.tintafade}">Nível ${s.nivel} · <span style="color:${pode?'#1a5a8b':T.tintafade}">${s.custo} SP</span>${!pode?`<span style="color:${T.acento};margin-left:6px">· SP insuficiente</span>`:''}</div>
-            </div>
-          </div>
-          <div class="skill-desc" style="color:${T.tintafade}">${s.desc}</div>
-        </button>`;
-      }).join('')}`;
-  }
-
-  document.getElementById('modal-overlay').classList.add('open');
-}
-
-function fecharModal(){
-  document.getElementById('modal-overlay').classList.remove('open');
-}
-
-function escolherSkill(id){
-  const s=CHAR.skills.find(x=>x.id===id);
-  if(!s||state.sp<s.custo) return;
-  setAcaoTag({label:`Skill: ${s.nome}`,emoji:s.emoji,texto:`Uso ${s.nome} Lv${s.nivel} (${s.custo} SP)`});
-  fecharModal();
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  EVENTOS
-// ═══════════════════════════════════════════════════════════════
-document.getElementById('action-input').addEventListener('keydown', e=>{
-  if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); enviarAcao(); }
-});
-
-document.querySelectorAll('.seal-round, #send-btn').forEach(btn=>{
-  btn.addEventListener('mouseenter',()=>{
-    const T=TEMAS[state.tema];
-    btn.style.transform='translateY(-2px)';
-    btn.style.boxShadow=`0 6px 0 ${T.sealSombra},0 8px 12px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.25)`;
-  });
-  btn.addEventListener('mouseleave',()=>{
-    const T=TEMAS[state.tema];
-    btn.style.transform='';
-    btn.style.boxShadow=`0 4px 0 ${T.sealSombra},0 5px 8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.25)`;
-  });
-  btn.addEventListener('mousedown',()=>{
-    const T=TEMAS[state.tema];
-    btn.style.transform='translateY(3px)';
-    btn.style.boxShadow=`0 1px 0 ${T.sealSombra},0 2px 4px rgba(0,0,0,.3)`;
-  });
-  btn.addEventListener('mouseup',()=>btn.style.transform='');
+document.getElementById('modal-skill').addEventListener('click', e => {
+  if(e.target === document.getElementById('modal-skill')) fecharSkillTree();
 });
 
 // ═══════════════════════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════════════════════
-buildIntro();
+buildClasseGrid();
+
+if(myNome) document.getElementById('inp-nome').value = myNome;
+
+const reconectou = await tentarReconectar();
+if(!reconectou) {
+  showScreen('screen-entry');
+}
 </script>
+
+<!-- ═══════════════════ MODAL: SKILL TREE ═══════════════════ -->
+<div id="modal-skill">
+  <div class="skill-sheet">
+    <div class="skill-sheet-head">
+      <div>
+        <h2>✨ Árvore de Skills</h2>
+        <p id="skill-sheet-sub">Guerreiro · Nível 1</p>
+      </div>
+      <button class="skill-sheet-close" onclick="fecharSkillTree()">✕</button>
+    </div>
+
+    <!-- Fase 1: árvore -->
+    <div class="skill-tree" id="skill-tree-lista"></div>
+
+    <!-- Fase 2: detalhe -->
+    <div class="skill-detail-panel" id="skill-detail-panel">
+      <div class="skill-selected-card">
+        <div class="skill-selected-icon" id="sk-icon">✨</div>
+        <div class="skill-selected-info">
+          <h3 id="sk-nome">Skill</h3>
+          <p id="sk-desc">Descrição</p>
+        </div>
+      </div>
+      <div>
+        <label>COMO VOCÊ USA ESSA SKILL?</label>
+        <textarea id="sk-detalhe" style="height:70px;resize:none;font-size:15px" placeholder="Descreva como aplica a skill... (opcional)"></textarea>
+      </div>
+      <div class="skill-detail-footer">
+        <button class="btn btn-secondary" onclick="voltarArvore()">← Voltar</button>
+        <button class="btn btn-primary" onclick="confirmarSkill()">Usar Skill ✨</button>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
