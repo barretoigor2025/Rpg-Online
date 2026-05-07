@@ -965,10 +965,13 @@ function atualizarBotaoIniciar(data) {
   const btn = document.getElementById('btn-iniciar-narrar');
   const semHistoria = !data.historia || Object.keys(data.historia).length === 0;
   const estado = data.config.estado;
-  // Host vê o botão quando não há história e não está narrando
-  const mostrar = amIHost && semHistoria && !chamandoIA &&
-    (estado === 'lobby' || estado === 'aguardando');
+  // Mostra para o host sempre que não há história e não está chamando a IA agora
+  const mostrar = amIHost && semHistoria && !chamandoIA;
   btn.style.display = mostrar ? 'block' : 'none';
+  if(mostrar) {
+    const travado = estado === 'iniciando' || estado === 'narrando';
+    btn.textContent = travado ? '🔄 Tentar Novamente' : '🎲 Iniciar Aventura';
+  }
   if(!semHistoria) document.getElementById('historia-empty').style.display = 'none';
 }
 
@@ -1036,10 +1039,10 @@ const TIPOS_ACAO = {
 };
 
 let _tipoAcaoAtual = null;
-let _slots = [null, null]; // acao1, acao2
+let _slots = [null, null];
+let _prevJaEnviou = false;
 
 window.abrirModalAcao = function(tipo) {
-  if(document.getElementById('acao-btns').style.display === 'none') return;
   _tipoAcaoAtual = tipo;
   const t = TIPOS_ACAO[tipo];
   document.getElementById('modal-acao-title').textContent = t.titulo;
@@ -1173,29 +1176,34 @@ function formatarTexto(t) {
 
 // ─── Input area ────────────────────────────────────────────────
 function atualizarInputArea(eu, estado, jogadores) {
-  const btn = document.getElementById('btn-enviar');
-  const mn  = document.getElementById('msg-narrando');
-  const me  = document.getElementById('msg-enviado');
-  const mi  = document.getElementById('msg-inconsciente');
+  const btn   = document.getElementById('btn-enviar');
+  const mn    = document.getElementById('msg-narrando');
+  const me    = document.getElementById('msg-enviado');
+  const mi    = document.getElementById('msg-inconsciente');
   const btns  = document.getElementById('acao-btns');
   const slots = document.getElementById('acao-slots');
 
   const jaMorto  = !eu.vivo || !eu.consciente;
-  // Bloqueado apenas se já enviou ao Firebase OU está morto
   const jaEnviou = eu.acao1 !== null;
-  const bloqueado = jaEnviou || jaMorto;
-
-  // Indicador informativo de narração (não bloqueia)
   const narrando = estado === 'narrando' || estado === 'iniciando';
-  mn.style.display   = narrando   ? 'flex'  : 'none';
-  me.style.display   = jaEnviou   ? 'block' : 'none';
-  mi.style.display   = jaMorto    ? 'block' : 'none';
-  btn.style.display  = bloqueado  ? 'none'  : 'block';
-  btns.style.display = bloqueado  ? 'none'  : 'grid';
-  slots.style.display= bloqueado  ? 'none'  : 'flex';
 
-  // Limpa slots quando Firebase zera as ações (nova rodada)
-  if(!jaEnviou && !jaMorto) { _slots=[null,null]; renderizarSlots(); }
+  mn.style.display  = narrando ? 'flex'  : 'none';
+  me.style.display  = jaEnviou ? 'block' : 'none';
+  mi.style.display  = jaMorto  ? 'block' : 'none';
+
+  // Botões sempre visíveis — só some quando morto/inconsciente
+  btns.style.display  = jaMorto ? 'none' : 'grid';
+  slots.style.display = jaMorto ? 'none' : 'flex';
+  // Enviar some apenas quando já enviou ou morto
+  btn.style.display   = (jaMorto || jaEnviou) ? 'none' : 'block';
+
+  // Reset slots somente quando a rodada terminar (acao1 voltou a null)
+  if(_prevJaEnviou && !jaEnviou && !jaMorto) {
+    _slots = [null, null];
+    renderizarSlots();
+  }
+  _prevJaEnviou = jaEnviou;
+
   if(!eu.vivo) document.getElementById('modal-morto').classList.add('open');
 }
 
@@ -1277,6 +1285,7 @@ function ocultarRetryUI() {
 
 async function chamarIAInicio() {
   if(chamandoIA) return;
+  if(!getApiKey()) { pedirApiKey(() => chamarIAInicio()); return; }
   chamandoIA = true;
   const btn = document.getElementById('btn-iniciar-narrar');
   if(btn) btn.style.display = 'none';
