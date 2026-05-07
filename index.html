@@ -657,7 +657,7 @@
     <!-- Botões de ação -->
     <div class="acao-btns" id="acao-btns" style="display:none">
       <button class="acao-btn" onclick="abrirModalAcao('falar')"><span class="ab-icon">💬</span><span class="ab-lbl">FALAR</span></button>
-      <button class="acao-btn" onclick="abrirModalAcao('atacar')"><span class="ab-icon">⚔️</span><span class="ab-lbl">ATACAR</span></button>
+      <button class="acao-btn" onclick="abrirModalAcao('atacar')"><span class="ab-icon">⚔️</span><span class="ab-lbl">ATAQUE</span></button>
       <button class="acao-btn" onclick="abrirArvoreSkills()"><span class="ab-icon">✨</span><span class="ab-lbl">SKILL</span></button>
       <button class="acao-btn" onclick="abrirModalAcao('defender')"><span class="ab-icon">🛡️</span><span class="ab-lbl">DEFENDER</span></button>
       <button class="acao-btn" onclick="abrirModalAcao('mover')"><span class="ab-icon">🏃</span><span class="ab-lbl">MOVER</span></button>
@@ -1366,8 +1366,8 @@ document.getElementById('modal-ficha').addEventListener('click', e => {
 // ─── Modal de ação ────────────────────────────────────────────
 const TIPOS_ACAO = {
   falar:    { titulo:'💬 Falar',      lbl1:'O QUE SEU PERSONAGEM DIZ?',    ph1:'Digite a fala...',             lbl2:'COMO? (TOM, EXPRESSÃO)',        ph2:'gritando, rindo, sussurrando...' },
-  atacar:   { titulo:'⚔️ Atacar',     lbl1:'O QUE / QUEM VOCÊ ATACA?',     ph1:'Descreva o alvo...',           lbl2:'COMO? COM QUÊ? (DETALHE)',      ph2:'com um chute, pela costas...' },
-  skill:    { titulo:'✨ Skill',       lbl1:'QUAL HABILIDADE VOCÊ USA?',     ph1:'Nome ou descrição da skill...', lbl2:'COMO VOCÊ A APLICA?',           ph2:'detalhe de uso...' },
+  atacar:   { titulo:'⚔️ Ataque Básico', lbl1:'QUEM VOCÊ ATACA?',            ph1:'Descreva o alvo...',           lbl2:'COMO? COM QUÊ?',               ph2:'com a espada, com um soco...' },
+  skill:    { titulo:'✨ Skill',       lbl1:'SKILL SELECIONADA',             ph1:'Nome da skill...',             lbl2:'ALVO OU DETALHE ADICIONAL',    ph2:'em quem / como aplica...' },
   defender: { titulo:'🛡️ Defender',  lbl1:'COMO VOCÊ SE DEFENDE?',         ph1:'Descreva sua defesa...',       lbl2:'DETALHE ADICIONAL',             ph2:'usando o escudo, recuando...' },
   mover:    { titulo:'🏃 Mover',      lbl1:'PARA ONDE VOCÊ SE MOVE?',       ph1:'Destino ou direção...',        lbl2:'COMO? (DETALHE)',               ph2:'furtivamente, correndo...' },
   livre:    { titulo:'🎯 Ação Livre',  lbl1:'O QUE VOCÊ FAZ?',              ph1:'Descreva livremente...',       lbl2:'DETALHE ADICIONAL (OPCIONAL)',  ph2:'mais detalhes...' },
@@ -1377,23 +1377,23 @@ let _tipoAcaoAtual = null;
 let _slots = [null, null];
 let _prevJaEnviou = false;
 
-window.abrirModalAcao = async function(tipo) {
+window.abrirModalAcao = async function(tipo, preFill) {
   _tipoAcaoAtual = tipo;
   const t = TIPOS_ACAO[tipo];
-  document.getElementById('modal-acao-title').textContent = t.titulo;
-  document.getElementById('modal-acao-lbl1').textContent  = t.lbl1;
-  document.getElementById('modal-acao-txt').placeholder   = t.ph1;
-  document.getElementById('modal-acao-txt').value         = '';
-  document.getElementById('modal-acao-lbl2').textContent  = t.lbl2;
+  document.getElementById('modal-acao-title').textContent   = t.titulo;
+  document.getElementById('modal-acao-lbl1').textContent    = t.lbl1;
+  document.getElementById('modal-acao-txt').placeholder     = t.ph1;
+  document.getElementById('modal-acao-txt').value           = preFill || '';
+  document.getElementById('modal-acao-lbl2').textContent    = t.lbl2;
   document.getElementById('modal-acao-detalhe').placeholder = t.ph2;
-  document.getElementById('modal-acao-detalhe').value     = '';
+  document.getElementById('modal-acao-detalhe').value       = '';
 
   const alvoDiv = document.getElementById('inimigos-alvo');
   const gridEl  = document.getElementById('inimigos-grid');
   alvoDiv.style.display = 'none';
   gridEl.innerHTML = '';
 
-  if(tipo === 'atacar' && mySala) {
+  if((tipo === 'atacar' || tipo === 'skill') && mySala) {
     const iniSnap = await get(ref(db, `salas/${mySala}/inimigos`));
     const inimigos = iniSnap.val() || {};
     const visiveis = Object.values(inimigos).filter(i => i.visivel !== false && i.hp > 0);
@@ -1417,7 +1417,7 @@ window.abrirModalAcao = async function(tipo) {
   }
 
   document.getElementById('modal-acao').classList.add('open');
-  setTimeout(() => document.getElementById('modal-acao-txt').focus(), 100);
+  if(!preFill) setTimeout(() => document.getElementById('modal-acao-txt').focus(), 100);
 };
 
 window.selecionarAlvo = function(nome, btn) {
@@ -1617,35 +1617,31 @@ function buildSystemPrompt(jogadores, inimigos) {
     .map(i => `• ${i.icon||'👿'} ${i.nome} — HP ${i.hp}/${i.maxHp}`)
     .join('\n');
 
-  return `Você é o Mestre de uma campanha de RPG de mesa no estilo D&D 5e, em um mundo medieval de fantasia.
+  return `Você é o Mestre de uma campanha de RPG no estilo D&D 5e, em mundo medieval.
 Escreva em português do Brasil.
 
-ESTILO DE NARRAÇÃO — siga rigorosamente:
-- Em COMBATE: seja DIRETO e OBJETIVO. Frases curtas. Diga o que aconteceu, ponto.
-  ✅ BOM: "Febre erra o soco. O goblin recua e contra-ataca, arranhando seu ombro."
-  ❌ RUIM: "Febre lança seu golpe mas a sorte não estava com ele, a esperança de acertar caiu por terra..."
-- Máximo 2-3 frases por ação de personagem. Não exagere na dramaticidade de ações comuns.
-- Em EXPLORAÇÃO ou DIÁLOGO: pode ser mais descritivo, mas ainda conciso.
-- Evite: advérbios excessivos, frases com sentimentos internos longos, metáforas desnecessárias.
-- Foque no RESULTADO concreto da ação, depois um detalhe visual rápido se for impactante.
+⚠️ REGRA OBRIGATÓRIA DE ESTILO:
+${iniList
+  ? `COMBATE ATIVO — máximo 80 palavras de narração total. Seja telegráfico.
+Máximo 2 frases por personagem. Diga só a AÇÃO e o RESULTADO concreto.
+CERTO: "Febre erra o golpe. O goblin contra-ataca, arranha seu braço."
+ERRADO: "Febre lança o golpe mas a sorte não estava com ele, a esperança caiu por terra..."
+PROIBIDO: sentimentos internos, metáforas longas, adjetivos em excesso.`
+  : `EXPLORAÇÃO — máximo 120 palavras. Pode ser descritivo, mas direto.`}
 
 FICHAS DOS PERSONAGENS:
 ${fichas}
 ${iniList ? `\nINIMIGOS PRESENTES:\n${iniList}\n` : ''}
-REGRAS:
-- Trate todas as ações dos jogadores como simultâneas na mesma rodada
+REGRAS DO SISTEMA:
+- Trate todas as ações como simultâneas na mesma rodada
 - Seja consistente com os eventos anteriores da história
-- Descreva consequências físicas e reações de inimigos de forma factual
-- NÃO inclua tags de atualização de stats no corpo da narração
-- AO FINAL da resposta, em uma linha separada, inclua APENAS as atualizações necessárias:
+- NÃO inclua tags de stats no corpo da narração
+- AO FINAL inclua em linha separada APENAS as atualizações necessárias:
   STATS: [HP:Nome:valor] [SP:Nome:valor] [EXP:Nome:+ganho] [MORTO:Nome] [INCONS:Nome]
-         [INIMIGO:Nome:hpAtual:hpMax:ícone] (para criar/atualizar inimigo) [MATAR:Nome] (inimigo derrotado)
-- Exemplos:
-  STATS: [HP:Igor:95] [EXP:Igor:+20] [INIMIGO:Goblin Guardião:45:80:👺] [MATAR:Rato Gigante]
-- Sempre que novos inimigos aparecerem, crie-os com [INIMIGO:...]. Atualize o HP deles a cada rodada.
-- Quando um inimigo for derrotado use [MATAR:Nome]. Inimigos derrotados não aparecem mais como alvos.
-- Seja generoso com EXP (mínimo +10 por rodada de ação)
-- HP e SP de jogadores devem ser valores absolutos (não delta)`;
+         [INIMIGO:Nome:hpAtual:hpMax:ícone] [MATAR:Nome]
+- Exemplos: STATS: [HP:Igor:95] [EXP:Igor:+20] [INIMIGO:Goblin:45:80:👺] [MATAR:Rato]
+- Atualize HP dos inimigos a cada rodada. Use [MATAR:Nome] quando derrotado.
+- EXP mínimo +10 por rodada. HP/SP devem ser valores absolutos.`;
 }
 
 function mostrarRetryUI(tentativa, totalMs) {
@@ -1864,7 +1860,7 @@ async function chamarOpenAI(systemPrompt, history, userMsg, onRetry) {
     { role:'user', content: userMsg }
   ];
 
-  const body = JSON.stringify({ model:'llama-3.3-70b-versatile', messages, temperature:0.85, max_tokens:900 });
+  const body = JSON.stringify({ model:'llama-3.3-70b-versatile', messages, temperature:0.8, max_tokens:700 });
   const MAX = 10;
 
   for(let t=1; t<=MAX; t++) {
@@ -2082,13 +2078,12 @@ window.fecharSkillTree = function() {
 window.confirmarSkill = function() {
   if(!_skillSelecionada) return;
   const detalhe = document.getElementById('sk-detalhe').value.trim();
-  const acaoFinal = detalhe
-    ? `✨ ${_skillSelecionada.nome}: ${detalhe}`
-    : `✨ ${_skillSelecionada.nome}`;
-  if(_slots[0] === null) { _slots[0] = acaoFinal; }
-  else { _slots[1] = acaoFinal; }
-  renderizarSlots();
+  const preFill = detalhe
+    ? `${_skillSelecionada.icon} ${_skillSelecionada.nome}: ${detalhe}`
+    : `${_skillSelecionada.icon} ${_skillSelecionada.nome}`;
   fecharSkillTree();
+  // Abre modal de ação com skill pré-preenchida e seleção de alvo
+  abrirModalAcao('skill', preFill);
 };
 
 document.getElementById('modal-skill').addEventListener('click', e => {
