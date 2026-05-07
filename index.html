@@ -433,6 +433,25 @@
     .inimigo-hp-bar{height:4px;background:rgba(255,255,255,.1);border-radius:2px;margin-top:3px;overflow:hidden}
     .inimigo-hp-fill{height:100%;background:var(--hp);border-radius:2px;transition:width .3s}
     .inimigo-hp-txt{font-size:11px;color:var(--hp);font-weight:bold;flex-shrink:0}
+
+    /* Card de dados */
+    .msg-dados{
+      background:rgba(15,10,35,.7);border:1px solid rgba(120,90,220,.3);
+      border-radius:var(--r);padding:10px 14px;
+    }
+    .msg-dados-lbl{font-size:10px;color:#9b8fd4;letter-spacing:2px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+    .dado-row{
+      display:flex;align-items:flex-start;gap:8px;padding:5px 0;
+      border-bottom:1px solid rgba(120,90,220,.1);flex-wrap:wrap;
+    }
+    .dado-row:last-child{border-bottom:none}
+    .dado-nome{font-size:11px;color:var(--gold);font-weight:bold;min-width:64px;flex-shrink:0}
+    .dado-acao{flex:1;font-size:11px;color:var(--text2);min-width:100px}
+    .dado-roll{font-size:11px;color:#b0a0e8;white-space:nowrap;flex-shrink:0}
+    .dado-result{font-size:13px;flex-shrink:0;font-weight:bold}
+    .dado-result.ok{color:#27ae60}
+    .dado-result.crit{color:#f39c12}
+    .dado-result.fail{color:var(--red)}
   </style>
 </head>
 <body>
@@ -715,6 +734,54 @@ const CLASSES = {
   barbaro:   { nome:'Bárbaro',   icon:'🪓', avatar:'😤', cor:'#5a1a1a', hp:150, sp:40,  desc:'Guerreiro da fúria selvagem',        stats:'HP Muito Alto / SP Baixo' },
   arqueiro:  { nome:'Arqueiro',  icon:'🏹', avatar:'🧝', cor:'#1a3a1a', hp:85,  sp:70,  desc:'Atirador preciso à distância',       stats:'HP Médio / SP Médio' },
 };
+
+// ═══════════════════════════════════════════════════════════════
+//  DADOS — MODIFICADORES POR CLASSE E TIPO DE AÇÃO
+// ═══════════════════════════════════════════════════════════════
+const MODS = {
+  guerreiro: { atacar:5, defender:3, falar:0,  mover:1, skill:4, livre:2 },
+  mago:      { atacar:2, defender:0, falar:1,  mover:0, skill:6, livre:3 },
+  ladino:    { atacar:4, defender:2, falar:2,  mover:4, skill:5, livre:3 },
+  clerigo:   { atacar:2, defender:3, falar:2,  mover:1, skill:5, livre:2 },
+  barbaro:   { atacar:6, defender:2, falar:-1, mover:2, skill:3, livre:3 },
+  arqueiro:  { atacar:5, defender:2, falar:1,  mover:3, skill:4, livre:3 },
+};
+const DC = { atacar:12, skill:13, defender:10, falar:11, mover:10, livre:11 };
+const LABEL_TIPO = { atacar:'Ataque', skill:'Habilidade', defender:'Defesa', falar:'Persuasão', mover:'Agilidade', livre:'Teste' };
+
+function detectarTipoAcao(acao) {
+  if(!acao) return 'livre';
+  const a = acao.toLowerCase();
+  if(a.includes('falar')   || a.includes('💬')) return 'falar';
+  if(a.includes('atacar')  || a.includes('⚔'))  return 'atacar';
+  if(a.includes('skill')   || a.includes('✨'))  return 'skill';
+  if(a.includes('defender')|| a.includes('🛡'))  return 'defender';
+  if(a.includes('mover')   || a.includes('🏃'))  return 'mover';
+  return 'livre';
+}
+
+function rolarAcao(nome, classe, acao, bonus) {
+  const tipo  = detectarTipoAcao(acao);
+  const mod   = (MODS[classe] || {})[tipo] ?? 0;
+  const dc    = DC[tipo] || 11;
+  const dado  = Math.floor(Math.random() * 20) + 1;
+  const total = dado + mod;
+  const critico = dado === 20;
+  const falha   = dado === 1;
+  const sucesso = critico || (!falha && total >= dc);
+  return { nome, classe, acao, tipo, dado, mod, total, dc, sucesso, critico, falha, bonus: !!bonus };
+}
+
+function rolarRodada(jogadores) {
+  const rolls = [];
+  Object.values(jogadores).forEach(j => {
+    if(!j.vivo || !j.consciente) return;
+    if(j.acao1 && j.acao1 !== '(nenhuma)') rolls.push(rolarAcao(j.nome, j.classe, j.acao1, false));
+    if(j.acao2 && j.acao2 !== '(sem segunda ação)' && j.acao2 !== '(nenhuma)')
+      rolls.push(rolarAcao(j.nome, j.classe, j.acao2, true));
+  });
+  return rolls;
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  ESTADO LOCAL
@@ -1234,6 +1301,26 @@ function renderizarHistoria(historia) {
     } else if(entry.role === 'model') {
       div.className = 'msg-mestre';
       div.innerHTML = `<div class="msg-mestre-lbl">⚔️ MESTRE</div>${formatarTexto(entry.content)}`;
+    } else if(entry.role === 'dados') {
+      div.className = 'msg-dados';
+      let rolls = [];
+      try { rolls = typeof entry.content === 'string' ? JSON.parse(entry.content) : entry.content; } catch(e){}
+      div.innerHTML = `<div class="msg-dados-lbl">🎲 RESULTADO DOS DADOS</div>` +
+        rolls.map(r => {
+          const modStr  = r.mod >= 0 ? `+${r.mod}` : `${r.mod}`;
+          const label   = LABEL_TIPO[r.tipo] || 'Teste';
+          const bonusTx = r.bonus ? ' <span style="font-size:9px;color:var(--text3)">(bônus)</span>' : '';
+          const emoji   = r.critico ? '💥' : r.falha ? '💀' : r.sucesso ? '✅' : '❌';
+          const txt     = r.critico ? 'CRÍTICO!' : r.falha ? 'FALHA!' : r.sucesso ? 'SUCESSO' : 'FALHOU';
+          const cls     = r.critico ? 'crit' : (r.falha || !r.sucesso) ? 'fail' : 'ok';
+          const acaoShort = r.acao.length > 38 ? r.acao.substring(0,38)+'…' : r.acao;
+          return `<div class="dado-row">
+            <span class="dado-nome">${r.nome}${bonusTx}</span>
+            <span class="dado-acao">${acaoShort}</span>
+            <span class="dado-roll">${label}: 1d20${modStr} = ${r.dado}${modStr} = <strong>${r.total}</strong> vs DC${r.dc}</span>
+            <span class="dado-result ${cls}">${emoji} ${txt}</span>
+          </div>`;
+        }).join('');
     } else {
       div.className = 'msg-acoes';
       div.innerHTML = `<div class="msg-acoes-lbl">AÇÕES DOS AVENTUREIROS</div>` +
@@ -1444,10 +1531,21 @@ async function chamarIA(jogadores, data) {
 
     const rodada = data.config.rodada || 1;
 
-    await push(ref(db, `salas/${mySala}/historia`), { role:'rodada', content: String(rodada), ts: Date.now()-2 });
-    await push(ref(db, `salas/${mySala}/historia`), { role:'user', content: acoes, ts: Date.now()-1 });
+    // Rolar dados antes de chamar a IA
+    const rolls    = rolarRodada(jogadores);
+    const rollsTxt = rolls.map(r => {
+      const modStr = r.mod >= 0 ? `+${r.mod}` : `${r.mod}`;
+      const status = r.critico ? 'CRÍTICO!' : r.falha ? 'FALHA CRÍTICA!' : r.sucesso ? 'SUCESSO' : 'FALHOU';
+      return `  ${r.nome}${r.bonus?' (bônus)':''}: ${r.acao.substring(0,50)} → 1d20${modStr}=${r.dado}${modStr}=${r.total} vs DC${r.dc} → ${status}`;
+    }).join('\n');
 
-    const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), gemHist, acoes, mostrarRetryUI);
+    await push(ref(db, `salas/${mySala}/historia`), { role:'rodada', content: String(rodada), ts: Date.now()-3 });
+    await push(ref(db, `salas/${mySala}/historia`), { role:'user',   content: acoes,           ts: Date.now()-2 });
+    await push(ref(db, `salas/${mySala}/historia`), { role:'dados',  content: JSON.stringify(rolls), ts: Date.now()-1 });
+
+    const msgComDados = `${acoes}\n\nRESULTADOS DOS DADOS DESTA RODADA — use-os fielmente ao narrar:\n${rollsTxt}\nCRÍTICO = efeito espetacular / FALHA CRÍTICA = desastre / SUCESSO = funciona / FALHOU = ação não surte efeito ou tem custo.`;
+
+    const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), gemHist, msgComDados, mostrarRetryUI);
 
     ocultarRetryUI();
 
@@ -1478,7 +1576,7 @@ function limparStats(texto) {
 }
 
 async function processarStats(resposta, jogadores) {
-  const statsLine = resposta.match(/STATS:(.*)/);
+  const statsLine = resposta.match(/STATS:([\s\S]*)/);
   if(!statsLine) return;
   const tags = statsLine[1].matchAll(/\[([A-Z]+):([^\]]+)\]/g);
   const ups = {};
