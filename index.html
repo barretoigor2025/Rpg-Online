@@ -1383,9 +1383,11 @@ async function chamarIAInicio() {
       .map(j => `${j.nome} (${CLASSES[j.classe]?.nome||j.classe})`)
       .join(', ');
 
-    const prompt = `Inicie uma campanha épica de RPG medieval estilo D&D para: ${nomes}.
-Crie uma abertura cinematográfica: descreva o cenário, o clima, e apresente uma situação de perigo ou mistério que una os personagens. Termine deixando claro o primeiro desafio que eles enfrentam e aguardando suas ações.
-STATS: (nenhuma atualização no início)`;
+    const prompt = `Inicie uma campanha de RPG medieval estilo D&D para: ${nomes}.
+CENÁRIO OBRIGATÓRIO: os personagens estão atravessando uma floresta densa à noite quando são surpreendidos por uma emboscada. Criaturas hostis (goblins, bandidos, ou monstros da floresta — escolha você) atacam de todos os lados saindo das sombras das árvores.
+Crie uma abertura cinematográfica e tensa: descreva a floresta, o momento do ataque, de onde vêm os inimigos e quantos são. Termine com os inimigos avançando e os aventureiros precisando agir AGORA.
+OBRIGATÓRIO ao final: crie os inimigos com a tag STATS usando [INIMIGO:nome:hp:hpMax:ícone] para cada inimigo visível.
+Exemplo de encerramento da linha STATS: STATS: [INIMIGO:Goblin Batedores:30:30:👺] [INIMIGO:Goblin Arqueiro:25:25:🏹] [INIMIGO:Líder Goblin:55:55:👹]`;
 
     const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, {}), [], prompt, mostrarRetryUI);
 
