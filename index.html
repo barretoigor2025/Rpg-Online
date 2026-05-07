@@ -1401,6 +1401,7 @@ Exemplo de encerramento da linha STATS: STATS: [INIMIGO:Goblin Batedores:30:30:ð
 
     const ts = Date.now();
     await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparStats(resposta), ts });
+    await processarStats(resposta, jogadores);
     await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando', rodada: 1 });
   } finally {
     chamandoIA = false;
