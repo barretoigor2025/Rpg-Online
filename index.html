@@ -540,6 +540,7 @@
       </div>
     </div>
     <div class="sala-chip" id="top-sala" onclick="copiarCodigo()">----</div>
+    <button id="btn-reset-campanha" onclick="resetarCampanha()" title="Reiniciar Campanha" style="display:none;background:transparent;border:none;font-size:20px;cursor:pointer;padding:4px;flex-shrink:0">☢️</button>
     <button onclick="sairDaSala()" title="Sair da sala" style="background:transparent;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px;flex-shrink:0">⬅️</button>
   </div>
 
@@ -960,6 +961,7 @@ function irParaJogo(codigo) {
     if(!eu) return;
 
     amIHost = (data.config.host === myUid);
+    document.getElementById('btn-reset-campanha').style.display = amIHost ? 'inline-block' : 'none';
 
     atualizarTopbar(eu);
     atualizarStatusBar(jogadores, data.config.rodada, data.config.estado);
@@ -987,6 +989,44 @@ function atualizarBotaoIniciar(data) {
   }
   if(!semHistoria) document.getElementById('historia-empty').style.display = 'none';
 }
+
+window.resetarCampanha = async function() {
+  if(!amIHost) return;
+  const ok = confirm('☢️ REINICIAR CAMPANHA?\n\nIsso apagará toda a história, os inimigos e resetará todos os personagens ao estado inicial.\n\nEsta ação não pode ser desfeita!');
+  if(!ok) return;
+
+  const snap = await get(ref(db, `salas/${mySala}`));
+  if(!snap.exists()) return;
+  const data = snap.val();
+  const jogadores = data.jogadores || {};
+
+  const ups = {};
+  ups[`salas/${mySala}/historia`] = null;
+  ups[`salas/${mySala}/inimigos`] = null;
+  ups[`salas/${mySala}/config/estado`] = 'lobby';
+  ups[`salas/${mySala}/config/rodada`] = 0;
+
+  Object.entries(jogadores).forEach(([uid, j]) => {
+    const cls = CLASSES[j.classe] || {};
+    const base = `salas/${mySala}/jogadores/${uid}`;
+    ups[`${base}/hp`]         = cls.hp || j.maxHp;
+    ups[`${base}/sp`]         = cls.sp || j.maxSp;
+    ups[`${base}/exp`]        = 0;
+    ups[`${base}/vivo`]       = true;
+    ups[`${base}/consciente`] = true;
+    ups[`${base}/acao1`]      = null;
+    ups[`${base}/acao2`]      = null;
+  });
+
+  await update(ref(db), ups);
+
+  renderedHistKeys = new Set();
+  const historiaEl = document.getElementById('historia');
+  Array.from(historiaEl.children).forEach(c => { if(c.id !== 'historia-empty') c.remove(); });
+  document.getElementById('historia-empty').style.display = '';
+  document.getElementById('modal-morto').classList.remove('open');
+  toast('Campanha reiniciada!');
+};
 
 window.hostIniciarOuRetentar = async function() {
   if(!amIHost || chamandoIA) return;
