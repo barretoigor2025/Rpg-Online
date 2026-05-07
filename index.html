@@ -1303,22 +1303,15 @@ function renderizarHistoria(historia) {
       div.innerHTML = `<div class="msg-mestre-lbl">⚔️ MESTRE</div>${formatarTexto(entry.content)}`;
     } else if(entry.role === 'dados') {
       div.className = 'msg-dados';
-      let rolls = [];
-      try { rolls = typeof entry.content === 'string' ? JSON.parse(entry.content) : entry.content; } catch(e){}
+      const linhas = (entry.content || '').split('\n').filter(l => l.trim());
       div.innerHTML = `<div class="msg-dados-lbl">🎲 RESULTADO DOS DADOS</div>` +
-        rolls.map(r => {
-          const modStr  = r.mod >= 0 ? `+${r.mod}` : `${r.mod}`;
-          const label   = LABEL_TIPO[r.tipo] || 'Teste';
-          const bonusTx = r.bonus ? ' <span style="font-size:9px;color:var(--text3)">(bônus)</span>' : '';
-          const emoji   = r.critico ? '💥' : r.falha ? '💀' : r.sucesso ? '✅' : '❌';
-          const txt     = r.critico ? 'CRÍTICO!' : r.falha ? 'FALHA!' : r.sucesso ? 'SUCESSO' : 'FALHOU';
-          const cls     = r.critico ? 'crit' : (r.falha || !r.sucesso) ? 'fail' : 'ok';
-          const acaoShort = r.acao.length > 38 ? r.acao.substring(0,38)+'…' : r.acao;
+        linhas.map(linha => {
+          const [nome, acao, roll, result, cls] = linha.split('|');
           return `<div class="dado-row">
-            <span class="dado-nome">${r.nome}${bonusTx}</span>
-            <span class="dado-acao">${acaoShort}</span>
-            <span class="dado-roll">${label}: 1d20${modStr} = ${r.dado}${modStr} = <strong>${r.total}</strong> vs DC${r.dc}</span>
-            <span class="dado-result ${cls}">${emoji} ${txt}</span>
+            <span class="dado-nome">${nome||''}</span>
+            <span class="dado-acao">${acao||''}</span>
+            <span class="dado-roll">${roll||''}</span>
+            <span class="dado-result ${cls||'ok'}">${result||''}</span>
           </div>`;
         }).join('');
     } else {
@@ -1539,9 +1532,21 @@ async function chamarIA(jogadores, data) {
       return `  ${r.nome}${r.bonus?' (bônus)':''}: ${r.acao.substring(0,50)} → 1d20${modStr}=${r.dado}${modStr}=${r.total} vs DC${r.dc} → ${status}`;
     }).join('\n');
 
+    // Salva o card de dados como linhas de texto simples (evita JSON com emojis)
+    const dadosLinhas = rolls.map(r => {
+      const modStr = r.mod >= 0 ? `+${r.mod}` : `${r.mod}`;
+      const label  = LABEL_TIPO[r.tipo] || 'Teste';
+      const emoji  = r.critico ? '💥' : r.falha ? '💀' : r.sucesso ? '✅' : '❌';
+      const status = r.critico ? 'CRÍTICO!' : r.falha ? 'FALHA!' : r.sucesso ? 'SUCESSO' : 'FALHOU';
+      const cls    = r.critico ? 'crit' : (!r.sucesso || r.falha) ? 'fail' : 'ok';
+      const bonus  = r.bonus ? ' (bônus)' : '';
+      const acao   = r.acao.substring(0, 40).replace(/\|/g, '/');
+      return `${r.nome}${bonus}|${acao}|${label}: 1d20${modStr} = ${r.dado}${modStr} = ${r.total} vs DC${r.dc}|${emoji} ${status}|${cls}`;
+    }).join('\n');
+
     await push(ref(db, `salas/${mySala}/historia`), { role:'rodada', content: String(rodada), ts: Date.now()-3 });
     await push(ref(db, `salas/${mySala}/historia`), { role:'user',   content: acoes,           ts: Date.now()-2 });
-    await push(ref(db, `salas/${mySala}/historia`), { role:'dados',  content: JSON.stringify(rolls), ts: Date.now()-1 });
+    if(dadosLinhas) await push(ref(db, `salas/${mySala}/historia`), { role:'dados', content: dadosLinhas, ts: Date.now()-1 });
 
     const msgComDados = `${acoes}\n\nRESULTADOS DOS DADOS DESTA RODADA — use-os fielmente ao narrar:\n${rollsTxt}\nCRÍTICO = efeito espetacular / FALHA CRÍTICA = desastre / SUCESSO = funciona / FALHOU = ação não surte efeito ou tem custo.`;
 
