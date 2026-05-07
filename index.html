@@ -418,12 +418,21 @@
       font-size:13px;z-index:200;max-width:90%;text-align:center;pointer-events:none;
     }
 
-    /* Narrar agora btn (host) */
-    #btn-narrar-agora{
-      font-size:11px;padding:5px 10px;border-radius:10px;
-      background:rgba(212,168,67,.15);border:1px solid var(--border);color:var(--gold);
-      display:none;flex-shrink:0;
+    /* Inimigos no modal de ataque */
+    #inimigos-alvo{display:none;flex-direction:column;gap:6px}
+    .inimigo-btn{
+      display:flex;align-items:center;gap:8px;padding:9px 12px;
+      border-radius:var(--r);border:1px solid var(--border);
+      background:rgba(180,30,30,.1);cursor:pointer;font-family:inherit;
+      color:var(--text);transition:background .15s;width:100%;text-align:left;font-size:13px;
     }
+    .inimigo-btn:active,.inimigo-btn.selected{background:rgba(180,30,30,.35);border-color:#c0392b}
+    .inimigo-icon{font-size:20px;flex-shrink:0}
+    .inimigo-info{flex:1}
+    .inimigo-nome{font-size:13px;font-weight:bold}
+    .inimigo-hp-bar{height:4px;background:rgba(255,255,255,.1);border-radius:2px;margin-top:3px;overflow:hidden}
+    .inimigo-hp-fill{height:100%;background:var(--hp);border-radius:2px;transition:width .3s}
+    .inimigo-hp-txt{font-size:11px;color:var(--hp);font-weight:bold;flex-shrink:0}
   </style>
 </head>
 <body>
@@ -582,8 +591,7 @@
       <div id="msg-enviado">✅ Ações enviadas! Aguardando todos...</div>
       <div id="msg-inconsciente">💀 Você está inconsciente ou morto.</div>
       <div style="flex:1"></div>
-      <button class="btn btn-secondary" id="btn-narrar-agora" onclick="narrarAgora()">Narrar agora</button>
-      <button class="btn btn-primary" id="btn-enviar" onclick="enviarAcoes()" style="display:none">Enviar ⚔️</button>
+      <button class="btn btn-primary" id="btn-enviar" onclick="enviarAcoes()" style="display:none">⚔️ Encerrar Turno</button>
     </div>
   </div>
 </div>
@@ -592,6 +600,11 @@
 <div id="modal-acao">
   <div class="acao-sheet">
     <div class="acao-sheet-title" id="modal-acao-title">⚔️ Atacar</div>
+    <!-- Alvos visíveis (só aparece quando há inimigos) -->
+    <div id="inimigos-alvo">
+      <label>INIMIGOS À VISTA — escolha o alvo</label>
+      <div id="inimigos-grid"></div>
+    </div>
     <div>
       <label id="modal-acao-lbl1">DESCREVA SUA AÇÃO</label>
       <textarea id="modal-acao-txt" placeholder=""></textarea>
@@ -1042,7 +1055,7 @@ let _tipoAcaoAtual = null;
 let _slots = [null, null];
 let _prevJaEnviou = false;
 
-window.abrirModalAcao = function(tipo) {
+window.abrirModalAcao = async function(tipo) {
   _tipoAcaoAtual = tipo;
   const t = TIPOS_ACAO[tipo];
   document.getElementById('modal-acao-title').textContent = t.titulo;
@@ -1052,8 +1065,45 @@ window.abrirModalAcao = function(tipo) {
   document.getElementById('modal-acao-lbl2').textContent  = t.lbl2;
   document.getElementById('modal-acao-detalhe').placeholder = t.ph2;
   document.getElementById('modal-acao-detalhe').value     = '';
+
+  const alvoDiv = document.getElementById('inimigos-alvo');
+  const gridEl  = document.getElementById('inimigos-grid');
+  alvoDiv.style.display = 'none';
+  gridEl.innerHTML = '';
+
+  if(tipo === 'atacar' && mySala) {
+    const iniSnap = await get(ref(db, `salas/${mySala}/inimigos`));
+    const inimigos = iniSnap.val() || {};
+    const visiveis = Object.values(inimigos).filter(i => i.visivel !== false && i.hp > 0);
+    if(visiveis.length > 0) {
+      visiveis.forEach(ini => {
+        const pct = Math.round((ini.hp / ini.maxHp) * 100);
+        const btn = document.createElement('button');
+        btn.className = 'inimigo-btn';
+        btn.innerHTML = `
+          <span class="inimigo-icon">${ini.icon||'👿'}</span>
+          <div class="inimigo-info">
+            <div class="inimigo-nome">${ini.nome}</div>
+            <div class="inimigo-hp-bar"><div class="inimigo-hp-fill" style="width:${pct}%"></div></div>
+          </div>
+          <span class="inimigo-hp-txt">${ini.hp}/${ini.maxHp}</span>`;
+        btn.onclick = () => selecionarAlvo(ini.nome, btn);
+        gridEl.appendChild(btn);
+      });
+      alvoDiv.style.display = 'flex';
+    }
+  }
+
   document.getElementById('modal-acao').classList.add('open');
   setTimeout(() => document.getElementById('modal-acao-txt').focus(), 100);
+};
+
+window.selecionarAlvo = function(nome, btn) {
+  document.querySelectorAll('.inimigo-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const txt = document.getElementById('modal-acao-txt');
+  txt.value = nome;
+  txt.focus();
 };
 
 window.fecharModalAcao = function() {
@@ -1120,16 +1170,6 @@ function atualizarStatusBar(jogadores, rodada, estado) {
     bar.appendChild(chip);
   });
 
-  // Botão narrar agora (host)
-  const btnNarrar = document.getElementById('btn-narrar-agora');
-  const todosEnviaram = Object.values(jogadores)
-    .filter(j => j.ativo && j.vivo && j.consciente)
-    .every(j => j.acao1 != null && j.acao2 != null);
-  btnNarrar.style.display = (amIHost && estado === 'aguardando') ? 'block' : 'none';
-  btnNarrar.disabled     = !todosEnviaram;
-  btnNarrar.style.background = todosEnviaram ? 'var(--gold)' : '';
-  btnNarrar.style.color      = todosEnviaram ? '#1a0d00'     : '';
-  btnNarrar.style.fontWeight = todosEnviaram ? 'bold'        : '';
 }
 
 // ─── Historia ──────────────────────────────────────────────────
@@ -1217,43 +1257,37 @@ window.enviarAcoes = async function() {
   });
 };
 
-// ─── Narrar agora (host forçado) ───────────────────────────────
-window.narrarAgora = async function() {
-  if(!amIHost || chamandoIA) return;
-  const snap = await get(ref(db, `salas/${mySala}`));
-  if(!snap.exists()) return;
-  const data = snap.val();
-  if(data.config.estado !== 'aguardando') return;
-  const ativos = Object.values(data.jogadores || {}).filter(j => j.ativo && j.vivo && j.consciente);
-  const todos  = ativos.every(j => j.acao1 != null && j.acao2 != null);
-  if(!todos) { toast('Aguardando todos os jogadores enviarem suas ações...'); return; }
-  chamarIA(data.jogadores, data);
-};
 
 // ─── Verificar rodada ──────────────────────────────────────────
 function verificarRodada(jogadores, data) {
-  const ativos = Object.values(jogadores).filter(j => j.ativo && j.vivo && j.consciente);
-  if(ativos.length === 0) return;
-  const todos = ativos.every(j => j.acao1 != null && j.acao2 != null);
+  // Espera TODOS os participantes (vivos/conscientes), online ou não — jogo assíncrono
+  const participantes = Object.values(jogadores).filter(j => j.vivo && j.consciente);
+  if(participantes.length === 0) return;
+  const todos = participantes.every(j => j.acao1 != null && j.acao2 != null);
   if(todos) chamarIA(jogadores, data);
 }
 
 // ═══════════════════════════════════════════════════════════════
 //  IA — GEMINI
 // ═══════════════════════════════════════════════════════════════
-function buildSystemPrompt(jogadores) {
+function buildSystemPrompt(jogadores, inimigos) {
   const fichas = Object.values(jogadores).map(j => {
     const cls = CLASSES[j.classe];
     const status = !j.vivo ? '(MORTO)' : !j.consciente ? '(INCONSCIENTE)' : '';
     return `• ${j.nome} [${cls?.nome||j.classe}] ${status} — HP ${j.hp}/${j.maxHp} | SP ${j.sp}/${j.maxSp} | EXP ${j.exp}`;
   }).join('\n');
 
+  const iniList = Object.values(inimigos || {})
+    .filter(i => i.visivel !== false && i.hp > 0)
+    .map(i => `• ${i.icon||'👿'} ${i.nome} — HP ${i.hp}/${i.maxHp}`)
+    .join('\n');
+
   return `Você é o Mestre de uma campanha de RPG de mesa no estilo D&D 5e, em um mundo medieval de fantasia épica.
 Narre em português do Brasil com linguagem épica, cinematográfica e imersiva.
 
 FICHAS DOS PERSONAGENS:
 ${fichas}
-
+${iniList ? `\nINIMIGOS PRESENTES:\n${iniList}\n` : ''}
 REGRAS:
 - Trate todas as ações dos jogadores como simultâneas na mesma rodada
 - Seja rigorosamente consistente com os eventos anteriores da história
@@ -1261,10 +1295,14 @@ REGRAS:
 - Crie tensão dramática, reviravoltas e momentos de heroísmo
 - NÃO inclua tags de atualização de stats no corpo da narração
 - AO FINAL da resposta, em uma linha separada, inclua APENAS as atualizações necessárias:
-  STATS: [HP:Nome:novoValor] [SP:Nome:novoValor] [EXP:Nome:+ganho] [MORTO:Nome] [INCONS:Nome]
-- Exemplo: STATS: [HP:Igor:95] [SP:Mago:110] [EXP:Igor:+20] [EXP:Mago:+20]
+  STATS: [HP:Nome:valor] [SP:Nome:valor] [EXP:Nome:+ganho] [MORTO:Nome] [INCONS:Nome]
+         [INIMIGO:Nome:hpAtual:hpMax:ícone] (para criar/atualizar inimigo) [MATAR:Nome] (inimigo derrotado)
+- Exemplos:
+  STATS: [HP:Igor:95] [EXP:Igor:+20] [INIMIGO:Goblin Guardião:45:80:👺] [MATAR:Rato Gigante]
+- Sempre que novos inimigos aparecerem, crie-os com [INIMIGO:...]. Atualize o HP deles a cada rodada.
+- Quando um inimigo for derrotado use [MATAR:Nome]. Inimigos derrotados não aparecem mais como alvos.
 - Seja generoso com EXP (mínimo +10 por rodada de ação)
-- HP e SP devem ser valores absolutos (não delta)`;
+- HP e SP de jogadores devem ser valores absolutos (não delta)`;
 }
 
 function mostrarRetryUI(tentativa, totalMs) {
@@ -1309,7 +1347,7 @@ async function chamarIAInicio() {
 Crie uma abertura cinematográfica: descreva o cenário, o clima, e apresente uma situação de perigo ou mistério que una os personagens. Termine deixando claro o primeiro desafio que eles enfrentam e aguardando suas ações.
 STATS: (nenhuma atualização no início)`;
 
-    const resposta = await chamarOpenAI(buildSystemPrompt(jogadores), [], prompt, mostrarRetryUI);
+    const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, {}), [], prompt, mostrarRetryUI);
 
     ocultarRetryUI();
 
@@ -1344,14 +1382,17 @@ async function chamarIA(jogadores, data) {
     }
 
     const acoes = Object.values(jogadores)
-      .filter(j => j.ativo)
       .map(j => {
         if(!j.vivo) return `${j.nome}: (morto, sem ação)`;
         if(!j.consciente) return `${j.nome}: (inconsciente, sem ação)`;
         return `${j.nome}: [Principal] ${j.acao1 || '(nenhuma)'}  [Bônus] ${j.acao2 || '(nenhuma)'}`;
       }).join('\n');
 
-    const histSnap = await get(ref(db, `salas/${mySala}/historia`));
+    const [histSnap, iniSnap] = await Promise.all([
+      get(ref(db, `salas/${mySala}/historia`)),
+      get(ref(db, `salas/${mySala}/inimigos`))
+    ]);
+    const inimigos = iniSnap.val() || {};
     const histRaw  = histSnap.val() || {};
     const histArr  = Object.values(histRaw).sort((a,b)=>(a.ts||0)-(b.ts||0));
     const gemHist  = histArr
@@ -1363,7 +1404,7 @@ async function chamarIA(jogadores, data) {
     await push(ref(db, `salas/${mySala}/historia`), { role:'rodada', content: String(rodada), ts: Date.now()-2 });
     await push(ref(db, `salas/${mySala}/historia`), { role:'user', content: acoes, ts: Date.now()-1 });
 
-    const resposta = await chamarOpenAI(buildSystemPrompt(jogadores), gemHist, acoes, mostrarRetryUI);
+    const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), gemHist, acoes, mostrarRetryUI);
 
     ocultarRetryUI();
 
@@ -1396,23 +1437,44 @@ function limparStats(texto) {
 async function processarStats(resposta, jogadores) {
   const statsLine = resposta.match(/STATS:(.*)/);
   if(!statsLine) return;
-  const tags = statsLine[1].matchAll(/\[(HP|SP|EXP|MORTO|INCONS):([^:]+):?([^\]]*)\]/g);
+  const tags = statsLine[1].matchAll(/\[([A-Z]+):([^\]]+)\]/g);
   const ups = {};
-  for(const [,tipo,nome,valor] of tags) {
+  for(const [,tipo,resto] of tags) {
+    const partes = resto.split(':');
+    const nome   = partes[0].trim();
+    const v1     = (partes[1] || '').trim();
+    const v2     = (partes[2] || '').trim();
+    const v3     = (partes[3] || '').trim();
+
+    if(tipo === 'INIMIGO') {
+      const hp    = parseInt(v1) || 0;
+      const maxHp = parseInt(v2) || hp;
+      const icon  = v3 || '👿';
+      const key   = nome.toLowerCase().replace(/[^a-z0-9]/g, '_');
+      ups[`salas/${mySala}/inimigos/${key}`] = { nome, hp: Math.max(0,hp), maxHp, icon, visivel: hp > 0 };
+      continue;
+    }
+    if(tipo === 'MATAR') {
+      const key = nome.toLowerCase().replace(/[^a-z0-9]/g, '_');
+      ups[`salas/${mySala}/inimigos/${key}/hp`]      = 0;
+      ups[`salas/${mySala}/inimigos/${key}/visivel`] = false;
+      continue;
+    }
+
     const uid = Object.keys(jogadores).find(u =>
-      jogadores[u].nome.toLowerCase() === nome.trim().toLowerCase()
+      jogadores[u].nome.toLowerCase() === nome.toLowerCase()
     );
     if(!uid) continue;
-    const j = jogadores[uid];
+    const j    = jogadores[uid];
     const base = `salas/${mySala}/jogadores/${uid}`;
     if(tipo==='HP') {
-      const v = parseInt(valor);
+      const v = parseInt(v1);
       if(!isNaN(v)) ups[`${base}/hp`] = Math.max(0, Math.min(v, j.maxHp));
     } else if(tipo==='SP') {
-      const v = parseInt(valor);
+      const v = parseInt(v1);
       if(!isNaN(v)) ups[`${base}/sp`] = Math.max(0, Math.min(v, j.maxSp));
     } else if(tipo==='EXP') {
-      const v = parseInt(valor.replace('+',''));
+      const v = parseInt(v1.replace('+',''));
       if(!isNaN(v)) ups[`${base}/exp`] = (j.exp||0)+v;
     } else if(tipo==='MORTO') {
       ups[`${base}/vivo`] = false; ups[`${base}/hp`] = 0;
