@@ -644,15 +644,15 @@
 <!-- ═══════════════════ MODAL: API KEY ═══════════════════ -->
 <div id="modal-key">
   <div class="modal-box">
-    <h2>🔑 Chave da API OpenAI</h2>
-    <p>Cole sua chave da API OpenAI. Você encontra em <strong>platform.openai.com/api-keys</strong> — é diferente da assinatura ChatGPT Plus.</p>
+    <h2>🔑 Chave da API Groq</h2>
+    <p>Crie sua chave gratuita em <strong>console.groq.com</strong> → API Keys → Create API Key. É grátis, só precisa de cadastro.</p>
     <div>
       <label>COLE SUA CHAVE AQUI</label>
-      <input id="inp-key" type="password" placeholder="sk-..." autocomplete="off">
+      <input id="inp-key" type="password" placeholder="gsk_..." autocomplete="off">
     </div>
     <button class="btn btn-primary" onclick="salvarKey()">Salvar e Continuar</button>
     <p style="font-size:11px;color:var(--text3)">
-      A chave começa com "sk-". Nunca compartilhe com ninguém.
+      A chave começa com "gsk_". Nunca compartilhe com ninguém.
     </p>
   </div>
 </div>
@@ -732,7 +732,7 @@ function toast(msg, dur=3500) {
   el._t = setTimeout(() => el.style.display='none', dur);
 }
 
-function getApiKey() { return localStorage.getItem('rpg_openai_key') || ''; }
+function getApiKey() { return localStorage.getItem('rpg_groq_key') || ''; }
 
 function codigoAleatorio() {
   const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -803,7 +803,7 @@ function pedirApiKey(cb) {
 window.salvarKey = function() {
   const v = document.getElementById('inp-key').value.trim();
   if(!v) { toast('Cole a chave antes de salvar'); return; }
-  localStorage.setItem('rpg_openai_key', v);
+  localStorage.setItem('rpg_groq_key', v);
   document.getElementById('modal-key').classList.remove('open');
   if(keyCallback) { keyCallback(); keyCallback=null; }
 };
@@ -1420,7 +1420,7 @@ async function chamarOpenAI(systemPrompt, history, userMsg, onRetry) {
     { role:'user', content: userMsg }
   ];
 
-  const body = JSON.stringify({ model:'gpt-4o-mini', messages, temperature:0.9, max_tokens:1500 });
+  const body = JSON.stringify({ model:'llama-3.3-70b-versatile', messages, temperature:0.9, max_tokens:1500 });
   const MAX = 10;
 
   for(let t=1; t<=MAX; t++) {
@@ -1430,7 +1430,7 @@ async function chamarOpenAI(systemPrompt, history, userMsg, onRetry) {
       await new Promise(r=>setTimeout(r, waitMs));
     }
     try {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method:'POST',
         headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
         body
