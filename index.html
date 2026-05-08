@@ -648,27 +648,6 @@
     .dado-result.crit{color:#f39c12}
     .dado-result.fail{color:var(--red)}
 
-    /* Card de status HP */
-    .msg-status{
-      background:rgba(0,0,0,.45);border:1px solid rgba(122,85,0,.2);
-      border-radius:var(--r);padding:8px 14px;
-    }
-    .msg-status-lbl{font-size:9px;color:var(--text3);letter-spacing:2px;margin-bottom:7px}
-    .status-row{
-      display:flex;align-items:center;gap:8px;padding:4px 0;
-      border-bottom:1px solid rgba(255,255,255,.05);
-    }
-    .status-row:last-child{border-bottom:none}
-    .status-icon{font-size:15px;flex-shrink:0;width:20px;text-align:center}
-    .status-nome{font-size:12px;color:var(--text);width:72px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .status-hp-bar{flex:1;height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
-    .status-hp-fill{height:100%;border-radius:3px;transition:width .4s}
-    .status-hp-txt{font-size:11px;font-weight:bold;flex-shrink:0;min-width:48px;text-align:right}
-    .status-diff{font-size:11px;flex-shrink:0;font-weight:bold;min-width:28px;text-align:right}
-    .status-diff.neg{color:var(--red)}
-    .status-diff.pos{color:var(--green)}
-    .status-efeito{font-size:9px;color:#f39c12;flex-shrink:0;letter-spacing:.5px;border:1px solid rgba(243,156,18,.3);border-radius:3px;padding:1px 4px}
-
     /* Painel flutuante de inimigos */
     #float-ini-btn{
       position:fixed;right:0;top:62px;
@@ -2142,27 +2121,7 @@ function renderizarHistoria(historia) {
           </div>`;
         }).join('');
     } else if(entry.role === 'status') {
-      div.className = 'msg-status';
-      const linhas = (entry.content||'').split('\n').filter(l=>l.trim());
-      div.innerHTML = `<div class="msg-status-lbl">❤️ STATUS APÓS A RODADA</div>` +
-        linhas.map(linha => {
-          const [icon, nome, hpAtual, hpMax, diff, tipo, efeito] = linha.split('|');
-          const hp  = parseInt(hpAtual)||0;
-          const max = parseInt(hpMax)||1;
-          const d   = parseInt(diff)||0;
-          const pct = Math.max(0, Math.min(100, (hp/max)*100));
-          const cor = tipo==='inimigo' ? '#e05050' : hp < max*0.3 ? 'var(--red)' : hp < max*0.6 ? '#f39c12' : 'var(--green)';
-          const diffStr = d !== 0 ? (d > 0 ? `+${d}` : `${d}`) : '';
-          const diffCls = d < 0 ? 'neg' : d > 0 ? 'pos' : '';
-          return `<div class="status-row">
-            <span class="status-icon">${icon||'❓'}</span>
-            <span class="status-nome">${nome||''}</span>
-            <div class="status-hp-bar"><div class="status-hp-fill" style="width:${pct}%;background:${cor}"></div></div>
-            <span class="status-hp-txt" style="color:${cor}">${hp}/${max}</span>
-            ${diffStr?`<span class="status-diff ${diffCls}">${diffStr}</span>`:''}
-            ${efeito?`<span class="status-efeito">${efeito}</span>`:''}
-          </div>`;
-        }).join('');
+      return; // status shown in retractable panel, not in chat
     } else {
       div.className = 'msg-acoes';
       div.innerHTML = `<div class="msg-acoes-lbl">AÇÕES DOS AVENTUREIROS</div>` +
@@ -2501,42 +2460,6 @@ async function processarStats(resposta, jogadores, iniAtual) {
     }
   }
   if(Object.keys(ups).length) await update(ref(db), ups);
-
-  // Build HP status card showing what changed this round
-  const statusLinhas = [];
-  Object.entries(jogadores).forEach(([uid, j]) => {
-    const newHp = ups[`salas/${mySala}/jogadores/${uid}/hp`];
-    if(newHp !== undefined && newHp !== j.hp) {
-      const diff = newHp - j.hp;
-      const cls  = CLASSES[j.classe] || {};
-      const morto  = ups[`salas/${mySala}/jogadores/${uid}/vivo`] === false;
-      const incons = ups[`salas/${mySala}/jogadores/${uid}/consciente`] === false;
-      const efeito = morto ? 'MORTO' : incons ? 'INCONSCIENTE' : '';
-      statusLinhas.push(`${cls.avatar||cls.icon||'⚔️'}|${j.nome}|${newHp}|${j.maxHp}|${diff}|jogador|${efeito}`);
-    }
-  });
-  if(iniAtual) {
-    Object.entries(iniAtual).forEach(([key, ini]) => {
-      const newHp = ups[`salas/${mySala}/inimigos/${key}/hp`];
-      if(newHp !== undefined && newHp !== ini.hp) {
-        const diff = newHp - ini.hp;
-        const efeito = newHp <= 0 ? 'DERROTADO' : '';
-        statusLinhas.push(`${ini.icon||'👿'}|${ini.nome}|${newHp}|${ini.maxHp}|${diff}|inimigo|${efeito}`);
-      }
-    });
-    // New enemies appearing this round
-    Object.entries(ups).forEach(([path, val]) => {
-      if(typeof val === 'object' && val.nome && val.hp !== undefined && path.includes('/inimigos/')) {
-        const key = path.split('/inimigos/')[1];
-        if(!iniAtual[key] && val.hp > 0) {
-          statusLinhas.push(`${val.icon||'👿'}|${val.nome}|${val.hp}|${val.maxHp}|0|inimigo|NOVO`);
-        }
-      }
-    });
-  }
-  if(statusLinhas.length > 0) {
-    await push(ref(db, `salas/${mySala}/historia`), { role:'status', content: statusLinhas.join('\n'), ts: Date.now()+2 });
-  }
 }
 
 async function chamarOpenAI(systemPrompt, history, userMsg, onRetry) {
