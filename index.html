@@ -39,13 +39,41 @@
     .btn:disabled{opacity:.4;cursor:not-allowed}
     label{font-size:11px;color:var(--text2);letter-spacing:1.5px;display:block;margin-bottom:6px}
 
-    /* ── TELA ENTRADA ── */
-    #screen-entry{
+    /* ── TELAS ENTRADA / WELCOME / SALA ── */
+    #screen-welcome,#screen-sala,#screen-entry{
       align-items:center;justify-content:center;padding:16px;
       background:radial-gradient(ellipse at 50% 30%,#2a1a08 0%,#0d0905 70%);
       overflow-y:auto;
     }
     .entry-box{width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px}
+    /* Welcome screen */
+    .wlc-saved-card{
+      background:var(--surface);border:2px solid var(--gold);border-radius:var(--r);
+      padding:14px;display:flex;gap:14px;align-items:center;cursor:pointer;
+      transition:box-shadow .2s;
+    }
+    .wlc-saved-card:hover{box-shadow:0 0 20px rgba(212,168,67,.25)}
+    .wlc-saved-card img{width:72px;height:84px;object-fit:contain;object-position:bottom;flex-shrink:0;
+      filter:drop-shadow(0 4px 8px rgba(0,0,0,.8));}
+    .wlc-saved-info .wn{font-size:20px;font-weight:bold;color:var(--gold)}
+    .wlc-saved-info .wc{font-size:11px;color:var(--text2);letter-spacing:1px;margin-top:3px}
+    .wlc-saved-info .ws{font-size:10px;color:var(--text3);margin-top:5px;line-height:1.5}
+    .wlc-divider{text-align:center;color:var(--text3);font-size:11px;letter-spacing:3px;padding:2px 0}
+    /* Sala options */
+    .sala-opt{
+      background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+      padding:14px;display:flex;flex-direction:column;gap:10px;
+    }
+    .sala-opt-title{font-size:10px;color:var(--text2);letter-spacing:2px;margin-bottom:2px;
+      display:flex;align-items:center;gap:6px}
+    .sala-opt-title span{font-size:16px}
+    .sala-continuar-code{
+      font-size:28px;font-weight:bold;color:var(--gold2);letter-spacing:8px;text-align:center;
+      padding:6px 0;
+    }
+    .sala-link{background:none;border:none;color:var(--text3);font-family:inherit;font-size:11px;
+      letter-spacing:1px;cursor:pointer;text-decoration:underline;padding:4px 0;text-align:center}
+    .sala-link:hover{color:var(--text2)}
     .entry-logo{text-align:center;padding:4px 0}
     .entry-logo .icon{font-size:40px;display:block;margin-bottom:6px}
     .entry-logo h1{font-size:22px;color:var(--gold);letter-spacing:3px}
@@ -769,8 +797,8 @@
   </div>
 </div>
 
-<!-- ═══════════════════ TELA: ENTRADA ═══════════════════ -->
-<div id="screen-entry" class="screen active">
+<!-- ═══════════════════ TELA: BOAS-VINDAS ═══════════════════ -->
+<div id="screen-welcome" class="screen active">
   <div class="entry-box">
     <div class="entry-logo">
       <span class="icon">⚔️</span>
@@ -778,36 +806,83 @@
       <p>SALA VIRTUAL DE CAMPANHA</p>
     </div>
 
-    <!-- Card do personagem criado -->
+    <!-- Loading enquanto verifica Firebase -->
+    <div id="wlc-loading" style="text-align:center;color:var(--text3);font-size:12px;letter-spacing:2px;padding:24px 0">
+      VERIFICANDO DADOS...
+    </div>
+
+    <!-- Opções (exibidas após verificação) -->
+    <div id="wlc-options" style="display:none;flex-direction:column;gap:12px">
+
+      <!-- Personagem salvo (mostrado se existir no Firebase) -->
+      <div id="wlc-saved" style="display:none;flex-direction:column;gap:8px">
+        <div style="font-size:10px;color:var(--text3);letter-spacing:2px;text-align:center">SEU PERSONAGEM</div>
+        <div class="wlc-saved-card" onclick="usarPersonagemSalvo()">
+          <img id="wlc-sprite" src="sprites/guerreiro_m.png" alt="sprite">
+          <div class="wlc-saved-info">
+            <div class="wn" id="wlc-nome">—</div>
+            <div class="wc" id="wlc-classe">—</div>
+            <div class="ws" id="wlc-stats">—</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="usarPersonagemSalvo()">
+          ▶ JOGAR COMO <span id="wlc-btn-nome">—</span>
+        </button>
+        <div class="wlc-divider">— OU —</div>
+      </div>
+
+      <button class="btn btn-secondary" onclick="showScreen('screen-char-creation')">
+        ⚔️ CRIAR NOVO PERSONAGEM
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ TELA: ESCOLHA DE SALA ═══════════════════ -->
+<div id="screen-sala" class="screen">
+  <div class="entry-box">
+    <div class="entry-logo" style="margin-bottom:4px">
+      <span class="icon" style="font-size:28px">⚔️</span>
+      <h1 style="font-size:18px">RPG ONLINE</h1>
+    </div>
+
+    <!-- Personagem ativo -->
     <div class="entry-char-card" id="entry-char-card">
       <img id="entry-char-sprite" src="sprites/guerreiro_m.png" alt="sprite">
       <div class="ec-info">
         <div class="ec-nome" id="entry-char-nome">—</div>
-        <div class="ec-cls" id="entry-char-cls">—</div>
+        <div class="ec-cls"  id="entry-char-cls">—</div>
       </div>
       <button class="ec-btn" onclick="showScreen('screen-char-creation')">TROCAR</button>
     </div>
 
-    <!-- Abas -->
-    <div class="entry-tabs">
-      <button class="entry-tab active" id="tab-criar" onclick="setTab('criar')">⚔️ Criar Sala</button>
-      <button class="entry-tab" id="tab-entrar" onclick="setTab('entrar')">🚪 Entrar em Sala</button>
+    <!-- Continuar partida anterior (oculto até verificar) -->
+    <div id="sala-opt-continuar" style="display:none" class="sala-opt">
+      <div class="sala-opt-title"><span>🔄</span> CONTINUAR PARTIDA ANTERIOR</div>
+      <div class="sala-continuar-code" id="sala-ultima-code">----</div>
+      <button class="btn btn-primary" onclick="continuarPartida()">ENTRAR NA SALA</button>
     </div>
 
-    <!-- Painel CRIAR -->
-    <div class="entry-panel" id="panel-criar">
-      <button class="btn btn-primary" onclick="criarSala()">⚔️ Criar Nova Sala</button>
-    </div>
-
-    <!-- Painel ENTRAR -->
-    <div class="entry-panel" id="panel-entrar" style="display:none">
+    <!-- Entrar em sala -->
+    <div class="sala-opt">
+      <div class="sala-opt-title"><span>🚪</span> ENTRAR EM SALA EXISTENTE</div>
       <div class="join-big">
-        <label>CÓDIGO DA SALA</label>
         <input id="inp-codigo" type="text" placeholder="RUNE" maxlength="4" autocomplete="off"
+          style="text-transform:uppercase;letter-spacing:8px;text-align:center;font-size:28px;font-weight:bold;padding:14px"
           onkeydown="if(event.key==='Enter') entrarSala()">
       </div>
-      <button class="btn btn-primary" onclick="entrarSala()">🚪 Entrar na Sala</button>
+      <button class="btn btn-primary" onclick="entrarSala()">🚪 ENTRAR NA SALA</button>
     </div>
+
+    <!-- Criar sala -->
+    <div class="sala-opt">
+      <div class="sala-opt-title"><span>✨</span> NOVA AVENTURA</div>
+      <button class="btn btn-primary" onclick="criarSala()">⚔️ CRIAR NOVA SALA</button>
+    </div>
+
+    <button class="sala-link" onclick="showScreen('screen-char-creation')">
+      Criar novo personagem
+    </button>
   </div>
 </div>
 
@@ -1179,6 +1254,7 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (id === 'screen-char-creation') { ccBuildGrid(); ccGoStep(1); }
+  if (id === 'screen-sala') { updateEntryCharCard(); verificarUltimaSala(); }
 }
 
 function spriteUrl(classe, sexo) {
@@ -1266,11 +1342,23 @@ window.ccConfirmar = async function() {
   myNome   = nome;
   myClasse = ccClasse;
   mySexo   = ccSexo;
+  const cls = CLASSES[myClasse] || {};
   localStorage.setItem('rpg_nome',   myNome);
   localStorage.setItem('rpg_classe', myClasse);
   localStorage.setItem('rpg_sexo',   mySexo);
+  localStorage.removeItem('rpg_sala'); // new character = fresh start
+  // Save to Firebase
+  await salvarPersonagemFirebase({
+    nome: myNome, classe: myClasse, sexo: mySexo,
+    nivel: 1, xp: 0,
+    atk: cls.atk||0, def: cls.def||0,
+    hp: cls.hp||100, maxHp: cls.hp||100,
+    sp: cls.sp||60,  maxSp: cls.sp||60,
+    historia: [], fama: 0, criadoEm: Date.now()
+  });
   updateEntryCharCard();
-  showScreen('screen-entry');
+  document.getElementById('sala-opt-continuar').style.display = 'none';
+  showScreen('screen-sala');
 };
 
 function updateEntryCharCard() {
@@ -1282,15 +1370,104 @@ function updateEntryCharCard() {
   document.getElementById('entry-char-cls').textContent = (cls.icon || '') + ' ' + (cls.nome || '').toUpperCase();
 }
 
-// On startup: decide which screen to show
-(function initStartScreen() {
-  if (myNome && myClasse && mySexo) {
-    updateEntryCharCard();
-    showScreen('screen-entry');
+// ═══════════════════════════════════════════════════════════════
+//  CHARACTER — FIREBASE PERSISTENCE
+// ═══════════════════════════════════════════════════════════════
+async function carregarPersonagemFirebase() {
+  try {
+    const snap = await get(ref(db, `personagens/${myUid}`));
+    if (snap.exists()) return snap.val();
+  } catch(e) {}
+  return null;
+}
+
+async function salvarPersonagemFirebase(dados) {
+  try {
+    await set(ref(db, `personagens/${myUid}`), { ...dados, uid: myUid, atualizadoEm: Date.now() });
+  } catch(e) {}
+}
+
+function populateWelcomeCard(char) {
+  const cls = CLASSES[char.classe] || {};
+  document.getElementById('wlc-sprite').src  = spriteUrl(char.classe, char.sexo);
+  document.getElementById('wlc-nome').textContent    = char.nome;
+  document.getElementById('wlc-btn-nome').textContent = char.nome;
+  document.getElementById('wlc-classe').textContent  = (cls.icon||'') + ' ' + (cls.nome||'').toUpperCase() + (char.sexo==='f'?' · ♀':' · ♂');
+  const nivel = char.nivel || 1;
+  const xp    = char.xp    || 0;
+  document.getElementById('wlc-stats').textContent  = `Nível ${nivel}  ·  ${xp} XP  ·  ATK ${char.atk||cls.atk}  DEF ${char.def||cls.def}`;
+}
+
+window.usarPersonagemSalvo = function() {
+  updateEntryCharCard();
+  verificarUltimaSala();
+  showScreen('screen-sala');
+};
+
+async function verificarUltimaSala() {
+  const ultimaSala = localStorage.getItem('rpg_sala');
+  const el = document.getElementById('sala-opt-continuar');
+  if (!ultimaSala) { el.style.display='none'; return; }
+  try {
+    const snap = await get(ref(db, `salas/${ultimaSala}/config`));
+    if (snap.exists() && snap.val().estado !== 'encerrada') {
+      document.getElementById('sala-ultima-code').textContent = ultimaSala;
+      el.style.display = 'flex';
+      return;
+    }
+  } catch(e) {}
+  localStorage.removeItem('rpg_sala');
+  el.style.display = 'none';
+}
+
+window.continuarPartida = async function() {
+  const codigo = localStorage.getItem('rpg_sala');
+  if (!codigo) return;
+  const snap = await get(ref(db, `salas/${codigo}`));
+  if (!snap.exists()) { toast('Sala não encontrada'); localStorage.removeItem('rpg_sala'); return; }
+  const data = snap.val();
+  mySala = codigo;
+  // Re-register player in case they disconnected
+  const cls = CLASSES[myClasse];
+  const existente = data.jogadores?.[myUid];
+  if (!existente) {
+    await set(ref(db, `salas/${codigo}/jogadores/${myUid}`), {
+      nome: myNome, classe: myClasse, sexo: mySexo,
+      hp: cls.hp, maxHp: cls.hp, sp: cls.sp, maxSp: cls.sp,
+      exp: 0, ativo: true, vivo: true, consciente: true,
+      acao1: null, acao2: null,
+      inventario: buildInventarioInicial(myClasse), joinedAt: Date.now()
+    });
   } else {
-    ccBuildGrid();
-    showScreen('screen-char-creation');
+    await update(ref(db, `salas/${codigo}/jogadores/${myUid}`), { ativo: true });
   }
+  onDisconnect(ref(db, `salas/${codigo}/jogadores/${myUid}/ativo`)).set(false);
+  if (data.config.estado === 'lobby') irParaLobby(codigo);
+  else irParaJogo(codigo);
+};
+
+// On startup: always show welcome, then check Firebase
+(async function initStartScreen() {
+  showScreen('screen-welcome');
+  const char = await carregarPersonagemFirebase();
+  // Also check localStorage fallback
+  const localChar = (myNome && myClasse) ? { nome:myNome, classe:myClasse, sexo:mySexo,
+    nivel: parseInt(localStorage.getItem('rpg_nivel')||'1'),
+    xp: parseInt(localStorage.getItem('rpg_xp')||'0'),
+    atk: CLASSES[myClasse]?.atk, def: CLASSES[myClasse]?.def } : null;
+  const saved = char || localChar;
+  if (saved) {
+    // Sync to memory
+    myNome   = saved.nome;   myClasse = saved.classe; mySexo = saved.sexo || 'm';
+    localStorage.setItem('rpg_nome', myNome);
+    localStorage.setItem('rpg_classe', myClasse);
+    localStorage.setItem('rpg_sexo', mySexo);
+    populateWelcomeCard(saved);
+    document.getElementById('wlc-saved').style.display = 'flex';
+  }
+  document.getElementById('wlc-loading').style.display  = 'none';
+  document.getElementById('wlc-options').style.display  = 'flex';
+  ccBuildGrid();
 })();
 
 function toast(msg, dur=3500) {
@@ -1323,23 +1500,13 @@ window.sairDaSala = async function() {
   localStorage.removeItem('rpg_sala');
   renderedHistKeys = new Set();
   updateEntryCharCard();
-  showScreen('screen-entry');
+  showScreen('screen-sala');
 };
 
 // ═══════════════════════════════════════════════════════════════
 //  ABAS ENTRADA
 // ═══════════════════════════════════════════════════════════════
-window.setTab = function(tab) {
-  document.getElementById('panel-criar').style.display  = tab==='criar'  ? 'flex' : 'none';
-  document.getElementById('panel-entrar').style.display = tab==='entrar' ? 'flex' : 'none';
-  document.getElementById('tab-criar').classList.toggle('active',  tab==='criar');
-  document.getElementById('tab-entrar').classList.toggle('active', tab==='entrar');
-  // Sincroniza nome entre painéis
-  if(tab==='entrar') {
-    const n = document.getElementById('inp-nome').value;
-    if(n) document.getElementById('inp-nome2').value = n;
-  }
-};
+window.setTab = function(tab) { /* deprecated — sala screen uses direct buttons */ };
 
 // ═══════════════════════════════════════════════════════════════
 //  BUILD CLASSE GRID
@@ -2590,14 +2757,9 @@ document.getElementById('modal-skill').addEventListener('click', e => {
 // ═══════════════════════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════════════════════
-buildClasseGrid();
-
-if(myNome) document.getElementById('inp-nome').value = myNome;
-
-const reconectou = await tentarReconectar();
-if(!reconectou) {
-  showScreen('screen-entry');
-}
+// tentarReconectar routes to lobby/game if active session exists
+// initStartScreen (async IIFE above) handles the welcome/char-creation flow
+await tentarReconectar();
 </script>
 
 <!-- ═══════════════════ MODAL: SKILL TREE ═══════════════════ -->
