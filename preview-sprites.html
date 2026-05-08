@@ -60,12 +60,14 @@
     position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);
     color:#e8c050;font-size:10px;
   }
-  .cls-canvas-wrap{
+  .cls-img-wrap{
     display:flex;align-items:flex-end;justify-content:center;
-    height:144px;margin-bottom:10px;
+    height:160px;margin-bottom:10px;overflow:hidden;
   }
-  .cls-canvas-wrap canvas{
-    image-rendering:pixelated;image-rendering:crisp-edges;
+  .cls-img-wrap img{
+    max-height:160px;max-width:128px;
+    object-fit:contain;object-position:bottom;
+    filter:drop-shadow(0 4px 8px rgba(0,0,0,.8));
   }
   .cls-name{
     font-size:11px;font-weight:700;color:#e8dfc8;
@@ -108,7 +110,7 @@
     display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
     min-width:110px;
   }
-  .sheet-sprite-col canvas{image-rendering:pixelated;image-rendering:crisp-edges}
+  .sheet-sprite-col img{max-width:100%;max-height:140px;object-fit:contain;object-position:bottom;filter:drop-shadow(0 4px 8px rgba(0,0,0,.9));}
   .sheet-info{flex:1;padding:14px 16px}
   .sheet-char-name{
     font-family:'Cinzel Decorative','Cinzel',serif;
@@ -184,7 +186,7 @@
 
 <div class="cards-row">
   <div class="cls-card active" onclick="selectClass(this,'guerreiro')">
-    <div class="cls-canvas-wrap"><canvas id="s-guerreiro" width="36" height="48" style="width:108px;height:144px"></canvas></div>
+    <div class="cls-img-wrap"><img src="sprites/guerreiro.png" alt="Guerreiro"></div>
     <div class="cls-name">GUERREIRO</div>
     <div class="cls-desc">Mestre do combate corpo a corpo. Usa armadura pesada e defesa.</div>
     <div class="cls-equip">
@@ -193,7 +195,7 @@
     </div>
   </div>
   <div class="cls-card" onclick="selectClass(this,'mago')">
-    <div class="cls-canvas-wrap"><canvas id="s-mago" width="36" height="48" style="width:108px;height:144px"></canvas></div>
+    <div class="cls-img-wrap"><img src="sprites/mago.png" alt="Mago"></div>
     <div class="cls-name">MAGO</div>
     <div class="cls-desc">Manipula o arcano com maestria. Baixa defesa, poder absurdo.</div>
     <div class="cls-equip">
@@ -202,7 +204,7 @@
     </div>
   </div>
   <div class="cls-card" onclick="selectClass(this,'ladino')">
-    <div class="cls-canvas-wrap"><canvas id="s-ladino" width="36" height="48" style="width:108px;height:144px"></canvas></div>
+    <div class="cls-img-wrap"><img src="sprites/ladino.png" alt="Ladino"></div>
     <div class="cls-name">LADINO</div>
     <div class="cls-desc">Ágil e furtivo. Golpes críticos e venenos são sua assinatura.</div>
     <div class="cls-equip">
@@ -211,7 +213,7 @@
     </div>
   </div>
   <div class="cls-card" onclick="selectClass(this,'clerigo')">
-    <div class="cls-canvas-wrap"><canvas id="s-clerigo" width="36" height="48" style="width:108px;height:144px"></canvas></div>
+    <div class="cls-img-wrap"><img src="sprites/clerigo.png" alt="Clérigo"></div>
     <div class="cls-name">CLÉRIGO</div>
     <div class="cls-desc">Mantém o grupo com fé com curas e proteção divina.</div>
     <div class="cls-equip">
@@ -220,7 +222,7 @@
     </div>
   </div>
   <div class="cls-card" onclick="selectClass(this,'barbaro')">
-    <div class="cls-canvas-wrap"><canvas id="s-barbaro" width="36" height="48" style="width:108px;height:144px"></canvas></div>
+    <div class="cls-img-wrap"><img src="sprites/barbaro.png" alt="Bárbaro"></div>
     <div class="cls-name">BÁRBARO</div>
     <div class="cls-desc">Força bruta e fúria incontrolável. Entra em frenesi no combate.</div>
     <div class="cls-equip">
@@ -229,7 +231,7 @@
     </div>
   </div>
   <div class="cls-card" onclick="selectClass(this,'arqueiro')">
-    <div class="cls-canvas-wrap"><canvas id="s-arqueiro" width="36" height="48" style="width:108px;height:144px"></canvas></div>
+    <div class="cls-img-wrap"><img src="sprites/arqueiro.png" alt="Arqueiro"></div>
     <div class="cls-name">ARQUEIRO</div>
     <div class="cls-desc">Mira precisa e conhecimento da natureza. Alto alcance e crítico.</div>
     <div class="cls-equip">
@@ -243,7 +245,7 @@
 <div class="sheet-panel">
   <div class="sheet-top">
     <div class="sheet-sprite-col">
-      <canvas id="s-sheet" width="36" height="48" style="width:90px;height:120px"></canvas>
+      <img id="s-sheet" src="sprites/guerreiro.png" alt="sprite">
     </div>
     <div class="sheet-info">
       <div class="sheet-char-name" id="sh-name">FEBRE</div>
@@ -286,13 +288,6 @@
 </div>
 
 <script>
-// ── pixel helpers ──────────────────────────────────────────────────────────────
-function px(c,x,y,cl)          {c.fillStyle=cl;c.fillRect(x,y,1,1)}
-function row(c,x1,x2,y,cl)     {c.fillStyle=cl;c.fillRect(x1,y,x2-x1+1,1)}
-function col(c,x,y1,y2,cl)     {c.fillStyle=cl;c.fillRect(x,y1,1,y2-y1+1)}
-function blk(c,x1,y1,x2,y2,cl) {c.fillStyle=cl;c.fillRect(x1,y1,x2-x1+1,y2-y1+1)}
-
-// ── GUERREIRO — plate armor, plumed helm, sword + kite shield ─────────────────
 function drawGuerreiro(c) {
   // plume
   col(c,17,0,2,'#dd2222');col(c,18,0,1,'#ff4444');col(c,16,1,2,'#aa1111');
@@ -619,51 +614,36 @@ function drawArqueiro(c) {
 
 // ── class data ────────────────────────────────────────────────────────────────
 const CLASS_DATA = {
-  guerreiro:{ fn:drawGuerreiro, name:'GUERREIRO', label:'Guerreiro — Nível 1',
+  guerreiro:{ name:'GUERREIRO', label:'Guerreiro — Nível 1',
     atk:21,def:17, hp:[95,120], sp:[40,60], xp:[245,700],
     equip:['🗡️','🛡️','🔰','⛑️'] },
-  mago:     { fn:drawMago,      name:'MAGO',      label:'Mago — Nível 1',
+  mago:     { name:'MAGO',      label:'Mago — Nível 1',
     atk:14,def:6,  hp:[50,60],  sp:[100,120],xp:[180,700],
     equip:['🪄','📖','🧣','💍'] },
-  ladino:   { fn:drawLadino,    name:'LADINO',    label:'Ladino — Nível 1',
+  ladino:   { name:'LADINO',    label:'Ladino — Nível 1',
     atk:18,def:10, hp:[70,80],  sp:[60,70],  xp:[310,700],
     equip:['🗡️','🗡️','🧥','🥾'] },
-  clerigo:  { fn:drawClerigo,   name:'CLÉRIGO',   label:'Clérigo — Nível 1',
+  clerigo:  { name:'CLÉRIGO',   label:'Clérigo — Nível 1',
     atk:12,def:14, hp:[80,100], sp:[90,100], xp:[200,700],
     equip:['🔨','🛡️','👘','✨'] },
-  barbaro:  { fn:drawBarbaro,   name:'BÁRBARO',   label:'Bárbaro — Nível 1',
+  barbaro:  { name:'BÁRBARO',   label:'Bárbaro — Nível 1',
     atk:26,def:9,  hp:[110,130],sp:[30,40],  xp:[150,700],
     equip:['🪓','🪓','🦺','💀'] },
-  arqueiro: { fn:drawArqueiro,  name:'ARQUEIRO',  label:'Arqueiro — Nível 1',
+  arqueiro: { name:'ARQUEIRO',  label:'Arqueiro — Nível 1',
     atk:19,def:8,  hp:[75,90],  sp:[50,60],  xp:[270,700],
     equip:['🏹','🔪','🧥','🪶'] },
 };
 
-function renderSprite(id, fn) {
-  const cv = document.getElementById(id);
-  if (!cv) return;
-  const ctx = cv.getContext('2d');
-  ctx.clearRect(0,0,cv.width,cv.height);
-  fn(ctx);
-}
-
-// render all cards
-Object.entries(CLASS_DATA).forEach(([k,d]) => renderSprite('s-'+k, d.fn));
-renderSprite('s-sheet', CLASS_DATA.guerreiro.fn);
-
-// card selection
+// card selection — swap img src and update sheet stats
 function selectClass(el, cls) {
   document.querySelectorAll('.cls-card').forEach(c=>c.classList.remove('active'));
   el.classList.add('active');
   const d = CLASS_DATA[cls];
-  // sheet sprite
-  renderSprite('s-sheet', d.fn);
-  // texts
+  document.getElementById('s-sheet').src = 'sprites/'+cls+'.png';
   document.getElementById('sh-name').textContent = 'FEBRE';
   document.getElementById('sh-class').textContent = d.label;
   document.getElementById('sh-atk').textContent = d.atk;
   document.getElementById('sh-def').textContent = d.def;
-  // bars
   const [hp,hpM]=d.hp, [sp,spM]=d.sp, [xp,xpM]=d.xp;
   document.getElementById('sh-hp-bar').style.width=Math.round(hp/hpM*100)+'%';
   document.getElementById('sh-sp-bar').style.width=Math.round(sp/spM*100)+'%';
@@ -671,7 +651,6 @@ function selectClass(el, cls) {
   document.getElementById('sh-hp-val').textContent=hp+' / '+hpM;
   document.getElementById('sh-sp-val').textContent=sp+' / '+spM;
   document.getElementById('sh-xp-val').textContent=xp+' / '+xpM;
-  // equip
   ['sh-eq1','sh-eq2','sh-eq3','sh-eq4'].forEach((id,i)=>{
     const el=document.getElementById(id);
     el.textContent=d.equip[i];
