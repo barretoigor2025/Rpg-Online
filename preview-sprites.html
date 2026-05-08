@@ -2,525 +2,682 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Preview Sprites — RPG Online</title>
+<title>Classes de Personagens — RPG Online</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: #0d0d1a;
-    color: #e8e0d0;
-    font-family: 'Courier New', monospace;
-    padding: 30px 20px;
-    min-height: 100vh;
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:#110e0a;
+    color:#e8dfc8;
+    font-family:'Cinzel',serif;
+    min-height:100vh;
+    padding:30px 16px 40px;
+    background-image:
+      radial-gradient(ellipse at 50% 0%, #2a1e0a 0%, transparent 60%),
+      repeating-linear-gradient(0deg,transparent,transparent 32px,rgba(255,200,50,.015) 33px),
+      repeating-linear-gradient(90deg,transparent,transparent 32px,rgba(255,200,50,.015) 33px);
   }
-  h1 { color: #d4a843; text-align: center; font-size: 22px; letter-spacing: 3px; margin-bottom: 8px; }
-  .subtitle { color: #7a7060; text-align: center; font-size: 12px; margin-bottom: 40px; letter-spacing: 2px; }
-  .sprite-grid {
-    display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-bottom: 50px;
-  }
-  .sprite-card {
-    background: linear-gradient(180deg, #1a1a30 0%, #12121f 100%);
-    border: 1px solid #2a2a50;
-    border-top: 1px solid #3a3a60;
-    border-radius: 6px;
-    padding: 18px 12px 14px;
-    text-align: center;
-    width: 130px;
-    transition: border-color 0.2s;
-  }
-  .sprite-card:hover { border-color: #d4a843; }
-  .sprite-canvas-wrap {
-    display: flex; align-items: flex-end; justify-content: center;
-    height: 172px; margin-bottom: 12px;
-  }
-  .sprite-card canvas {
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-  }
-  .class-icon { font-size: 13px; margin-bottom: 4px; }
-  .class-name { color: #d4a843; font-size: 13px; font-weight: bold; letter-spacing: 1px; }
-  .class-role { color: #5a5048; font-size: 10px; margin-top: 3px; letter-spacing: 1px; }
 
-  .mock-section { max-width: 460px; margin: 0 auto 40px; }
-  .mock-section h2 { color: #d4a843; font-size: 14px; letter-spacing: 2px; margin-bottom: 16px; text-align: center; }
-  .mock-sheet {
-    background: #12121f;
-    border: 1px solid #2a2a50;
-    border-radius: 8px;
-    overflow: hidden;
+  /* ── HEADER ── */
+  .page-header{text-align:center;margin-bottom:32px}
+  .page-title{
+    font-family:'Cinzel Decorative','Cinzel',serif;
+    font-size:clamp(16px,3vw,26px);
+    color:#e8c050;
+    letter-spacing:4px;
+    text-shadow:0 0 20px rgba(232,192,80,.5),0 2px 4px #000;
+    margin-bottom:6px;
   }
-  .fc-header {
-    background: linear-gradient(135deg, #1a1228 0%, #0e1020 100%);
-    padding: 16px;
-    display: flex; align-items: center; gap: 14px;
-    border-bottom: 1px solid #2a2a50;
+  .page-title::before,.page-title::after{content:' ✦ ';color:#a07820;font-size:.7em}
+  .page-sub{
+    font-size:10px;color:#7a6840;letter-spacing:3px;font-family:'Courier New',monospace;
   }
-  .fc-avatar-area { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-  .fc-info { flex: 1; }
-  .fc-info .char-name { font-size: 18px; font-weight: bold; color: #fff; }
-  .fc-info .char-class { font-size: 12px; color: #d4a843; }
-  .fc-info .char-level { font-size: 11px; color: #5a5048; margin-top: 2px; }
-  .fc-stats { display: flex; gap: 10px; margin-top: 10px; }
-  .stat-pill {
-    background: #1e1e35; border: 1px solid #2a2a50; border-radius: 4px;
-    padding: 4px 8px; font-size: 11px; text-align: center;
+
+  /* ── CARDS ── */
+  .cards-row{
+    display:flex;gap:10px;flex-wrap:wrap;justify-content:center;
+    margin-bottom:28px;
   }
-  .stat-pill .sv { font-size: 14px; font-weight: bold; color: #d4a843; }
-  .stat-pill .sl { font-size: 9px; color: #5a5048; }
-  .fc-body { padding: 14px; }
-  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 11px; }
-  .bar-label { width: 30px; color: #888; }
-  .bar-track { flex: 1; height: 10px; background: #1a1a30; border-radius: 3px; overflow: hidden; }
-  .bar-fill-hp { background: linear-gradient(90deg, #1a7a1a, #22cc22); height: 100%; }
-  .bar-fill-sp { background: linear-gradient(90deg, #1a1a8a, #3a3acc); height: 100%; }
-  .bar-val { width: 55px; color: #aaa; text-align: right; }
+  .cls-card{
+    background:linear-gradient(180deg,#1e1810 0%,#130f0a 100%);
+    border:1px solid #3a2e18;
+    border-top:2px solid #c0900a;
+    border-radius:4px;
+    width:148px;
+    padding:14px 10px 10px;
+    cursor:pointer;
+    transition:border-color .2s,box-shadow .2s,transform .15s;
+    position:relative;
+  }
+  .cls-card:hover,.cls-card.active{
+    border-color:#e8c050;
+    border-top-color:#ffe090;
+    box-shadow:0 0 18px rgba(232,192,80,.25),inset 0 0 20px rgba(232,192,80,.05);
+    transform:translateY(-2px);
+  }
+  .cls-card.active::after{
+    content:'▼';
+    position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);
+    color:#e8c050;font-size:10px;
+  }
+  .cls-canvas-wrap{
+    display:flex;align-items:flex-end;justify-content:center;
+    height:144px;margin-bottom:10px;
+  }
+  .cls-canvas-wrap canvas{
+    image-rendering:pixelated;image-rendering:crisp-edges;
+  }
+  .cls-name{
+    font-size:11px;font-weight:700;color:#e8dfc8;
+    letter-spacing:2px;text-align:center;margin-bottom:4px;
+  }
+  .cls-desc{
+    font-size:9px;color:#786850;font-family:'Courier New',monospace;
+    text-align:center;line-height:1.5;margin-bottom:8px;min-height:36px;
+  }
+  .cls-equip{
+    display:flex;justify-content:center;gap:4px;flex-wrap:wrap;
+  }
+  .eq-icon{
+    width:22px;height:22px;
+    background:#1a140c;
+    border:1px solid #3a2e18;
+    border-radius:3px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;
+    filter:drop-shadow(0 1px 1px #000);
+  }
+
+  /* ── CHARACTER SHEET BOTTOM ── */
+  .sheet-panel{
+    max-width:680px;margin:0 auto;
+    background:linear-gradient(180deg,#1e1810 0%,#130f0a 100%);
+    border:1px solid #3a2e18;
+    border-top:2px solid #c0900a;
+    border-radius:6px;
+    overflow:hidden;
+  }
+  .sheet-top{
+    display:flex;gap:0;
+  }
+  .sheet-sprite-col{
+    flex-shrink:0;
+    background:linear-gradient(180deg,#160d06 0%,#0e0a06 100%);
+    border-right:1px solid #3a2e18;
+    padding:16px 12px 12px;
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+    min-width:110px;
+  }
+  .sheet-sprite-col canvas{image-rendering:pixelated;image-rendering:crisp-edges}
+  .sheet-info{flex:1;padding:14px 16px}
+  .sheet-char-name{
+    font-family:'Cinzel Decorative','Cinzel',serif;
+    font-size:20px;font-weight:700;
+    color:#fff;letter-spacing:2px;
+    text-shadow:0 0 12px rgba(232,192,80,.4);
+    margin-bottom:2px;
+  }
+  .sheet-class-line{font-size:11px;color:#c0900a;letter-spacing:2px;margin-bottom:12px}
+  .bars-block{margin-bottom:12px}
+  .bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .bar-lbl{font-size:10px;color:#786850;width:28px;letter-spacing:1px}
+  .bar-track{
+    flex:1;height:12px;
+    background:#0e0a06;
+    border:1px solid #2a2010;
+    border-radius:2px;overflow:hidden;
+    position:relative;
+  }
+  .bar-fill{height:100%;border-radius:1px;position:relative}
+  .bar-fill::after{
+    content:'';position:absolute;top:0;left:0;right:0;height:50%;
+    background:rgba(255,255,255,.15);border-radius:1px;
+  }
+  .bar-hp{background:linear-gradient(90deg,#1a6010,#30c030)}
+  .bar-sp{background:linear-gradient(90deg,#10208a,#2040d0)}
+  .bar-xp{background:linear-gradient(90deg,#8a6000,#d4a020)}
+  .bar-val{font-size:9px;color:#9a8860;width:52px;text-align:right;font-family:'Courier New',monospace}
+
+  .sheet-stats-col{
+    flex-shrink:0;
+    border-left:1px solid #3a2e18;
+    padding:14px 14px;
+    min-width:100px;
+    display:flex;flex-direction:column;gap:8px;justify-content:flex-start;
+    padding-top:42px;
+  }
+  .stat-box{text-align:center}
+  .stat-val{font-size:22px;font-weight:700;color:#e8c050;line-height:1}
+  .stat-lbl{font-size:9px;color:#786850;letter-spacing:2px;margin-top:2px}
+
+  /* equip grid in sheet */
+  .sheet-equip{
+    border-top:1px solid #2a2010;
+    padding:10px 14px;
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  }
+  .sheet-equip-lbl{font-size:9px;color:#786850;letter-spacing:2px;margin-right:4px}
+  .eq-slot{
+    width:36px;height:36px;
+    background:#0e0a06;
+    border:1px solid #3a2e18;
+    border-radius:4px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;
+    position:relative;
+  }
+  .eq-slot:not(.empty){border-color:#5a4020}
+  .eq-slot .slot-lbl{
+    position:absolute;bottom:-13px;left:50%;transform:translateX(-50%);
+    font-size:7px;color:#5a4820;letter-spacing:1px;white-space:nowrap;
+  }
+  .equip-row{display:flex;gap:6px;margin-top:4px}
+  .divider{height:1px;background:linear-gradient(90deg,transparent,#3a2e18 20%,#3a2e18 80%,transparent);margin:0}
 </style>
 </head>
 <body>
 
-<h1>PIXEL ART SPRITES</h1>
-<p class="subtitle">ESTILO ULTIMA 8 / FF TACTICS -- SEM ANIMACAO -- 24x43px x4</p>
+<div class="page-header">
+  <div class="page-title">CLASSES DE PERSONAGENS</div>
+  <div class="page-sub">ESTILO RAGNAROK ONLINE &nbsp;•&nbsp; PIXEL FANTASY TACTICS</div>
+</div>
 
-<div class="sprite-grid">
-  <div class="sprite-card">
-    <div class="sprite-canvas-wrap">
-      <canvas id="c-guerreiro" width="24" height="43" style="width:96px;height:172px"></canvas>
+<div class="cards-row">
+  <div class="cls-card active" onclick="selectClass(this,'guerreiro')">
+    <div class="cls-canvas-wrap"><canvas id="s-guerreiro" width="36" height="48" style="width:108px;height:144px"></canvas></div>
+    <div class="cls-name">GUERREIRO</div>
+    <div class="cls-desc">Mestre do combate corpo a corpo. Usa armadura pesada e defesa.</div>
+    <div class="cls-equip">
+      <div class="eq-icon">🗡️</div><div class="eq-icon">🛡️</div>
+      <div class="eq-icon">🔰</div><div class="eq-icon">⛑️</div>
     </div>
-    <div class="class-icon">&#9876;</div>
-    <div class="class-name">GUERREIRO</div>
-    <div class="class-role">WARRIOR</div>
   </div>
-  <div class="sprite-card">
-    <div class="sprite-canvas-wrap">
-      <canvas id="c-mago" width="24" height="43" style="width:96px;height:172px"></canvas>
+  <div class="cls-card" onclick="selectClass(this,'mago')">
+    <div class="cls-canvas-wrap"><canvas id="s-mago" width="36" height="48" style="width:108px;height:144px"></canvas></div>
+    <div class="cls-name">MAGO</div>
+    <div class="cls-desc">Manipula o arcano com maestria. Baixa defesa, poder absurdo.</div>
+    <div class="cls-equip">
+      <div class="eq-icon">🪄</div><div class="eq-icon">📖</div>
+      <div class="eq-icon">🧣</div><div class="eq-icon">💍</div>
     </div>
-    <div class="class-icon">&#128302;</div>
-    <div class="class-name">MAGO</div>
-    <div class="class-role">MAGE</div>
   </div>
-  <div class="sprite-card">
-    <div class="sprite-canvas-wrap">
-      <canvas id="c-ladino" width="24" height="43" style="width:96px;height:172px"></canvas>
+  <div class="cls-card" onclick="selectClass(this,'ladino')">
+    <div class="cls-canvas-wrap"><canvas id="s-ladino" width="36" height="48" style="width:108px;height:144px"></canvas></div>
+    <div class="cls-name">LADINO</div>
+    <div class="cls-desc">Ágil e furtivo. Golpes críticos e venenos são sua assinatura.</div>
+    <div class="cls-equip">
+      <div class="eq-icon">🗡️</div><div class="eq-icon">🗡️</div>
+      <div class="eq-icon">🧥</div><div class="eq-icon">🥾</div>
     </div>
-    <div class="class-icon">&#128329;</div>
-    <div class="class-name">LADINO</div>
-    <div class="class-role">ROGUE</div>
   </div>
-  <div class="sprite-card">
-    <div class="sprite-canvas-wrap">
-      <canvas id="c-clerigo" width="24" height="43" style="width:96px;height:172px"></canvas>
+  <div class="cls-card" onclick="selectClass(this,'clerigo')">
+    <div class="cls-canvas-wrap"><canvas id="s-clerigo" width="36" height="48" style="width:108px;height:144px"></canvas></div>
+    <div class="cls-name">CLÉRIGO</div>
+    <div class="cls-desc">Mantém o grupo com fé com curas e proteção divina.</div>
+    <div class="cls-equip">
+      <div class="eq-icon">🔨</div><div class="eq-icon">🛡️</div>
+      <div class="eq-icon">👘</div><div class="eq-icon">✨</div>
     </div>
-    <div class="class-icon">&#10024;</div>
-    <div class="class-name">CLERIGO</div>
-    <div class="class-role">CLERIC</div>
   </div>
-  <div class="sprite-card">
-    <div class="sprite-canvas-wrap">
-      <canvas id="c-barbaro" width="24" height="43" style="width:96px;height:172px"></canvas>
+  <div class="cls-card" onclick="selectClass(this,'barbaro')">
+    <div class="cls-canvas-wrap"><canvas id="s-barbaro" width="36" height="48" style="width:108px;height:144px"></canvas></div>
+    <div class="cls-name">BÁRBARO</div>
+    <div class="cls-desc">Força bruta e fúria incontrolável. Entra em frenesi no combate.</div>
+    <div class="cls-equip">
+      <div class="eq-icon">🪓</div><div class="eq-icon">🪓</div>
+      <div class="eq-icon">🦺</div><div class="eq-icon">💀</div>
     </div>
-    <div class="class-icon">&#129683;</div>
-    <div class="class-name">BARBARO</div>
-    <div class="class-role">BARBARIAN</div>
   </div>
-  <div class="sprite-card">
-    <div class="sprite-canvas-wrap">
-      <canvas id="c-arqueiro" width="24" height="43" style="width:96px;height:172px"></canvas>
+  <div class="cls-card" onclick="selectClass(this,'arqueiro')">
+    <div class="cls-canvas-wrap"><canvas id="s-arqueiro" width="36" height="48" style="width:108px;height:144px"></canvas></div>
+    <div class="cls-name">ARQUEIRO</div>
+    <div class="cls-desc">Mira precisa e conhecimento da natureza. Alto alcance e crítico.</div>
+    <div class="cls-equip">
+      <div class="eq-icon">🏹</div><div class="eq-icon">🔪</div>
+      <div class="eq-icon">🧥</div><div class="eq-icon">🪶</div>
     </div>
-    <div class="class-icon">&#127993;</div>
-    <div class="class-name">ARQUEIRO</div>
-    <div class="class-role">RANGER</div>
   </div>
 </div>
 
-<div class="mock-section">
-  <h2>-- COMO FICARIA NA FICHA --</h2>
-  <div class="mock-sheet">
-    <div class="fc-header">
-      <div class="fc-avatar-area">
-        <canvas id="c-sheet" width="24" height="43" style="width:72px;height:129px;image-rendering:pixelated;image-rendering:crisp-edges"></canvas>
-      </div>
-      <div class="fc-info">
-        <div class="char-name">Febre</div>
-        <div class="char-class">Guerreiro - Nivel 4</div>
-        <div class="char-level">1.250 XP ate o proximo nivel</div>
-        <div class="fc-stats">
-          <div class="stat-pill"><div class="sv">15</div><div class="sl">ATK</div></div>
-          <div class="stat-pill"><div class="sv">17</div><div class="sl">DEF</div></div>
-          <div class="stat-pill"><div class="sv">12</div><div class="sl">SPD</div></div>
+<!-- CHARACTER SHEET -->
+<div class="sheet-panel">
+  <div class="sheet-top">
+    <div class="sheet-sprite-col">
+      <canvas id="s-sheet" width="36" height="48" style="width:90px;height:120px"></canvas>
+    </div>
+    <div class="sheet-info">
+      <div class="sheet-char-name" id="sh-name">FEBRE</div>
+      <div class="sheet-class-line" id="sh-class">GUERREIRO &nbsp;—&nbsp; NÍVEL 1</div>
+      <div class="bars-block">
+        <div class="bar-row">
+          <span class="bar-lbl">HP</span>
+          <div class="bar-track"><div class="bar-fill bar-hp" id="sh-hp-bar" style="width:79%"></div></div>
+          <span class="bar-val" id="sh-hp-val">95 / 120</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-lbl">SP</span>
+          <div class="bar-track"><div class="bar-fill bar-sp" id="sh-sp-bar" style="width:67%"></div></div>
+          <span class="bar-val" id="sh-sp-val">40 / 60</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-lbl">XP</span>
+          <div class="bar-track"><div class="bar-fill bar-xp" id="sh-xp-bar" style="width:34%"></div></div>
+          <span class="bar-val" id="sh-xp-val">245 / 700</span>
         </div>
       </div>
     </div>
-    <div class="fc-body">
-      <div class="bar-row">
-        <span class="bar-label">HP</span>
-        <div class="bar-track"><div class="bar-fill-hp" style="width:72%"></div></div>
-        <span class="bar-val">87 / 120</span>
-      </div>
-      <div class="bar-row">
-        <span class="bar-label">SP</span>
-        <div class="bar-track"><div class="bar-fill-sp" style="width:100%"></div></div>
-        <span class="bar-val">60 / 60</span>
-      </div>
+    <div class="sheet-stats-col">
+      <div class="stat-box"><div class="stat-val" id="sh-atk">21</div><div class="stat-lbl">ATK</div></div>
+      <div class="stat-box"><div class="stat-val" id="sh-def">17</div><div class="stat-lbl">DEF</div></div>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="sheet-equip">
+    <span class="sheet-equip-lbl">EQUIP</span>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <div class="eq-slot" id="sh-eq1">🗡️<span class="slot-lbl">ARMA</span></div>
+      <div class="eq-slot" id="sh-eq2">🛡️<span class="slot-lbl">ESCUDO</span></div>
+      <div class="eq-slot" id="sh-eq3">🔰<span class="slot-lbl">ARMAD.</span></div>
+      <div class="eq-slot" id="sh-eq4">⛑️<span class="slot-lbl">ELMO</span></div>
+      <div class="eq-slot empty"><span class="slot-lbl">ANEL</span></div>
+      <div class="eq-slot empty"><span class="slot-lbl">BOTAS</span></div>
     </div>
   </div>
 </div>
 
 <script>
-// pixel helpers
-function px(c,x,y,col)        { c.fillStyle=col; c.fillRect(x,y,1,1); }
-function row(c,x1,x2,y,col)   { c.fillStyle=col; c.fillRect(x1,y,x2-x1+1,1); }
-function col(c,x,y1,y2,col)   { c.fillStyle=col; c.fillRect(x,y1,1,y2-y1+1); }
-function blk(c,x1,y1,x2,y2,col){ c.fillStyle=col; c.fillRect(x1,y1,x2-x1+1,y2-y1+1); }
+// ── pixel helpers ──────────────────────────────────────────────────────────────
+function px(c,x,y,cl)          {c.fillStyle=cl;c.fillRect(x,y,1,1)}
+function row(c,x1,x2,y,cl)     {c.fillStyle=cl;c.fillRect(x1,y,x2-x1+1,1)}
+function col(c,x,y1,y2,cl)     {c.fillStyle=cl;c.fillRect(x,y1,1,y2-y1+1)}
+function blk(c,x1,y1,x2,y2,cl) {c.fillStyle=cl;c.fillRect(x1,y1,x2-x1+1,y2-y1+1)}
 
-// GUERREIRO -- steel plate + red plume + kite shield + broadsword
+// ── GUERREIRO — plate armor, plumed helm, sword + kite shield ─────────────────
 function drawGuerreiro(c) {
   // plume
-  col(c,11,0,1,'#cc2222'); col(c,12,0,0,'#ff4444'); col(c,10,1,1,'#aa1111');
-  // helmet
-  row(c,8,15,1,'#8a9ba8'); row(c,8,15,2,'#9aadb8'); row(c,8,15,3,'#8a9ba8');
-  row(c,8,15,4,'#7a8b96');
-  blk(c,7,1,7,4,'#7a8b96'); blk(c,16,1,16,4,'#7a8b96');
-  // helmet highlight
-  row(c,9,13,1,'#c0d0db');
+  col(c,17,0,2,'#dd2222');col(c,18,0,1,'#ff4444');col(c,16,1,2,'#aa1111');
+  // helmet top
+  row(c,13,21,2,'#8090a0');row(c,12,22,3,'#909fac');row(c,12,22,4,'#8090a0');
+  // helmet side
+  blk(c,11,3,11,6,'#707f8c');blk(c,22,3,22,6,'#606e7a');
   // visor
-  blk(c,8,2,15,3,'#1c2830'); row(c,9,14,2,'#2a3a45');
-  // chin guard
-  row(c,8,15,4,'#6a7b86');
-  // neck/face sides
-  blk(c,9,5,14,6,'#e8b890');
+  blk(c,12,4,21,5,'#182028');row(c,13,20,4,'#243040');
+  // chin + neck
+  row(c,12,21,6,'#707f8c');blk(c,14,7,19,8,'#e0b080');
+  // helmet highlights
+  row(c,14,18,2,'#b8cad8');row(c,13,15,3,'#a0b5c0');
+  px(c,11,4,'#8090a0');px(c,22,5,'#505e6a');
 
   // pauldrons
-  blk(c,4,6,6,9,'#7a8b96'); blk(c,17,6,19,9,'#7a8b96');
-  px(c,5,6,'#b0c0cc'); px(c,17,6,'#b0c0cc');
-  px(c,4,8,'#5a6b76'); px(c,19,8,'#5a6b76');
+  blk(c,8,8,11,12,'#7080a0');blk(c,22,8,25,12,'#6070a0');
+  row(c,9,10,8,'#a0b8cc');row(c,22,23,8,'#8090a0');
+  px(c,8,10,'#506080');px(c,25,11,'#404f60');
 
-  // chest
-  blk(c,7,6,16,16,'#8a9ba8');
-  row(c,8,15,6,'#b0c0cc'); col(c,7,7,15,'#a0b0bc'); col(c,16,7,15,'#5a6b76');
-  col(c,11,7,15,'#5a6b76'); col(c,12,7,15,'#5a6b76'); // center seam
-  row(c,7,16,16,'#6a7b86');
-
+  // chest plate
+  blk(c,11,8,22,19,'#8090a0');
+  row(c,12,21,8,'#a8b8cc');col(c,11,9,18,'#9aaabb');col(c,22,9,18,'#5a6878');
+  // center groove
+  col(c,16,9,18,'#505e70');col(c,17,9,18,'#505e70');
+  // pectoral details
+  row(c,12,15,10,'#9aaabb');row(c,18,21,10,'#9aaabb');
+  // lower shadow
+  row(c,11,22,19,'#606e80');
   // belt
-  blk(c,7,16,16,17,'#2c1e12');
-  row(c,8,15,17,'#504030'); px(c,11,16,'#c0a020'); px(c,12,16,'#c0a020');
+  blk(c,11,19,22,20,'#281e10');row(c,12,21,20,'#504030');
+  px(c,16,19,'#c0a020');px(c,17,19,'#c0a020');
 
   // arms
-  blk(c,4,9,6,17,'#7a8b96'); col(c,5,10,16,'#9aadb8');
-  blk(c,17,9,19,17,'#7a8b96'); col(c,17,10,16,'#9aadb8');
+  blk(c,8,12,10,20,'#7080a0');col(c,9,13,19,'#8090aa');
+  blk(c,23,12,25,20,'#6070a0');col(c,23,13,19,'#7080aa');
   // gauntlets
-  blk(c,4,17,6,19,'#3a4a55'); row(c,4,6,18,'#4a5a65');
-  blk(c,17,17,19,19,'#3a4a55'); row(c,17,19,18,'#4a5a65');
+  blk(c,8,20,10,22,'#38485a');row(c,8,10,21,'#485868');
+  blk(c,23,20,25,22,'#38485a');row(c,23,25,21,'#485868');
 
-  // kite shield (left)
-  blk(c,0,9,4,20,'#8b0000');
-  col(c,1,10,19,'#cc2222'); col(c,0,9,20,'#6a0000');
-  row(c,0,4,9,'#c0a020'); row(c,0,4,20,'#c0a020');
-  blk(c,1,13,3,14,'#c0a020'); px(c,2,13,'#ffe060');
+  // kite shield
+  blk(c,3,10,8,22,'#8b0000');
+  col(c,4,11,21,'#bb2222');col(c,3,10,22,'#600000');
+  row(c,3,8,10,'#c09010');row(c,3,8,22,'#c09010');
+  col(c,3,10,22,'#c09010');
+  blk(c,5,15,6,16,'#c09010');px(c,5,15,'#ffe040');
+  row(c,4,7,15,'#d0a020'); // shield cross
+  col(c,5,11,21,'#d0a020');
 
-  // sword (right)
-  blk(c,20,3,21,14,'#d8e0e8'); col(c,20,4,13,'#a8b0b8'); col(c,21,4,13,'#eef4fc');
-  px(c,20,3,'#ffffff');
-  blk(c,19,10,23,11,'#c0a020'); px(c,19,10,'#e8c030'); px(c,23,10,'#e8c030');
-  blk(c,20,11,21,14,'#5a2e10'); col(c,20,12,13,'#7a4e30');
-  blk(c,20,14,21,15,'#c0a020');
+  // sword
+  blk(c,26,5,27,16,'#d0dce8');col(c,26,6,15,'#b0bcc8');col(c,27,6,15,'#eaf4ff');
+  px(c,26,5,'#ffffff');
+  blk(c,25,12,29,13,'#c09010');px(c,25,12,'#e8c030');px(c,29,12,'#e8c030');
+  blk(c,26,13,27,16,'#5a2e10');col(c,26,14,15,'#7a4e30');
+  blk(c,26,16,27,17,'#c09010');
 
   // red tabard
-  blk(c,9,17,14,26,'#8b0000');
-  col(c,10,18,25,'#aa1111'); col(c,13,18,25,'#6a0000');
-  row(c,9,14,26,'#6a0000');
+  blk(c,14,20,19,30,'#800000');
+  col(c,15,21,29,'#aa1111');col(c,18,21,29,'#600000');
+  row(c,14,19,30,'#600000');
 
   // legs
-  blk(c,6,17,9,28,'#8a9ba8'); col(c,7,18,27,'#b0c0cc');
-  blk(c,6,22,9,23,'#6a7b86'); px(c,7,22,'#c0d0db');
-  blk(c,14,17,17,28,'#8a9ba8'); col(c,14,18,27,'#b0c0cc');
-  blk(c,14,22,17,23,'#6a7b86'); px(c,14,22,'#c0d0db');
+  blk(c,11,20,14,32,'#7a8a9a');col(c,12,21,31,'#9aaabb');
+  blk(c,11,25,14,26,'#606e80');px(c,12,25,'#b0c0cc');
+  blk(c,19,20,22,32,'#7a8a9a');col(c,19,21,31,'#9aaabb');
+  blk(c,19,25,22,26,'#606e80');px(c,19,25,'#b0c0cc');
 
   // boots
-  blk(c,5,28,9,33,'#221810'); row(c,6,8,28,'#3a2818');
-  blk(c,14,28,18,33,'#221810'); row(c,15,17,28,'#3a2818');
-  blk(c,4,32,9,42,'#181008'); row(c,5,8,33,'#2a1c10');
-  blk(c,13,32,19,42,'#181008'); row(c,14,18,33,'#2a1c10');
+  blk(c,10,32,14,37,'#201810');blk(c,19,32,23,37,'#201810');
+  row(c,11,13,32,'#302820');row(c,20,22,32,'#302820');
+  blk(c,9,36,14,47,'#141008');blk(c,18,36,24,47,'#141008');
+  row(c,10,13,37,'#201808');row(c,19,23,37,'#201808');
 }
 
-// MAGO -- tall hat + flowing robes + orb staff
+// ── MAGO — tall hat, starry robes, glowing orb staff ──────────────────────────
 function drawMago(c) {
   // pointed hat
-  px(c,11,0,'#3a1a6a'); blk(c,10,1,12,1,'#4a2a7a');
-  blk(c,9,2,13,2,'#5a3a8a'); blk(c,8,3,14,3,'#4a2a7a');
-  blk(c,7,4,16,5,'#3a1a6a');
-  row(c,8,15,4,'#6a4aaa'); row(c,8,15,5,'#2a0a5a');
-  px(c,11,2,'#e0c050'); // star
+  px(c,16,0,'#3a1860');blk(c,15,1,17,1,'#4a2878');blk(c,13,2,19,2,'#3a1860');
+  blk(c,12,3,20,3,'#4a2878');blk(c,11,4,21,5,'#3a1860');
+  row(c,12,20,4,'#6a40a8');row(c,12,20,5,'#2e0e50');
+  px(c,16,2,'#e0c040');px(c,15,3,'#c0a020');px(c,17,3,'#c0a020');
   // face
-  blk(c,8,5,15,9,'#e8b890'); row(c,9,14,5,'#f0c8a0');
-  // eyes + brows
-  px(c,10,7,'#1a1020'); px(c,13,7,'#1a1020');
-  row(c,9,11,6,'#8888a0'); row(c,12,14,6,'#8888a0');
-  // beard
-  blk(c,8,8,15,10,'#d0d0d0'); row(c,9,14,8,'#e8e8e8');
-  // robe body wide
-  blk(c,5,9,18,22,'#4a2a7a');
-  col(c,6,10,21,'#6a4aaa'); col(c,17,10,21,'#2a0a5a');
-  row(c,6,17,9,'#6a4aaa');
-  // robe stars
-  px(c,9,12,'#e0c050'); px(c,14,15,'#e0c050');
-  px(c,8,18,'#c0a030'); px(c,15,11,'#c0a030');
+  blk(c,12,5,20,9,'#e8b888');row(c,13,19,5,'#f0c898');
+  px(c,14,7,'#1a0820');px(c,18,7,'#1a0820');
+  row(c,13,15,6,'#888898');row(c,17,19,6,'#888898');
+  blk(c,12,8,20,10,'#d0d0c8');row(c,13,19,8,'#e8e8e0'); // beard
+  // robe
+  blk(c,9,10,23,22,'#3a1860');
+  col(c,10,11,21,'#5a38a0');col(c,22,11,21,'#280a48');
+  row(c,10,22,10,'#5a38a0');
+  // stars
+  px(c,13,13,'#e0c040');px(c,19,16,'#e0c040');
+  px(c,12,18,'#b09020');px(c,20,12,'#b09020');
   // belt
-  blk(c,6,18,17,19,'#2a0a5a'); row(c,7,16,18,'#e0c050');
-  px(c,11,18,'#fff090'); px(c,12,18,'#fff090');
+  blk(c,10,18,22,19,'#280a48');row(c,11,21,18,'#e0c040');
+  px(c,16,18,'#ffee80');px(c,15,18,'#ffee80');
   // wide sleeves
-  blk(c,2,10,5,19,'#4a2a7a'); col(c,3,11,18,'#6a4aaa');
-  blk(c,18,10,21,19,'#4a2a7a'); col(c,18,11,18,'#2a0a5a');
-  row(c,2,5,19,'#e0c050'); row(c,18,21,19,'#e0c050');
-  // hands
-  blk(c,2,19,5,21,'#e8b890'); blk(c,18,19,21,21,'#e8b890');
+  blk(c,5,11,9,20,'#3a1860');col(c,6,12,19,'#5a38a0');
+  blk(c,23,11,27,20,'#3a1860');col(c,23,12,19,'#280a48');
+  row(c,5,9,20,'#e0c040');row(c,23,27,20,'#e0c040');
+  blk(c,5,20,9,22,'#e8b888');blk(c,23,20,27,22,'#e8b888');
   // staff
-  col(c,22,4,38,'#6b3a10'); col(c,23,5,37,'#8b5a30');
+  col(c,28,6,45,'#6b3a10');col(c,29,7,44,'#8b5a30');
   // orb
-  blk(c,20,1,24,6,'#4060cc'); blk(c,21,0,23,0,'#4060cc');
-  blk(c,21,1,23,5,'#6080ee'); px(c,21,1,'#b0c8ff'); px(c,22,1,'#d0e0ff');
-  // robe lower (long)
-  blk(c,6,22,17,36,'#3a1a6a');
-  col(c,7,23,35,'#5a3a8a'); col(c,16,23,35,'#2a0a5a');
-  row(c,6,17,36,'#e0c050');
-  // feet
-  blk(c,8,36,11,42,'#221810'); blk(c,12,36,15,42,'#221810');
-  row(c,8,11,37,'#3a2818'); row(c,12,15,37,'#3a2818');
+  blk(c,25,2,29,7,'#3050cc');blk(c,26,1,28,1,'#3050cc');
+  blk(c,26,2,28,6,'#5070ee');px(c,26,2,'#a0b8ff');px(c,27,2,'#c0d4ff');
+  px(c,27,1,'#e0ecff');
+  // robe lower
+  blk(c,10,22,22,38,'#2e0e50');
+  col(c,11,23,37,'#4a2878');col(c,21,23,37,'#1e0038');
+  row(c,10,22,38,'#e0c040');
+  blk(c,12,38,16,47,'#201410');blk(c,17,38,21,47,'#201410');
+  row(c,12,16,39,'#302018');row(c,17,21,39,'#302018');
 }
 
-// LADINO -- dark hood + leather + red eyes + dual daggers
+// ── LADINO — dark hood, red glowing eyes, twin daggers ────────────────────────
 function drawLadino(c) {
   // hood
-  blk(c,7,0,16,0,'#1a1a24'); blk(c,6,1,17,2,'#222233');
-  blk(c,6,2,17,5,'#1a1a28');
-  row(c,7,16,1,'#2e2e44');
-  col(c,6,2,5,'#111120'); col(c,17,2,5,'#111120');
+  blk(c,10,0,22,1,'#18182a');blk(c,9,1,23,3,'#20203a');
+  blk(c,9,3,23,6,'#181828');
+  row(c,10,22,1,'#2c2c48');
+  col(c,9,2,6,'#101020');col(c,23,2,6,'#101020');
   // face in shadow
-  blk(c,8,3,15,6,'#c89868'); row(c,9,14,3,'#d0a878');
-  // red eyes
-  px(c,10,4,'#ee1111'); px(c,13,4,'#ee1111');
-  px(c,10,4,'#ff4444'); px(c,13,4,'#ff4444');
-  // face shadow
-  blk(c,8,3,9,5,'#9a7050'); blk(c,14,3,15,5,'#9a7050');
+  blk(c,11,4,21,8,'#c08858');row(c,12,20,4,'#d09870');
+  // red glow eyes
+  px(c,13,5,'#ff2020');px(c,19,5,'#ff2020');
+  px(c,13,6,'#aa1010');px(c,19,6,'#aa1010');
+  // shadow from hood
+  blk(c,11,4,12,7,'#9a7050');blk(c,20,4,21,7,'#9a7050');
   // scarf
-  blk(c,7,6,16,7,'#111120'); row(c,8,15,6,'#1e1e30');
+  blk(c,10,7,22,9,'#101020');row(c,11,21,7,'#1e1e30');
+  row(c,11,21,8,'#181830');
   // neck
-  row(c,10,13,7,'#c89868');
+  row(c,13,19,9,'#c08858');
   // leather vest
-  blk(c,7,7,16,17,'#2a1e14');
-  col(c,8,8,16,'#3a2e24'); col(c,15,8,16,'#1a0e08');
-  row(c,8,15,7,'#3a2e24');
-  row(c,9,14,9,'#605040'); row(c,9,14,13,'#605040');
-  px(c,11,9,'#a08060'); px(c,12,9,'#a08060');
+  blk(c,10,9,22,19,'#281c10');
+  col(c,11,10,18,'#382c20');col(c,21,10,18,'#180c08');
+  row(c,11,21,9,'#382c20');
+  // straps
+  row(c,12,20,11,'#504030');row(c,12,20,15,'#504030');
+  px(c,15,11,'#907060');px(c,16,11,'#907060');
   // hood drape
-  blk(c,5,7,7,12,'#1a1a28'); blk(c,16,7,18,12,'#1a1a28');
+  blk(c,7,9,10,14,'#181828');blk(c,22,9,25,14,'#181828');
   // arms
-  blk(c,5,8,7,17,'#2a1e14'); col(c,6,9,16,'#3a2e24');
-  blk(c,16,8,18,17,'#2a1e14'); col(c,16,9,16,'#3a2e24');
+  blk(c,7,10,9,19,'#281c10');col(c,8,11,18,'#382c20');
+  blk(c,23,10,25,19,'#281c10');col(c,23,11,18,'#382c20');
   // bracers
-  blk(c,5,14,7,17,'#3a2818'); blk(c,16,14,18,17,'#3a2818');
-  row(c,5,7,14,'#605040'); row(c,16,18,14,'#605040');
-  row(c,5,7,17,'#605040'); row(c,16,18,17,'#605040');
-  // hands
-  blk(c,5,17,7,19,'#c89868'); blk(c,16,17,18,19,'#c89868');
+  blk(c,7,16,9,19,'#382010');blk(c,23,16,25,19,'#382010');
+  row(c,7,9,16,'#604030');row(c,23,25,16,'#604030');
+  row(c,7,9,19,'#604030');row(c,23,25,19,'#604030');
+  blk(c,7,19,9,21,'#c08858');blk(c,23,19,25,21,'#c08858');
   // dagger left
-  blk(c,1,14,2,24,'#c0c8d0'); col(c,1,14,23,'#e0e8f0');
-  blk(c,0,16,3,17,'#a08060'); blk(c,1,24,2,26,'#2a1e14');
+  blk(c,3,16,4,27,'#c0c8d8');col(c,3,16,26,'#e0e8f8');
+  blk(c,2,18,5,19,'#a08060');blk(c,3,27,4,29,'#281c10');
   // dagger right
-  blk(c,21,14,22,24,'#c0c8d0'); col(c,22,14,23,'#e0e8f0');
-  blk(c,20,16,23,17,'#a08060'); blk(c,21,24,22,26,'#2a1e14');
+  blk(c,28,16,29,27,'#c0c8d8');col(c,29,16,26,'#e0e8f8');
+  blk(c,27,18,30,19,'#a08060');blk(c,28,27,29,29,'#281c10');
   // belt
-  blk(c,7,17,16,18,'#1a1010'); row(c,8,15,17,'#504030');
-  px(c,11,17,'#807060'); px(c,12,17,'#807060');
+  blk(c,10,19,22,20,'#181010');row(c,11,21,19,'#4a3828');
+  px(c,15,19,'#807060');px(c,16,19,'#807060');
   // pants
-  blk(c,7,18,10,28,'#181820'); blk(c,13,18,16,28,'#181820');
-  col(c,8,19,27,'#201e2a'); col(c,13,19,27,'#201e2a');
+  blk(c,10,20,14,31,'#181820');blk(c,18,20,22,31,'#181820');
+  col(c,11,21,30,'#201e2a');col(c,18,21,30,'#201e2a');
   // boots
-  blk(c,6,28,11,35,'#151015'); blk(c,12,28,17,35,'#151015');
-  col(c,7,29,34,'#252025'); col(c,12,29,34,'#252025');
-  blk(c,5,34,11,42,'#0e0a0e'); blk(c,12,34,18,42,'#0e0a0e');
+  blk(c,9,31,14,37,'#151015');blk(c,18,31,23,37,'#151015');
+  col(c,10,32,36,'#252025');col(c,18,32,36,'#252025');
+  blk(c,8,36,14,47,'#0e0a0e');blk(c,18,36,25,47,'#0e0a0e');
 }
 
-// CLERIGO -- white+gold robes + mitre + holy mace
+// ── CLÉRIGO — white+gold robes, mitre, holy mace ──────────────────────────────
 function drawClerigo(c) {
-  // mitre top
-  px(c,11,0,'#f0e8c0'); blk(c,10,1,13,1,'#f0e8c0');
-  blk(c,9,2,14,2,'#ece0b0'); blk(c,8,3,15,3,'#f0e8c0');
-  row(c,8,15,3,'#c0a020'); // trim
-  px(c,11,2,'#c0a020'); px(c,12,2,'#c0a020'); // cross symbol
-  px(c,11,1,'#e0c050'); px(c,11,3,'#e0c050');
-  // mitre brim
-  blk(c,7,4,16,5,'#c0a020'); row(c,8,15,4,'#e0c040');
+  // mitre
+  px(c,16,0,'#f0e8b0');blk(c,14,1,18,1,'#f0e8b0');
+  blk(c,13,2,19,2,'#e8e0a0');blk(c,12,3,20,3,'#f0e8b0');
+  row(c,12,20,3,'#c09010');
+  px(c,16,1,'#c09010');px(c,16,2,'#c09010');px(c,15,2,'#e0c050');px(c,17,2,'#e0c050');
+  blk(c,11,4,21,5,'#c09010');row(c,12,20,4,'#e0c030');
   // face
-  blk(c,8,5,15,9,'#f0c8a0'); row(c,9,14,5,'#f8d8b0');
-  px(c,10,7,'#1a1010'); px(c,13,7,'#1a1010'); // kind eyes
-  row(c,10,13,8,'#d09878'); // smile
+  blk(c,12,5,20,10,'#f0c898');row(c,13,19,5,'#f8d8a8');
+  px(c,14,7,'#1a1010');px(c,18,7,'#1a1010');
+  row(c,14,18,9,'#c09878'); // kind smile
+  row(c,13,15,6,'#c09878');row(c,17,19,6,'#c09878'); // brows gentle
   // neck
-  row(c,10,13,9,'#f0c8a0');
+  row(c,14,18,10,'#f0c898');
   // white robe
-  blk(c,6,9,17,22,'#ece8e0');
-  col(c,7,10,21,'#ffffff'); col(c,16,10,21,'#c0bbb0');
-  row(c,7,16,9,'#ffffff');
-  // gold border robe
-  row(c,6,17,9,'#c0a020'); row(c,6,17,22,'#c0a020');
-  col(c,6,9,22,'#c0a020'); col(c,17,9,22,'#c0a020');
-  // holy cross on chest
-  px(c,11,12,'#c0a020'); px(c,12,12,'#c0a020');
-  blk(c,10,13,13,16,'#c0a020');
-  px(c,11,13,'#ffe060'); px(c,12,13,'#ffe060');
+  blk(c,9,10,23,22,'#ece8de');
+  col(c,10,11,21,'#ffffff');col(c,22,11,21,'#c0bbb0');
+  row(c,10,22,10,'#ffffff');
+  // gold border
+  row(c,9,23,10,'#c09010');row(c,9,23,22,'#c09010');
+  col(c,9,10,22,'#c09010');col(c,23,10,22,'#c09010');
+  // holy cross chest
+  px(c,15,13,'#c09010');px(c,16,13,'#c09010');px(c,17,13,'#c09010');
+  blk(c,14,14,19,17,'#c09010');
+  px(c,15,14,'#ffe050');px(c,16,14,'#ffe050');px(c,17,14,'#ffe050');
   // wide sleeves
-  blk(c,3,10,6,20,'#ece8e0'); col(c,4,11,19,'#ffffff');
-  col(c,3,10,19,'#c0bbb0');
-  blk(c,17,10,20,20,'#ece8e0'); col(c,19,11,19,'#c0bbb0');
-  row(c,3,6,20,'#c0a020'); row(c,17,20,20,'#c0a020');
-  // hands
-  blk(c,3,20,6,22,'#f0c8a0'); blk(c,17,20,20,22,'#f0c8a0');
+  blk(c,5,11,9,21,'#ece8de');col(c,6,12,20,'#ffffff');col(c,5,11,20,'#c0bbb0');
+  blk(c,23,11,27,21,'#ece8de');col(c,26,12,20,'#c0bbb0');
+  row(c,5,9,21,'#c09010');row(c,23,27,21,'#c09010');
+  blk(c,5,21,9,23,'#f0c898');blk(c,23,21,27,23,'#f0c898');
   // holy mace
-  col(c,21,14,36,'#6b4520'); col(c,22,15,35,'#8b6540');
-  blk(c,19,9,23,14,'#909090');
-  row(c,19,23,9,'#c0c0c0'); blk(c,18,10,24,12,'#808080');
-  row(c,18,24,10,'#b0b0b0');
-  blk(c,20,10,22,13,'#e0e890'); px(c,20,10,'#ffffff'); px(c,21,10,'#ffffff');
+  col(c,28,17,40,'#6b4520');col(c,29,18,39,'#8b6540');
+  blk(c,25,10,30,17,'#909090');row(c,25,30,10,'#c0c0c0');
+  blk(c,24,11,31,14,'#808080');row(c,24,31,11,'#b0b0b0');
+  blk(c,26,11,29,15,'#e8ec80');px(c,26,11,'#ffffff');px(c,27,11,'#ffffff');
   // robe lower
-  blk(c,6,22,17,37,'#ddd8d0');
-  col(c,7,23,36,'#ece8e0'); col(c,16,23,36,'#b8b3a8');
-  row(c,6,17,37,'#c0a020');
-  // sandals
-  blk(c,7,38,11,42,'#c8a060'); blk(c,12,38,16,42,'#c8a060');
-  row(c,7,11,38,'#e0b878'); row(c,12,16,38,'#e0b878');
+  blk(c,9,22,23,38,'#ddd8cc');
+  col(c,10,23,37,'#ece8de');col(c,22,23,37,'#b8b3a8');
+  row(c,9,23,38,'#c09010');
+  blk(c,11,38,15,47,'#c0a050');blk(c,18,38,22,47,'#c0a050');
+  row(c,11,15,39,'#d8b870');row(c,18,22,39,'#d8b870');
 }
 
-// BARBARO -- huge build + war paint + fur + great axe
+// ── BÁRBARO — huge bulk, war paint, great axe, fur ────────────────────────────
 function drawBarbaro(c) {
   // wild red hair
-  blk(c,6,0,17,0,'#5a1010'); blk(c,5,1,18,2,'#7a2020');
-  row(c,6,17,1,'#aa3030');
-  px(c,4,1,'#7a2020'); px(c,19,1,'#5a1010');
-  // head (bigger)
-  blk(c,7,2,16,9,'#c88858'); row(c,8,15,2,'#d89868');
-  // war paint streaks
-  blk(c,7,4,9,5,'#cc1111'); blk(c,14,4,16,5,'#cc1111');
-  col(c,7,3,5,'#cc1111'); col(c,16,3,5,'#cc1111');
+  blk(c,9,0,23,1,'#5a1010');blk(c,7,1,25,2,'#7a2020');
+  row(c,9,23,1,'#aa3030');
+  px(c,6,1,'#7a2020');px(c,26,1,'#5a1010');
+  // head (bigger/wider for barbarian)
+  blk(c,9,2,23,9,'#c08848');row(c,10,22,2,'#d09858');
+  // war paint
+  blk(c,9,4,11,6,'#cc1111');blk(c,21,4,23,6,'#cc1111');
+  col(c,9,3,6,'#cc1111');col(c,23,3,6,'#cc1111');
   // fierce eyes
-  px(c,9,5,'#1a0808'); px(c,14,5,'#1a0808');
-  // snarl / teeth
-  row(c,10,13,8,'#8a5838');
-  blk(c,10,8,13,9,'#e8e0d0'); // teeth block
+  px(c,12,5,'#1a0808');px(c,20,5,'#1a0808');
+  row(c,11,12,4,'#601010');row(c,20,21,4,'#601010'); // heavy brows
+  // snarl
+  row(c,13,19,8,'#8a5830');
+  blk(c,13,8,19,9,'#e8e0c0');// teeth
   // thick neck
-  blk(c,9,9,14,11,'#c88858'); blk(c,7,10,8,12,'#c88858'); blk(c,15,10,16,12,'#c88858');
-  // fur cloak body
-  blk(c,5,10,18,21,'#4a3020');
-  col(c,6,11,20,'#6a5030'); col(c,17,11,20,'#3a2010');
-  row(c,6,17,10,'#6a5030');
+  blk(c,12,9,20,11,'#c08848');
+  blk(c,9,10,11,13,'#c08848');blk(c,21,10,23,13,'#c08848');
+  // fur cloak
+  blk(c,7,11,25,21,'#4a3020');
+  col(c,8,12,20,'#6a5030');col(c,24,12,20,'#3a2010');
+  row(c,8,24,11,'#6a5030');
   // fur texture
-  px(c,8,12,'#7a6040'); px(c,11,13,'#7a6040');
-  px(c,14,11,'#7a6040'); px(c,9,16,'#7a6040');
-  px(c,13,17,'#7a6040'); px(c,7,18,'#7a6040');
+  px(c,10,13,'#7a6040');px(c,14,14,'#7a6040');px(c,18,12,'#7a6040');
+  px(c,12,17,'#7a6040');px(c,16,18,'#7a6040');px(c,9,19,'#7a6040');
   // bare skin sides
-  blk(c,5,12,6,20,'#c88858'); blk(c,17,12,18,20,'#c88858');
-  // leather straps
-  row(c,6,17,14,'#2a1808'); row(c,6,17,18,'#2a1808');
-  px(c,11,14,'#706040'); px(c,12,14,'#706040');
+  blk(c,7,13,8,21,'#c08848');blk(c,24,13,25,21,'#c08848');
+  // straps
+  row(c,8,24,15,'#2a1808');row(c,8,24,19,'#2a1808');
+  px(c,15,15,'#706040');px(c,16,15,'#706040');
   // massive arms
-  blk(c,2,10,5,21,'#c88858'); col(c,3,11,20,'#d89868');
-  blk(c,18,10,21,21,'#c88858'); col(c,18,11,20,'#d89868');
-  // fists
-  blk(c,2,21,5,23,'#b87848'); blk(c,18,21,21,23,'#b87848');
-  // great axe pole
-  col(c,22,5,40,'#3a2010'); col(c,23,6,39,'#5a4030');
-  // left axe blade
-  blk(c,17,3,22,15,'#7a8290');
-  col(c,17,3,14,'#9aaab0'); col(c,22,4,14,'#4a5258');
-  row(c,17,22,3,'#a0aab2');
-  col(c,17,4,13,'#c0ccd8'); // sharp edge
-  px(c,17,3,'#e0ecf8');
-  // right axe blade
-  blk(c,22,5,27,17,'#6a7280');
-  col(c,22,6,16,'#8a9298'); col(c,27,6,16,'#404850');
-  col(c,27,7,15,'#b0bcc8'); // edge
+  blk(c,3,11,7,22,'#c08848');col(c,4,12,21,'#d09858');
+  blk(c,25,11,29,22,'#c08848');col(c,25,12,21,'#d09858');
+  blk(c,3,22,7,24,'#b07848');blk(c,25,22,29,24,'#b07848');
+  // great axe
+  col(c,30,7,44,'#3a2010');col(c,31,8,43,'#5a4030');
+  // left blade
+  blk(c,23,4,30,16,'#707888');
+  col(c,23,4,15,'#9098a0');col(c,30,5,15,'#484e58');
+  row(c,23,30,4,'#a0a8b0');col(c,23,5,14,'#c0cad8');
+  px(c,23,4,'#e0ecf8');
+  // right blade
+  blk(c,30,6,35,17,'#606870');
+  col(c,30,7,16,'#8088a0');col(c,35,7,16,'#404850');
+  col(c,35,8,15,'#b0b8c8');
   // loincloth
-  blk(c,8,21,15,27,'#2a1808');
-  col(c,9,22,26,'#3a2818'); row(c,8,15,21,'#5a4030');
-  row(c,8,15,27,'#4a3020');
-  // legs (massive)
-  blk(c,6,27,10,35,'#c88858'); col(c,7,28,34,'#d89868');
-  blk(c,13,27,17,35,'#c88858'); col(c,13,28,34,'#d89868');
-  // knee guards
-  blk(c,6,30,10,31,'#3a2010'); blk(c,13,30,17,31,'#3a2010');
+  blk(c,11,21,21,28,'#2a1808');col(c,12,22,27,'#3a2818');
+  row(c,11,21,21,'#5a4030');row(c,11,21,28,'#4a3020');
+  // legs
+  blk(c,8,28,13,37,'#c08848');col(c,9,29,36,'#d09858');
+  blk(c,19,28,24,37,'#c08848');col(c,19,29,36,'#d09858');
+  blk(c,8,31,13,32,'#3a2010');blk(c,19,31,24,32,'#3a2010');
   // fur boots
-  blk(c,5,35,11,39,'#4a3020'); blk(c,12,35,18,39,'#4a3020');
-  row(c,5,11,35,'#6a5030'); row(c,12,18,35,'#6a5030');
-  blk(c,4,38,11,42,'#2a1808'); blk(c,12,38,19,42,'#2a1808');
+  blk(c,7,37,13,41,'#4a3020');blk(c,19,37,25,41,'#4a3020');
+  row(c,7,13,37,'#6a5030');row(c,19,25,37,'#6a5030');
+  blk(c,6,40,14,47,'#2a1808');blk(c,18,40,26,47,'#2a1808');
 }
 
-// ARQUEIRO -- green hood + leather + longbow + quiver
+// ── ARQUEIRO — ranger hood, longbow, quiver ───────────────────────────────────
 function drawArqueiro(c) {
   // green hood
-  blk(c,8,0,15,0,'#2a4a18'); blk(c,7,1,16,2,'#3a5a28');
-  blk(c,6,2,17,4,'#2a4a18'); row(c,7,16,1,'#4a6a38');
-  col(c,6,2,4,'#1a3a08'); col(c,17,2,4,'#1a3a08');
-  blk(c,6,3,8,5,'#1a3a08'); blk(c,15,3,17,5,'#1a3a08');
+  blk(c,11,0,21,0,'#284818');blk(c,10,1,22,2,'#385828');
+  blk(c,9,2,23,4,'#284818');row(c,10,22,1,'#486838');
+  col(c,9,2,4,'#182808');col(c,23,2,4,'#182808');
+  blk(c,9,3,11,5,'#182808');blk(c,21,3,23,5,'#182808');
   // face
-  blk(c,9,3,14,7,'#d0a070'); row(c,10,13,3,'#e0b080');
-  px(c,10,5,'#101808'); px(c,13,5,'#101808'); // focused eyes
-  row(c,10,11,4,'#503020'); row(c,12,13,4,'#503020'); // brows
-  row(c,10,13,7,'#b07050');
-  row(c,10,13,7,'#c08060'); // mouth
+  blk(c,11,4,21,8,'#c89858');row(c,12,20,4,'#d8a868');
+  px(c,13,6,'#101808');px(c,19,6,'#101808');
+  row(c,12,14,5,'#503020');row(c,18,20,5,'#503020');
+  row(c,13,19,8,'#b07050');
   // neck
-  row(c,10,13,8,'#d0a070');
+  row(c,13,19,8,'#c89858');
   // leather vest
-  blk(c,7,8,16,18,'#3a2818');
-  col(c,8,9,17,'#4a3828'); col(c,15,9,17,'#2a1808');
-  row(c,8,15,8,'#4a3828');
-  row(c,9,14,10,'#604030'); row(c,9,14,14,'#604030');
+  blk(c,10,9,22,19,'#382818');
+  col(c,11,10,18,'#483828');col(c,21,10,18,'#281808');
+  row(c,11,21,9,'#483828');
+  row(c,12,20,11,'#5a3828');row(c,12,20,15,'#5a3828');
   // hood drape
-  blk(c,5,7,7,12,'#2a4a18'); blk(c,16,7,18,12,'#2a4a18');
+  blk(c,7,8,10,14,'#284818');blk(c,22,8,25,14,'#284818');
   // arms
-  blk(c,5,9,7,18,'#3a2818'); col(c,6,10,17,'#4a3828');
-  blk(c,16,9,18,18,'#3a2818'); col(c,16,10,17,'#4a3828');
+  blk(c,7,10,9,19,'#382818');col(c,8,11,18,'#483828');
+  blk(c,23,10,25,19,'#382818');col(c,23,11,18,'#483828');
   // bracers
-  blk(c,5,14,7,18,'#504030'); blk(c,16,14,18,18,'#504030');
-  row(c,5,7,14,'#706050'); row(c,16,18,14,'#706050');
-  row(c,5,7,17,'#706050'); row(c,16,18,17,'#706050');
-  // hands
-  blk(c,5,18,7,20,'#d0a070'); blk(c,16,18,18,20,'#d0a070');
+  blk(c,7,15,9,19,'#484030');blk(c,23,15,25,19,'#484030');
+  row(c,7,9,15,'#605848');row(c,23,25,15,'#605848');
+  row(c,7,9,19,'#605848');row(c,23,25,19,'#605848');
+  blk(c,7,19,9,21,'#c89858');blk(c,23,19,25,21,'#c89858');
   // longbow
-  col(c,2,3,40,'#6b4520'); col(c,3,4,39,'#8b6540');
-  blk(c,0,3,2,6,'#5a3010'); blk(c,0,37,2,40,'#5a3010');
-  col(c,1,3,40,'#e0d8c0'); // bowstring
+  col(c,3,3,44,'#6b4520');col(c,4,4,43,'#8b6540');
+  blk(c,1,3,3,7,'#5a3010');blk(c,1,41,3,45,'#5a3010');
+  col(c,2,3,45,'#e0d8c0');
   // quiver
-  blk(c,17,8,20,22,'#5a3820'); col(c,18,9,21,'#7a5840'); row(c,17,20,8,'#7a5840');
-  col(c,17,6,9,'#8b6540'); col(c,18,5,8,'#8b6540'); col(c,19,7,9,'#8b6540');
-  px(c,17,6,'#d04020'); px(c,18,5,'#d04020'); px(c,19,7,'#d04020');
+  blk(c,23,9,27,23,'#5a3820');col(c,24,10,22,'#7a5840');
+  row(c,23,27,9,'#7a5840');
+  col(c,23,7,10,'#8b6540');col(c,24,6,9,'#8b6540');col(c,25,8,10,'#8b6540');
+  px(c,23,7,'#d04020');px(c,24,6,'#d04020');px(c,25,8,'#d04020');
   // belt + pouches
-  blk(c,7,18,16,19,'#2a1808'); row(c,8,15,18,'#504030');
-  blk(c,8,18,10,21,'#3a2818'); blk(c,13,18,15,21,'#3a2818');
+  blk(c,10,19,22,20,'#281808');row(c,11,21,19,'#484030');
+  blk(c,11,19,13,22,'#382818');blk(c,20,19,22,22,'#382818');
   // pants
-  blk(c,7,19,10,29,'#2a3818'); blk(c,13,19,16,29,'#2a3818');
-  col(c,8,20,28,'#3a4828'); col(c,13,20,28,'#3a4828');
-  // knee guards
-  blk(c,7,23,10,25,'#3a2818'); blk(c,13,23,16,25,'#3a2818');
+  blk(c,10,20,14,31,'#283818');blk(c,18,20,22,31,'#283818');
+  col(c,11,21,30,'#384828');col(c,18,21,30,'#384828');
+  blk(c,10,24,14,26,'#382818');blk(c,18,24,22,26,'#382818');
   // boots
-  blk(c,6,29,11,36,'#2a1808'); blk(c,12,29,17,36,'#2a1808');
-  col(c,7,30,35,'#3a2818'); col(c,12,30,35,'#3a2818');
-  blk(c,5,35,11,42,'#1a1008'); blk(c,12,35,18,42,'#1a1008');
-  row(c,6,10,36,'#2a1808'); row(c,13,17,36,'#2a1808');
+  blk(c,9,31,14,37,'#281808');blk(c,18,31,23,37,'#281808');
+  col(c,10,32,36,'#382818');col(c,18,32,36,'#382818');
+  blk(c,8,36,14,47,'#181008');blk(c,18,36,24,47,'#181008');
 }
 
-// render all -- static, no animation
-const sprites = [
-  ['c-guerreiro', drawGuerreiro],
-  ['c-mago',      drawMago],
-  ['c-ladino',    drawLadino],
-  ['c-clerigo',   drawClerigo],
-  ['c-barbaro',   drawBarbaro],
-  ['c-arqueiro',  drawArqueiro],
-  ['c-sheet',     drawGuerreiro],
-];
-sprites.forEach(([id, fn]) => {
-  const canvas = document.getElementById(id);
-  if (!canvas) return;
-  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-  fn(canvas.getContext('2d'));
-});
+// ── class data ────────────────────────────────────────────────────────────────
+const CLASS_DATA = {
+  guerreiro:{ fn:drawGuerreiro, name:'GUERREIRO', label:'Guerreiro — Nível 1',
+    atk:21,def:17, hp:[95,120], sp:[40,60], xp:[245,700],
+    equip:['🗡️','🛡️','🔰','⛑️'] },
+  mago:     { fn:drawMago,      name:'MAGO',      label:'Mago — Nível 1',
+    atk:14,def:6,  hp:[50,60],  sp:[100,120],xp:[180,700],
+    equip:['🪄','📖','🧣','💍'] },
+  ladino:   { fn:drawLadino,    name:'LADINO',    label:'Ladino — Nível 1',
+    atk:18,def:10, hp:[70,80],  sp:[60,70],  xp:[310,700],
+    equip:['🗡️','🗡️','🧥','🥾'] },
+  clerigo:  { fn:drawClerigo,   name:'CLÉRIGO',   label:'Clérigo — Nível 1',
+    atk:12,def:14, hp:[80,100], sp:[90,100], xp:[200,700],
+    equip:['🔨','🛡️','👘','✨'] },
+  barbaro:  { fn:drawBarbaro,   name:'BÁRBARO',   label:'Bárbaro — Nível 1',
+    atk:26,def:9,  hp:[110,130],sp:[30,40],  xp:[150,700],
+    equip:['🪓','🪓','🦺','💀'] },
+  arqueiro: { fn:drawArqueiro,  name:'ARQUEIRO',  label:'Arqueiro — Nível 1',
+    atk:19,def:8,  hp:[75,90],  sp:[50,60],  xp:[270,700],
+    equip:['🏹','🔪','🧥','🪶'] },
+};
+
+function renderSprite(id, fn) {
+  const cv = document.getElementById(id);
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  fn(ctx);
+}
+
+// render all cards
+Object.entries(CLASS_DATA).forEach(([k,d]) => renderSprite('s-'+k, d.fn));
+renderSprite('s-sheet', CLASS_DATA.guerreiro.fn);
+
+// card selection
+function selectClass(el, cls) {
+  document.querySelectorAll('.cls-card').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  const d = CLASS_DATA[cls];
+  // sheet sprite
+  renderSprite('s-sheet', d.fn);
+  // texts
+  document.getElementById('sh-name').textContent = 'FEBRE';
+  document.getElementById('sh-class').textContent = d.label;
+  document.getElementById('sh-atk').textContent = d.atk;
+  document.getElementById('sh-def').textContent = d.def;
+  // bars
+  const [hp,hpM]=d.hp, [sp,spM]=d.sp, [xp,xpM]=d.xp;
+  document.getElementById('sh-hp-bar').style.width=Math.round(hp/hpM*100)+'%';
+  document.getElementById('sh-sp-bar').style.width=Math.round(sp/spM*100)+'%';
+  document.getElementById('sh-xp-bar').style.width=Math.round(xp/xpM*100)+'%';
+  document.getElementById('sh-hp-val').textContent=hp+' / '+hpM;
+  document.getElementById('sh-sp-val').textContent=sp+' / '+spM;
+  document.getElementById('sh-xp-val').textContent=xp+' / '+xpM;
+  // equip
+  ['sh-eq1','sh-eq2','sh-eq3','sh-eq4'].forEach((id,i)=>{
+    const el=document.getElementById(id);
+    el.textContent=d.equip[i];
+    el.appendChild(Object.assign(document.createElement('span'),{className:'slot-lbl',textContent:['ARMA','ESCUDO','ARMAD.','ELMO'][i]}));
+  });
+}
 </script>
 </body>
 </html>
