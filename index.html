@@ -1502,31 +1502,60 @@ window.toggleVoz = function() {
   voiceEnabled = !voiceEnabled;
   localStorage.setItem('rpg_voice', voiceEnabled ? '1' : '0');
   updateVoiceBtn();
-  if (!voiceEnabled && _currentAudio) { _currentAudio.pause(); _currentAudio = null; }
+  if (!voiceEnabled) {
+    if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
+    if (window.speechSynthesis) speechSynthesis.cancel();
+  }
   toast(voiceEnabled ? '🔊 Narração ativada' : '🔇 Narração desativada', 2000);
 };
 
+function _narrarWebSpeech(limpo) {
+  if (!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(limpo);
+  const voices = speechSynthesis.getVoices();
+  const voz = voices.find(v => v.lang.startsWith('pt')) || voices.find(v => v.lang.startsWith('es')) || null;
+  if (voz) utt.voice = voz;
+  utt.rate = 0.88; utt.pitch = 0.75;
+  speechSynthesis.speak(utt);
+}
+
 async function narrarTexto(texto) {
   if (!voiceEnabled) return;
-  const apiKey = getApiKey();
-  if (!apiKey) return;
-  const limpo = texto.replace(/<[^>]+>/g,'').replace(/[*#_`]/g,'').replace(/\s+/g,' ').trim();
+  const limpo = texto.replace(/<[^>]+>/g,'').replace(/[*#_`~]/g,'').replace(/\s+/g,' ').trim().substring(0, 800);
   if (!limpo) return;
+
+  // Cancel previous
   if (_currentAudio) { _currentAudio.pause(); URL.revokeObjectURL(_currentAudio._url||''); _currentAudio = null; }
+  if (window.speechSynthesis) speechSynthesis.cancel();
+
+  const apiKey = getApiKey();
+  if (!apiKey) { _narrarWebSpeech(limpo); return; }
+
   try {
     const res = await fetch('https://api.groq.com/openai/v1/audio/speech', {
       method: 'POST',
       headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
-      body: JSON.stringify({ model:'playai-tts', input: limpo.substring(0,800), voice:'Fritz-PlayAI', response_format:'wav' })
+      body: JSON.stringify({ model:'playai-tts', input: limpo, voice:'Fritz-PlayAI', response_format:'mp3' })
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      const errBody = await res.text().catch(()=>'');
+      console.warn('Groq TTS erro', res.status, errBody);
+      _narrarWebSpeech(limpo);
+      return;
+    }
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
-    _currentAudio = new Audio(url);
-    _currentAudio._url = url;
-    _currentAudio.play();
-    _currentAudio.onended = () => { URL.revokeObjectURL(url); _currentAudio = null; };
-  } catch(e) {}
+    const audio = new Audio(url);
+    audio._url = url;
+    _currentAudio = audio;
+    audio.onended = () => { URL.revokeObjectURL(url); _currentAudio = null; };
+    const p = audio.play();
+    if (p) p.catch(e => { console.warn('Audio play bloqueado:', e); _narrarWebSpeech(limpo); });
+  } catch(e) {
+    console.warn('TTS exception:', e);
+    _narrarWebSpeech(limpo);
+  }
 }
 
 function getApiKey() { return localStorage.getItem('rpg_groq_key') || ''; }
