@@ -79,6 +79,106 @@
     .classe-card .cd{font-size:10px;color:var(--text2);margin-top:1px;line-height:1.3}
     .classe-card .cs{font-size:10px;color:var(--text3);margin-top:2px}
 
+    /* ── TELA CRIAÇÃO DE PERSONAGEM ── */
+    #screen-char-creation{
+      align-items:center;justify-content:center;padding:16px;
+      background:radial-gradient(ellipse at 50% 30%,#2a1a08 0%,#0d0905 70%);
+      overflow-y:auto;
+    }
+    .cc-box{width:100%;max-width:480px;display:flex;flex-direction:column;gap:14px}
+    .cc-step{display:none;flex-direction:column;gap:14px}
+    .cc-step.active{display:flex}
+    .cc-step-title{
+      font-size:11px;color:var(--text2);letter-spacing:3px;text-align:center;
+      padding-bottom:8px;border-bottom:1px solid var(--border);
+    }
+    /* Progress dots */
+    .cc-progress{
+      display:flex;align-items:center;justify-content:center;gap:0;
+      padding:4px 0;
+    }
+    .cc-dot{
+      width:28px;height:28px;border-radius:50%;
+      border:2px solid var(--border);
+      background:var(--bg);color:var(--text3);
+      font-size:11px;font-weight:bold;
+      display:flex;align-items:center;justify-content:center;
+      transition:background .2s,border-color .2s,color .2s;
+    }
+    .cc-dot.done{background:var(--gold);border-color:var(--gold);color:#1a0d00}
+    .cc-dot.active{border-color:var(--gold2);color:var(--gold2)}
+    .cc-line{flex:1;height:2px;background:var(--border);max-width:40px;transition:background .2s}
+    .cc-line.done{background:var(--gold)}
+    /* Class grid in wizard */
+    .cc-class-grid{
+      display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+    }
+    .cc-class-card{
+      background:#0d0905;border:2px solid var(--border);border-radius:var(--r);
+      padding:10px 6px 8px;cursor:pointer;text-align:center;
+      transition:border-color .15s,background .15s;
+      display:flex;flex-direction:column;align-items:center;gap:4px;
+    }
+    .cc-class-card.selected{border-color:var(--gold);background:#1e1508}
+    .cc-class-card:active{opacity:.8}
+    .cc-class-card img{width:72px;height:72px;object-fit:contain;object-position:bottom;
+      filter:drop-shadow(0 2px 4px rgba(0,0,0,.8));}
+    .cc-class-card .cn{font-size:10px;font-weight:bold;color:var(--text);letter-spacing:1px}
+    .cc-class-card .cs{font-size:9px;color:var(--text3);margin-top:1px}
+    /* Gender selector */
+    .cc-gender-row{display:flex;gap:10px}
+    .cc-gender-btn{
+      flex:1;padding:14px;border:2px solid var(--border);border-radius:var(--r);
+      background:var(--bg);color:var(--text2);font-family:inherit;font-size:14px;
+      cursor:pointer;transition:border-color .15s,background .15s,color .15s;letter-spacing:1px;
+    }
+    .cc-gender-btn.active{border-color:var(--gold);background:#1e1508;color:var(--gold2)}
+    /* Sprite preview */
+    .cc-sprite-preview{
+      display:flex;align-items:flex-end;justify-content:center;
+      height:180px;
+    }
+    .cc-sprite-preview img{
+      max-height:180px;max-width:160px;object-fit:contain;object-position:bottom;
+      filter:drop-shadow(0 6px 12px rgba(0,0,0,.9));
+      transition:opacity .2s;
+    }
+    .cc-sprite-preview.sm{height:100px}
+    .cc-sprite-preview.sm img{max-height:100px;max-width:90px}
+    /* Confirm card */
+    .cc-confirm-card{
+      background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+      padding:16px;display:flex;gap:16px;align-items:center;
+    }
+    .cc-confirm-card img{
+      width:80px;height:100px;object-fit:contain;object-position:bottom;
+      filter:drop-shadow(0 4px 8px rgba(0,0,0,.9));
+    }
+    .cc-confirm-info .cn{font-size:20px;font-weight:bold;color:var(--gold);margin-bottom:4px}
+    .cc-confirm-info .cc{font-size:12px;color:var(--text2);letter-spacing:2px;margin-bottom:3px}
+    .cc-confirm-info .cs{font-size:11px;color:var(--text3)}
+    /* Nav buttons row */
+    .cc-nav{display:flex;gap:10px}
+    .cc-nav .btn{flex:1}
+    /* Entry character card */
+    .entry-char-card{
+      background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+      padding:12px;display:flex;gap:12px;align-items:center;
+    }
+    .entry-char-card img{
+      width:56px;height:64px;object-fit:contain;object-position:bottom;
+      filter:drop-shadow(0 2px 6px rgba(0,0,0,.8));flex-shrink:0;
+    }
+    .entry-char-card .ec-info{flex:1}
+    .entry-char-card .ec-nome{font-size:16px;font-weight:bold;color:var(--gold)}
+    .entry-char-card .ec-cls{font-size:10px;color:var(--text2);letter-spacing:1px;margin-top:2px}
+    .entry-char-card .ec-btn{
+      background:transparent;border:1px solid var(--border);color:var(--text3);
+      font-family:inherit;font-size:10px;letter-spacing:1px;padding:6px 8px;
+      border-radius:var(--r);cursor:pointer;white-space:nowrap;flex-shrink:0;
+    }
+    .entry-char-card .ec-btn:hover{border-color:var(--gold);color:var(--gold)}
+
     /* ── TELA LOBBY ── */
     #screen-lobby{
       align-items:center;justify-content:center;padding:20px;
@@ -587,6 +687,88 @@
 </head>
 <body>
 
+<!-- ═══════════════════ TELA: CRIAÇÃO DE PERSONAGEM ═══════════════════ -->
+<div id="screen-char-creation" class="screen">
+  <div class="cc-box">
+    <div class="entry-logo">
+      <span class="icon">⚔️</span>
+      <h1>RPG ONLINE</h1>
+      <p>CRIE SEU PERSONAGEM</p>
+    </div>
+
+    <!-- Progress indicator -->
+    <div class="cc-progress">
+      <div class="cc-dot active" id="cc-dot-1">1</div>
+      <div class="cc-line" id="cc-line-1"></div>
+      <div class="cc-dot" id="cc-dot-2">2</div>
+      <div class="cc-line" id="cc-line-2"></div>
+      <div class="cc-dot" id="cc-dot-3">3</div>
+      <div class="cc-line" id="cc-line-3"></div>
+      <div class="cc-dot" id="cc-dot-4">4</div>
+    </div>
+
+    <!-- Passo 1: Escolha de Classe -->
+    <div id="cc-step1" class="cc-step active">
+      <div class="cc-step-title">PASSO 1 — ESCOLHA SUA CLASSE</div>
+      <div class="cc-class-grid" id="cc-class-grid"></div>
+      <button class="btn btn-primary" onclick="ccNext(1)">PRÓXIMO →</button>
+    </div>
+
+    <!-- Passo 2: Escolha de Gênero -->
+    <div id="cc-step2" class="cc-step">
+      <div class="cc-step-title">PASSO 2 — ESCOLHA SEU GÊNERO</div>
+      <div class="cc-sprite-preview">
+        <img id="cc-sprite2" src="sprites/guerreiro_m.png" alt="sprite">
+      </div>
+      <div class="cc-gender-row">
+        <button id="cc-btn-m" class="cc-gender-btn active" onclick="ccSetSexo('m')">♂ MASCULINO</button>
+        <button id="cc-btn-f" class="cc-gender-btn" onclick="ccSetSexo('f')">♀ FEMININO</button>
+      </div>
+      <div class="cc-nav">
+        <button class="btn btn-secondary" onclick="ccBack(2)">← VOLTAR</button>
+        <button class="btn btn-primary" onclick="ccNext(2)">PRÓXIMO →</button>
+      </div>
+    </div>
+
+    <!-- Passo 3: Nome -->
+    <div id="cc-step3" class="cc-step">
+      <div class="cc-step-title">PASSO 3 — NOME DO HERÓI</div>
+      <div style="display:flex;gap:14px;align-items:center">
+        <div class="cc-sprite-preview sm" style="flex-shrink:0">
+          <img id="cc-sprite3" src="sprites/guerreiro_m.png" alt="sprite">
+        </div>
+        <div style="flex:1">
+          <label>COMO TE CHAMAM, AVENTUREIRO?</label>
+          <input id="cc-nome" type="text" placeholder="Nome do herói..." maxlength="18" autocomplete="off"
+            onkeydown="if(event.key==='Enter') ccNext(3)">
+        </div>
+      </div>
+      <div class="cc-nav">
+        <button class="btn btn-secondary" onclick="ccBack(3)">← VOLTAR</button>
+        <button class="btn btn-primary" onclick="ccNext(3)">PRÓXIMO →</button>
+      </div>
+    </div>
+
+    <!-- Passo 4: Confirmação -->
+    <div id="cc-step4" class="cc-step">
+      <div class="cc-step-title">PASSO 4 — SEU PERSONAGEM</div>
+      <div class="cc-confirm-card">
+        <img id="cc-sprite4" src="sprites/guerreiro_m.png" alt="sprite">
+        <div class="cc-confirm-info">
+          <div class="cn" id="cc-conf-nome">—</div>
+          <div class="cc" id="cc-conf-classe">—</div>
+          <div class="cs" id="cc-conf-sexo">—</div>
+          <div class="cs" id="cc-conf-stats" style="margin-top:6px;color:var(--text2)">—</div>
+        </div>
+      </div>
+      <div class="cc-nav">
+        <button class="btn btn-secondary" onclick="ccBack(4)">← VOLTAR</button>
+        <button class="btn btn-primary" onclick="ccConfirmar()">⚔️ COMEÇAR AVENTURA</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════════════ TELA: ENTRADA ═══════════════════ -->
 <div id="screen-entry" class="screen active">
   <div class="entry-box">
@@ -594,6 +776,16 @@
       <span class="icon">⚔️</span>
       <h1>RPG ONLINE</h1>
       <p>SALA VIRTUAL DE CAMPANHA</p>
+    </div>
+
+    <!-- Card do personagem criado -->
+    <div class="entry-char-card" id="entry-char-card">
+      <img id="entry-char-sprite" src="sprites/guerreiro_m.png" alt="sprite">
+      <div class="ec-info">
+        <div class="ec-nome" id="entry-char-nome">—</div>
+        <div class="ec-cls" id="entry-char-cls">—</div>
+      </div>
+      <button class="ec-btn" onclick="showScreen('screen-char-creation')">TROCAR</button>
     </div>
 
     <!-- Abas -->
@@ -604,37 +796,15 @@
 
     <!-- Painel CRIAR -->
     <div class="entry-panel" id="panel-criar">
-      <div>
-        <label>SEU NOME DE HERÓI</label>
-        <input id="inp-nome" type="text" placeholder="Como te chamam, aventureiro?" maxlength="18" autocomplete="off">
-      </div>
-      <div>
-        <label>SUA CLASSE</label>
-        <div class="classe-grid" id="classe-grid"></div>
-      </div>
       <button class="btn btn-primary" onclick="criarSala()">⚔️ Criar Nova Sala</button>
     </div>
 
     <!-- Painel ENTRAR -->
     <div class="entry-panel" id="panel-entrar" style="display:none">
-      <div>
-        <label>SEU NOME DE HERÓI</label>
-        <input id="inp-nome2" type="text" placeholder="Como te chamam, aventureiro?" maxlength="18" autocomplete="off">
-      </div>
-      <div>
-        <label>SUA CLASSE</label>
-        <select id="sel-classe2">
-          <option value="guerreiro">⚔️ Guerreiro — HP Alto / SP Médio</option>
-          <option value="mago">🔮 Mago — HP Baixo / SP Alto</option>
-          <option value="ladino">🗡️ Ladino — HP Médio / SP Médio</option>
-          <option value="clerigo">✨ Clérigo — HP Médio / SP Alto</option>
-          <option value="barbaro">🪓 Bárbaro — HP Muito Alto / SP Baixo</option>
-          <option value="arqueiro">🏹 Arqueiro — HP Médio / SP Médio</option>
-        </select>
-      </div>
       <div class="join-big">
         <label>CÓDIGO DA SALA</label>
-        <input id="inp-codigo" type="text" placeholder="RUNE" maxlength="4" autocomplete="off">
+        <input id="inp-codigo" type="text" placeholder="RUNE" maxlength="4" autocomplete="off"
+          onkeydown="if(event.key==='Enter') entrarSala()">
       </div>
       <button class="btn btn-primary" onclick="entrarSala()">🚪 Entrar na Sala</button>
     </div>
@@ -994,6 +1164,7 @@ let myUid    = localStorage.getItem('rpg_uid')    || crypto.randomUUID();
 let mySala   = localStorage.getItem('rpg_sala')   || null;
 let myNome   = localStorage.getItem('rpg_nome')   || '';
 let myClasse = localStorage.getItem('rpg_classe') || 'guerreiro';
+let mySexo   = localStorage.getItem('rpg_sexo')   || 'm';
 let amIHost  = false;
 let chamandoIA = false;
 let renderedHistKeys = new Set();
@@ -1007,7 +1178,120 @@ localStorage.setItem('rpg_uid', myUid);
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  if (id === 'screen-char-creation') { ccBuildGrid(); ccGoStep(1); }
 }
+
+function spriteUrl(classe, sexo) {
+  return `sprites/${classe}_${sexo || 'm'}.png`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CRIAÇÃO DE PERSONAGEM — WIZARD
+// ═══════════════════════════════════════════════════════════════
+let ccClasse = myClasse;
+let ccSexo   = mySexo;
+
+function ccBuildGrid() {
+  const grid = document.getElementById('cc-class-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  Object.entries(CLASSES).forEach(([key, cls]) => {
+    const card = document.createElement('div');
+    card.className = 'cc-class-card' + (key === ccClasse ? ' selected' : '');
+    card.innerHTML = `
+      <img src="${spriteUrl(key,'m')}" alt="${cls.nome}">
+      <div class="cn">${cls.nome.toUpperCase()}</div>
+      <div class="cs">HP ${cls.hp} / SP ${cls.sp}</div>`;
+    card.onclick = () => {
+      document.querySelectorAll('.cc-class-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      ccClasse = key;
+    };
+    grid.appendChild(card);
+  });
+}
+
+function ccUpdateProgress(step) {
+  for (let i = 1; i <= 4; i++) {
+    const dot = document.getElementById('cc-dot-' + i);
+    dot.classList.toggle('done', i < step);
+    dot.classList.toggle('active', i === step);
+    if (i < 4) {
+      const line = document.getElementById('cc-line-' + i);
+      line.classList.toggle('done', i < step);
+    }
+  }
+}
+
+function ccGoStep(step) {
+  document.querySelectorAll('.cc-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('cc-step' + step).classList.add('active');
+  ccUpdateProgress(step);
+  const sp = spriteUrl(ccClasse, ccSexo);
+  ['2','3','4'].forEach(n => {
+    const img = document.getElementById('cc-sprite' + n);
+    if (img) img.src = sp;
+  });
+}
+
+window.ccSetSexo = function(sexo) {
+  ccSexo = sexo;
+  document.getElementById('cc-btn-m').classList.toggle('active', sexo === 'm');
+  document.getElementById('cc-btn-f').classList.toggle('active', sexo === 'f');
+  document.getElementById('cc-sprite2').src = spriteUrl(ccClasse, sexo);
+};
+
+window.ccNext = function(fromStep) {
+  if (fromStep === 3) {
+    const nome = document.getElementById('cc-nome').value.trim();
+    if (!nome) { toast('Digite o nome do seu herói!'); return; }
+    // Update confirm panel
+    const cls = CLASSES[ccClasse] || {};
+    document.getElementById('cc-sprite4').src = spriteUrl(ccClasse, ccSexo);
+    document.getElementById('cc-conf-nome').textContent = nome;
+    document.getElementById('cc-conf-classe').textContent = cls.nome?.toUpperCase() + ' ' + (cls.icon || '');
+    document.getElementById('cc-conf-sexo').textContent = ccSexo === 'm' ? '♂ MASCULINO' : '♀ FEMININO';
+    document.getElementById('cc-conf-stats').textContent = `ATK ${cls.atk}  DEF ${cls.def}  HP ${cls.hp}  SP ${cls.sp}`;
+  }
+  ccGoStep(fromStep + 1);
+};
+
+window.ccBack = function(fromStep) {
+  ccGoStep(fromStep - 1);
+};
+
+window.ccConfirmar = async function() {
+  const nome = document.getElementById('cc-nome').value.trim();
+  if (!nome) { toast('Nome inválido!'); return; }
+  myNome   = nome;
+  myClasse = ccClasse;
+  mySexo   = ccSexo;
+  localStorage.setItem('rpg_nome',   myNome);
+  localStorage.setItem('rpg_classe', myClasse);
+  localStorage.setItem('rpg_sexo',   mySexo);
+  updateEntryCharCard();
+  showScreen('screen-entry');
+};
+
+function updateEntryCharCard() {
+  const el = document.getElementById('entry-char-card');
+  if (!el || !myNome) return;
+  const cls = CLASSES[myClasse] || {};
+  document.getElementById('entry-char-sprite').src = spriteUrl(myClasse, mySexo);
+  document.getElementById('entry-char-nome').textContent = myNome;
+  document.getElementById('entry-char-cls').textContent = (cls.icon || '') + ' ' + (cls.nome || '').toUpperCase();
+}
+
+// On startup: decide which screen to show
+(function initStartScreen() {
+  if (myNome && myClasse && mySexo) {
+    updateEntryCharCard();
+    showScreen('screen-entry');
+  } else {
+    ccBuildGrid();
+    showScreen('screen-char-creation');
+  }
+})();
 
 function toast(msg, dur=3500) {
   const el = document.getElementById('toast');
@@ -1038,6 +1322,7 @@ window.sairDaSala = async function() {
   mySala = null;
   localStorage.removeItem('rpg_sala');
   renderedHistKeys = new Set();
+  updateEntryCharCard();
   showScreen('screen-entry');
 };
 
@@ -1097,11 +1382,7 @@ window.salvarKey = function() {
 //  CRIAR SALA
 // ═══════════════════════════════════════════════════════════════
 window.criarSala = async function() {
-  const nome = document.getElementById('inp-nome').value.trim();
-  if(!nome) { toast('Digite seu nome de herói!'); return; }
-  myNome = nome;
-  localStorage.setItem('rpg_nome', nome);
-  localStorage.setItem('rpg_classe', myClasse);
+  if(!myNome) { toast('Crie seu personagem primeiro!'); showScreen('screen-char-creation'); return; }
 
   const codigo = codigoAleatorio();
   mySala = codigo;
@@ -1112,7 +1393,7 @@ window.criarSala = async function() {
     config: { host: myUid, estado: 'lobby', rodada: 0, criadoEm: serverTimestamp() },
     jogadores: {
       [myUid]: {
-        nome, classe: myClasse,
+        nome: myNome, classe: myClasse, sexo: mySexo,
         hp: cls.hp, maxHp: cls.hp,
         sp: cls.sp, maxSp: cls.sp,
         exp: 0, ativo: true, vivo: true, consciente: true,
@@ -1131,10 +1412,8 @@ window.criarSala = async function() {
 //  ENTRAR EM SALA
 // ═══════════════════════════════════════════════════════════════
 window.entrarSala = async function() {
-  const nome = (document.getElementById('inp-nome2').value || document.getElementById('inp-nome').value).trim();
-  myClasse = document.getElementById('sel-classe2').value || myClasse;
+  if(!myNome) { toast('Crie seu personagem primeiro!'); showScreen('screen-char-creation'); return; }
   const codigo = document.getElementById('inp-codigo').value.trim().toUpperCase();
-  if(!nome)          { toast('Digite seu nome de herói!'); return; }
   if(codigo.length !== 4) { toast('O código tem 4 letras'); return; }
 
   const snap = await get(ref(db, `salas/${codigo}`));
@@ -1143,15 +1422,12 @@ window.entrarSala = async function() {
   const salaData = snap.val();
   if(salaData.config.estado !== 'lobby') { toast('Esta partida já começou!'); return; }
 
-  myNome = nome;
-  localStorage.setItem('rpg_nome', nome);
-  localStorage.setItem('rpg_classe', myClasse);
   mySala = codigo;
   localStorage.setItem('rpg_sala', codigo);
 
   const cls = CLASSES[myClasse];
   await set(ref(db, `salas/${codigo}/jogadores/${myUid}`), {
-    nome, classe: myClasse,
+    nome: myNome, classe: myClasse, sexo: mySexo,
     hp: cls.hp, maxHp: cls.hp,
     sp: cls.sp, maxSp: cls.sp,
     exp: 0, ativo: true, vivo: true, consciente: true,
@@ -1189,7 +1465,12 @@ function irParaLobby(codigo) {
       div.className = 'player-row';
       div.innerHTML = `
         <div class="online-dot ${online?'on':''}"></div>
-        <div class="player-avatar">${cls.icon||'?'}</div>
+        <div class="player-avatar" style="overflow:hidden;padding:0">
+          <img src="sprites/${j.classe||'guerreiro'}_${j.sexo||'m'}.png"
+            style="width:100%;height:100%;object-fit:contain;object-position:bottom"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+          ><span style="display:none;width:100%;height:100%;align-items:center;justify-content:center">${cls.icon||'?'}</span>
+        </div>
         <div class="player-info">
           <div class="player-nome">${j.nome}</div>
           <div class="player-classe">${cls.nome||j.classe} · ${online?'<span style="color:var(--green)">online</span>':'<span style="color:#555">ausente</span>'}</div>
