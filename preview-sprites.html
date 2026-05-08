@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Preview Sprites RPG</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:#0d0905;font-family:Georgia,serif;
+    display:flex;flex-direction:column;align-items:center;
+    padding:32px 16px;gap:40px;min-height:100vh;
+  }
+  h1{color:#d4a843;font-size:18px;letter-spacing:4px;text-align:center}
+  p{color:#6a5830;font-size:11px;letter-spacing:2px;text-align:center;margin-top:-32px}
+  .sprites-row{
+    display:flex;flex-wrap:wrap;gap:28px;justify-content:center;
+  }
+  .sprite-card{
+    display:flex;flex-direction:column;align-items:center;gap:10px;
+    background:#1e1508;border:1px solid #7a5500;border-radius:10px;
+    padding:18px 16px 14px;
+  }
+  canvas{image-rendering:pixelated;image-rendering:crisp-edges}
+  .sprite-name{font-size:12px;color:#d4a843;letter-spacing:2px;font-weight:bold}
+  .sprite-class{font-size:10px;color:#6a5830;letter-spacing:1px}
+
+  /* Mock da ficha para contextualizar */
+  .ficha-mock{
+    background:#1e1508;border:1px solid #7a5500;border-radius:16px;
+    padding:0;width:340px;overflow:hidden;
+  }
+  .fm-header{
+    padding:18px;display:flex;align-items:center;gap:16px;
+    background:linear-gradient(135deg,#8b451399 0%,transparent 70%);
+  }
+  .fm-nome{font-size:18px;color:#f0c866;font-weight:bold}
+  .fm-classe{font-size:12px;color:#a89060;margin-top:4px}
+  .fm-nivel{font-size:10px;color:#6a5830;margin-top:2px;letter-spacing:1px}
+  .fm-body{padding:14px;display:flex;flex-direction:column;gap:10px}
+  .fm-bar{display:flex;flex-direction:column;gap:3px}
+  .fm-bar-lbl{display:flex;justify-content:space-between;font-size:10px;color:#a89060}
+  .fm-bar-track{height:7px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden}
+  .fm-bar-fill{height:100%;border-radius:4px}
+  .section-lbl{font-size:9px;color:#6a5830;letter-spacing:2px;border-top:1px solid rgba(122,85,0,.2);padding-top:10px}
+</style>
+</head>
+<body>
+
+<h1>⚔️ PREVIEW — SPRITES PIXELADOS</h1>
+<p>ESTILO FINAL FANTASY TACTICS / RAGNAROK</p>
+
+<div class="sprites-row" id="sprites-row"></div>
+
+<div style="color:#d4a843;font-size:11px;letter-spacing:3px;margin-top:8px">MOCKUP — FICHA DO PERSONAGEM</div>
+<div class="ficha-mock">
+  <div class="fm-header">
+    <canvas id="canvas-mock" width="64" height="96" style="image-rendering:pixelated;border-radius:4px"></canvas>
+    <div>
+      <div class="fm-nome">Febre</div>
+      <div class="fm-classe">⚔️ Guerreiro</div>
+      <div class="fm-nivel">NÍVEL 3</div>
+    </div>
+  </div>
+  <div class="fm-body">
+    <div class="fm-bar">
+      <div class="fm-bar-lbl"><span>HP</span><span>95/120</span></div>
+      <div class="fm-bar-track"><div class="fm-bar-fill" style="width:79%;background:#c0392b"></div></div>
+    </div>
+    <div class="fm-bar">
+      <div class="fm-bar-lbl"><span>SP</span><span>40/60</span></div>
+      <div class="fm-bar-track"><div class="fm-bar-fill" style="width:67%;background:#2471a3"></div></div>
+    </div>
+    <div class="fm-bar">
+      <div class="fm-bar-lbl"><span>EXP</span><span>240 XP</span></div>
+      <div class="fm-bar-track"><div class="fm-bar-fill" style="width:40%;background:#1e8449"></div></div>
+    </div>
+    <div class="section-lbl">ATK 21 &nbsp;·&nbsp; DEF 17 &nbsp;·&nbsp; EQUIPAMENTOS</div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  PIXEL ART ENGINE
+// ═══════════════════════════════════════════
+function p(ctx, x, y, w, h, color) {
+  if(!color) return;
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, w, h);
+}
+
+// ─── GUERREIRO ────────────────────────────
+function drawGuerreiro(ctx) {
+  const sk='#f4c48c', sd='#d4a47c', ey='#1a0a04';
+  const AL='#9aa8bc', AM='#7a8094', AD='#5a606e';
+  const GD='#d4a843', GK='#a07820';
+  const RE='#c02020', RD='#8b1010';
+  const BL='#d0d4e0', BS='#909098';
+  const BT='#3a2810';
+
+  // Capacete
+  p(ctx, 4,0, 8,1, GD);
+  p(ctx, 3,1, 10,3, AL);
+  p(ctx, 3,1, 10,1, GD);  // viseira ouro
+  p(ctx, 4,4,  1,2, AL); p(ctx,11,4,1,2,AL); // abas do elmo
+
+  // Rosto
+  p(ctx, 5,3, 6,4, sk);
+  p(ctx, 6,5, 1,1, ey); p(ctx,9,5, 1,1, ey);  // olhos
+  p(ctx, 6,7, 4,1, sd);  // queixo
+
+  // Garganta / gorjal
+  p(ctx, 5,7, 6,1, GD);
+  p(ctx, 5,8, 6,2, AM);
+
+  // Espauleiras
+  p(ctx, 0,9, 5,3, AL); p(ctx,0,10,5,1,GD);
+  p(ctx,11,9, 5,3, AL); p(ctx,11,10,5,1,GD);
+
+  // Cota / armadura do peito
+  p(ctx, 3,9, 10,7, AM);
+  p(ctx, 4,10, 8,5, AL);
+  p(ctx, 7,11, 2,3, GD);  // cruz de ouro
+
+  // Capa vermelha (esquerda)
+  p(ctx, 0,12, 3,9, RE);
+  p(ctx, 0,13, 2,8, RD);
+
+  // Espada (direita)
+  p(ctx,13,8, 2,1, GD);   // guarda
+  p(ctx,14,5, 1,3, GD);   // punho
+  p(ctx,13,9, 1,9, BL);   // lâmina
+  p(ctx,14,9, 1,7, BS);
+
+  // Cintura
+  p(ctx, 3,16, 10,2, AD);
+  p(ctx, 5,16, 6,1, GD);
+
+  // Pernas
+  p(ctx, 3,18, 4,5, AM);
+  p(ctx, 8,18, 4,5, AD);
+
+  // Botas
+  p(ctx, 2,23, 6,1, BT);
+  p(ctx, 8,23, 5,1, BT);
+}
+
+// ─── MAGO ─────────────────────────────────
+function drawMago(ctx) {
+  const sk='#f4c48c', sd='#d4a47c', ey='#1a0a04';
+  const PR='#7030a0', PD='#4a1870', PL='#9050c0';
+  const GD='#d4a843';
+  const WH='#e8e4e0', WD='#b8b4b0';
+  const ST='#8b4513', GM='#40a0e0';  // staff, gem
+
+  // Chapéu pontudo (sobe acima da cabeça)
+  p(ctx, 7,0, 2,1, PR);
+  p(ctx, 6,1, 4,1, PR);
+  p(ctx, 5,2, 6,2, PR);
+  p(ctx, 4,4, 8,2, PD);
+  p(ctx, 3,4,12,1, PR);  // aba do chapéu
+
+  // Rosto
+  p(ctx, 4,6, 8,5, sk);
+  p(ctx, 6,8, 1,1, ey); p(ctx,9,8,1,1,ey);
+  p(ctx, 5,10,6,1, sd);
+  // Barba curta
+  p(ctx, 4,11,8,2, WH);
+
+  // Robe (largo, alargando para baixo)
+  p(ctx, 3,13,10,3, PR);
+  p(ctx, 4,13, 8,2, PL);  // brilho
+  p(ctx, 2,16,12,4, PR);  // corpo
+  p(ctx, 1,20,14,4, PD);  // base do robe
+  p(ctx, 0,22,16,2, PR);  // largura total embaixo
+
+  // Estrelas/detalhes no robe
+  p(ctx, 5,15,1,1,GD); p(ctx,7,17,1,1,GD); p(ctx,10,19,1,1,GD);
+  p(ctx, 3,19,1,1,GD);
+
+  // Cajado (esquerda)
+  p(ctx, 1,7, 1,16, ST);  // cabo
+  p(ctx, 0,5, 3,3, PL);   // gema no topo
+  p(ctx, 1,5, 1,3, GM);   // brilho da gema
+
+  // Mão segurando cajado
+  p(ctx, 2,13,2,2, sk);
+}
+
+// ─── LADINO ───────────────────────────────
+function drawLadino(ctx) {
+  const sk='#f4c48c', sd='#d4a47c', ey='#1a0a04';
+  const DG='#2a3a2a', DD='#1a2a1a', DL='#3a5030';
+  const BK='#1a1a1a', BL='#282828';
+  const SL='#c0c8d0', SS='#909098';  // dagger
+  const BD='#3a2810';
+
+  // Capuz escuro (cobre quase tudo)
+  p(ctx, 4,0, 8,2, DG);
+  p(ctx, 3,2,10,4, DD);
+  p(ctx, 2,4,12,3, BK);
+
+  // Rosto (só parte visível)
+  p(ctx, 4,5, 8,3, sk);
+  p(ctx, 5,6, 2,1, ey); p(ctx,9,6,1,1,ey);  // olhar sombrio
+  p(ctx, 5,8, 6,1, sd);  // boca
+
+  // Capuz lateral / sombra
+  p(ctx, 2,5, 2,5, DD);
+  p(ctx,12,5, 2,5, DD);
+
+  // Corpo (slim, escuro)
+  p(ctx, 4,9, 8,7, DG);
+  p(ctx, 5,9, 6,6, DL);  // detalhe
+  p(ctx, 4,10,1,5, BK);  // sombra esq
+  p(ctx,11,10,1,5, DD);
+
+  // Cinto com adagas
+  p(ctx, 3,15,10,2, BK);
+  p(ctx, 5,14, 2,4, SL);  // adaga esq
+  p(ctx, 9,14, 2,4, SL);  // adaga dir
+  p(ctx, 5,13, 2,1, SS); p(ctx,9,13,2,1,SS);  // guardas
+
+  // Pernas (slim)
+  p(ctx, 4,17, 4,6, DG);
+  p(ctx, 8,17, 4,6, DD);
+
+  // Botas
+  p(ctx, 3,23, 5,1, BK);
+  p(ctx, 8,23, 5,1, BK);
+}
+
+// ─── CLÉRIGO ──────────────────────────────
+function drawClerigo(ctx) {
+  const sk='#f4c48c', sd='#d4a47c', ey='#1a4a8a';
+  const WH='#dce8f0', WD='#b0bcc8', WL='#eef4ff';
+  const GD='#d4a843', GK='#a07820';
+  const BL='#3a60a0', BD='#2a4070';
+  const MC='#d0c060', MS='#a09040';  // mace
+
+  // Capuz/mitra sagrada
+  p(ctx, 5,0, 6,2, WH);
+  p(ctx, 4,2, 8,2, WD);
+  p(ctx, 3,4,10,3, WH);
+  p(ctx, 4,5, 8,1, GD);  // faixa ouro
+
+  // Rosto (sereno)
+  p(ctx, 4,6, 8,5, sk);
+  p(ctx, 6,8, 1,1, ey); p(ctx,9,8,1,1,ey);  // olhos azuis
+  p(ctx, 6,10,4,1, sd);
+
+  // Colarinho/hábito
+  p(ctx, 5,11,6,1, GD);  // gola dourada
+
+  // Veste/hábito branco
+  p(ctx, 2,12,12,4, WH);
+  p(ctx, 3,12,10,3, WL);  // brilho
+  // Cruz no peito
+  p(ctx, 7,13, 2,5, GD);
+  p(ctx, 5,15, 6,1, GD);
+
+  // Mangas / corpo
+  p(ctx, 1,16,14,5, WH);
+  p(ctx, 2,16,12,4, WD);
+
+  // Maça (direita, dourada)
+  p(ctx,13,10, 2,3, MC);   // cabeça da maça
+  p(ctx,13,13, 1,8, MS);   // cabo
+  p(ctx,12,10, 1,3, GK);
+
+  // Base do hábito (largo)
+  p(ctx, 1,21,14,3, WD);
+}
+
+// ─── BÁRBARO ──────────────────────────────
+function drawBarbaro(ctx) {
+  const sk='#f0b878', sd='#d09858', ey='#3a1a0a';
+  const HA='#5a3010', HD='#3a1a08';  // hair
+  const LT='#a06020', LD='#783010';  // leather
+  const FU='#d8c4a0', FD='#b8a480';  // fur
+  const AX='#9aa0b4', AK='#6a7084', GD='#d4a843';
+  const BT='#3a2810';
+
+  // Cabelo selvagem (volumoso, para cima)
+  p(ctx, 3,0, 10,2, HA);
+  p(ctx, 2,1, 12,3, HA);
+  p(ctx, 1,2,  2,3, HD); p(ctx,13,2,2,3,HD);  // franjas laterais
+
+  // Rosto feroz
+  p(ctx, 3,4, 10,5, sk);
+  p(ctx, 5,6, 2,1, ey); p(ctx,9,6,2,1,ey);  // olhos largos
+  p(ctx, 3,6, 2,2, sk);  // bochecha
+  p(ctx, 6,8, 4,1, sd);  // boca/queixo
+  // Cicatriz
+  p(ctx, 7,5, 1,3, sd);
+
+  // Pescoço musculoso
+  p(ctx, 6,9, 4,2, sk);
+
+  // Tronco (sem armadura, musculoso)
+  p(ctx, 2,11,12,7, sk);
+  p(ctx, 3,12,10,5, sd);   // volume muscular
+  p(ctx, 6,12, 4,5, sk);   // peitoral central
+
+  // Tira de couro (peitoral)
+  p(ctx, 4,11, 8,2, LT);
+  p(ctx, 5,11, 6,1, GD);   // rebite dourado
+  p(ctx, 7,11, 2,7, LT);   // tira vertical
+
+  // Machado enorme (esquerda)
+  p(ctx, 0,2,  3,8, AX);   // lâmina superior
+  p(ctx, 0,10, 3,5, AK);   // lâmina inferior
+  p(ctx, 1,7,  1,16, AK);  // cabo do machado
+  p(ctx, 0,5,  2,6, AX);   // gume
+  p(ctx, 0,11, 2,1, GD);   // ornamento
+
+  // Calça de couro / fur
+  p(ctx, 3,18, 10,4, LT);
+  p(ctx, 2,18, 1,4, FU);   // fur lateral
+  p(ctx,13,18, 1,4, FU);
+
+  // Pernas largas
+  p(ctx, 3,22, 5,2, LD);
+  p(ctx, 8,22, 5,2, LD);
+
+  // Botas
+  p(ctx, 2,23, 6,1, BT);
+  p(ctx, 8,23, 6,1, BT);
+}
+
+// ─── ARQUEIRO ─────────────────────────────
+function drawArqueiro(ctx) {
+  const sk='#f4c48c', sd='#d4a47c', ey='#2a4010';
+  const GN='#3a6030', GD2='#2a4820', GL='#4a7840';
+  const BR='#8b4513', BD='#6b3010';  // brown
+  const LT='#a07840', LD='#7a5820';
+  const BW='#8b5e20', BS='#6b4010';  // bow
+  const AR='#c0c8a0';  // arrow
+
+  // Capuz verde
+  p(ctx, 5,0, 6,3, GN);
+  p(ctx, 4,3, 8,2, GD2);
+  p(ctx, 3,5,10,2, GN);
+  p(ctx, 2,6, 2,4, GD2);  // laterais do capuz
+  p(ctx,12,6, 2,4, GD2);
+
+  // Rosto (sombrio, focado)
+  p(ctx, 4,6, 8,5, sk);
+  p(ctx, 6,8, 1,1, ey); p(ctx,9,8,1,1,ey);
+  p(ctx, 6,10,4,1, sd);
+
+  // Colete de couro sobre camisa verde
+  p(ctx, 4,11,8,7, GN);
+  p(ctx, 5,11,6,6, GL);   // brilho
+  p(ctx, 4,11,8,2, LT);   // colete de couro
+  p(ctx, 4,13,8,2, LT);
+  // Alças
+  p(ctx, 6,11,1,8, BD);
+  p(ctx, 9,11,1,8, BD);
+
+  // Braço esquerdo segurando arco
+  p(ctx, 2,11,2,8, sk);
+  p(ctx, 3,12,1,6, sd);
+
+  // Arco (curvo, esquerda)
+  p(ctx, 0,4, 1,1, BW);
+  p(ctx, 0,5, 1,3, BW);
+  p(ctx, 1,6, 1,4, BW);
+  p(ctx, 0,10,1,3, BW);
+  p(ctx, 0,13,1,3, BW);
+  p(ctx, 1,16,1,2, BW);
+  // Corda do arco
+  p(ctx, 0,5, 1,12, AR);
+
+  // Aljava nas costas (direita)
+  p(ctx,13,9, 2,8, BR);
+  p(ctx,13,8, 2,2, BD);
+  p(ctx,14,7, 1,3, AR);   // flechas saindo
+
+  // Pernas
+  p(ctx, 4,18, 4,5, GN);
+  p(ctx, 8,18, 4,5, GD2);
+
+  // Botas de couro
+  p(ctx, 3,23, 5,1, BR);
+  p(ctx, 8,23, 5,1, BD);
+}
+
+// ═══════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════
+const CLASSES = [
+  { key:'guerreiro', name:'Guerreiro', icon:'⚔️', cor:'#8b4513', draw:drawGuerreiro },
+  { key:'mago',      name:'Mago',      icon:'🔮', cor:'#4a235a', draw:drawMago      },
+  { key:'ladino',    name:'Ladino',    icon:'🗡️', cor:'#1a2a1a', draw:drawLadino    },
+  { key:'clerigo',   name:'Clérigo',   icon:'✨', cor:'#1a3a4a', draw:drawClerigo   },
+  { key:'barbaro',   name:'Bárbaro',   icon:'🪓', cor:'#5a1a1a', draw:drawBarbaro   },
+  { key:'arqueiro',  name:'Arqueiro',  icon:'🏹', cor:'#1a3a1a', draw:drawArqueiro  },
+];
+
+const row = document.getElementById('sprites-row');
+
+CLASSES.forEach(cls => {
+  // small canvas (sprite em 16x24)
+  const small = document.createElement('canvas');
+  small.width  = 16;
+  small.height = 24;
+  const sctx = small.getContext('2d');
+  sctx.clearRect(0, 0, 16, 24);
+  cls.draw(sctx);
+
+  // big canvas (4x scale)
+  const big = document.createElement('canvas');
+  big.width  = 64;
+  big.height = 96;
+  big.style.imageRendering = 'pixelated';
+  const bctx = big.getContext('2d');
+  bctx.imageSmoothingEnabled = false;
+  bctx.drawImage(small, 0, 0, 64, 96);
+
+  const card = document.createElement('div');
+  card.className = 'sprite-card';
+  card.style.borderColor = cls.cor;
+  card.innerHTML = `<div class="sprite-name">${cls.icon} ${cls.name}</div>`;
+  card.insertBefore(big, card.firstChild);
+  row.appendChild(card);
+});
+
+// Mockup da ficha — Guerreiro
+const mockSmall = document.createElement('canvas');
+mockSmall.width = 16; mockSmall.height = 24;
+drawGuerreiro(mockSmall.getContext('2d'));
+const mockBig = document.getElementById('canvas-mock');
+const mbctx = mockBig.getContext('2d');
+mbctx.imageSmoothingEnabled = false;
+mbctx.drawImage(mockSmall, 0, 0, 64, 96);
+
+// Animação idle simples (pisca/respira)
+let frame = 0;
+setInterval(() => {
+  frame++;
+  CLASSES.forEach((cls, i) => {
+    const big = row.children[i].querySelector('canvas');
+    const bctx = big.getContext('2d');
+    const small = document.createElement('canvas');
+    small.width = 16; small.height = 24;
+    const sctx = small.getContext('2d');
+
+    // Shift de 1px para cima nos frames pares (efeito respiração)
+    if(frame % 2 === 0) {
+      sctx.translate(0, -1);
+    }
+    cls.draw(sctx);
+    bctx.clearRect(0, 0, 64, 96);
+    bctx.fillStyle = '#1e1508';
+    bctx.fillRect(0, 0, 64, 96);
+    bctx.imageSmoothingEnabled = false;
+    bctx.drawImage(small, 0, 0, 64, 96);
+  });
+}, 600);
+</script>
+</body>
+</html>
