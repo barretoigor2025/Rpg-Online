@@ -59,6 +59,8 @@
     .wlc-saved-info .wc{font-size:11px;color:var(--text2);letter-spacing:1px;margin-top:3px}
     .wlc-saved-info .ws{font-size:10px;color:var(--text3);margin-top:5px;line-height:1.5}
     .wlc-divider{text-align:center;color:var(--text3);font-size:11px;letter-spacing:3px;padding:2px 0}
+    .btn-danger-link{background:none;border:none;color:#c0392b;font-size:11px;letter-spacing:1px;cursor:pointer;padding:4px 0;text-align:center;opacity:.7;transition:opacity .2s}
+    .btn-danger-link:hover{opacity:1;text-decoration:underline}
     /* Sala options */
     .sala-opt{
       background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
@@ -834,6 +836,10 @@
       <button class="btn btn-secondary" onclick="showScreen('screen-char-creation')">
         ⚔️ CRIAR NOVO PERSONAGEM
       </button>
+
+      <button class="btn-danger-link" id="btn-apagar-personagem" style="display:none" onclick="apagarPersonagem()">
+        🗑 Apagar personagem
+      </button>
     </div>
   </div>
 </div>
@@ -882,6 +888,9 @@
 
     <button class="sala-link" onclick="showScreen('screen-char-creation')">
       Criar novo personagem
+    </button>
+    <button class="btn-danger-link" onclick="apagarPersonagem()">
+      🗑 Apagar personagem
     </button>
   </div>
 </div>
@@ -1256,6 +1265,7 @@ function showScreen(id) {
   if (id === 'screen-char-creation') { ccBuildGrid(); ccGoStep(1); }
   if (id === 'screen-sala') { updateEntryCharCard(); verificarUltimaSala(); }
 }
+window.showScreen = showScreen;
 
 function spriteUrl(classe, sexo) {
   return `sprites/${classe}_${sexo || 'm'}.png`;
@@ -1404,6 +1414,20 @@ window.usarPersonagemSalvo = function() {
   showScreen('screen-sala');
 };
 
+window.apagarPersonagem = async function() {
+  const nome = myNome || 'este personagem';
+  if (!confirm(`Apagar "${nome}" permanentemente? Esta ação não pode ser desfeita.`)) return;
+  try { await remove(ref(db, `personagens/${myUid}`)); } catch(e) {}
+  myNome = ''; myClasse = 'guerreiro'; mySexo = 'm';
+  ['rpg_nome','rpg_classe','rpg_sexo','rpg_sala','rpg_nivel','rpg_xp'].forEach(k => localStorage.removeItem(k));
+  document.getElementById('wlc-saved').style.display = 'none';
+  document.getElementById('btn-apagar-personagem').style.display = 'none';
+  toast('Personagem apagado.');
+  showScreen('screen-welcome');
+  document.getElementById('wlc-loading').style.display = 'none';
+  document.getElementById('wlc-options').style.display = 'flex';
+};
+
 async function verificarUltimaSala() {
   const ultimaSala = localStorage.getItem('rpg_sala');
   const el = document.getElementById('sala-opt-continuar');
@@ -1464,6 +1488,7 @@ window.continuarPartida = async function() {
     localStorage.setItem('rpg_sexo', mySexo);
     populateWelcomeCard(saved);
     document.getElementById('wlc-saved').style.display = 'flex';
+    document.getElementById('btn-apagar-personagem').style.display = 'block';
   }
   document.getElementById('wlc-loading').style.display  = 'none';
   document.getElementById('wlc-options').style.display  = 'flex';
