@@ -2173,7 +2173,7 @@ function atualizarInputArea(eu, estado, jogadores) {
   mi.style.display  = jaMorto  ? 'block' : 'none';
 
   // Botões sempre visíveis — só some quando morto/inconsciente
-  btns.style.display  = jaMorto ? 'none' : 'grid';
+  btns.style.display  = jaMorto ? 'none' : 'flex';
   slots.style.display = jaMorto ? 'none' : 'flex';
   // Enviar some apenas quando já enviou ou morto
   btn.style.display   = (jaMorto || jaEnviou) ? 'none' : 'block';
