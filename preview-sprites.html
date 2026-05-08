@@ -2,461 +2,525 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Preview Sprites RPG</title>
+<title>Preview Sprites — RPG Online</title>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{
-    background:#0d0905;font-family:Georgia,serif;
-    display:flex;flex-direction:column;align-items:center;
-    padding:32px 16px;gap:40px;min-height:100vh;
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0d0d1a;
+    color: #e8e0d0;
+    font-family: 'Courier New', monospace;
+    padding: 30px 20px;
+    min-height: 100vh;
   }
-  h1{color:#d4a843;font-size:18px;letter-spacing:4px;text-align:center}
-  p{color:#6a5830;font-size:11px;letter-spacing:2px;text-align:center;margin-top:-32px}
-  .sprites-row{
-    display:flex;flex-wrap:wrap;gap:28px;justify-content:center;
+  h1 { color: #d4a843; text-align: center; font-size: 22px; letter-spacing: 3px; margin-bottom: 8px; }
+  .subtitle { color: #7a7060; text-align: center; font-size: 12px; margin-bottom: 40px; letter-spacing: 2px; }
+  .sprite-grid {
+    display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-bottom: 50px;
   }
-  .sprite-card{
-    display:flex;flex-direction:column;align-items:center;gap:10px;
-    background:#1e1508;border:1px solid #7a5500;border-radius:10px;
-    padding:18px 16px 14px;
+  .sprite-card {
+    background: linear-gradient(180deg, #1a1a30 0%, #12121f 100%);
+    border: 1px solid #2a2a50;
+    border-top: 1px solid #3a3a60;
+    border-radius: 6px;
+    padding: 18px 12px 14px;
+    text-align: center;
+    width: 130px;
+    transition: border-color 0.2s;
   }
-  canvas{image-rendering:pixelated;image-rendering:crisp-edges}
-  .sprite-name{font-size:12px;color:#d4a843;letter-spacing:2px;font-weight:bold}
-  .sprite-class{font-size:10px;color:#6a5830;letter-spacing:1px}
+  .sprite-card:hover { border-color: #d4a843; }
+  .sprite-canvas-wrap {
+    display: flex; align-items: flex-end; justify-content: center;
+    height: 172px; margin-bottom: 12px;
+  }
+  .sprite-card canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+  .class-icon { font-size: 13px; margin-bottom: 4px; }
+  .class-name { color: #d4a843; font-size: 13px; font-weight: bold; letter-spacing: 1px; }
+  .class-role { color: #5a5048; font-size: 10px; margin-top: 3px; letter-spacing: 1px; }
 
-  /* Mock da ficha para contextualizar */
-  .ficha-mock{
-    background:#1e1508;border:1px solid #7a5500;border-radius:16px;
-    padding:0;width:340px;overflow:hidden;
+  .mock-section { max-width: 460px; margin: 0 auto 40px; }
+  .mock-section h2 { color: #d4a843; font-size: 14px; letter-spacing: 2px; margin-bottom: 16px; text-align: center; }
+  .mock-sheet {
+    background: #12121f;
+    border: 1px solid #2a2a50;
+    border-radius: 8px;
+    overflow: hidden;
   }
-  .fm-header{
-    padding:18px;display:flex;align-items:center;gap:16px;
-    background:linear-gradient(135deg,#8b451399 0%,transparent 70%);
+  .fc-header {
+    background: linear-gradient(135deg, #1a1228 0%, #0e1020 100%);
+    padding: 16px;
+    display: flex; align-items: center; gap: 14px;
+    border-bottom: 1px solid #2a2a50;
   }
-  .fm-nome{font-size:18px;color:#f0c866;font-weight:bold}
-  .fm-classe{font-size:12px;color:#a89060;margin-top:4px}
-  .fm-nivel{font-size:10px;color:#6a5830;margin-top:2px;letter-spacing:1px}
-  .fm-body{padding:14px;display:flex;flex-direction:column;gap:10px}
-  .fm-bar{display:flex;flex-direction:column;gap:3px}
-  .fm-bar-lbl{display:flex;justify-content:space-between;font-size:10px;color:#a89060}
-  .fm-bar-track{height:7px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden}
-  .fm-bar-fill{height:100%;border-radius:4px}
-  .section-lbl{font-size:9px;color:#6a5830;letter-spacing:2px;border-top:1px solid rgba(122,85,0,.2);padding-top:10px}
+  .fc-avatar-area { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .fc-info { flex: 1; }
+  .fc-info .char-name { font-size: 18px; font-weight: bold; color: #fff; }
+  .fc-info .char-class { font-size: 12px; color: #d4a843; }
+  .fc-info .char-level { font-size: 11px; color: #5a5048; margin-top: 2px; }
+  .fc-stats { display: flex; gap: 10px; margin-top: 10px; }
+  .stat-pill {
+    background: #1e1e35; border: 1px solid #2a2a50; border-radius: 4px;
+    padding: 4px 8px; font-size: 11px; text-align: center;
+  }
+  .stat-pill .sv { font-size: 14px; font-weight: bold; color: #d4a843; }
+  .stat-pill .sl { font-size: 9px; color: #5a5048; }
+  .fc-body { padding: 14px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 11px; }
+  .bar-label { width: 30px; color: #888; }
+  .bar-track { flex: 1; height: 10px; background: #1a1a30; border-radius: 3px; overflow: hidden; }
+  .bar-fill-hp { background: linear-gradient(90deg, #1a7a1a, #22cc22); height: 100%; }
+  .bar-fill-sp { background: linear-gradient(90deg, #1a1a8a, #3a3acc); height: 100%; }
+  .bar-val { width: 55px; color: #aaa; text-align: right; }
 </style>
 </head>
 <body>
 
-<h1>⚔️ PREVIEW — SPRITES PIXELADOS</h1>
-<p>ESTILO FINAL FANTASY TACTICS / RAGNAROK</p>
+<h1>PIXEL ART SPRITES</h1>
+<p class="subtitle">ESTILO ULTIMA 8 / FF TACTICS -- SEM ANIMACAO -- 24x43px x4</p>
 
-<div class="sprites-row" id="sprites-row"></div>
-
-<div style="color:#d4a843;font-size:11px;letter-spacing:3px;margin-top:8px">MOCKUP — FICHA DO PERSONAGEM</div>
-<div class="ficha-mock">
-  <div class="fm-header">
-    <canvas id="canvas-mock" width="64" height="96" style="image-rendering:pixelated;border-radius:4px"></canvas>
-    <div>
-      <div class="fm-nome">Febre</div>
-      <div class="fm-classe">⚔️ Guerreiro</div>
-      <div class="fm-nivel">NÍVEL 3</div>
+<div class="sprite-grid">
+  <div class="sprite-card">
+    <div class="sprite-canvas-wrap">
+      <canvas id="c-guerreiro" width="24" height="43" style="width:96px;height:172px"></canvas>
     </div>
+    <div class="class-icon">&#9876;</div>
+    <div class="class-name">GUERREIRO</div>
+    <div class="class-role">WARRIOR</div>
   </div>
-  <div class="fm-body">
-    <div class="fm-bar">
-      <div class="fm-bar-lbl"><span>HP</span><span>95/120</span></div>
-      <div class="fm-bar-track"><div class="fm-bar-fill" style="width:79%;background:#c0392b"></div></div>
+  <div class="sprite-card">
+    <div class="sprite-canvas-wrap">
+      <canvas id="c-mago" width="24" height="43" style="width:96px;height:172px"></canvas>
     </div>
-    <div class="fm-bar">
-      <div class="fm-bar-lbl"><span>SP</span><span>40/60</span></div>
-      <div class="fm-bar-track"><div class="fm-bar-fill" style="width:67%;background:#2471a3"></div></div>
+    <div class="class-icon">&#128302;</div>
+    <div class="class-name">MAGO</div>
+    <div class="class-role">MAGE</div>
+  </div>
+  <div class="sprite-card">
+    <div class="sprite-canvas-wrap">
+      <canvas id="c-ladino" width="24" height="43" style="width:96px;height:172px"></canvas>
     </div>
-    <div class="fm-bar">
-      <div class="fm-bar-lbl"><span>EXP</span><span>240 XP</span></div>
-      <div class="fm-bar-track"><div class="fm-bar-fill" style="width:40%;background:#1e8449"></div></div>
+    <div class="class-icon">&#128329;</div>
+    <div class="class-name">LADINO</div>
+    <div class="class-role">ROGUE</div>
+  </div>
+  <div class="sprite-card">
+    <div class="sprite-canvas-wrap">
+      <canvas id="c-clerigo" width="24" height="43" style="width:96px;height:172px"></canvas>
     </div>
-    <div class="section-lbl">ATK 21 &nbsp;·&nbsp; DEF 17 &nbsp;·&nbsp; EQUIPAMENTOS</div>
+    <div class="class-icon">&#10024;</div>
+    <div class="class-name">CLERIGO</div>
+    <div class="class-role">CLERIC</div>
+  </div>
+  <div class="sprite-card">
+    <div class="sprite-canvas-wrap">
+      <canvas id="c-barbaro" width="24" height="43" style="width:96px;height:172px"></canvas>
+    </div>
+    <div class="class-icon">&#129683;</div>
+    <div class="class-name">BARBARO</div>
+    <div class="class-role">BARBARIAN</div>
+  </div>
+  <div class="sprite-card">
+    <div class="sprite-canvas-wrap">
+      <canvas id="c-arqueiro" width="24" height="43" style="width:96px;height:172px"></canvas>
+    </div>
+    <div class="class-icon">&#127993;</div>
+    <div class="class-name">ARQUEIRO</div>
+    <div class="class-role">RANGER</div>
+  </div>
+</div>
+
+<div class="mock-section">
+  <h2>-- COMO FICARIA NA FICHA --</h2>
+  <div class="mock-sheet">
+    <div class="fc-header">
+      <div class="fc-avatar-area">
+        <canvas id="c-sheet" width="24" height="43" style="width:72px;height:129px;image-rendering:pixelated;image-rendering:crisp-edges"></canvas>
+      </div>
+      <div class="fc-info">
+        <div class="char-name">Febre</div>
+        <div class="char-class">Guerreiro - Nivel 4</div>
+        <div class="char-level">1.250 XP ate o proximo nivel</div>
+        <div class="fc-stats">
+          <div class="stat-pill"><div class="sv">15</div><div class="sl">ATK</div></div>
+          <div class="stat-pill"><div class="sv">17</div><div class="sl">DEF</div></div>
+          <div class="stat-pill"><div class="sv">12</div><div class="sl">SPD</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="fc-body">
+      <div class="bar-row">
+        <span class="bar-label">HP</span>
+        <div class="bar-track"><div class="bar-fill-hp" style="width:72%"></div></div>
+        <span class="bar-val">87 / 120</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">SP</span>
+        <div class="bar-track"><div class="bar-fill-sp" style="width:100%"></div></div>
+        <span class="bar-val">60 / 60</span>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-// ═══════════════════════════════════════════
-//  PIXEL ART ENGINE
-// ═══════════════════════════════════════════
-function p(ctx, x, y, w, h, color) {
-  if(!color) return;
-  ctx.fillStyle = color;
-  ctx.fillRect(x, y, w, h);
+// pixel helpers
+function px(c,x,y,col)        { c.fillStyle=col; c.fillRect(x,y,1,1); }
+function row(c,x1,x2,y,col)   { c.fillStyle=col; c.fillRect(x1,y,x2-x1+1,1); }
+function col(c,x,y1,y2,col)   { c.fillStyle=col; c.fillRect(x,y1,1,y2-y1+1); }
+function blk(c,x1,y1,x2,y2,col){ c.fillStyle=col; c.fillRect(x1,y1,x2-x1+1,y2-y1+1); }
+
+// GUERREIRO -- steel plate + red plume + kite shield + broadsword
+function drawGuerreiro(c) {
+  // plume
+  col(c,11,0,1,'#cc2222'); col(c,12,0,0,'#ff4444'); col(c,10,1,1,'#aa1111');
+  // helmet
+  row(c,8,15,1,'#8a9ba8'); row(c,8,15,2,'#9aadb8'); row(c,8,15,3,'#8a9ba8');
+  row(c,8,15,4,'#7a8b96');
+  blk(c,7,1,7,4,'#7a8b96'); blk(c,16,1,16,4,'#7a8b96');
+  // helmet highlight
+  row(c,9,13,1,'#c0d0db');
+  // visor
+  blk(c,8,2,15,3,'#1c2830'); row(c,9,14,2,'#2a3a45');
+  // chin guard
+  row(c,8,15,4,'#6a7b86');
+  // neck/face sides
+  blk(c,9,5,14,6,'#e8b890');
+
+  // pauldrons
+  blk(c,4,6,6,9,'#7a8b96'); blk(c,17,6,19,9,'#7a8b96');
+  px(c,5,6,'#b0c0cc'); px(c,17,6,'#b0c0cc');
+  px(c,4,8,'#5a6b76'); px(c,19,8,'#5a6b76');
+
+  // chest
+  blk(c,7,6,16,16,'#8a9ba8');
+  row(c,8,15,6,'#b0c0cc'); col(c,7,7,15,'#a0b0bc'); col(c,16,7,15,'#5a6b76');
+  col(c,11,7,15,'#5a6b76'); col(c,12,7,15,'#5a6b76'); // center seam
+  row(c,7,16,16,'#6a7b86');
+
+  // belt
+  blk(c,7,16,16,17,'#2c1e12');
+  row(c,8,15,17,'#504030'); px(c,11,16,'#c0a020'); px(c,12,16,'#c0a020');
+
+  // arms
+  blk(c,4,9,6,17,'#7a8b96'); col(c,5,10,16,'#9aadb8');
+  blk(c,17,9,19,17,'#7a8b96'); col(c,17,10,16,'#9aadb8');
+  // gauntlets
+  blk(c,4,17,6,19,'#3a4a55'); row(c,4,6,18,'#4a5a65');
+  blk(c,17,17,19,19,'#3a4a55'); row(c,17,19,18,'#4a5a65');
+
+  // kite shield (left)
+  blk(c,0,9,4,20,'#8b0000');
+  col(c,1,10,19,'#cc2222'); col(c,0,9,20,'#6a0000');
+  row(c,0,4,9,'#c0a020'); row(c,0,4,20,'#c0a020');
+  blk(c,1,13,3,14,'#c0a020'); px(c,2,13,'#ffe060');
+
+  // sword (right)
+  blk(c,20,3,21,14,'#d8e0e8'); col(c,20,4,13,'#a8b0b8'); col(c,21,4,13,'#eef4fc');
+  px(c,20,3,'#ffffff');
+  blk(c,19,10,23,11,'#c0a020'); px(c,19,10,'#e8c030'); px(c,23,10,'#e8c030');
+  blk(c,20,11,21,14,'#5a2e10'); col(c,20,12,13,'#7a4e30');
+  blk(c,20,14,21,15,'#c0a020');
+
+  // red tabard
+  blk(c,9,17,14,26,'#8b0000');
+  col(c,10,18,25,'#aa1111'); col(c,13,18,25,'#6a0000');
+  row(c,9,14,26,'#6a0000');
+
+  // legs
+  blk(c,6,17,9,28,'#8a9ba8'); col(c,7,18,27,'#b0c0cc');
+  blk(c,6,22,9,23,'#6a7b86'); px(c,7,22,'#c0d0db');
+  blk(c,14,17,17,28,'#8a9ba8'); col(c,14,18,27,'#b0c0cc');
+  blk(c,14,22,17,23,'#6a7b86'); px(c,14,22,'#c0d0db');
+
+  // boots
+  blk(c,5,28,9,33,'#221810'); row(c,6,8,28,'#3a2818');
+  blk(c,14,28,18,33,'#221810'); row(c,15,17,28,'#3a2818');
+  blk(c,4,32,9,42,'#181008'); row(c,5,8,33,'#2a1c10');
+  blk(c,13,32,19,42,'#181008'); row(c,14,18,33,'#2a1c10');
 }
 
-// ─── GUERREIRO ────────────────────────────
-function drawGuerreiro(ctx) {
-  const sk='#f4c48c', sd='#d4a47c', ey='#1a0a04';
-  const AL='#9aa8bc', AM='#7a8094', AD='#5a606e';
-  const GD='#d4a843', GK='#a07820';
-  const RE='#c02020', RD='#8b1010';
-  const BL='#d0d4e0', BS='#909098';
-  const BT='#3a2810';
-
-  // Capacete
-  p(ctx, 4,0, 8,1, GD);
-  p(ctx, 3,1, 10,3, AL);
-  p(ctx, 3,1, 10,1, GD);  // viseira ouro
-  p(ctx, 4,4,  1,2, AL); p(ctx,11,4,1,2,AL); // abas do elmo
-
-  // Rosto
-  p(ctx, 5,3, 6,4, sk);
-  p(ctx, 6,5, 1,1, ey); p(ctx,9,5, 1,1, ey);  // olhos
-  p(ctx, 6,7, 4,1, sd);  // queixo
-
-  // Garganta / gorjal
-  p(ctx, 5,7, 6,1, GD);
-  p(ctx, 5,8, 6,2, AM);
-
-  // Espauleiras
-  p(ctx, 0,9, 5,3, AL); p(ctx,0,10,5,1,GD);
-  p(ctx,11,9, 5,3, AL); p(ctx,11,10,5,1,GD);
-
-  // Cota / armadura do peito
-  p(ctx, 3,9, 10,7, AM);
-  p(ctx, 4,10, 8,5, AL);
-  p(ctx, 7,11, 2,3, GD);  // cruz de ouro
-
-  // Capa vermelha (esquerda)
-  p(ctx, 0,12, 3,9, RE);
-  p(ctx, 0,13, 2,8, RD);
-
-  // Espada (direita)
-  p(ctx,13,8, 2,1, GD);   // guarda
-  p(ctx,14,5, 1,3, GD);   // punho
-  p(ctx,13,9, 1,9, BL);   // lâmina
-  p(ctx,14,9, 1,7, BS);
-
-  // Cintura
-  p(ctx, 3,16, 10,2, AD);
-  p(ctx, 5,16, 6,1, GD);
-
-  // Pernas
-  p(ctx, 3,18, 4,5, AM);
-  p(ctx, 8,18, 4,5, AD);
-
-  // Botas
-  p(ctx, 2,23, 6,1, BT);
-  p(ctx, 8,23, 5,1, BT);
+// MAGO -- tall hat + flowing robes + orb staff
+function drawMago(c) {
+  // pointed hat
+  px(c,11,0,'#3a1a6a'); blk(c,10,1,12,1,'#4a2a7a');
+  blk(c,9,2,13,2,'#5a3a8a'); blk(c,8,3,14,3,'#4a2a7a');
+  blk(c,7,4,16,5,'#3a1a6a');
+  row(c,8,15,4,'#6a4aaa'); row(c,8,15,5,'#2a0a5a');
+  px(c,11,2,'#e0c050'); // star
+  // face
+  blk(c,8,5,15,9,'#e8b890'); row(c,9,14,5,'#f0c8a0');
+  // eyes + brows
+  px(c,10,7,'#1a1020'); px(c,13,7,'#1a1020');
+  row(c,9,11,6,'#8888a0'); row(c,12,14,6,'#8888a0');
+  // beard
+  blk(c,8,8,15,10,'#d0d0d0'); row(c,9,14,8,'#e8e8e8');
+  // robe body wide
+  blk(c,5,9,18,22,'#4a2a7a');
+  col(c,6,10,21,'#6a4aaa'); col(c,17,10,21,'#2a0a5a');
+  row(c,6,17,9,'#6a4aaa');
+  // robe stars
+  px(c,9,12,'#e0c050'); px(c,14,15,'#e0c050');
+  px(c,8,18,'#c0a030'); px(c,15,11,'#c0a030');
+  // belt
+  blk(c,6,18,17,19,'#2a0a5a'); row(c,7,16,18,'#e0c050');
+  px(c,11,18,'#fff090'); px(c,12,18,'#fff090');
+  // wide sleeves
+  blk(c,2,10,5,19,'#4a2a7a'); col(c,3,11,18,'#6a4aaa');
+  blk(c,18,10,21,19,'#4a2a7a'); col(c,18,11,18,'#2a0a5a');
+  row(c,2,5,19,'#e0c050'); row(c,18,21,19,'#e0c050');
+  // hands
+  blk(c,2,19,5,21,'#e8b890'); blk(c,18,19,21,21,'#e8b890');
+  // staff
+  col(c,22,4,38,'#6b3a10'); col(c,23,5,37,'#8b5a30');
+  // orb
+  blk(c,20,1,24,6,'#4060cc'); blk(c,21,0,23,0,'#4060cc');
+  blk(c,21,1,23,5,'#6080ee'); px(c,21,1,'#b0c8ff'); px(c,22,1,'#d0e0ff');
+  // robe lower (long)
+  blk(c,6,22,17,36,'#3a1a6a');
+  col(c,7,23,35,'#5a3a8a'); col(c,16,23,35,'#2a0a5a');
+  row(c,6,17,36,'#e0c050');
+  // feet
+  blk(c,8,36,11,42,'#221810'); blk(c,12,36,15,42,'#221810');
+  row(c,8,11,37,'#3a2818'); row(c,12,15,37,'#3a2818');
 }
 
-// ─── MAGO ─────────────────────────────────
-function drawMago(ctx) {
-  const sk='#f4c48c', sd='#d4a47c', ey='#1a0a04';
-  const PR='#7030a0', PD='#4a1870', PL='#9050c0';
-  const GD='#d4a843';
-  const WH='#e8e4e0', WD='#b8b4b0';
-  const ST='#8b4513', GM='#40a0e0';  // staff, gem
-
-  // Chapéu pontudo (sobe acima da cabeça)
-  p(ctx, 7,0, 2,1, PR);
-  p(ctx, 6,1, 4,1, PR);
-  p(ctx, 5,2, 6,2, PR);
-  p(ctx, 4,4, 8,2, PD);
-  p(ctx, 3,4,12,1, PR);  // aba do chapéu
-
-  // Rosto
-  p(ctx, 4,6, 8,5, sk);
-  p(ctx, 6,8, 1,1, ey); p(ctx,9,8,1,1,ey);
-  p(ctx, 5,10,6,1, sd);
-  // Barba curta
-  p(ctx, 4,11,8,2, WH);
-
-  // Robe (largo, alargando para baixo)
-  p(ctx, 3,13,10,3, PR);
-  p(ctx, 4,13, 8,2, PL);  // brilho
-  p(ctx, 2,16,12,4, PR);  // corpo
-  p(ctx, 1,20,14,4, PD);  // base do robe
-  p(ctx, 0,22,16,2, PR);  // largura total embaixo
-
-  // Estrelas/detalhes no robe
-  p(ctx, 5,15,1,1,GD); p(ctx,7,17,1,1,GD); p(ctx,10,19,1,1,GD);
-  p(ctx, 3,19,1,1,GD);
-
-  // Cajado (esquerda)
-  p(ctx, 1,7, 1,16, ST);  // cabo
-  p(ctx, 0,5, 3,3, PL);   // gema no topo
-  p(ctx, 1,5, 1,3, GM);   // brilho da gema
-
-  // Mão segurando cajado
-  p(ctx, 2,13,2,2, sk);
+// LADINO -- dark hood + leather + red eyes + dual daggers
+function drawLadino(c) {
+  // hood
+  blk(c,7,0,16,0,'#1a1a24'); blk(c,6,1,17,2,'#222233');
+  blk(c,6,2,17,5,'#1a1a28');
+  row(c,7,16,1,'#2e2e44');
+  col(c,6,2,5,'#111120'); col(c,17,2,5,'#111120');
+  // face in shadow
+  blk(c,8,3,15,6,'#c89868'); row(c,9,14,3,'#d0a878');
+  // red eyes
+  px(c,10,4,'#ee1111'); px(c,13,4,'#ee1111');
+  px(c,10,4,'#ff4444'); px(c,13,4,'#ff4444');
+  // face shadow
+  blk(c,8,3,9,5,'#9a7050'); blk(c,14,3,15,5,'#9a7050');
+  // scarf
+  blk(c,7,6,16,7,'#111120'); row(c,8,15,6,'#1e1e30');
+  // neck
+  row(c,10,13,7,'#c89868');
+  // leather vest
+  blk(c,7,7,16,17,'#2a1e14');
+  col(c,8,8,16,'#3a2e24'); col(c,15,8,16,'#1a0e08');
+  row(c,8,15,7,'#3a2e24');
+  row(c,9,14,9,'#605040'); row(c,9,14,13,'#605040');
+  px(c,11,9,'#a08060'); px(c,12,9,'#a08060');
+  // hood drape
+  blk(c,5,7,7,12,'#1a1a28'); blk(c,16,7,18,12,'#1a1a28');
+  // arms
+  blk(c,5,8,7,17,'#2a1e14'); col(c,6,9,16,'#3a2e24');
+  blk(c,16,8,18,17,'#2a1e14'); col(c,16,9,16,'#3a2e24');
+  // bracers
+  blk(c,5,14,7,17,'#3a2818'); blk(c,16,14,18,17,'#3a2818');
+  row(c,5,7,14,'#605040'); row(c,16,18,14,'#605040');
+  row(c,5,7,17,'#605040'); row(c,16,18,17,'#605040');
+  // hands
+  blk(c,5,17,7,19,'#c89868'); blk(c,16,17,18,19,'#c89868');
+  // dagger left
+  blk(c,1,14,2,24,'#c0c8d0'); col(c,1,14,23,'#e0e8f0');
+  blk(c,0,16,3,17,'#a08060'); blk(c,1,24,2,26,'#2a1e14');
+  // dagger right
+  blk(c,21,14,22,24,'#c0c8d0'); col(c,22,14,23,'#e0e8f0');
+  blk(c,20,16,23,17,'#a08060'); blk(c,21,24,22,26,'#2a1e14');
+  // belt
+  blk(c,7,17,16,18,'#1a1010'); row(c,8,15,17,'#504030');
+  px(c,11,17,'#807060'); px(c,12,17,'#807060');
+  // pants
+  blk(c,7,18,10,28,'#181820'); blk(c,13,18,16,28,'#181820');
+  col(c,8,19,27,'#201e2a'); col(c,13,19,27,'#201e2a');
+  // boots
+  blk(c,6,28,11,35,'#151015'); blk(c,12,28,17,35,'#151015');
+  col(c,7,29,34,'#252025'); col(c,12,29,34,'#252025');
+  blk(c,5,34,11,42,'#0e0a0e'); blk(c,12,34,18,42,'#0e0a0e');
 }
 
-// ─── LADINO ───────────────────────────────
-function drawLadino(ctx) {
-  const sk='#f4c48c', sd='#d4a47c', ey='#1a0a04';
-  const DG='#2a3a2a', DD='#1a2a1a', DL='#3a5030';
-  const BK='#1a1a1a', BL='#282828';
-  const SL='#c0c8d0', SS='#909098';  // dagger
-  const BD='#3a2810';
-
-  // Capuz escuro (cobre quase tudo)
-  p(ctx, 4,0, 8,2, DG);
-  p(ctx, 3,2,10,4, DD);
-  p(ctx, 2,4,12,3, BK);
-
-  // Rosto (só parte visível)
-  p(ctx, 4,5, 8,3, sk);
-  p(ctx, 5,6, 2,1, ey); p(ctx,9,6,1,1,ey);  // olhar sombrio
-  p(ctx, 5,8, 6,1, sd);  // boca
-
-  // Capuz lateral / sombra
-  p(ctx, 2,5, 2,5, DD);
-  p(ctx,12,5, 2,5, DD);
-
-  // Corpo (slim, escuro)
-  p(ctx, 4,9, 8,7, DG);
-  p(ctx, 5,9, 6,6, DL);  // detalhe
-  p(ctx, 4,10,1,5, BK);  // sombra esq
-  p(ctx,11,10,1,5, DD);
-
-  // Cinto com adagas
-  p(ctx, 3,15,10,2, BK);
-  p(ctx, 5,14, 2,4, SL);  // adaga esq
-  p(ctx, 9,14, 2,4, SL);  // adaga dir
-  p(ctx, 5,13, 2,1, SS); p(ctx,9,13,2,1,SS);  // guardas
-
-  // Pernas (slim)
-  p(ctx, 4,17, 4,6, DG);
-  p(ctx, 8,17, 4,6, DD);
-
-  // Botas
-  p(ctx, 3,23, 5,1, BK);
-  p(ctx, 8,23, 5,1, BK);
+// CLERIGO -- white+gold robes + mitre + holy mace
+function drawClerigo(c) {
+  // mitre top
+  px(c,11,0,'#f0e8c0'); blk(c,10,1,13,1,'#f0e8c0');
+  blk(c,9,2,14,2,'#ece0b0'); blk(c,8,3,15,3,'#f0e8c0');
+  row(c,8,15,3,'#c0a020'); // trim
+  px(c,11,2,'#c0a020'); px(c,12,2,'#c0a020'); // cross symbol
+  px(c,11,1,'#e0c050'); px(c,11,3,'#e0c050');
+  // mitre brim
+  blk(c,7,4,16,5,'#c0a020'); row(c,8,15,4,'#e0c040');
+  // face
+  blk(c,8,5,15,9,'#f0c8a0'); row(c,9,14,5,'#f8d8b0');
+  px(c,10,7,'#1a1010'); px(c,13,7,'#1a1010'); // kind eyes
+  row(c,10,13,8,'#d09878'); // smile
+  // neck
+  row(c,10,13,9,'#f0c8a0');
+  // white robe
+  blk(c,6,9,17,22,'#ece8e0');
+  col(c,7,10,21,'#ffffff'); col(c,16,10,21,'#c0bbb0');
+  row(c,7,16,9,'#ffffff');
+  // gold border robe
+  row(c,6,17,9,'#c0a020'); row(c,6,17,22,'#c0a020');
+  col(c,6,9,22,'#c0a020'); col(c,17,9,22,'#c0a020');
+  // holy cross on chest
+  px(c,11,12,'#c0a020'); px(c,12,12,'#c0a020');
+  blk(c,10,13,13,16,'#c0a020');
+  px(c,11,13,'#ffe060'); px(c,12,13,'#ffe060');
+  // wide sleeves
+  blk(c,3,10,6,20,'#ece8e0'); col(c,4,11,19,'#ffffff');
+  col(c,3,10,19,'#c0bbb0');
+  blk(c,17,10,20,20,'#ece8e0'); col(c,19,11,19,'#c0bbb0');
+  row(c,3,6,20,'#c0a020'); row(c,17,20,20,'#c0a020');
+  // hands
+  blk(c,3,20,6,22,'#f0c8a0'); blk(c,17,20,20,22,'#f0c8a0');
+  // holy mace
+  col(c,21,14,36,'#6b4520'); col(c,22,15,35,'#8b6540');
+  blk(c,19,9,23,14,'#909090');
+  row(c,19,23,9,'#c0c0c0'); blk(c,18,10,24,12,'#808080');
+  row(c,18,24,10,'#b0b0b0');
+  blk(c,20,10,22,13,'#e0e890'); px(c,20,10,'#ffffff'); px(c,21,10,'#ffffff');
+  // robe lower
+  blk(c,6,22,17,37,'#ddd8d0');
+  col(c,7,23,36,'#ece8e0'); col(c,16,23,36,'#b8b3a8');
+  row(c,6,17,37,'#c0a020');
+  // sandals
+  blk(c,7,38,11,42,'#c8a060'); blk(c,12,38,16,42,'#c8a060');
+  row(c,7,11,38,'#e0b878'); row(c,12,16,38,'#e0b878');
 }
 
-// ─── CLÉRIGO ──────────────────────────────
-function drawClerigo(ctx) {
-  const sk='#f4c48c', sd='#d4a47c', ey='#1a4a8a';
-  const WH='#dce8f0', WD='#b0bcc8', WL='#eef4ff';
-  const GD='#d4a843', GK='#a07820';
-  const BL='#3a60a0', BD='#2a4070';
-  const MC='#d0c060', MS='#a09040';  // mace
-
-  // Capuz/mitra sagrada
-  p(ctx, 5,0, 6,2, WH);
-  p(ctx, 4,2, 8,2, WD);
-  p(ctx, 3,4,10,3, WH);
-  p(ctx, 4,5, 8,1, GD);  // faixa ouro
-
-  // Rosto (sereno)
-  p(ctx, 4,6, 8,5, sk);
-  p(ctx, 6,8, 1,1, ey); p(ctx,9,8,1,1,ey);  // olhos azuis
-  p(ctx, 6,10,4,1, sd);
-
-  // Colarinho/hábito
-  p(ctx, 5,11,6,1, GD);  // gola dourada
-
-  // Veste/hábito branco
-  p(ctx, 2,12,12,4, WH);
-  p(ctx, 3,12,10,3, WL);  // brilho
-  // Cruz no peito
-  p(ctx, 7,13, 2,5, GD);
-  p(ctx, 5,15, 6,1, GD);
-
-  // Mangas / corpo
-  p(ctx, 1,16,14,5, WH);
-  p(ctx, 2,16,12,4, WD);
-
-  // Maça (direita, dourada)
-  p(ctx,13,10, 2,3, MC);   // cabeça da maça
-  p(ctx,13,13, 1,8, MS);   // cabo
-  p(ctx,12,10, 1,3, GK);
-
-  // Base do hábito (largo)
-  p(ctx, 1,21,14,3, WD);
+// BARBARO -- huge build + war paint + fur + great axe
+function drawBarbaro(c) {
+  // wild red hair
+  blk(c,6,0,17,0,'#5a1010'); blk(c,5,1,18,2,'#7a2020');
+  row(c,6,17,1,'#aa3030');
+  px(c,4,1,'#7a2020'); px(c,19,1,'#5a1010');
+  // head (bigger)
+  blk(c,7,2,16,9,'#c88858'); row(c,8,15,2,'#d89868');
+  // war paint streaks
+  blk(c,7,4,9,5,'#cc1111'); blk(c,14,4,16,5,'#cc1111');
+  col(c,7,3,5,'#cc1111'); col(c,16,3,5,'#cc1111');
+  // fierce eyes
+  px(c,9,5,'#1a0808'); px(c,14,5,'#1a0808');
+  // snarl / teeth
+  row(c,10,13,8,'#8a5838');
+  blk(c,10,8,13,9,'#e8e0d0'); // teeth block
+  // thick neck
+  blk(c,9,9,14,11,'#c88858'); blk(c,7,10,8,12,'#c88858'); blk(c,15,10,16,12,'#c88858');
+  // fur cloak body
+  blk(c,5,10,18,21,'#4a3020');
+  col(c,6,11,20,'#6a5030'); col(c,17,11,20,'#3a2010');
+  row(c,6,17,10,'#6a5030');
+  // fur texture
+  px(c,8,12,'#7a6040'); px(c,11,13,'#7a6040');
+  px(c,14,11,'#7a6040'); px(c,9,16,'#7a6040');
+  px(c,13,17,'#7a6040'); px(c,7,18,'#7a6040');
+  // bare skin sides
+  blk(c,5,12,6,20,'#c88858'); blk(c,17,12,18,20,'#c88858');
+  // leather straps
+  row(c,6,17,14,'#2a1808'); row(c,6,17,18,'#2a1808');
+  px(c,11,14,'#706040'); px(c,12,14,'#706040');
+  // massive arms
+  blk(c,2,10,5,21,'#c88858'); col(c,3,11,20,'#d89868');
+  blk(c,18,10,21,21,'#c88858'); col(c,18,11,20,'#d89868');
+  // fists
+  blk(c,2,21,5,23,'#b87848'); blk(c,18,21,21,23,'#b87848');
+  // great axe pole
+  col(c,22,5,40,'#3a2010'); col(c,23,6,39,'#5a4030');
+  // left axe blade
+  blk(c,17,3,22,15,'#7a8290');
+  col(c,17,3,14,'#9aaab0'); col(c,22,4,14,'#4a5258');
+  row(c,17,22,3,'#a0aab2');
+  col(c,17,4,13,'#c0ccd8'); // sharp edge
+  px(c,17,3,'#e0ecf8');
+  // right axe blade
+  blk(c,22,5,27,17,'#6a7280');
+  col(c,22,6,16,'#8a9298'); col(c,27,6,16,'#404850');
+  col(c,27,7,15,'#b0bcc8'); // edge
+  // loincloth
+  blk(c,8,21,15,27,'#2a1808');
+  col(c,9,22,26,'#3a2818'); row(c,8,15,21,'#5a4030');
+  row(c,8,15,27,'#4a3020');
+  // legs (massive)
+  blk(c,6,27,10,35,'#c88858'); col(c,7,28,34,'#d89868');
+  blk(c,13,27,17,35,'#c88858'); col(c,13,28,34,'#d89868');
+  // knee guards
+  blk(c,6,30,10,31,'#3a2010'); blk(c,13,30,17,31,'#3a2010');
+  // fur boots
+  blk(c,5,35,11,39,'#4a3020'); blk(c,12,35,18,39,'#4a3020');
+  row(c,5,11,35,'#6a5030'); row(c,12,18,35,'#6a5030');
+  blk(c,4,38,11,42,'#2a1808'); blk(c,12,38,19,42,'#2a1808');
 }
 
-// ─── BÁRBARO ──────────────────────────────
-function drawBarbaro(ctx) {
-  const sk='#f0b878', sd='#d09858', ey='#3a1a0a';
-  const HA='#5a3010', HD='#3a1a08';  // hair
-  const LT='#a06020', LD='#783010';  // leather
-  const FU='#d8c4a0', FD='#b8a480';  // fur
-  const AX='#9aa0b4', AK='#6a7084', GD='#d4a843';
-  const BT='#3a2810';
-
-  // Cabelo selvagem (volumoso, para cima)
-  p(ctx, 3,0, 10,2, HA);
-  p(ctx, 2,1, 12,3, HA);
-  p(ctx, 1,2,  2,3, HD); p(ctx,13,2,2,3,HD);  // franjas laterais
-
-  // Rosto feroz
-  p(ctx, 3,4, 10,5, sk);
-  p(ctx, 5,6, 2,1, ey); p(ctx,9,6,2,1,ey);  // olhos largos
-  p(ctx, 3,6, 2,2, sk);  // bochecha
-  p(ctx, 6,8, 4,1, sd);  // boca/queixo
-  // Cicatriz
-  p(ctx, 7,5, 1,3, sd);
-
-  // Pescoço musculoso
-  p(ctx, 6,9, 4,2, sk);
-
-  // Tronco (sem armadura, musculoso)
-  p(ctx, 2,11,12,7, sk);
-  p(ctx, 3,12,10,5, sd);   // volume muscular
-  p(ctx, 6,12, 4,5, sk);   // peitoral central
-
-  // Tira de couro (peitoral)
-  p(ctx, 4,11, 8,2, LT);
-  p(ctx, 5,11, 6,1, GD);   // rebite dourado
-  p(ctx, 7,11, 2,7, LT);   // tira vertical
-
-  // Machado enorme (esquerda)
-  p(ctx, 0,2,  3,8, AX);   // lâmina superior
-  p(ctx, 0,10, 3,5, AK);   // lâmina inferior
-  p(ctx, 1,7,  1,16, AK);  // cabo do machado
-  p(ctx, 0,5,  2,6, AX);   // gume
-  p(ctx, 0,11, 2,1, GD);   // ornamento
-
-  // Calça de couro / fur
-  p(ctx, 3,18, 10,4, LT);
-  p(ctx, 2,18, 1,4, FU);   // fur lateral
-  p(ctx,13,18, 1,4, FU);
-
-  // Pernas largas
-  p(ctx, 3,22, 5,2, LD);
-  p(ctx, 8,22, 5,2, LD);
-
-  // Botas
-  p(ctx, 2,23, 6,1, BT);
-  p(ctx, 8,23, 6,1, BT);
+// ARQUEIRO -- green hood + leather + longbow + quiver
+function drawArqueiro(c) {
+  // green hood
+  blk(c,8,0,15,0,'#2a4a18'); blk(c,7,1,16,2,'#3a5a28');
+  blk(c,6,2,17,4,'#2a4a18'); row(c,7,16,1,'#4a6a38');
+  col(c,6,2,4,'#1a3a08'); col(c,17,2,4,'#1a3a08');
+  blk(c,6,3,8,5,'#1a3a08'); blk(c,15,3,17,5,'#1a3a08');
+  // face
+  blk(c,9,3,14,7,'#d0a070'); row(c,10,13,3,'#e0b080');
+  px(c,10,5,'#101808'); px(c,13,5,'#101808'); // focused eyes
+  row(c,10,11,4,'#503020'); row(c,12,13,4,'#503020'); // brows
+  row(c,10,13,7,'#b07050');
+  row(c,10,13,7,'#c08060'); // mouth
+  // neck
+  row(c,10,13,8,'#d0a070');
+  // leather vest
+  blk(c,7,8,16,18,'#3a2818');
+  col(c,8,9,17,'#4a3828'); col(c,15,9,17,'#2a1808');
+  row(c,8,15,8,'#4a3828');
+  row(c,9,14,10,'#604030'); row(c,9,14,14,'#604030');
+  // hood drape
+  blk(c,5,7,7,12,'#2a4a18'); blk(c,16,7,18,12,'#2a4a18');
+  // arms
+  blk(c,5,9,7,18,'#3a2818'); col(c,6,10,17,'#4a3828');
+  blk(c,16,9,18,18,'#3a2818'); col(c,16,10,17,'#4a3828');
+  // bracers
+  blk(c,5,14,7,18,'#504030'); blk(c,16,14,18,18,'#504030');
+  row(c,5,7,14,'#706050'); row(c,16,18,14,'#706050');
+  row(c,5,7,17,'#706050'); row(c,16,18,17,'#706050');
+  // hands
+  blk(c,5,18,7,20,'#d0a070'); blk(c,16,18,18,20,'#d0a070');
+  // longbow
+  col(c,2,3,40,'#6b4520'); col(c,3,4,39,'#8b6540');
+  blk(c,0,3,2,6,'#5a3010'); blk(c,0,37,2,40,'#5a3010');
+  col(c,1,3,40,'#e0d8c0'); // bowstring
+  // quiver
+  blk(c,17,8,20,22,'#5a3820'); col(c,18,9,21,'#7a5840'); row(c,17,20,8,'#7a5840');
+  col(c,17,6,9,'#8b6540'); col(c,18,5,8,'#8b6540'); col(c,19,7,9,'#8b6540');
+  px(c,17,6,'#d04020'); px(c,18,5,'#d04020'); px(c,19,7,'#d04020');
+  // belt + pouches
+  blk(c,7,18,16,19,'#2a1808'); row(c,8,15,18,'#504030');
+  blk(c,8,18,10,21,'#3a2818'); blk(c,13,18,15,21,'#3a2818');
+  // pants
+  blk(c,7,19,10,29,'#2a3818'); blk(c,13,19,16,29,'#2a3818');
+  col(c,8,20,28,'#3a4828'); col(c,13,20,28,'#3a4828');
+  // knee guards
+  blk(c,7,23,10,25,'#3a2818'); blk(c,13,23,16,25,'#3a2818');
+  // boots
+  blk(c,6,29,11,36,'#2a1808'); blk(c,12,29,17,36,'#2a1808');
+  col(c,7,30,35,'#3a2818'); col(c,12,30,35,'#3a2818');
+  blk(c,5,35,11,42,'#1a1008'); blk(c,12,35,18,42,'#1a1008');
+  row(c,6,10,36,'#2a1808'); row(c,13,17,36,'#2a1808');
 }
 
-// ─── ARQUEIRO ─────────────────────────────
-function drawArqueiro(ctx) {
-  const sk='#f4c48c', sd='#d4a47c', ey='#2a4010';
-  const GN='#3a6030', GD2='#2a4820', GL='#4a7840';
-  const BR='#8b4513', BD='#6b3010';  // brown
-  const LT='#a07840', LD='#7a5820';
-  const BW='#8b5e20', BS='#6b4010';  // bow
-  const AR='#c0c8a0';  // arrow
-
-  // Capuz verde
-  p(ctx, 5,0, 6,3, GN);
-  p(ctx, 4,3, 8,2, GD2);
-  p(ctx, 3,5,10,2, GN);
-  p(ctx, 2,6, 2,4, GD2);  // laterais do capuz
-  p(ctx,12,6, 2,4, GD2);
-
-  // Rosto (sombrio, focado)
-  p(ctx, 4,6, 8,5, sk);
-  p(ctx, 6,8, 1,1, ey); p(ctx,9,8,1,1,ey);
-  p(ctx, 6,10,4,1, sd);
-
-  // Colete de couro sobre camisa verde
-  p(ctx, 4,11,8,7, GN);
-  p(ctx, 5,11,6,6, GL);   // brilho
-  p(ctx, 4,11,8,2, LT);   // colete de couro
-  p(ctx, 4,13,8,2, LT);
-  // Alças
-  p(ctx, 6,11,1,8, BD);
-  p(ctx, 9,11,1,8, BD);
-
-  // Braço esquerdo segurando arco
-  p(ctx, 2,11,2,8, sk);
-  p(ctx, 3,12,1,6, sd);
-
-  // Arco (curvo, esquerda)
-  p(ctx, 0,4, 1,1, BW);
-  p(ctx, 0,5, 1,3, BW);
-  p(ctx, 1,6, 1,4, BW);
-  p(ctx, 0,10,1,3, BW);
-  p(ctx, 0,13,1,3, BW);
-  p(ctx, 1,16,1,2, BW);
-  // Corda do arco
-  p(ctx, 0,5, 1,12, AR);
-
-  // Aljava nas costas (direita)
-  p(ctx,13,9, 2,8, BR);
-  p(ctx,13,8, 2,2, BD);
-  p(ctx,14,7, 1,3, AR);   // flechas saindo
-
-  // Pernas
-  p(ctx, 4,18, 4,5, GN);
-  p(ctx, 8,18, 4,5, GD2);
-
-  // Botas de couro
-  p(ctx, 3,23, 5,1, BR);
-  p(ctx, 8,23, 5,1, BD);
-}
-
-// ═══════════════════════════════════════════
-//  RENDER
-// ═══════════════════════════════════════════
-const CLASSES = [
-  { key:'guerreiro', name:'Guerreiro', icon:'⚔️', cor:'#8b4513', draw:drawGuerreiro },
-  { key:'mago',      name:'Mago',      icon:'🔮', cor:'#4a235a', draw:drawMago      },
-  { key:'ladino',    name:'Ladino',    icon:'🗡️', cor:'#1a2a1a', draw:drawLadino    },
-  { key:'clerigo',   name:'Clérigo',   icon:'✨', cor:'#1a3a4a', draw:drawClerigo   },
-  { key:'barbaro',   name:'Bárbaro',   icon:'🪓', cor:'#5a1a1a', draw:drawBarbaro   },
-  { key:'arqueiro',  name:'Arqueiro',  icon:'🏹', cor:'#1a3a1a', draw:drawArqueiro  },
+// render all -- static, no animation
+const sprites = [
+  ['c-guerreiro', drawGuerreiro],
+  ['c-mago',      drawMago],
+  ['c-ladino',    drawLadino],
+  ['c-clerigo',   drawClerigo],
+  ['c-barbaro',   drawBarbaro],
+  ['c-arqueiro',  drawArqueiro],
+  ['c-sheet',     drawGuerreiro],
 ];
-
-const row = document.getElementById('sprites-row');
-
-CLASSES.forEach(cls => {
-  // small canvas (sprite em 16x24)
-  const small = document.createElement('canvas');
-  small.width  = 16;
-  small.height = 24;
-  const sctx = small.getContext('2d');
-  sctx.clearRect(0, 0, 16, 24);
-  cls.draw(sctx);
-
-  // big canvas (4x scale)
-  const big = document.createElement('canvas');
-  big.width  = 64;
-  big.height = 96;
-  big.style.imageRendering = 'pixelated';
-  const bctx = big.getContext('2d');
-  bctx.imageSmoothingEnabled = false;
-  bctx.drawImage(small, 0, 0, 64, 96);
-
-  const card = document.createElement('div');
-  card.className = 'sprite-card';
-  card.style.borderColor = cls.cor;
-  card.innerHTML = `<div class="sprite-name">${cls.icon} ${cls.name}</div>`;
-  card.insertBefore(big, card.firstChild);
-  row.appendChild(card);
+sprites.forEach(([id, fn]) => {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+  fn(canvas.getContext('2d'));
 });
-
-// Mockup da ficha — Guerreiro
-const mockSmall = document.createElement('canvas');
-mockSmall.width = 16; mockSmall.height = 24;
-drawGuerreiro(mockSmall.getContext('2d'));
-const mockBig = document.getElementById('canvas-mock');
-const mbctx = mockBig.getContext('2d');
-mbctx.imageSmoothingEnabled = false;
-mbctx.drawImage(mockSmall, 0, 0, 64, 96);
-
-// Animação idle simples (pisca/respira)
-let frame = 0;
-setInterval(() => {
-  frame++;
-  CLASSES.forEach((cls, i) => {
-    const big = row.children[i].querySelector('canvas');
-    const bctx = big.getContext('2d');
-    const small = document.createElement('canvas');
-    small.width = 16; small.height = 24;
-    const sctx = small.getContext('2d');
-
-    // Shift de 1px para cima nos frames pares (efeito respiração)
-    if(frame % 2 === 0) {
-      sctx.translate(0, -1);
-    }
-    cls.draw(sctx);
-    bctx.clearRect(0, 0, 64, 96);
-    bctx.fillStyle = '#1e1508';
-    bctx.fillRect(0, 0, 64, 96);
-    bctx.imageSmoothingEnabled = false;
-    bctx.drawImage(small, 0, 0, 64, 96);
-  });
-}, 600);
 </script>
 </body>
 </html>
