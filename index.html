@@ -1047,7 +1047,10 @@
       Seus companheiros continuam a luta.<br>
       Você pode observar o restante da aventura.
     </p>
-    <button class="btn btn-secondary" style="margin-top:20px" onclick="sairDaSala()">← Voltar ao Lobby</button>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px">
+      <button class="btn btn-secondary" onclick="document.getElementById('modal-morto').classList.remove('open')">👁 Observar Partida</button>
+      <button class="btn btn-secondary" style="opacity:.7" onclick="sairDaSala()">← Voltar ao Lobby</button>
+    </div>
   </div>
 </div>
 
@@ -1502,6 +1505,8 @@ window.sairDaSala = async function() {
     try { await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), { ativo: false }); } catch {}
   }
   mySala = null;
+  _mortoMostrado = false;
+  document.getElementById('modal-morto').classList.remove('open');
   localStorage.removeItem('rpg_sala');
   renderedHistKeys = new Set();
   updateEntryCharCard();
@@ -1675,6 +1680,8 @@ window.iniciarJogo = async function() {
 //  JOGO PRINCIPAL
 // ═══════════════════════════════════════════════════════════════
 function irParaJogo(codigo) {
+  _mortoMostrado = false;
+  document.getElementById('modal-morto').classList.remove('open');
   showScreen('screen-game');
   document.getElementById('top-sala').textContent = codigo;
 
@@ -1967,6 +1974,7 @@ const TIPOS_ACAO = {
 let _tipoAcaoAtual = null;
 let _slots = [null, null];
 let _prevJaEnviou = false;
+let _mortoMostrado = false;
 
 window.abrirModalAcao = async function(tipo, preFill) {
   _tipoAcaoAtual = tipo;
@@ -2174,7 +2182,10 @@ function atualizarInputArea(eu, estado, jogadores) {
   }
   _prevJaEnviou = jaEnviou;
 
-  if(!eu.vivo) document.getElementById('modal-morto').classList.add('open');
+  if(!eu.vivo && !_mortoMostrado) {
+    _mortoMostrado = true;
+    document.getElementById('modal-morto').classList.add('open');
+  }
 }
 
 // ─── Enviar ações ──────────────────────────────────────────────
