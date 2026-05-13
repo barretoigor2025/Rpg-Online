@@ -10,7 +10,7 @@
   --bg:#0d0905; --surface:#1e1508; --border:#7a5500;
   --gold:#d4a843; --gold2:#f0c866;
   --text:#f0e4c8; --text2:#a89060; --text3:#6a5830;
-  --hp:#c0392b; --green:#27ae60; --red:#e74c3c; --r:8px;
+  --hp:#c0392b; --green:#27ae60; --red:#e74c3c; --blue:#3a80cc; --r:8px;
 }
 html,body { height:100%; background:var(--bg); color:var(--text); font-family:Georgia,serif; overflow:hidden; }
 
@@ -43,23 +43,21 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:Ge
 #grid-wrap {
   flex:1; overflow:auto; display:flex; align-items:center; justify-content:center;
   background:#6a6860;
-  background-image:
-    radial-gradient(ellipse at center, #787470 0%, #5a5855 100%);
+  background-image: radial-gradient(ellipse at center, #787470 0%, #5a5855 100%);
 }
 #grid-container { position:relative; flex-shrink:0; }
 
-/* ── TILE (SVG-based, grey + gold border) ── */
-.tile {
-  position:absolute; cursor:pointer;
-  transition:filter .12s;
-}
+/* ── TILE ── */
+.tile { position:absolute; cursor:pointer; transition:filter .12s; }
 .tile svg { display:block; overflow:visible; }
 .tile:hover .tile-poly { filter:brightness(1.18); }
 .tile.hl-move .tile-poly { fill:#3a80cc !important; fill-opacity:.9; }
 .tile.hl-atk  .tile-poly { fill:#bb3535 !important; fill-opacity:.88; }
 .tile.hl-sel  .tile-poly { fill:var(--gold) !important; fill-opacity:.85; }
+.tile.hl-skill .tile-poly { fill:#27ae60 !important; fill-opacity:.88; }
 .tile.hl-move:hover .tile-poly { fill:#50a0ef !important; }
 .tile.hl-atk:hover  .tile-poly { fill:#d84040 !important; }
+.tile.hl-skill:hover .tile-poly { fill:#2ecc71 !important; }
 
 /* ── UNIT ── */
 .unit {
@@ -67,6 +65,22 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:Ge
   cursor:pointer;
   transition:left .50s cubic-bezier(.4,0,.2,1), top .50s cubic-bezier(.4,0,.2,1);
 }
+/* Name + HP/SP label above sprite */
+.u-label {
+  background:rgba(0,0,0,.82);
+  border:1px solid rgba(212,168,67,.35);
+  border-radius:4px;
+  padding:2px 6px;
+  font-size:8px;
+  color:var(--gold2);
+  white-space:nowrap;
+  margin-bottom:2px;
+  text-align:center;
+  line-height:1.4;
+  pointer-events:none;
+  user-select:none;
+}
+.u-label .u-hpsp { color:var(--text2); font-size:7px; display:block; }
 .unit .u-sprite {
   width:38px; height:52px; object-fit:contain; object-position:bottom;
   image-rendering:pixelated;
@@ -78,6 +92,8 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:Ge
 }
 .unit .u-bar  { width:34px; height:3px; background:rgba(0,0,0,.5); border-radius:2px; margin-top:2px; overflow:hidden; }
 .unit .u-fill { height:100%; border-radius:2px; transition:width .4s; }
+.unit .u-sp-bar  { width:34px; height:2px; background:rgba(0,0,0,.5); border-radius:2px; margin-top:1px; overflow:hidden; }
+.unit .u-sp-fill { height:100%; border-radius:2px; background:#3a80cc; transition:width .4s; }
 .unit.u-active   { filter:drop-shadow(0 0 8px #f0c866); }
 .unit.u-selected { filter:drop-shadow(0 0 12px #ffe066) brightness(1.15); }
 .unit.u-dead     { opacity:.2; pointer-events:none; transition:opacity .7s; }
@@ -89,25 +105,19 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:Ge
   border:2px solid var(--gold);
   border-radius:12px;
   padding:12px 14px;
-  max-width:230px; min-width:150px;
+  max-width:240px; min-width:160px;
   pointer-events:none;
   animation:sb-in .28s cubic-bezier(.34,1.56,.64,1);
 }
-/* tail pointing down toward unit */
 .speech-bubble::after {
-  content:'';
-  position:absolute; bottom:-14px; left:50%;
+  content:''; position:absolute; bottom:-14px; left:50%;
   transform:translateX(-50%);
-  border:12px solid transparent;
-  border-top:14px solid var(--gold);
+  border:12px solid transparent; border-top:14px solid var(--gold);
 }
 .speech-bubble::before {
-  content:'';
-  position:absolute; bottom:-10px; left:50%;
-  transform:translateX(-50%);
-  z-index:1;
-  border:10px solid transparent;
-  border-top:12px solid #110d05;
+  content:''; position:absolute; bottom:-10px; left:50%;
+  transform:translateX(-50%); z-index:1;
+  border:10px solid transparent; border-top:12px solid #110d05;
 }
 .sb-head {
   display:flex; align-items:center; gap:6px;
@@ -138,9 +148,10 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:Ge
 .btn:active { opacity:.75; }
 .btn-primary   { background:var(--gold); color:#1a0d00; font-weight:bold; }
 .btn-secondary { background:transparent; border:1px solid var(--border); color:var(--text); }
+.btn-info      { background:transparent; border:1px solid #3a80cc; color:#7ab8f5; }
 .btn:disabled  { opacity:.35; cursor:not-allowed; }
 
-/* ── ACTION MODAL ── */
+/* ── MODALS ── */
 .modal {
   display:none; position:fixed; inset:0;
   background:rgba(0,0,0,.82); z-index:100;
@@ -165,7 +176,25 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:Ge
 .modal-footer { display:flex; gap:8px; }
 .modal-footer .btn { flex:1; }
 
-/* dice box inside modal */
+/* skill grid inside action modal */
+.skill-section label { margin-bottom:8px; }
+.skill-grid {
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:6px;
+}
+.skill-btn {
+  background:rgba(58,128,204,.12); border:1px solid rgba(58,128,204,.35);
+  border-radius:var(--r); padding:8px 8px;
+  color:var(--text); font-family:inherit; font-size:11px;
+  cursor:pointer; text-align:left; transition:background .15s;
+  display:flex; flex-direction:column; gap:2px;
+}
+.skill-btn:hover { background:rgba(58,128,204,.28); border-color:#3a80cc; }
+.skill-btn.sp-empty { opacity:.4; cursor:not-allowed; }
+.skill-btn .sk-name { font-weight:bold; font-size:12px; }
+.skill-btn .sk-sp   { font-size:9px; color:#7ab8f5; }
+.skill-btn .sk-desc { font-size:9px; color:var(--text2); }
+
+/* dice box */
 .dice-box {
   background:rgba(15,10,35,.75); border:1px solid rgba(120,90,220,.35);
   border-radius:var(--r); padding:12px 14px;
@@ -179,36 +208,77 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:Ge
 .d-crit { color:#f39c12; }
 .d-fail { color:var(--red); }
 
+/* ── CHARACTER SHEET ── */
+.ficha-section { display:flex; flex-direction:column; gap:8px; }
+.ficha-header {
+  display:flex; align-items:center; gap:10px;
+  padding-bottom:12px; border-bottom:1px solid rgba(122,85,0,.3);
+}
+.ficha-header .fh-icon { font-size:32px; }
+.ficha-header .fh-info { flex:1; }
+.fh-name   { font-size:18px; color:var(--gold2); }
+.fh-classe { font-size:11px; color:var(--text2); letter-spacing:1.5px; }
+.stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.stat-box {
+  background:rgba(0,0,0,.35); border:1px solid rgba(122,85,0,.2);
+  border-radius:6px; padding:8px 10px;
+}
+.stat-label { font-size:9px; color:var(--text3); letter-spacing:1.5px; }
+.stat-val   { font-size:18px; color:var(--text); font-weight:bold; }
+.stat-val.hp-val { color:#e74c3c; }
+.stat-val.sp-val { color:#3a80cc; }
+.skill-list { display:flex; flex-direction:column; gap:6px; }
+.skill-row {
+  display:flex; align-items:center; gap:8px;
+  background:rgba(58,128,204,.08); border:1px solid rgba(58,128,204,.2);
+  border-radius:6px; padding:8px 10px;
+}
+.sk-icon2 { font-size:18px; }
+.sk-info  { flex:1; }
+.sk-nm    { font-size:13px; color:var(--text); }
+.sk-dsc   { font-size:10px; color:var(--text2); }
+.sk-spcost { font-size:10px; color:#7ab8f5; white-space:nowrap; }
+.equip-list { display:flex; flex-direction:column; gap:4px; }
+.equip-row  {
+  display:flex; align-items:center; gap:8px;
+  padding:6px 10px;
+  background:rgba(122,85,0,.08); border:1px solid rgba(122,85,0,.15);
+  border-radius:6px; font-size:12px; color:var(--text);
+}
+.equip-slot { font-size:9px; color:var(--text3); letter-spacing:1px; min-width:60px; }
+.section-title {
+  font-size:9px; color:var(--text3); letter-spacing:2px;
+  padding-bottom:4px; border-bottom:1px solid rgba(122,85,0,.2);
+}
+
 /* ── TOAST ── */
 #toast {
   display:none; position:fixed; bottom:80px; left:50%;
   transform:translateX(-50%); background:#7b241c; color:#fff;
   padding:10px 20px; border-radius:var(--r); font-size:13px;
-  z-index:200; pointer-events:none; white-space:nowrap;
+  z-index:600; pointer-events:none; white-space:nowrap;
 }
 </style>
 </head>
 <body>
 
 <div id="app">
-  <!-- Turn order -->
   <div id="turn-bar">
     <span class="tb-lbl">TURNOS ▶</span>
     <div id="turn-chips" style="display:flex;gap:6px"></div>
   </div>
 
-  <!-- Isometric grid -->
   <div id="grid-wrap">
     <div id="grid-container"></div>
   </div>
 
-  <!-- Bottom bar -->
   <div id="bottom-bar">
     <span id="phase-txt">Carregando...</span>
-    <button id="btn-agir"      class="btn btn-primary"   onclick="openActionModal()" style="display:none">⚔️ AGIR</button>
-    <button id="btn-continuar" class="btn btn-primary"   onclick="onContinuar()"     style="display:none">▶ CONTINUAR</button>
-    <button id="btn-esperar"   class="btn btn-secondary" onclick="playerEndTurn()"   style="display:none">⏭ ESPERAR</button>
-    <button id="btn-cancelar"  class="btn btn-secondary" onclick="cancelSelect()"    style="display:none">✕ CANCELAR</button>
+    <button id="btn-ficha"    class="btn btn-info"      onclick="openFicha()"        style="display:none">📋 FICHA</button>
+    <button id="btn-agir"     class="btn btn-primary"   onclick="openActionModal()"  style="display:none">⚔️ AGIR</button>
+    <button id="btn-continuar"class="btn btn-primary"   onclick="onContinuar()"      style="display:none">▶ CONTINUAR</button>
+    <button id="btn-esperar"  class="btn btn-secondary" onclick="playerEndTurn()"    style="display:none">⏭ ESPERAR</button>
+    <button id="btn-cancelar" class="btn btn-secondary" onclick="cancelSelect()"     style="display:none">✕ CANCELAR</button>
   </div>
 </div>
 
@@ -216,19 +286,41 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:Ge
 <div id="modal-action" class="modal">
   <div class="modal-sheet">
     <h3 id="act-title">⚔️ Agir</h3>
-    <div>
-      <label>O QUE FAZ SEU PERSONAGEM?</label>
-      <textarea id="act-txt" rows="3"
-        placeholder="Descreva livremente... ex: Ataco o goblin mirado no pescoço com um golpe diagonal"></textarea>
+
+    <!-- Skills -->
+    <div class="skill-section">
+      <label>HABILIDADES</label>
+      <div id="skill-grid" class="skill-grid"></div>
     </div>
+
+    <!-- Free text -->
+    <div>
+      <label>OU DESCREVA LIVREMENTE</label>
+      <textarea id="act-txt" rows="3"
+        placeholder="Ex: Ataco o goblin mirado no pescoço com um golpe diagonal"></textarea>
+    </div>
+
     <div class="dice-box" id="dice-box">
       <div class="d-info"   id="d-info">—</div>
       <div class="d-num"    id="d-num">—</div>
       <div class="d-status" id="d-status">—</div>
     </div>
+
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeActionModal()">← Voltar</button>
-      <button class="btn btn-primary"   id="btn-roll" onclick="rollAction()">🎲 Rolar &amp; Confirmar</button>
+      <button class="btn btn-info"      onclick="openFicha()">📋 Ficha</button>
+      <button class="btn btn-primary"   id="btn-roll" onclick="rollAction()">🎲 Rolar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Character sheet modal -->
+<div id="modal-ficha" class="modal">
+  <div class="modal-sheet">
+    <h3>📋 Ficha do Personagem</h3>
+    <div id="ficha-content" class="ficha-section"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeFicha()">← Voltar</button>
     </div>
   </div>
 </div>
@@ -241,8 +333,8 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:Ge
 // ═══════════════════════════════════════════════════════
 const COLS = 10, ROWS = 8;
 const TW = 64, TH = 32, HW = 32, HH = 16;
-const OFFSET_X = (ROWS - 1) * HW;  // normalise min-x → 0
-const OFFSET_Y = 60;                // top padding for sprites
+const OFFSET_X = (ROWS - 1) * HW;
+const OFFSET_Y = 80;  // more top padding for labels
 const GRID_W   = (COLS + ROWS - 2) * HW + TW;
 const GRID_H   = (COLS + ROWS - 2) * HH + TH + OFFSET_Y + 20;
 
@@ -264,6 +356,52 @@ const MODS = {
 };
 const DC = { atacar:12, skill:13, defender:10, falar:11, mover:10, livre:11 };
 
+// Skills per class
+const SKILLS = {
+  guerreiro:[
+    { id:'golpe_duplo',  name:'Golpe Duplo',   icon:'⚔️',  sp:20, tipo:'atacar',   desc:'Dois golpes consecutivos (+2 dano)' },
+    { id:'provocar',     name:'Provocar',       icon:'😤',  sp:10, tipo:'falar',    desc:'Força inimigo próximo a te atacar' },
+    { id:'bater_escudo', name:'Bater Escudo',   icon:'🛡️', sp:15, tipo:'defender', desc:'Reduz próximo dano recebido' },
+  ],
+  mago:[
+    { id:'bola_fogo',    name:'Bola de Fogo',   icon:'🔥',  sp:30, tipo:'skill',   desc:'Dano mágico em área' },
+    { id:'cura',         name:'Cura',           icon:'💚',  sp:20, tipo:'skill',   desc:'Restaura HP de aliado' },
+    { id:'escudo_magico',name:'Escudo Mágico',  icon:'🔵',  sp:15, tipo:'defender',desc:'Cria barreira protetora' },
+    { id:'raio',         name:'Raio',           icon:'⚡',  sp:25, tipo:'skill',   desc:'Ataque mágico de longa distância' },
+  ],
+  ladino:[
+    { id:'ataque_furtivo',name:'Atq Furtivo',   icon:'🗡️', sp:20, tipo:'atacar',  desc:'+4 dano se inimigo distraído' },
+    { id:'fumar',         name:'Névoa de Fumaça',icon:'💨', sp:15, tipo:'livre',   desc:'Dificulta ataques ao redor' },
+    { id:'veneno',        name:'Envenenar',      icon:'☠️', sp:25, tipo:'skill',   desc:'Dano contínuo por veneno' },
+  ],
+  clerigo:[
+    { id:'cura_sagrada',  name:'Cura Sagrada',  icon:'✨',  sp:20, tipo:'skill',   desc:'Restaura HP significativo de aliado' },
+    { id:'luz_divina',    name:'Luz Divina',    icon:'🌟',  sp:25, tipo:'skill',   desc:'Dano sagrado em inimigo undead' },
+    { id:'proteger',      name:'Proteger',      icon:'🛡️', sp:10, tipo:'defender',desc:'Escudo divino por 1 turno' },
+    { id:'benção',        name:'Bênção',        icon:'🙏',  sp:15, tipo:'skill',   desc:'+2 em todos os rolls aliados' },
+  ],
+  barbaro:[
+    { id:'furia',         name:'Fúria Bárbara', icon:'🪓',  sp:20, tipo:'atacar',  desc:'+6 dano mas -2 defesa por 1 turno' },
+    { id:'rugido',        name:'Rugido',        icon:'😱',  sp:10, tipo:'falar',   desc:'Aterroriza inimigos próximos' },
+    { id:'pancada',       name:'Pancada',       icon:'💥',  sp:15, tipo:'atacar',  desc:'Golpe forte que empurra inimigo' },
+  ],
+  arqueiro:[
+    { id:'flechada',      name:'Flechada Certa', icon:'🎯', sp:15, tipo:'atacar',  desc:'+3 precisão, ignora cobertura' },
+    { id:'chuva_flechas', name:'Chuva de Flechas',icon:'🏹',sp:30, tipo:'skill',  desc:'Atinge múltiplos inimigos em área' },
+    { id:'armadilha',     name:'Armadilha',      icon:'🪤', sp:20, tipo:'livre',   desc:'Coloca armadilha em tile adjacente' },
+  ],
+};
+
+// Equipment per class (flavor)
+const EQUIP = {
+  guerreiro: [['ARMA','Espada Longa'],['ARMADURA','Cota de Malha'],['ACESSÓRIO','Amuleto de Pedra']],
+  mago:      [['ARMA','Cajado Arcano'],['ARMADURA','Manto de Estudioso'],['ACESSÓRIO','Anel de Foco']],
+  ladino:    [['ARMA','Adaga Dupla'],['ARMADURA','Armadura de Couro'],['ACESSÓRIO','Luvas Sombrias']],
+  clerigo:   [['ARMA','Maça Sagrada'],['ARMADURA','Armadura de Tecido'],['ACESSÓRIO','Símbolo Sagrado']],
+  barbaro:   [['ARMA','Machado de Guerra'],['ARMADURA','Armadura Pesada'],['ACESSÓRIO','Colar de Dentes']],
+  arqueiro:  [['ARMA','Arco Longo'],['ARMADURA','Armadura de Couro'],['ACESSÓRIO','Aljava de Setas']],
+};
+
 const ENEMY_TEMPLATES = [
   { name:'Goblin',       icon:'👺', hp:30, mv:3, atk:1, spd:7, dmg:5  },
   { name:'Arq. Goblin',  icon:'🏹', hp:20, mv:2, atk:4, spd:6, dmg:4  },
@@ -280,6 +418,7 @@ let selUnit = null, hlMove = new Set(), hlAtk = new Set();
 let hasMoved = false, hasActed = false;
 let _continuarCb = null;
 let _currentAudio = null;
+let _activeSkill  = null; // skill selected for targeting
 
 // ═══════════════════════════════════════════════════════
 //  UTILS
@@ -297,18 +436,16 @@ function toast(msg, dur=3000) {
 function gridToScreen(col, row) {
   return { x:(col-row)*HW + OFFSET_X, y:(col+row)*HH + OFFSET_Y };
 }
-
 function unitScreenPos(col, row) {
   const {x, y} = gridToScreen(col, row);
-  return { left: x + HW - 19, top: y - 40 };
+  return { left: x + HW - 19, top: y - 58 };
 }
-
 function dist(a, b) { return Math.abs(a.col-b.col) + Math.abs(a.row-b.row); }
 function unitAt(col, row) { return units.find(u => u.alive && u.col===col && u.row===row) || null; }
 function getTileEl(c, r)  { return document.getElementById(`t${c}_${r}`); }
 
 // ═══════════════════════════════════════════════════════
-//  MAP — all grey tiles
+//  MAP
 // ═══════════════════════════════════════════════════════
 function renderMap() {
   const cont = document.getElementById('grid-container');
@@ -328,7 +465,6 @@ function renderMap() {
     div.id = `t${c}_${r}`;
     div.className = 'tile';
     div.style.cssText = `left:${x}px;top:${y}px;width:${TW}px;height:${TH}px;z-index:${(c+r)*2}`;
-    // SVG diamond: grey fill, gold stroke = clean yellow border on every tile
     div.innerHTML = `<svg viewBox="0 0 64 32" width="64" height="32" xmlns="http://www.w3.org/2000/svg">
       <polygon class="tile-poly"
         points="32,1 63,16 32,31 1,16"
@@ -350,9 +486,11 @@ function buildUnits() {
     { name:'Arqueira',  classe:'arqueiro',  sexo:'f', col:2, row:6 },
   ].forEach((p, i) => {
     const c = CLASS_CFG[p.classe];
-    units.push({ id:`p${i}`, team:'player', name:p.name, classe:p.classe, sexo:p.sexo,
-      col:p.col, row:p.row, hp:c.hp, maxHp:c.hp, dmg:c.dmg,
-      mv:c.mv, atkRange:c.atk, spd:c.spd, alive:true });
+    units.push({
+      id:`p${i}`, team:'player', name:p.name, classe:p.classe, sexo:p.sexo,
+      col:p.col, row:p.row, hp:c.hp, maxHp:c.hp, sp:c.sp, maxSp:c.sp,
+      dmg:c.dmg, mv:c.mv, atkRange:c.atk, spd:c.spd, alive:true,
+    });
   });
 
   [
@@ -362,9 +500,11 @@ function buildUnits() {
     { t:2, col:9, row:6 },
   ].forEach((e, i) => {
     const tmpl = ENEMY_TEMPLATES[e.t];
-    units.push({ id:`e${i}`, team:'enemy', name:e.name||tmpl.name, icon:tmpl.icon,
-      col:e.col, row:e.row, hp:tmpl.hp, maxHp:tmpl.hp, dmg:tmpl.dmg,
-      mv:tmpl.mv, atkRange:tmpl.atk, spd:tmpl.spd, alive:true });
+    units.push({
+      id:`e${i}`, team:'enemy', name:e.name||tmpl.name, icon:tmpl.icon,
+      col:e.col, row:e.row, hp:tmpl.hp, maxHp:tmpl.hp, sp:0, maxSp:0,
+      dmg:tmpl.dmg, mv:tmpl.mv, atkRange:tmpl.atk, spd:tmpl.spd, alive:true,
+    });
   });
 }
 
@@ -375,15 +515,26 @@ function createUnitEl(u) {
   div.id = `u_${u.id}`; div.className = 'unit';
   div.style.cssText = `left:${pos.left}px;top:${pos.top}px;z-index:${(u.col+u.row)*2+1}`;
 
-  const hpPct = 100;
+  const spBar = u.maxSp > 0 ? `<div class="u-sp-bar"><div class="u-sp-fill" style="width:100%"></div></div>` : '';
+  const spLabel = u.maxSp > 0 ? `${u.sp}SP` : '';
+
   if (u.team === 'player') {
     div.innerHTML = `
+      <div class="u-label">
+        <span class="u-name-tag">${u.name}</span>
+        <span class="u-hpsp">${u.hp}/${u.maxHp}HP${spLabel?' · '+spLabel:''}</span>
+      </div>
       <img class="u-sprite" src="../sprites/${u.classe}_${u.sexo}.png"
         onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
       <span class="u-icon" style="display:none">${CLASS_CFG[u.classe]?.icon||'⚔️'}</span>
-      <div class="u-bar"><div class="u-fill" style="width:100%;background:var(--green)"></div></div>`;
+      <div class="u-bar"><div class="u-fill" style="width:100%;background:var(--green)"></div></div>
+      ${spBar}`;
   } else {
     div.innerHTML = `
+      <div class="u-label">
+        <span class="u-name-tag">${u.name}</span>
+        <span class="u-hpsp">${u.hp}/${u.maxHp}HP</span>
+      </div>
       <span class="u-icon">${u.icon}</span>
       <div class="u-bar"><div class="u-fill" style="width:100%;background:var(--green)"></div></div>`;
   }
@@ -405,11 +556,35 @@ function moveUnitEl(u, col, row) {
 function refreshUnitEl(u) {
   const el = document.getElementById(`u_${u.id}`);
   if (!el) return;
-  const pct = Math.max(0, Math.round((u.hp/u.maxHp)*100));
-  const clr = pct>50?'var(--green)':pct>25?'#f39c12':'var(--red)';
-  const fill = el.querySelector('.u-fill');
-  if (fill) { fill.style.width=pct+'%'; fill.style.background=clr; }
-  el.className = `unit${selUnit===u?' u-selected':''}${curUnit()===u?' u-active':''}${!u.alive?' u-dead':''}`;
+
+  // HP bar
+  const hpPct = Math.max(0, Math.round((u.hp/u.maxHp)*100));
+  const hpClr = hpPct>50?'var(--green)':hpPct>25?'#f39c12':'var(--red)';
+  const fill  = el.querySelector('.u-fill');
+  if (fill) { fill.style.width=hpPct+'%'; fill.style.background=hpClr; }
+
+  // SP bar
+  if (u.maxSp > 0) {
+    const spPct = Math.max(0, Math.round((u.sp/u.maxSp)*100));
+    const spFill = el.querySelector('.u-sp-fill');
+    if (spFill) spFill.style.width = spPct + '%';
+  }
+
+  // Label
+  const nameTag = el.querySelector('.u-name-tag');
+  const hpspTag = el.querySelector('.u-hpsp');
+  if (nameTag) nameTag.textContent = u.name;
+  if (hpspTag) {
+    const spLabel = u.maxSp > 0 ? ` · ${u.sp}SP` : '';
+    hpspTag.textContent = `${u.hp}/${u.maxHp}HP${spLabel}`;
+  }
+
+  // Unit classes
+  const cls = ['unit'];
+  if (selUnit === u)     cls.push('u-selected');
+  if (curUnit() === u)   cls.push('u-active');
+  if (!u.alive)          cls.push('u-dead');
+  el.className = cls.join(' ');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -423,7 +598,7 @@ function buildQueue() {
 function curUnit() { return turnQueue[curIdx % turnQueue.length]; }
 
 function advanceTurn() {
-  hasMoved = false; hasActed = false; selUnit = null;
+  hasMoved = false; hasActed = false; selUnit = null; _activeSkill = null;
   clearHL(); hideBtns();
   let tries = turnQueue.length;
   do { curIdx = (curIdx+1) % turnQueue.length; tries--; }
@@ -438,7 +613,7 @@ function startUnitTurn() {
   if (cu.team === 'player') {
     phase = 'select';
     setPhase(`TURNO DE ${cu.name.toUpperCase()} — toque no personagem`);
-    showBtns(false, false, false, false);
+    showBtns({ ficha:true });
   } else {
     phase = 'enemy';
     setPhase(`${cu.icon||'👹'} ${cu.name} está agindo...`);
@@ -452,8 +627,8 @@ function renderTurnBar() {
   chips.innerHTML = '';
   const n = Math.min(10, turnQueue.length);
   for (let i=0; i<n; i++) {
-    const idx = (curIdx+i) % turnQueue.length;
-    const u   = turnQueue[idx];
+    const idx  = (curIdx+i) % turnQueue.length;
+    const u    = turnQueue[idx];
     const chip = document.createElement('div');
     chip.className = `turn-chip${i===0?' active':''}${u.team==='enemy'?' enemy':''}${!u.alive?' dead':''}`;
     const icon = u.team==='player' ? (CLASS_CFG[u.classe]?.icon||'⚔️') : u.icon;
@@ -498,8 +673,8 @@ function atkTiles(u, fc, fr) {
 //  HIGHLIGHTS
 // ═══════════════════════════════════════════════════════
 function clearHL() {
-  document.querySelectorAll('.tile.hl-move,.tile.hl-atk,.tile.hl-sel')
-    .forEach(el => el.classList.remove('hl-move','hl-atk','hl-sel'));
+  document.querySelectorAll('.tile.hl-move,.tile.hl-atk,.tile.hl-sel,.tile.hl-skill')
+    .forEach(el => el.classList.remove('hl-move','hl-atk','hl-sel','hl-skill'));
 }
 function applyHL(movSet, atkSet, sc, sr) {
   clearHL();
@@ -519,6 +694,16 @@ function onUnitClick(u) {
   const cu = curUnit();
   if (phase==='end') return;
 
+  // Skill targeting: clicking an ally for heal/buff
+  if (_activeSkill && phase==='skill-target') {
+    const validAlly = u.team==='player' && u.alive;
+    const validEnemy = u.team==='enemy' && u.alive && hlAtk.has(`${u.col},${u.row}`);
+    if (validAlly || validEnemy) {
+      _executeSkillOn(cu, u);
+      return;
+    }
+  }
+
   if (phase==='select' && u===cu && cu.team==='player') {
     selUnit = cu;
     hlMove  = hasMoved ? new Set() : reachableTiles(cu);
@@ -526,8 +711,8 @@ function onUnitClick(u) {
     applyHL(hlMove, hlAtk, cu.col, cu.row);
     units.forEach(u=>refreshUnitEl(u));
     phase = 'move';
-    setPhase(`${cu.name}${hasMoved?'':', tile AZUL pra mover'} · tile VERMELHO pra atacar`);
-    showBtns(!hasActed, false, true, true);
+    setPhase(`${cu.name}${hasMoved?'':', tile AZUL pra mover'} · VERMELHO pra atacar`);
+    showBtns({ agir:!hasActed, esperar:true, cancelar:true, ficha:true });
     return;
   }
 
@@ -549,7 +734,7 @@ function onTileClick(col, row) {
     units.forEach(u=>refreshUnitEl(u));
     phase = 'action';
     setPhase(`${cu.name} moveu · AGIR ou ESPERAR`);
-    showBtns(!hasActed, false, true, true);
+    showBtns({ agir:!hasActed, esperar:true, cancelar:true, ficha:true });
   }
 }
 
@@ -557,32 +742,93 @@ function onTileClick(col, row) {
 //  UI HELPERS
 // ═══════════════════════════════════════════════════════
 function setPhase(txt) { document.getElementById('phase-txt').textContent = txt; }
-function hideBtns()    { ['btn-agir','btn-continuar','btn-esperar','btn-cancelar'].forEach(id => document.getElementById(id).style.display='none'); }
-function showBtns(agir, cont, esp, cancel) {
-  document.getElementById('btn-agir').style.display      = agir  ?'':'none';
-  document.getElementById('btn-continuar').style.display = cont  ?'':'none';
-  document.getElementById('btn-esperar').style.display   = esp   ?'':'none';
-  document.getElementById('btn-cancelar').style.display  = cancel?'':'none';
+
+function hideBtns() {
+  ['btn-ficha','btn-agir','btn-continuar','btn-esperar','btn-cancelar']
+    .forEach(id => document.getElementById(id).style.display='none');
+}
+
+function showBtns({ ficha=false, agir=false, continuar=false, esperar=false, cancelar=false } = {}) {
+  document.getElementById('btn-ficha').style.display     = ficha    ? '' : 'none';
+  document.getElementById('btn-agir').style.display      = agir     ? '' : 'none';
+  document.getElementById('btn-continuar').style.display = continuar ? '' : 'none';
+  document.getElementById('btn-esperar').style.display   = esperar  ? '' : 'none';
+  document.getElementById('btn-cancelar').style.display  = cancelar ? '' : 'none';
 }
 
 function cancelSelect() {
-  selUnit=null; clearHL(); units.forEach(u=>refreshUnitEl(u));
+  selUnit=null; _activeSkill=null; clearHL(); units.forEach(u=>refreshUnitEl(u));
   phase='select';
   setPhase(`TURNO DE ${curUnit()?.name?.toUpperCase()||'?'} — toque no personagem`);
-  showBtns(false,false,false,false);
+  showBtns({ ficha:true });
 }
 
 function playerEndTurn() { clearHL(); advanceTurn(); }
 
 function onContinuar() {
   const cb = _continuarCb; _continuarCb = null;
-  // stop audio
-  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
-  if (window.speechSynthesis) speechSynthesis.cancel();
-  // remove bubble
+  stopAudio();
   document.querySelectorAll('.speech-bubble').forEach(el => el.remove());
   hideBtns();
   if (cb) cb();
+}
+
+function stopAudio() {
+  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
+  if (window.speechSynthesis) speechSynthesis.cancel();
+}
+
+// ═══════════════════════════════════════════════════════
+//  CHARACTER SHEET
+// ═══════════════════════════════════════════════════════
+function openFicha() {
+  const cu = curUnit();
+  if (!cu || cu.team !== 'player') return;
+  const cfg   = CLASS_CFG[cu.classe] || {};
+  const skills = SKILLS[cu.classe]   || [];
+  const equip  = EQUIP[cu.classe]    || [];
+  const icon   = cfg.icon || '⚔️';
+
+  const skillRows = skills.map(sk => `
+    <div class="skill-row">
+      <span class="sk-icon2">${sk.icon}</span>
+      <div class="sk-info">
+        <div class="sk-nm">${sk.name}</div>
+        <div class="sk-dsc">${sk.desc}</div>
+      </div>
+      <span class="sk-spcost">${sk.sp}SP</span>
+    </div>`).join('');
+
+  const equipRows = equip.map(([slot,item]) => `
+    <div class="equip-row">
+      <span class="equip-slot">${slot}</span>
+      <span>${item}</span>
+    </div>`).join('');
+
+  document.getElementById('ficha-content').innerHTML = `
+    <div class="ficha-header">
+      <span class="fh-icon">${icon}</span>
+      <div class="fh-info">
+        <div class="fh-name">${cu.name}</div>
+        <div class="fh-classe">${cu.classe.toUpperCase()} · VEL ${cu.spd} · ALV ${cu.mv}</div>
+      </div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-label">HP</div><div class="stat-val hp-val">${cu.hp}/${cu.maxHp}</div></div>
+      <div class="stat-box"><div class="stat-label">SP</div><div class="stat-val sp-val">${cu.sp}/${cu.maxSp}</div></div>
+      <div class="stat-box"><div class="stat-label">DANO BASE</div><div class="stat-val">${cu.dmg}</div></div>
+      <div class="stat-box"><div class="stat-label">ALCANCE ATK</div><div class="stat-val">${cu.atkRange}</div></div>
+    </div>
+    <div class="section-title">HABILIDADES</div>
+    <div class="skill-list">${skillRows}</div>
+    <div class="section-title">EQUIPAMENTOS</div>
+    <div class="equip-list">${equipRows}</div>`;
+
+  document.getElementById('modal-ficha').classList.add('open');
+}
+
+function closeFicha() {
+  document.getElementById('modal-ficha').classList.remove('open');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -590,12 +836,116 @@ function onContinuar() {
 // ═══════════════════════════════════════════════════════
 function openActionModal() {
   const cu = curUnit();
+  if (!cu) return;
   document.getElementById('act-title').textContent = `⚔️ ${cu.name} age`;
+  document.getElementById('act-txt').value = '';
   document.getElementById('dice-box').classList.remove('show');
   document.getElementById('btn-roll').disabled = false;
+
+  // Build skill buttons
+  const skills = SKILLS[cu.classe] || [];
+  const grid = document.getElementById('skill-grid');
+  grid.innerHTML = '';
+  skills.forEach(sk => {
+    const btn = document.createElement('button');
+    const canUse = cu.sp >= sk.sp;
+    btn.className = `skill-btn${canUse?'':' sp-empty'}`;
+    btn.innerHTML = `<span class="sk-name">${sk.icon} ${sk.name}</span><span class="sk-sp">${sk.sp} SP</span><span class="sk-desc">${sk.desc}</span>`;
+    if (canUse) {
+      btn.onclick = () => activateSkill(sk);
+    } else {
+      btn.title = 'SP insuficiente';
+    }
+    grid.appendChild(btn);
+  });
+
   document.getElementById('modal-action').classList.add('open');
   setTimeout(() => document.getElementById('act-txt').focus(), 80);
 }
+
+function activateSkill(sk) {
+  const cu = curUnit();
+  closeActionModal();
+  _activeSkill = sk;
+
+  // Skills that need a target
+  const needsTarget = ['cura','cura_sagrada','benção','escudo_magico','proteger'].includes(sk.id);
+  if (needsTarget) {
+    hlAtk = atkTiles(cu, cu.col, cu.row);
+    // Show ally positions for heal-type skills
+    const allies = units.filter(u=>u.team==='player'&&u.alive&&u!==cu);
+    clearHL();
+    allies.forEach(a => getTileEl(a.col,a.row)?.classList.add('hl-skill'));
+    phase = 'skill-target';
+    setPhase(`${sk.icon} ${sk.name}: toque no alvo`);
+    showBtns({ cancelar:true, ficha:true });
+  } else {
+    // Execute on nearest visible enemy or self
+    document.getElementById('act-txt').value = `${sk.name}: ${sk.desc}`;
+    _executeSkillSelf(cu, sk);
+  }
+}
+
+function _executeSkillSelf(cu, sk) {
+  cu.sp = Math.max(0, cu.sp - sk.sp);
+  const tipo  = sk.tipo;
+  const mod   = (MODS[cu.classe]||{})[tipo] ?? 2;
+  const dc    = DC[tipo] || 11;
+  const dado  = Math.floor(Math.random()*20)+1;
+  const total = dado + mod;
+  const crit  = dado === 20;
+  const fail  = dado === 1;
+  const succ  = crit || (!fail && total >= dc);
+
+  const enemies = units.filter(u=>u.team==='enemy'&&u.alive&&hlAtk.has(`${u.col},${u.row}`));
+  const target  = enemies.sort((a,b)=>dist(cu,a)-dist(cu,b))[0];
+  let dmg = 0;
+  if (succ && target) {
+    dmg = crit ? (cu.dmg+4)*2 : cu.dmg+4;
+    target.hp = Math.max(0, target.hp - dmg);
+    if (target.hp <= 0) target.alive = false;
+  }
+
+  hasActed = true;
+  units.forEach(u => refreshUnitEl(u)); renderTurnBar();
+  const narr = buildSkillNarration(cu, target, sk, succ, crit, fail, dmg);
+  showBubble(cu, narr, () => {
+    if (!checkBattleEnd()) {
+      phase = 'action';
+      showBtns({ esperar:true, ficha:true });
+      setPhase(`${cu.name} usou ${sk.name} · ESPERAR para encerrar`);
+    }
+  });
+}
+
+function _executeSkillOn(cu, target) {
+  const sk = _activeSkill; _activeSkill = null;
+  cu.sp = Math.max(0, cu.sp - sk.sp);
+  clearHL();
+
+  const dado = Math.floor(Math.random()*20)+1;
+  const mod  = (MODS[cu.classe]||{})['skill'] ?? 2;
+  const succ = dado === 20 || (dado !== 1 && dado+mod >= DC.skill);
+  const crit = dado === 20;
+
+  let healed = 0;
+  if (succ && target.team === 'player') {
+    healed = crit ? 30 : 18;
+    target.hp = Math.min(target.maxHp, target.hp + healed);
+  }
+
+  hasActed = true;
+  units.forEach(u => refreshUnitEl(u)); renderTurnBar();
+  const narr = buildHealNarration(cu, target, sk, succ, crit, healed);
+  showBubble(cu, narr, () => {
+    if (!checkBattleEnd()) {
+      phase = 'action';
+      showBtns({ esperar:true, ficha:true });
+      setPhase(`${cu.name} usou ${sk.name} · ESPERAR para encerrar`);
+    }
+  });
+}
+
 function closeActionModal() { document.getElementById('modal-action').classList.remove('open'); }
 
 function rollAction() {
@@ -634,7 +984,7 @@ function detectType(txt) {
   const a = txt.toLowerCase();
   if (/falar|conversar|negociar|persuad/.test(a)) return 'falar';
   if (/atac|golpe|cortar|bater|ferir|lança|arremessa/.test(a)) return 'atacar';
-  if (/magia|feitiç|curar|invocar|skill|runa/.test(a)) return 'skill';
+  if (/magia|feitiç|curar|invocar|runa/.test(a)) return 'skill';
   if (/defend|bloquear|esquivar|proteger|recuar/.test(a)) return 'defender';
   if (/correr|fugir|mover|saltar|avança/.test(a)) return 'mover';
   return 'livre';
@@ -658,14 +1008,14 @@ function applyPlayerAction(cu, txt, succ, crit, fail, total) {
     cu.hp = Math.max(0, cu.hp - 2);
   }
 
-  const narration = buildNarration(cu, target, txt, succ, crit, fail, dmg);
   units.forEach(u => refreshUnitEl(u));
   renderTurnBar();
 
+  const narration = buildNarration(cu, target, txt, succ, crit, fail, dmg);
   showBubble(cu, narration, () => {
     if (!checkBattleEnd()) {
       phase = 'action';
-      showBtns(false, false, true, false);
+      showBtns({ esperar:true, ficha:true });
       setPhase(`${cu.name} agiu · ESPERAR para encerrar turno`);
     }
   });
@@ -679,7 +1029,6 @@ async function runEnemyTurn(enemy) {
   if (!players.length) return;
   const target = players.sort((a,b)=>dist(enemy,a)-dist(enemy,b))[0];
 
-  // Move
   if (dist(enemy,target) > enemy.atkRange) {
     const reach = reachableTiles(enemy);
     let best=null, bestD=Infinity;
@@ -745,21 +1094,22 @@ function checkBattleEnd() {
 }
 
 // ═══════════════════════════════════════════════════════
-//  SPEECH BUBBLE
+//  SPEECH BUBBLE — waits for TTS then shows CONTINUAR
 // ═══════════════════════════════════════════════════════
 let _autoDismiss = null;
 
 function showBubble(unit, narration, onDone) {
   document.querySelectorAll('.speech-bubble').forEach(el => el.remove());
   clearTimeout(_autoDismiss);
+  stopAudio();
 
   const cont = document.getElementById('grid-container');
   const pos  = unitScreenPos(unit.col, unit.row);
 
-  const BUBBLE_W = 230;
+  const BUBBLE_W = 240;
   const unitCX   = pos.left + 19;
   const left     = Math.max(8, Math.min(GRID_W - BUBBLE_W - 8, unitCX - BUBBLE_W/2));
-  const top      = Math.max(8, pos.top - 115);
+  const top      = Math.max(8, pos.top - 120);
 
   const bubble = document.createElement('div');
   bubble.className = 'speech-bubble';
@@ -774,47 +1124,43 @@ function showBubble(unit, narration, onDone) {
     <div class="sb-text">${narration}</div>`;
   cont.appendChild(bubble);
 
-  // Scroll grid to show bubble
-  const wrap = document.getElementById('grid-wrap');
-  const contRect = cont.getBoundingClientRect();
-  wrap.scrollTo({ top: Math.max(0, top - 80), behavior:'smooth' });
+  document.getElementById('grid-wrap').scrollTo({ top: Math.max(0, top - 80), behavior:'smooth' });
 
-  // Play TTS
-  narrar(narration);
+  setPhase('⏳ Narrando...');
+  hideBtns();
 
-  // Wire "Continuar" button
+  // Wire callback — called when user clicks CONTINUAR or auto-advances
   _continuarCb = () => {
     bubble.remove();
     if (onDone) onDone();
   };
-  setPhase('▼ Toque CONTINUAR para prosseguir');
-  showBtns(false, true, false, false);
 
-  // Auto-advance after 5s
-  _autoDismiss = setTimeout(() => { if (_continuarCb) onContinuar(); }, 5000);
+  // Start TTS; reveal CONTINUAR when audio ends (or on timeout)
+  narrar(narration).then(() => {
+    // TTS done → show CONTINUAR
+    setPhase('▼ CONTINUAR para prosseguir');
+    showBtns({ continuar:true });
+    // Auto-advance after 4s if user doesn't click
+    _autoDismiss = setTimeout(() => { if (_continuarCb) onContinuar(); }, 4000);
+  });
 }
 
 // ═══════════════════════════════════════════════════════
-//  NARRATION GENERATOR
+//  NARRATION GENERATORS
 // ═══════════════════════════════════════════════════════
 function buildNarration(actor, target, acao, succ, crit, fail, dmg) {
-  const an = actor.name;
-  const tn = target?.name;
-  const th = target?.hp;
-  const tm = target?.maxHp;
+  const an = actor.name, tn = target?.name, th = target?.hp, tm = target?.maxHp;
 
-  if (fail) {
-    return rnd([
-      `${an} perde o equilíbrio no momento crucial — a arma oscila pelo ar vazio, deixando uma abertura perigosa.`,
-      `O impulso de ${an} vai longe demais. ${an} luta para se recompor, completamente exposto por um instante.`,
-      `Falha catastrófica! ${an} tropeça e quase cai — por sorte ninguém aproveitou a abertura.`,
-    ]);
-  }
+  if (fail) return rnd([
+    `${an} perde o equilíbrio no momento crucial — a arma oscila pelo ar vazio, deixando uma abertura perigosa.`,
+    `O impulso de ${an} vai longe demais. ${an} luta para se recompor, completamente exposto por um instante.`,
+    `Falha catastrófica! ${an} tropeça e quase cai — por sorte ninguém aproveitou a abertura.`,
+  ]);
 
   if (crit && target) {
     const dead = th <= 0;
     if (dead) return rnd([
-      `Golpe LETAL! A ${actor.team==='player'?'lâmina':'garra'} de ${an} atravessa a defesa de ${tn} e penetra fundo — ${dmg} de dano! ${tn} desmorona no chão.`,
+      `Golpe LETAL! A lâmina de ${an} atravessa a defesa de ${tn} e penetra fundo — ${dmg} de dano! ${tn} desmorona no chão.`,
       `CRÍTICO DEVASTADOR! ${an} encontra uma abertura fatal e desfere ${dmg} de dano em ${tn}. O inimigo cai para não mais se levantar.`,
     ]);
     return rnd([
@@ -825,8 +1171,8 @@ function buildNarration(actor, target, acao, succ, crit, fail, dmg) {
   }
 
   if (succ && target) {
-    const dead   = th <= 0;
-    const frac   = th / tm;
+    const dead = th <= 0;
+    const frac = th / tm;
     const estado = dead       ? 'desmorona no chão derrotado'
                  : frac<0.25 ? 'mal consegue se manter de pé, sangrando'
                  : frac<0.55 ? 'vacila, com ferimentos visíveis'
@@ -842,59 +1188,79 @@ function buildNarration(actor, target, acao, succ, crit, fail, dmg) {
     ]);
   }
 
-  if (!succ && target) {
-    return rnd([
-      `${tn} desvia no último segundo. O golpe de ${an} corta o ar sem efeito.`,
-      `${an} tenta uma abertura mas ${tn} bloqueia e recua fora do alcance.`,
-      `O ataque de ${an} passa por centímetros de ${tn}, que esquiva com agilidade.`,
-      `${tn} lê o movimento de ${an} e se defende. O ataque não passa.`,
-    ]);
-  }
+  if (!succ && target) return rnd([
+    `${tn} desvia no último segundo. O golpe de ${an} corta o ar sem efeito.`,
+    `${an} tenta uma abertura mas ${tn} bloqueia e recua fora do alcance.`,
+    `O ataque de ${an} passa por centímetros de ${tn}, que esquiva com agilidade.`,
+    `${tn} lê o movimento de ${an} e se defende. O ataque não passa.`,
+  ]);
 
   return `${an} age com determinação, mas o momento passa sem efeito concreto.`;
 }
 
-// ═══════════════════════════════════════════════════════
-//  TTS — Groq + WebSpeech fallback
-// ═══════════════════════════════════════════════════════
-async function narrar(texto) {
-  const limpo = texto.replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim().substring(0, 600);
-  if (!limpo) return;
-
-  if (_currentAudio) { _currentAudio.pause(); URL.revokeObjectURL(_currentAudio._url||''); _currentAudio = null; }
-  if (window.speechSynthesis) speechSynthesis.cancel();
-
-  const apiKey = localStorage.getItem('rpg_groq_key') || '';
-  if (apiKey) {
-    try {
-      const res = await fetch('https://api.groq.com/openai/v1/audio/speech', {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
-        body: JSON.stringify({ model:'playai-tts', input:limpo, voice:'Fritz-PlayAI', response_format:'mp3', speed:1.2 })
-      });
-      if (res.ok) {
-        const blob  = await res.blob();
-        const url   = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audio._url  = url;
-        _currentAudio = audio;
-        audio.onended = () => { URL.revokeObjectURL(url); _currentAudio = null; };
-        audio.play().catch(() => _webSpeech(limpo));
-        return;
-      }
-    } catch(e) {}
-  }
-  _webSpeech(limpo);
+function buildSkillNarration(actor, target, sk, succ, crit, fail, dmg) {
+  const an = actor.name, tn = target?.name;
+  if (fail) return `${an} tenta usar ${sk.name} mas perde a concentração no momento crítico!`;
+  if (crit && target) return `${an} canaliza ${sk.icon} ${sk.name} com maestria — golpe crítico! ${tn} recebe ${dmg} de dano mágico!`;
+  if (succ && target) return `${an} usa ${sk.icon} ${sk.name}! O poder atinge ${tn} causando ${dmg} de dano.`;
+  if (!succ && target) return `${an} tenta ${sk.name} mas ${tn} resiste ao efeito!`;
+  return `${an} usa ${sk.icon} ${sk.name}!`;
 }
 
-function _webSpeech(texto) {
-  if (!window.speechSynthesis) return;
+function buildHealNarration(actor, target, sk, succ, crit, healed) {
+  const an = actor.name, tn = target.name;
+  if (!succ) return `${an} tenta ${sk.name} em ${tn} mas a energia se dissipa sem efeito.`;
+  if (crit)  return `Cura CRÍTICA! ${an} canaliza ${sk.icon} ${sk.name} em ${tn} — ${healed} HP restaurados! ${tn} brilha com energia divina.`;
+  return `${an} usa ${sk.icon} ${sk.name} em ${tn}. ${healed} pontos de vida restaurados — ${tn} respira aliviado.`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  TTS — returns Promise that resolves when audio ends
+// ═══════════════════════════════════════════════════════
+function narrar(texto) {
+  const limpo = texto.replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim().substring(0, 600);
+  if (!limpo) return Promise.resolve();
+
+  return new Promise(async resolve => {
+    const apiKey = localStorage.getItem('rpg_groq_key') || '';
+    if (apiKey) {
+      try {
+        const res = await fetch('https://api.groq.com/openai/v1/audio/speech', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
+          body: JSON.stringify({ model:'playai-tts', input:limpo, voice:'Fritz-PlayAI', response_format:'mp3', speed:1.2 })
+        });
+        if (res.ok) {
+          const blob  = await res.blob();
+          const url   = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          audio._url  = url;
+          _currentAudio = audio;
+          audio.onended = () => { URL.revokeObjectURL(url); _currentAudio = null; resolve(); };
+          audio.onerror = () => { URL.revokeObjectURL(url); _currentAudio = null; resolve(); };
+          audio.play().catch(() => { _webSpeech(limpo, resolve); });
+          return;
+        }
+      } catch(e) {}
+    }
+    _webSpeech(limpo, resolve);
+  });
+}
+
+function _webSpeech(texto, onEnd) {
+  if (!window.speechSynthesis) { if (onEnd) onEnd(); return; }
   const utt    = new SpeechSynthesisUtterance(texto);
   const voices = speechSynthesis.getVoices();
   const voz    = voices.find(v=>v.lang.startsWith('pt')) || voices.find(v=>v.lang.startsWith('es')) || null;
   if (voz) utt.voice = voz;
   utt.rate = 0.9; utt.pitch = 0.78;
+  utt.onend   = onEnd || null;
+  utt.onerror = onEnd || null;
   speechSynthesis.speak(utt);
+  // Fallback: if voices not loaded yet, resolve after estimated duration
+  if (!onEnd) return;
+  const estimated = Math.max(2000, texto.length * 60);
+  setTimeout(onEnd, estimated + 500);
 }
 
 // ═══════════════════════════════════════════════════════
