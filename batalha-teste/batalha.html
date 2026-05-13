@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>⚔️ Batalha Tática</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -123,7 +126,66 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
   overflow-y:auto;scrollbar-width:none;
 }
 #sidebar-left::-webkit-scrollbar{display:none}
-@media(max-width:700px){#sidebar-left,#sidebar-right{display:none}}
+@media(max-width:900px){#sidebar-left,#sidebar-right{display:none!important}}
+
+/* ══════════════════════════════════════
+   MOBILE LAYOUT
+══════════════════════════════════════ */
+@media(max-width:900px){
+  /* Turn bar compact */
+  #turn-bar{height:48px;padding:3px 8px}
+  .turn-chip{min-width:42px;padding:2px 5px 3px}
+  .tc-icon{font-size:14px}
+  .tc-name,.tc-hp{font-size:6px}
+
+  /* Turn header compact */
+  #turn-header-row{padding:3px 8px;min-height:30px}
+  #turn-name{font-size:12px}
+  #turn-sub{display:none}
+  .th-btn{padding:3px 7px;font-size:8px}
+
+  /* Map fills full width */
+  #grid-wrap{align-items:flex-start;justify-content:flex-start}
+
+  /* Bottom area: stack vertically */
+  #combat-controls-row{flex-direction:column;min-height:auto}
+  #combat-box{
+    border-right:none;
+    border-bottom:1px solid rgba(122,85,0,.18);
+    padding:5px 10px 6px;
+  }
+  #combat-portrait{width:36px;height:42px;flex-shrink:0}
+  #combat-text{font-size:10px;line-height:1.5}
+  #combat-roll-line{font-size:7px}
+
+  #controls-area{
+    width:100%;padding:5px 10px;
+    flex-direction:row;align-items:center;gap:8px;
+    border-top:none;
+  }
+  .speed-lbl{font-size:6px}
+  #speed-row{flex:1;gap:5px}
+  #speed-val{font-size:13px;min-width:26px}
+  #btn-rolar{padding:8px 14px;font-size:10px;flex-shrink:0}
+
+  /* Action input */
+  #action-input-row{padding:4px 8px;gap:5px}
+  #act-txt{height:40px;font-size:12px;padding:6px 8px}
+  #btn-esperar,#btn-cancelar,#btn-esperar2{padding:4px 8px;font-size:8px}
+
+  /* Log compact */
+  #log-chat-row{height:36px}
+  .log-sec-title{display:none}
+  .log-entry,.chat-entry{font-size:8px}
+
+  /* CMD bar */
+  #cmd-bar{padding:4px 8px;gap:4px}
+  #chat-input{font-size:11px;padding:4px 7px}
+  .btn{padding:5px 9px;font-size:9px}
+
+  /* Hide legends */
+  #legendas-bar{display:none!important}
+}
 
 .sb-header{
   padding:7px 10px 5px;
@@ -1543,4 +1605,3 @@ function init(){
 init();
 </script>
 </body>
-</html>
