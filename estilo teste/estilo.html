@@ -3,354 +3,285 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Teste de Estilo — RPG Online</title>
+<title>Seletor de Estilo — RPG Online</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
+
   body {
     background: #0e0f0d;
     color: #d4af6a;
     font-family: 'Courier New', monospace;
     min-height: 100vh;
-    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 16px;
+    gap: 24px;
   }
+
   h1 {
-    text-align: center;
-    font-size: 18px;
-    letter-spacing: 4px;
-    margin-bottom: 6px;
+    font-size: 15px;
+    letter-spacing: 5px;
     color: #d4af6a;
+    text-align: center;
   }
-  .sub { text-align: center; font-size: 10px; color: #5a4a2a; letter-spacing: 2px; margin-bottom: 28px; }
 
-  /* ── LAYOUT ─────────────────────────────────────────── */
-  .main { display: flex; gap: 32px; flex-wrap: wrap; justify-content: center; }
-
-  /* ── PRÉVIA ─────────────────────────────────────────── */
-  .preview-box {
-    display: flex; flex-direction: column; align-items: center; gap: 14px;
-    background: #141510; border: 1px solid #2a2010;
-    border-radius: 8px; padding: 24px 32px;
+  /* ── PRÉVIA ───────────────────────────────── */
+  .preview {
+    background: #121310;
+    border: 1px solid #2a2010;
+    border-radius: 10px;
+    padding: 28px 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
   }
-  .preview-box h2 { font-size: 11px; letter-spacing: 3px; color: #5a4a2a; }
 
-  .char-wrap {
-    position: relative;
-    width: 160px; height: 240px;
-    display: flex; align-items: flex-end; justify-content: center;
-  }
-  .char-base { width: 160px; height: 240px; image-rendering: pixelated; }
-  .hair-overlay {
-    position: absolute;
-    top: 0px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 120px; height: 80px;
+  #sprite-preview {
+    width: 160px;
+    height: 240px;
     image-rendering: pixelated;
-    pointer-events: none;
+    display: block;
   }
 
-  /* Ajuste fino de posição do cabelo (arrastar com slider) */
-  .offset-row {
-    display: flex; gap: 10px; align-items: center; font-size: 10px; color: #5a4a2a;
+  .info {
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: #5a4a2a;
   }
-  .offset-row input[type=range] {
-    width: 100px; accent-color: #d4af6a;
-  }
-  #lbl-oy, #lbl-ox { color: #d4af6a; min-width: 24px; }
+  .info strong { color: #d4af6a; }
 
-  /* Botões de gênero */
+  /* ── PAINEL DE CONTROLES ──────────────────── */
+  .controles {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    max-width: 380px;
+  }
+
+  /* linha de seleção */
+  .sel-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .sel-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: #3a3020;
+  }
+
+  /* seletor ← valor → */
+  .arrow-sel {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: #141510;
+    border: 1px solid #2a2010;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .arrow-sel button {
+    background: transparent;
+    border: none;
+    color: #7a6a4a;
+    font-size: 18px;
+    padding: 10px 18px;
+    cursor: pointer;
+    transition: color .15s, background .15s;
+    flex-shrink: 0;
+  }
+  .arrow-sel button:hover { color: #d4af6a; background: #1e1a0d; }
+  .arrow-sel .val {
+    flex: 1;
+    text-align: center;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: #d4af6a;
+    user-select: none;
+  }
+
+  /* indicador de cor */
+  .cor-dot {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    margin-right: 7px;
+    vertical-align: middle;
+  }
+
+  /* botões de classe */
+  .class-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .btn-class {
+    background: #141510;
+    border: 1px solid #2a2010;
+    color: #5a4a2a;
+    font-family: inherit;
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 8px 4px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: all .15s;
+  }
+  .btn-class:hover { color: #d4af6a; border-color: #5a4a2a; }
+  .btn-class.active { border-color: #d4af6a; color: #d4af6a; background: #1e1a0d; }
+
+  /* botões de gênero */
   .gender-row { display: flex; gap: 8px; }
   .btn-gender {
-    background: #1a1810; border: 1px solid #3a2a0a; color: #7a6a4a;
-    font-family: inherit; font-size: 11px; letter-spacing: 2px;
-    padding: 6px 16px; cursor: pointer; border-radius: 4px;
+    flex: 1;
+    background: #141510;
+    border: 1px solid #2a2010;
+    color: #5a4a2a;
+    font-family: inherit;
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 9px;
+    cursor: pointer;
+    border-radius: 5px;
     transition: all .15s;
   }
   .btn-gender.active { border-color: #d4af6a; color: #d4af6a; background: #1e1a0d; }
 
-  /* ── SELETOR ────────────────────────────────────────── */
-  .selector-box {
-    display: flex; flex-direction: column; gap: 20px;
-    background: #141510; border: 1px solid #2a2010;
-    border-radius: 8px; padding: 20px 24px;
-    max-width: 620px;
-  }
-
-  .sel-section { display: flex; flex-direction: column; gap: 8px; }
-  .sel-label { font-size: 10px; letter-spacing: 3px; color: #5a4a2a; }
-
-  /* Grade de classes */
-  .class-grid { display: flex; gap: 8px; flex-wrap: wrap; }
-  .btn-class {
-    background: #1a1810; border: 1px solid #2a2010;
-    padding: 4px 10px; cursor: pointer; border-radius: 4px;
-    font-family: inherit; font-size: 10px; color: #7a6a4a;
-    letter-spacing: 1px; transition: all .15s;
-  }
-  .btn-class.active { border-color: #d4af6a; color: #d4af6a; background: #1e1a0d; }
-
-  /* Grade de estilos de cabelo */
-  .style-grid { display: flex; gap: 6px; flex-wrap: wrap; }
-  .btn-style {
-    background: #1a1810; border: 2px solid #2a2010;
-    cursor: pointer; border-radius: 4px; padding: 2px;
-    transition: border-color .15s;
-    position: relative;
-  }
-  .btn-style:hover { border-color: #5a4a2a; }
-  .btn-style.active { border-color: #d4af6a; }
-  .btn-style img { width: 80px; height: 54px; image-rendering: pixelated; display: block; }
-  .btn-style span {
-    display: block; text-align: center; font-size: 8px;
-    color: #5a4a2a; letter-spacing: 1px; padding: 2px 0;
-  }
-  .btn-style.active span { color: #d4af6a; }
-
-  /* Seletor de cor */
-  .color-grid { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  .btn-cor {
-    width: 28px; height: 28px; border-radius: 50%;
-    cursor: pointer; border: 2px solid #2a2010;
-    transition: transform .15s, border-color .15s;
-  }
-  .btn-cor:hover { transform: scale(1.15); }
-  .btn-cor.active { border-color: #fff; transform: scale(1.2); }
-
-  /* Info */
-  .info-bar {
-    font-size: 10px; letter-spacing: 2px; color: #5a4a2a;
-    background: #0e0f0d; border: 1px solid #1e1a0d;
-    border-radius: 4px; padding: 6px 12px; text-align: center;
-  }
-  .info-bar span { color: #d4af6a; }
-
-  /* ── GALERIA ────────────────────────────────────────── */
-  .gallery { width: 100%; margin-top: 32px; }
-  .gallery h2 { text-align: center; font-size: 11px; letter-spacing: 3px; color: #5a4a2a; margin-bottom: 16px; }
-  .gal-grid {
-    display: flex; flex-wrap: wrap; gap: 16px; justify-content: center;
-  }
-  .gal-card {
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-  }
-  .gal-wrap { position: relative; width: 80px; height: 120px; }
-  .gal-base { width: 80px; height: 120px; image-rendering: pixelated; }
-  .gal-hair {
-    position: absolute; top: 0; left: 50%;
-    transform: translateX(-50%);
-    width: 60px; height: 40px; image-rendering: pixelated;
-    pointer-events: none;
-  }
-  .gal-lbl { font-size: 8px; color: #5a4a2a; letter-spacing: 1px; }
-
-  hr { border: none; border-top: 1px solid #2a2010; margin: 8px 0; }
+  hr { border: none; border-top: 1px solid #1e1a0a; }
 </style>
 </head>
 <body>
 
-<h1>⚔ SISTEMA DE CABELOS — TESTE</h1>
-<p class="sub">ESTILO RAGNAROK ONLINE / RPG ONLINE</p>
+<h1>⚔ ESTILO DO PERSONAGEM</h1>
 
-<div class="main">
-
-  <!-- PRÉVIA DO PERSONAGEM -->
-  <div class="preview-box">
-    <h2>PRÉVIA</h2>
-
-    <div class="gender-row">
-      <button class="btn-gender active" onclick="setGenero('m')">♂ MASC</button>
-      <button class="btn-gender" onclick="setGenero('f')">♀ FEM</button>
-    </div>
-
-    <div class="char-wrap" id="preview-wrap">
-      <img id="preview-char" class="char-base" src="personagens/guerreiro_m.png">
-      <img id="preview-hair" class="hair-overlay" src="cabelos/masculino/classico_preto.png">
-    </div>
-
-    <div class="offset-row">
-      <span>↕</span>
-      <input type="range" id="slider-oy" min="-40" max="60" value="0" oninput="ajustarOffset()">
-      <span id="lbl-oy">0</span>
-    </div>
-    <div class="offset-row">
-      <span>↔</span>
-      <input type="range" id="slider-ox" min="-40" max="40" value="0" oninput="ajustarOffset()">
-      <span id="lbl-ox">0</span>
-    </div>
-
-    <div class="info-bar" id="info-bar">
-      <span>GUERREIRO</span> · <span>CLÁSSICO</span> · <span>PRETO</span>
-    </div>
-  </div>
-
-  <!-- SELETORES -->
-  <div class="selector-box">
-
-    <div class="sel-section">
-      <div class="sel-label">CLASSE</div>
-      <div class="class-grid" id="class-grid"></div>
-    </div>
-
-    <hr>
-
-    <div class="sel-section">
-      <div class="sel-label">CORTE DE CABELO</div>
-      <div class="style-grid" id="style-grid"></div>
-    </div>
-
-    <hr>
-
-    <div class="sel-section">
-      <div class="sel-label">COR DO CABELO</div>
-      <div class="color-grid" id="color-grid"></div>
-    </div>
-
-  </div>
+<!-- PRÉVIA -->
+<div class="preview">
+  <img id="sprite-preview" src="" alt="personagem">
+  <div class="info" id="info-txt">—</div>
 </div>
 
-<!-- GALERIA: todas as combinações da cor selecionada -->
-<div class="gallery">
-  <h2>GALERIA — TODOS OS ESTILOS NA COR SELECIONADA</h2>
-  <div class="gal-grid" id="gal-grid"></div>
+<!-- CONTROLES -->
+<div class="controles">
+
+  <div class="sel-row">
+    <div class="sel-label">CLASSE</div>
+    <div class="class-grid" id="class-grid"></div>
+  </div>
+
+  <div class="sel-row">
+    <div class="sel-label">GÊNERO</div>
+    <div class="gender-row">
+      <button class="btn-gender active" id="btn-m" onclick="setGenero('m')">♂ MASCULINO</button>
+      <button class="btn-gender"        id="btn-f" onclick="setGenero('f')">♀ FEMININO</button>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="sel-row">
+    <div class="sel-label">CORTE DE CABELO</div>
+    <div class="arrow-sel">
+      <button onclick="mudar('estilo',-1)">&#8592;</button>
+      <span class="val" id="val-estilo">—</span>
+      <button onclick="mudar('estilo',+1)">&#8594;</button>
+    </div>
+  </div>
+
+  <div class="sel-row">
+    <div class="sel-label">COR DO CABELO</div>
+    <div class="arrow-sel">
+      <button onclick="mudar('cor',-1)">&#8592;</button>
+      <span class="val" id="val-cor">—</span>
+      <button onclick="mudar('cor',+1)">&#8594;</button>
+    </div>
+  </div>
+
 </div>
 
 <script>
-// ── DADOS ────────────────────────────────────────────────────
 const CLASSES = ['guerreiro','mago','ladino','clerigo','barbaro','arqueiro'];
-const CLASSES_PT = { guerreiro:'GUERREIRO', mago:'MAGO', ladino:'LADINO', clerigo:'CLÉRIGO', barbaro:'BÁRBARO', arqueiro:'ARQUEIRO' };
+const CLASSES_PT = { guerreiro:'GUERREIRO', mago:'MAGO', ladino:'LADINO',
+                     clerigo:'CLÉRIGO', barbaro:'BÁRBARO', arqueiro:'ARQUEIRO' };
 
-const ESTILOS_M = ['classico','espetado','partido','baguncado','rabo_baixo'];
-const ESTILOS_F = ['classico','camadas','tranca_lateral','rabo_alto','coque_baixo'];
+const ESTILOS = {
+  m: ['classico','espetado','partido','baguncado','rabo_baixo'],
+  f: ['classico','camadas','tranca_lateral','rabo_alto','coque_baixo']
+};
 const ESTILOS_PT = {
   classico:'CLÁSSICO', espetado:'ESPETADO', partido:'PARTIDO',
   baguncado:'BAGUNÇADO', rabo_baixo:'RABO BAIXO',
-  camadas:'CAMADAS', tranca_lateral:'TRANÇA LAT.', rabo_alto:'RABO ALTO', coque_baixo:'COQUE BAIXO'
+  camadas:'CAMADAS', tranca_lateral:'TRANÇA LAT.', rabo_alto:'RABO ALTO',
+  coque_baixo:'COQUE BAIXO'
 };
 
 const CORES = ['preto','cinza','branco','vermelho','loiro','verde','azul'];
-const CORES_HEX = {
-  preto:'#1a1a1a', cinza:'#888', branco:'#eee',
-  vermelho:'#c0392b', loiro:'#d4af37', verde:'#27ae60', azul:'#2980b9'
+const CORES_PT = { preto:'PRETO', cinza:'CINZA', branco:'BRANCO',
+                   vermelho:'VERMELHO', loiro:'LOIRO', verde:'VERDE', azul:'AZUL' };
+const CORES_HEX = { preto:'#222', cinza:'#999', branco:'#eee',
+                    vermelho:'#c0392b', loiro:'#d4af37', verde:'#27ae60', azul:'#2980b9' };
+
+let estado = {
+  classe: 'guerreiro',
+  genero: 'm',
+  iEstilo: 0,
+  iCor: 0
 };
 
-// ── ESTADO ───────────────────────────────────────────────────
-let estado = { classe:'guerreiro', genero:'m', estilo:'classico', cor:'preto' };
-
-// ── BUILDS HTML ──────────────────────────────────────────────
-function buildClasses() {
-  const g = document.getElementById('class-grid');
-  CLASSES.forEach(c => {
-    const b = document.createElement('button');
-    b.className = 'btn-class' + (c === estado.classe ? ' active' : '');
-    b.textContent = CLASSES_PT[c];
-    b.onclick = () => { estado.classe = c; atualizar(); };
-    g.appendChild(b);
-  });
+function setGenero(g) {
+  estado.genero = g;
+  estado.iEstilo = 0;
+  document.getElementById('btn-m').classList.toggle('active', g === 'm');
+  document.getElementById('btn-f').classList.toggle('active', g === 'f');
+  atualizar();
 }
 
-function buildEstilos() {
-  const g = document.getElementById('style-grid');
-  g.innerHTML = '';
-  const estilos = estado.genero === 'm' ? ESTILOS_M : ESTILOS_F;
-  const pasta = estado.genero === 'm' ? 'masculino' : 'feminino';
-  estilos.forEach(e => {
-    const b = document.createElement('button');
-    b.className = 'btn-style' + (e === estado.estilo ? ' active' : '');
-    b.onclick = () => { estado.estilo = e; atualizar(); };
-    b.innerHTML = `<img src="cabelos/${pasta}/${e}_${estado.cor}.png"><span>${ESTILOS_PT[e]}</span>`;
-    g.appendChild(b);
-  });
+function mudar(campo, dir) {
+  if (campo === 'estilo') {
+    const n = ESTILOS[estado.genero].length;
+    estado.iEstilo = (estado.iEstilo + dir + n) % n;
+  } else {
+    estado.iCor = (estado.iCor + dir + CORES.length) % CORES.length;
+  }
+  atualizar();
 }
 
-function buildCores() {
-  const g = document.getElementById('color-grid');
-  CORES.forEach(c => {
-    const b = document.createElement('button');
-    b.className = 'btn-cor' + (c === estado.cor ? ' active' : '');
-    b.style.background = CORES_HEX[c];
-    b.title = c.toUpperCase();
-    b.onclick = () => { estado.cor = c; atualizar(); };
-    g.appendChild(b);
-  });
-}
-
-function buildGaleria() {
-  const g = document.getElementById('gal-grid');
-  g.innerHTML = '';
-  const pasta = estado.genero === 'm' ? 'masculino' : 'feminino';
-  const estilos = estado.genero === 'm' ? ESTILOS_M : ESTILOS_F;
-  CLASSES.forEach(cls => {
-    estilos.forEach(est => {
-      const card = document.createElement('div');
-      card.className = 'gal-card';
-      const wrap = document.createElement('div');
-      wrap.className = 'gal-wrap';
-      const base = document.createElement('img');
-      base.className = 'gal-base';
-      base.src = `personagens/${cls}_${estado.genero}.png`;
-      const h = document.createElement('img');
-      h.className = 'gal-hair';
-      h.src = `cabelos/${pasta}/${est}_${estado.cor}.png`;
-      h.style.top = getHairOffset(cls) + 'px';
-      wrap.appendChild(base);
-      wrap.appendChild(h);
-      const lbl = document.createElement('div');
-      lbl.className = 'gal-lbl';
-      lbl.textContent = CLASSES_PT[cls].substring(0,4) + ' · ' + ESTILOS_PT[est].substring(0,6);
-      card.appendChild(wrap);
-      card.appendChild(lbl);
-      g.appendChild(card);
-    });
-  });
-}
-
-// ── OFFSET DO CABELO (ajuste visual por classe) ──────────────
-// Esses valores podem ser calibrados conforme o boneco
-const HAIR_OFFSETS = {
-  guerreiro: 0, mago: 0, ladino: 0,
-  clerigo: 0, barbaro: 0, arqueiro: 0
-};
-function getHairOffset(cls) { return HAIR_OFFSETS[cls] || 0; }
-
-// ── ATUALIZAR PRÉVIA ─────────────────────────────────────────
 function atualizar() {
-  const pasta = estado.genero === 'm' ? 'masculino' : 'feminino';
-  // Garantir estilo válido para o gênero
-  const estilos = estado.genero === 'm' ? ESTILOS_M : ESTILOS_F;
-  if (!estilos.includes(estado.estilo)) estado.estilo = estilos[0];
+  const { classe, genero, iEstilo, iCor } = estado;
+  const estilo = ESTILOS[genero][iEstilo];
+  const cor    = CORES[iCor];
 
-  document.getElementById('preview-char').src = `personagens/${estado.classe}_${estado.genero}.png`;
-  document.getElementById('preview-hair').src = `cabelos/${pasta}/${estado.estilo}_${estado.cor}.png`;
+  const src = `compostos/${classe}_${genero}_${estilo}_${cor}.png`;
+  document.getElementById('sprite-preview').src = src;
 
-  // Atualizar botões ativos
-  document.querySelectorAll('.btn-class').forEach((b,i) => b.classList.toggle('active', CLASSES[i]===estado.classe));
-  document.querySelectorAll('.btn-gender').forEach(b => b.classList.toggle('active', b.textContent.includes(estado.genero==='m'?'MASC':'FEM')));
-  document.querySelectorAll('.btn-cor').forEach((b,i) => b.classList.toggle('active', CORES[i]===estado.cor));
+  // Labels
+  document.getElementById('val-estilo').textContent = ESTILOS_PT[estilo];
 
-  buildEstilos(); // rebuild com novo gênero/cor
-  buildGaleria();
+  const dot = `<span class="cor-dot" style="background:${CORES_HEX[cor]}"></span>`;
+  document.getElementById('val-cor').innerHTML = dot + CORES_PT[cor];
 
-  document.getElementById('info-bar').innerHTML =
-    `<span>${CLASSES_PT[estado.classe]}</span> · <span>${ESTILOS_PT[estado.estilo]}</span> · <span>${estado.cor.toUpperCase()}</span>`;
+  document.getElementById('info-txt').innerHTML =
+    `<strong>${CLASSES_PT[classe]}</strong> · ${genero === 'm' ? '♂' : '♀'} · ${ESTILOS_PT[estilo]} · ${CORES_PT[cor]}`;
 
-  ajustarOffset();
+  // classe buttons
+  document.querySelectorAll('.btn-class').forEach(b =>
+    b.classList.toggle('active', b.dataset.cls === classe));
 }
 
-function setGenero(g) { estado.genero = g; atualizar(); }
+// Build class grid
+const grid = document.getElementById('class-grid');
+CLASSES.forEach(c => {
+  const b = document.createElement('button');
+  b.className = 'btn-class' + (c === estado.classe ? ' active' : '');
+  b.dataset.cls = c;
+  b.textContent = CLASSES_PT[c];
+  b.onclick = () => { estado.classe = c; atualizar(); };
+  grid.appendChild(b);
+});
 
-function ajustarOffset() {
-  const oy = document.getElementById('slider-oy').value;
-  const ox = document.getElementById('slider-ox').value;
-  document.getElementById('lbl-oy').textContent = oy;
-  document.getElementById('lbl-ox').textContent = ox;
-  const h = document.getElementById('preview-hair');
-  h.style.top = oy + 'px';
-  h.style.marginLeft = ox + 'px';
-}
-
-// ── INIT ─────────────────────────────────────────────────────
-buildClasses();
-buildCores();
 atualizar();
 </script>
 </body>
