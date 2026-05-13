@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>⚔️ Batalha Tática</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg:#0d0905; --surface:#1e1508; --surface2:#2a1f10;
+  --border:#7a5500; --gold:#d4a843; --gold2:#f0c866;
+  --text:#f0e4c8; --text2:#a89060; --text3:#6a5830;
+  --hp:#c0392b; --sp:#2471a3; --green:#27ae60; --red:#e74c3c;
+  --r:8px;
+}
+html, body { height:100%; background:var(--bg); color:var(--text); font-family:Georgia,serif; overflow:hidden; }
+
+/* ── LAYOUT ── */
+#app { display:flex; flex-direction:column; height:100vh; height:100dvh; }
+
+/* ── TURN BAR ── */
+#turn-bar {
+  background:rgba(13,9,5,.97); border-bottom:1px solid var(--border);
+  padding:6px 10px; display:flex; align-items:center; gap:6px;
+  flex-shrink:0; overflow-x:auto; scrollbar-width:none;
+}
+#turn-bar::-webkit-scrollbar { display:none; }
+.tb-lbl { font-size:9px; color:var(--text3); letter-spacing:2px; flex-shrink:0; white-space:nowrap; }
+.turn-chip {
+  display:flex; flex-direction:column; align-items:center; gap:1px;
+  flex-shrink:0; min-width:44px;
+  background:rgba(30,21,8,.8); border:1px solid rgba(122,85,0,.3);
+  border-radius:8px; padding:4px 7px; cursor:default;
+  transition:border-color .2s, background .2s;
+}
+.turn-chip.active  { border-color:var(--gold2); background:rgba(212,168,67,.18); }
+.turn-chip.enemy   { border-color:rgba(200,50,50,.35); }
+.turn-chip.enemy.active { border-color:#e74c3c; background:rgba(200,50,50,.18); }
+.turn-chip.dead    { opacity:.3; }
+.tc-icon  { font-size:16px; line-height:1; }
+.tc-name  { font-size:8px; color:var(--text2); white-space:nowrap; }
+.tc-hp    { font-size:8px; color:var(--hp); }
+
+/* ── GRID WRAP ── */
+#grid-wrap {
+  flex:1; overflow:auto; display:flex;
+  align-items:center; justify-content:center;
+  background:radial-gradient(ellipse at 50% 40%, #1a1205 0%, #0d0905 80%);
+}
+#grid-container { position:relative; flex-shrink:0; }
+
+/* ── TILE ── */
+.tile {
+  position:absolute;
+  cursor:pointer;
+  transition:filter .1s;
+}
+.tile .tt {   /* top face – diamond */
+  position:absolute; inset:0;
+  clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  transition:background .15s;
+}
+.tile .tl, .tile .tr {  /* side depth faces */
+  position:absolute; bottom:-8px;
+  width:50%; height:8px;
+  clip-path:none;
+}
+.tile .tl { left:0;  transform-origin:top right;  transform:skewY(26.57deg); }
+.tile .tr { right:0; transform-origin:top left;   transform:skewY(-26.57deg); }
+
+/* terrain colours */
+.t-grass .tt { background:#4a6f40; }
+.t-grass .tl { background:#2a4022; }
+.t-grass .tr { background:#385030; }
+.t-stone .tt { background:#6a5f50; }
+.t-stone .tl { background:#3a3530; }
+.t-stone .tr { background:#4a4540; }
+.t-dark  .tt { background:#2a2520; }
+.t-dark  .tl { background:#1a1510; }
+.t-dark  .tr { background:#221e18; }
+.t-water .tt { background:#254070; }
+.t-water .tl { background:#162050; }
+.t-water .tr { background:#1a2860; }
+
+/* highlights */
+.tile.hl-move  .tt { background:#4090d0 !important; }
+.tile.hl-move  .tl { background:#2060a0 !important; }
+.tile.hl-move  .tr { background:#2870b8 !important; }
+.tile.hl-atk   .tt { background:#c04040 !important; }
+.tile.hl-atk   .tl { background:#802020 !important; }
+.tile.hl-atk   .tr { background:#a03030 !important; }
+.tile.hl-sel   .tt { background:var(--gold) !important; }
+.tile.hl-sel   .tl { background:#8a6a20 !important; }
+.tile.hl-sel   .tr { background:#aa8030 !important; }
+.tile.hl-move:hover .tt { filter:brightness(1.25); }
+.tile.hl-atk:hover  .tt { filter:brightness(1.25); }
+
+/* ── UNIT ── */
+.unit {
+  position:absolute; display:flex; flex-direction:column; align-items:center;
+  cursor:pointer; transition:left .22s cubic-bezier(.4,0,.2,1), top .22s cubic-bezier(.4,0,.2,1);
+  pointer-events:all;
+}
+.unit .u-sprite {
+  width:38px; height:52px; object-fit:contain; object-position:bottom;
+  image-rendering:pixelated;
+  filter:drop-shadow(0 3px 5px rgba(0,0,0,.9));
+  display:block;
+}
+.unit .u-icon {
+  font-size:30px; line-height:1;
+  filter:drop-shadow(0 2px 5px rgba(0,0,0,.9));
+}
+.unit .u-bar { width:34px; height:3px; background:rgba(0,0,0,.5); border-radius:2px; margin-top:2px; overflow:hidden; }
+.unit .u-fill { height:100%; border-radius:2px; transition:width .3s; }
+.unit.u-active  { filter:drop-shadow(0 0 8px #f0c866); }
+.unit.u-selected{ filter:drop-shadow(0 0 10px #ffe066) brightness(1.15); }
+.unit.u-dead    { opacity:.25; pointer-events:none; transition:opacity .8s; }
+
+/* ── BOTTOM BAR ── */
+#bottom-bar {
+  background:rgba(13,9,5,.97); border-top:1px solid var(--border);
+  padding:10px 12px; flex-shrink:0;
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+#phase-txt { font-size:11px; color:var(--gold); flex:1; letter-spacing:.5px; min-width:0; }
+.btn {
+  padding:9px 14px; border:none; border-radius:var(--r);
+  font-family:inherit; font-size:12px; cursor:pointer;
+  letter-spacing:.5px; white-space:nowrap; flex-shrink:0;
+  transition:opacity .15s;
+}
+.btn:active { opacity:.75; }
+.btn-primary   { background:var(--gold); color:#1a0d00; font-weight:bold; }
+.btn-secondary { background:transparent; border:1px solid var(--border); color:var(--text); }
+.btn-danger    { background:#7b241c; color:#fff; }
+.btn:disabled  { opacity:.35; cursor:not-allowed; }
+
+/* ── MODALS ── */
+.modal {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,.82); z-index:100;
+  align-items:flex-end; justify-content:center;
+}
+.modal.open { display:flex; }
+.modal-sheet {
+  background:var(--surface); border:1px solid var(--border);
+  border-top:2px solid var(--gold); border-radius:16px 16px 0 0;
+  padding:20px; width:100%; max-width:520px;
+  display:flex; flex-direction:column; gap:14px;
+  max-height:88vh; overflow-y:auto;
+}
+.modal-sheet::-webkit-scrollbar { width:3px; }
+.modal-sheet::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+.modal-sheet h3 { font-size:16px; color:var(--gold); display:flex; align-items:center; gap:8px; }
+.modal-sheet label { font-size:10px; color:var(--text2); letter-spacing:1.5px; display:block; margin-bottom:4px; }
+.modal-sheet textarea, .modal-sheet input[type=text] {
+  width:100%; background:#0d0905; border:1px solid var(--border);
+  color:var(--text); font-family:inherit; font-size:15px;
+  padding:10px 12px; border-radius:var(--r); outline:none; resize:none;
+}
+.modal-sheet textarea:focus, .modal-sheet input:focus { border-color:var(--gold); }
+.modal-footer { display:flex; gap:8px; }
+.modal-footer .btn { flex:1; }
+
+/* dice box */
+.dice-box {
+  background:rgba(15,10,35,.75); border:1px solid rgba(120,90,220,.3);
+  border-radius:var(--r); padding:10px 14px;
+  display:none; flex-direction:column; gap:4px;
+}
+.dice-box.show { display:flex; }
+.dice-box .d-info  { font-size:10px; color:#9b8fd4; letter-spacing:1px; }
+.dice-box .d-num   { font-size:26px; font-weight:bold; }
+.dice-box .d-status{ font-size:13px; font-weight:bold; }
+.d-ok   { color:var(--green); }
+.d-crit { color:#f39c12; }
+.d-fail { color:var(--red); }
+
+/* result box */
+.result-body { font-size:14px; color:var(--text2); line-height:1.75; }
+.result-body strong { color:var(--text); }
+
+/* ── TOAST ── */
+#toast {
+  display:none; position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+  background:#7b241c; color:#fff; padding:10px 20px; border-radius:var(--r);
+  font-size:13px; z-index:200; pointer-events:none; white-space:nowrap;
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="turn-bar">
+    <span class="tb-lbl">TURNOS ▶</span>
+    <div id="turn-chips" style="display:flex;gap:6px"></div>
+  </div>
+
+  <div id="grid-wrap">
+    <div id="grid-container"></div>
+  </div>
+
+  <div id="bottom-bar">
+    <span id="phase-txt">Carregando...</span>
+    <button id="btn-agir"     class="btn btn-primary"   onclick="openActionModal()"  style="display:none">⚔️ AGIR</button>
+    <button id="btn-esperar"  class="btn btn-secondary" onclick="playerEndTurn()"    style="display:none">⏭ ESPERAR</button>
+    <button id="btn-cancelar" class="btn btn-secondary" onclick="cancelSelect()"     style="display:none">✕ CANCEL</button>
+  </div>
+</div>
+
+<!-- ── MODAL: AÇÃO ── -->
+<div id="modal-action" class="modal">
+  <div class="modal-sheet">
+    <h3 id="act-title">⚔️ Agir</h3>
+    <div>
+      <label>O QUE FAZ SEU PERSONAGEM?</label>
+      <textarea id="act-txt" rows="3" placeholder="Descreva livremente... ex: Ataco o goblin com minha espada, mirando no pescoço"></textarea>
+    </div>
+    <div class="dice-box" id="dice-box">
+      <div class="d-info" id="d-info">—</div>
+      <div class="d-num"  id="d-num">—</div>
+      <div class="d-status" id="d-status">—</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeActionModal()">← Voltar</button>
+      <button class="btn btn-primary"   id="btn-roll" onclick="rollAction()">🎲 Rolar &amp; Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: RESULTADO ── -->
+<div id="modal-result" class="modal">
+  <div class="modal-sheet">
+    <h3 id="res-title">📜 Resultado</h3>
+    <div class="result-body" id="res-body">—</div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeResultModal()">Continuar →</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+//  CONSTANTS
+// ═══════════════════════════════════════════════════════════════════
+const COLS = 10, ROWS = 8;
+const TW = 64, TH = 32, HW = 32, HH = 16;
+const DEPTH = 8;
+// Grid screen offsets
+const OFFSET_X = (ROWS - 1) * HW;                         // = 224  (normalise min-x to 0)
+const OFFSET_Y = 55;                                        // top padding for tall sprites
+const GRID_W   = (COLS - 1 + ROWS - 1) * HW + TW;        // 448
+const GRID_H   = (COLS - 1 + ROWS - 1) * HH + TH + OFFSET_Y + DEPTH + 10; // ~320
+
+const TERRAINS = {
+  g: { passable:true,  cls:'t-grass' },
+  s: { passable:true,  cls:'t-stone' },
+  d: { passable:true,  cls:'t-dark'  },
+  w: { passable:false, cls:'t-water' },
+};
+
+// Map layout (10 cols × 8 rows)
+const MAP_DEF = [
+  'gggggsgggg',
+  'gssggggggg',
+  'gssgddgggg',
+  'ggggddwwgg',
+  'ggggggwwgg',
+  'gggdddgggg',
+  'ggsdddsggg',
+  'ggggggsgg g',
+];
+
+const CLASS_CFG = {
+  guerreiro:{ mv:3, atk:1, spd:7, icon:'⚔️',  hp:120, sp:60,  damage:13 },
+  mago:     { mv:2, atk:3, spd:5, icon:'🔮',  hp:60,  sp:120, damage:9  },
+  ladino:   { mv:4, atk:1, spd:9, icon:'🗡️', hp:80,  sp:80,  damage:10 },
+  clerigo:  { mv:3, atk:2, spd:6, icon:'✨',  hp:90,  sp:100, damage:7  },
+  barbaro:  { mv:3, atk:1, spd:6, icon:'🪓',  hp:150, sp:40,  damage:18 },
+  arqueiro: { mv:3, atk:4, spd:8, icon:'🏹',  hp:85,  sp:70,  damage:12 },
+};
+
+const MODS = {
+  guerreiro:{ atacar:5, defender:3, falar:0, mover:1, skill:4, livre:2 },
+  mago:     { atacar:2, defender:0, falar:1, mover:0, skill:6, livre:3 },
+  ladino:   { atacar:4, defender:2, falar:2, mover:4, skill:5, livre:3 },
+  clerigo:  { atacar:2, defender:3, falar:2, mover:1, skill:5, livre:2 },
+  barbaro:  { atacar:6, defender:2, falar:-1,mover:2, skill:3, livre:3 },
+  arqueiro: { atacar:5, defender:2, falar:1, mover:3, skill:4, livre:3 },
+};
+const DC = { atacar:12, skill:13, defender:10, falar:11, mover:10, livre:11 };
+
+const ENEMY_TEMPLATES = [
+  { name:'Goblin',         icon:'👺', hp:30,  mv:3, atk:1, spd:7, dmg:5  },
+  { name:'Arq. Goblin',    icon:'🏹', hp:20,  mv:2, atk:4, spd:6, dmg:4  },
+  { name:'Líder Goblin',   icon:'👹', hp:55,  mv:2, atk:1, spd:5, dmg:8  },
+  { name:'Goblin Pesado',  icon:'🧌', hp:40,  mv:2, atk:1, spd:5, dmg:7  },
+];
+
+// ═══════════════════════════════════════════════════════════════════
+//  BATTLE STATE
+// ═══════════════════════════════════════════════════════════════════
+let mapGrid  = [];   // [row][col] = { terrain, tileEl }
+let units    = [];
+let turnQueue= [];
+let curIdx   = 0;
+let phase    = 'idle';   // idle | select | move | action | enemy | end
+let selUnit  = null;
+let hlMove   = new Set();
+let hlAtk    = new Set();
+let hasMoved = false;
+let hasActed = false;
+let _resultCb = null;
+
+// ═══════════════════════════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════════════════════════
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function toast(msg, dur=3000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.style.display='none', dur);
+}
+
+function gridToScreen(col, row) {
+  return { x:(col-row)*HW + OFFSET_X, y:(col+row)*HH + OFFSET_Y };
+}
+
+function unitScreenPos(col, row) {
+  const {x, y} = gridToScreen(col, row);
+  // Sprite centred horizontally, feet at tile centre
+  return { left: x + HW - 19, top: y - 38 };
+}
+
+function dist(a, b) { return Math.abs(a.col-b.col) + Math.abs(a.row-b.row); }
+
+function unitAt(col, row) {
+  return units.find(u => u.alive && u.col===col && u.row===row) || null;
+}
+
+function getTileEl(col, row) { return document.getElementById(`t${col}_${row}`); }
+
+// ═══════════════════════════════════════════════════════════════════
+//  MAP
+// ═══════════════════════════════════════════════════════════════════
+function buildMap() {
+  for (let r=0; r<ROWS; r++) {
+    mapGrid[r] = [];
+    for (let c=0; c<COLS; c++) {
+      const ch = MAP_DEF[r]?.[c] || 'g';
+      mapGrid[r][c] = { terrain: TERRAINS[ch] || TERRAINS.g, tileEl: null };
+    }
+  }
+}
+
+function renderMap() {
+  const cont = document.getElementById('grid-container');
+  cont.innerHTML = '';
+  cont.style.width  = GRID_W  + 'px';
+  cont.style.height = GRID_H  + 'px';
+
+  // Painter order: sort by (col+row) ascending
+  const order = [];
+  for (let r=0; r<ROWS; r++)
+    for (let c=0; c<COLS; c++)
+      order.push({c,r,z:c+r});
+  order.sort((a,b)=>a.z-b.z);
+
+  order.forEach(({c,r}) => {
+    const {x,y} = gridToScreen(c,r);
+    const t = mapGrid[r][c];
+    const div = document.createElement('div');
+    div.id = `t${c}_${r}`;
+    div.className = `tile ${t.terrain.cls}`;
+    div.style.cssText = `left:${x}px;top:${y}px;width:${TW}px;height:${TH+DEPTH}px;z-index:${(c+r)*2}`;
+    div.innerHTML = `<div class="tt"></div><div class="tl"></div><div class="tr"></div>`;
+    div.dataset.c = c; div.dataset.r = r;
+    div.addEventListener('click', () => onTileClick(c, r));
+    cont.appendChild(div);
+    t.tileEl = div;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  UNITS
+// ═══════════════════════════════════════════════════════════════════
+function buildUnits() {
+  // Players — left side
+  const players = [
+    { name:'Guerreiro', classe:'guerreiro', sexo:'m', col:1, row:1 },
+    { name:'Mago',      classe:'mago',      sexo:'m', col:1, row:4 },
+    { name:'Arqueira',  classe:'arqueiro',  sexo:'f', col:2, row:6 },
+  ];
+  players.forEach((p,i) => {
+    const cfg = CLASS_CFG[p.classe];
+    units.push({ id:`p${i}`, team:'player', name:p.name, classe:p.classe, sexo:p.sexo,
+      col:p.col, row:p.row,
+      hp:cfg.hp, maxHp:cfg.hp, damage:cfg.damage,
+      mv:cfg.mv, atkRange:cfg.atk, spd:cfg.spd, alive:true });
+  });
+
+  // Enemies — right side
+  const placements = [
+    { t:0, col:8, row:1 },
+    { t:1, col:9, row:3 },
+    { t:0, col:8, row:5, name:'Goblin 2' },
+    { t:2, col:9, row:6 },
+  ];
+  placements.forEach((e,i) => {
+    const tmpl = ENEMY_TEMPLATES[e.t];
+    units.push({ id:`e${i}`, team:'enemy', name:e.name||tmpl.name, icon:tmpl.icon,
+      col:e.col, row:e.row,
+      hp:tmpl.hp, maxHp:tmpl.hp, damage:tmpl.dmg,
+      mv:tmpl.mv, atkRange:tmpl.atk, spd:tmpl.spd, alive:true });
+  });
+}
+
+function createUnitEl(u) {
+  const cont = document.getElementById('grid-container');
+  const pos  = unitScreenPos(u.col, u.row);
+  const div  = document.createElement('div');
+  div.id     = `u_${u.id}`;
+  div.className = 'unit';
+  div.style.cssText = `left:${pos.left}px;top:${pos.top}px;z-index:${(u.col+u.row)*2+1}`;
+
+  const hpPct = Math.round((u.hp/u.maxHp)*100);
+  const hpClr = hpPct>50?'var(--green)':hpPct>25?'#f39c12':'var(--red)';
+
+  if (u.team==='player') {
+    div.innerHTML = `<img class="u-sprite" src="../sprites/${u.classe}_${u.sexo}.png"
+      onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+      <span class="u-icon" style="display:none">${CLASS_CFG[u.classe]?.icon||'⚔️'}</span>
+      <div class="u-bar"><div class="u-fill" style="width:${hpPct}%;background:${hpClr}"></div></div>`;
+  } else {
+    div.innerHTML = `<span class="u-icon">${u.icon}</span>
+      <div class="u-bar"><div class="u-fill" style="width:${hpPct}%;background:${hpClr}"></div></div>`;
+  }
+
+  div.addEventListener('click', e => { e.stopPropagation(); onUnitClick(u); });
+  cont.appendChild(div);
+}
+
+function moveUnitEl(u, col, row) {
+  u.col = col; u.row = row;
+  const el  = document.getElementById(`u_${u.id}`);
+  const pos = unitScreenPos(col, row);
+  if (!el) return;
+  el.style.left   = pos.left + 'px';
+  el.style.top    = pos.top  + 'px';
+  el.style.zIndex = (col+row)*2+1;
+}
+
+function refreshUnitEl(u) {
+  const el = document.getElementById(`u_${u.id}`);
+  if (!el) return;
+  const hpPct = Math.max(0, Math.round((u.hp/u.maxHp)*100));
+  const hpClr = hpPct>50?'var(--green)':hpPct>25?'#f39c12':'var(--red)';
+  const fill  = el.querySelector('.u-fill');
+  if (fill) { fill.style.width=hpPct+'%'; fill.style.background=hpClr; }
+  el.className = `unit${selUnit===u?' u-selected':''}${curUnit()===u?' u-active':''}${!u.alive?' u-dead':''}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  TURN ORDER
+// ═══════════════════════════════════════════════════════════════════
+function buildQueue() {
+  turnQueue = [...units].sort((a,b)=>b.spd-a.spd);
+  curIdx = 0;
+}
+
+function curUnit() { return turnQueue[curIdx % turnQueue.length]; }
+
+function advanceTurn() {
+  hasMoved = false; hasActed = false; selUnit = null;
+  clearHL();
+  // Move to next alive unit
+  let tries = turnQueue.length;
+  do {
+    curIdx = (curIdx+1) % turnQueue.length;
+    tries--;
+  } while (!curUnit().alive && tries>0);
+
+  refreshAllUnits();
+  renderTurnBar();
+
+  if (!checkBattleEnd()) {
+    startUnitTurn();
+  }
+}
+
+function startUnitTurn() {
+  const cu = curUnit();
+  if (cu.team==='player') {
+    phase = 'select';
+    setPhase(`TURNO DE ${cu.name.toUpperCase()} — Toque no personagem para selecionar`);
+    showBtns(false, false, false);
+  } else {
+    phase = 'enemy';
+    setPhase(`👹 ${cu.name} age...`);
+    showBtns(false, false, false);
+    setTimeout(() => runEnemyTurn(cu), 700);
+  }
+}
+
+function renderTurnBar() {
+  const chips = document.getElementById('turn-chips');
+  chips.innerHTML = '';
+  const n = Math.min(9, turnQueue.length);
+  for (let i=0; i<n; i++) {
+    const idx = (curIdx+i) % turnQueue.length;
+    const u   = turnQueue[idx];
+    const chip = document.createElement('div');
+    chip.className = `turn-chip${i===0?' active':''}${u.team==='enemy'?' enemy':''}${!u.alive?' dead':''}`;
+    const icon = u.team==='player' ? (CLASS_CFG[u.classe]?.icon||'⚔️') : u.icon;
+    chip.innerHTML = `<span class="tc-icon">${icon}</span><span class="tc-name">${u.name}</span><span class="tc-hp">${u.hp}/${u.maxHp}</span>`;
+    chips.appendChild(chip);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  BFS — REACHABLE TILES
+// ═══════════════════════════════════════════════════════════════════
+function reachableTiles(u) {
+  const res  = new Set();
+  const vis  = new Set([`${u.col},${u.row}`]);
+  const q    = [{ col:u.col, row:u.row, left:u.mv }];
+  while (q.length) {
+    const {col,row,left} = q.shift();
+    if (left<=0) continue;
+    for (const [dc,dr] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const nc=col+dc, nr=row+dr;
+      const key=`${nc},${nr}`;
+      if (vis.has(key)) continue;
+      if (nc<0||nc>=COLS||nr<0||nr>=ROWS) continue;
+      if (!mapGrid[nr][nc].terrain.passable) continue;
+      if (unitAt(nc,nr)) continue;
+      vis.add(key);
+      res.add(key);
+      if (left>1) q.push({col:nc,row:nr,left:left-1});
+    }
+  }
+  return res;
+}
+
+function attackTiles(u, fromCol, fromRow) {
+  const res = new Set();
+  const r   = u.atkRange;
+  for (let dc=-r; dc<=r; dc++) {
+    for (let dr=-r; dr<=r; dr++) {
+      const d=Math.abs(dc)+Math.abs(dr);
+      if (d===0||d>r) continue;
+      const nc=fromCol+dc, nr=fromRow+dr;
+      if (nc<0||nc>=COLS||nr<0||nr>=ROWS) continue;
+      res.add(`${nc},${nr}`);
+    }
+  }
+  return res;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  HIGHLIGHTS
+// ═══════════════════════════════════════════════════════════════════
+function clearHL() {
+  document.querySelectorAll('.tile.hl-move,.tile.hl-atk,.tile.hl-sel').forEach(el =>
+    el.classList.remove('hl-move','hl-atk','hl-sel'));
+}
+
+function applyHL(moveTiles, atkTileSet, selCol, selRow) {
+  clearHL();
+  moveTiles.forEach(key => {
+    const [c,r]=key.split(',').map(Number);
+    getTileEl(c,r)?.classList.add('hl-move');
+  });
+  atkTileSet.forEach(key => {
+    const [c,r]=key.split(',').map(Number);
+    const el=getTileEl(c,r);
+    if (el && !el.classList.contains('hl-move')) el.classList.add('hl-atk');
+  });
+  if (selCol!=null) getTileEl(selCol, selRow)?.classList.add('hl-sel');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  INPUT
+// ═══════════════════════════════════════════════════════════════════
+function onUnitClick(u) {
+  const cu = curUnit();
+  if (phase==='end') return;
+
+  // Select own unit on player turn
+  if (phase==='select' && u===cu && cu.team==='player') {
+    selUnit = cu;
+    hlMove = hasMoved ? new Set() : reachableTiles(cu);
+    hlAtk  = attackTiles(cu, cu.col, cu.row);
+    applyHL(hlMove, hlAtk, cu.col, cu.row);
+    refreshAllUnits();
+    phase = 'move';
+    setPhase(`${cu.name} selecionado${hasMoved?'':' — tile AZUL pra mover'} · tile VERMELHO pra atacar`);
+    showBtns(!hasActed, true, true);
+    return;
+  }
+
+  // Click enemy in attack range → attack action
+  if ((phase==='move'||phase==='action') && u.team==='enemy' && hlAtk.has(`${u.col},${u.row}`)) {
+    document.getElementById('act-txt').value = `Ataco ${u.name}`;
+    openActionModal();
+  }
+}
+
+function onTileClick(col, row) {
+  const cu = curUnit();
+  if (!cu || cu.team!=='player' || phase==='end') return;
+
+  if (phase==='move' && hlMove.has(`${col},${row}`)) {
+    // Move
+    moveUnitEl(cu, col, row);
+    hasMoved = true;
+    hlMove   = new Set();
+    hlAtk    = attackTiles(cu, col, row);
+    applyHL(new Set(), hlAtk, col, row);
+    refreshAllUnits();
+    phase = 'action';
+    setPhase(`${cu.name} moveu — AGIR ou ESPERAR`);
+    showBtns(!hasActed, true, true);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════════════════════════════════════════
+function setPhase(txt) { document.getElementById('phase-txt').textContent = txt; }
+
+function showBtns(agir, esperar, cancelar) {
+  document.getElementById('btn-agir').style.display    = agir    ?'':'none';
+  document.getElementById('btn-esperar').style.display = esperar ?'':'none';
+  document.getElementById('btn-cancelar').style.display= cancelar?'':'none';
+}
+
+function cancelSelect() {
+  selUnit=null; clearHL(); phase='select';
+  refreshAllUnits();
+  setPhase(`TURNO DE ${curUnit()?.name?.toUpperCase()||'?'} — Toque no personagem`);
+  showBtns(false,false,false);
+}
+
+function playerEndTurn() {
+  clearHL(); advanceTurn();
+}
+
+function refreshAllUnits() {
+  units.forEach(u => refreshUnitEl(u));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  ACTION MODAL
+// ═══════════════════════════════════════════════════════════════════
+function openActionModal() {
+  const cu = curUnit();
+  document.getElementById('act-title').textContent = `⚔️ ${cu.name} age`;
+  document.getElementById('dice-box').classList.remove('show');
+  document.getElementById('btn-roll').disabled = false;
+  document.getElementById('modal-action').classList.add('open');
+  setTimeout(() => document.getElementById('act-txt').focus(), 80);
+}
+
+function closeActionModal() {
+  document.getElementById('modal-action').classList.remove('open');
+}
+
+function rollAction() {
+  const txt = document.getElementById('act-txt').value.trim();
+  if (!txt) { toast('Descreva a ação!'); return; }
+
+  const cu   = curUnit();
+  const tipo = detectType(txt);
+  const mod  = (MODS[cu.classe]||{})[tipo] ?? 2;
+  const dc   = DC[tipo] || 11;
+  const dado = Math.floor(Math.random()*20)+1;
+  const total= dado+mod;
+  const crit = dado===20;
+  const fail = dado===1;
+  const succ = crit || (!fail && total>=dc);
+
+  const modStr = mod>=0?`+${mod}`:String(mod);
+  const cls    = crit?'d-crit':(!succ||fail)?'d-fail':'d-ok';
+  const label  = crit?'⚡ CRÍTICO!':fail?'💀 FALHA CRÍTICA!':succ?'✅ SUCESSO':'❌ FALHOU';
+
+  document.getElementById('d-info').textContent   = `${cu.name} · 1d20${modStr} vs DC${dc}`;
+  document.getElementById('d-num').textContent    = `${dado}${modStr} = ${total}`;
+  document.getElementById('d-num').className      = `d-num ${cls}`;
+  document.getElementById('d-status').textContent = label;
+  document.getElementById('d-status').className   = `d-status ${cls}`;
+  document.getElementById('dice-box').classList.add('show');
+  document.getElementById('btn-roll').disabled = true;
+
+  setTimeout(() => {
+    closeActionModal();
+    applyPlayerAction(cu, txt, succ, crit, fail, total);
+  }, 1700);
+}
+
+function detectType(txt) {
+  const a = txt.toLowerCase();
+  if (/falar|conversar|negociar|persuad/.test(a)) return 'falar';
+  if (/atac|golpe|cortar|bater|ferir|matar/.test(a)) return 'atacar';
+  if (/magia|feitiç|curar|invocar|skill/.test(a)) return 'skill';
+  if (/defend|bloquear|esquivar|proteger/.test(a)) return 'defender';
+  if (/correr|fugir|mover|saltar/.test(a)) return 'mover';
+  return 'livre';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  APPLY PLAYER ACTION
+// ═══════════════════════════════════════════════════════════════════
+function applyPlayerAction(cu, txt, succ, crit, fail, total) {
+  hasActed = true;
+
+  // Find nearest enemy in attack range
+  const enemies = units.filter(u=>u.team==='enemy'&&u.alive&&hlAtk.has(`${u.col},${u.row}`));
+  const target  = enemies.sort((a,b)=>dist(cu,a)-dist(cu,b))[0];
+
+  let msg = '';
+  if (succ && target) {
+    const dmg = crit ? cu.damage*2 : cu.damage;
+    target.hp = Math.max(0, target.hp-dmg);
+    if (target.hp<=0) { target.alive=false; }
+    msg = buildHitMsg(cu.name, target, dmg, crit, target.hp<=0);
+  } else if (succ) {
+    msg = `<strong>✅ SUCESSO (${total})</strong> — ${cu.name} age com precisão, mas não há alvo no alcance do ataque.`;
+  } else if (fail) {
+    msg = `<strong>💀 FALHA CRÍTICA!</strong> — ${cu.name} tropeça e abre a guarda. Uma abertura perigosa!`;
+    // Small self-damage on crit fail
+    cu.hp = Math.max(0, cu.hp-2);
+  } else {
+    msg = `<strong>❌ FALHOU (${total} vs DC${DC[detectType(txt)]})</strong> — ${cu.name} tenta agir mas o momento passa sem efeito.`;
+  }
+
+  showResult(succ?'✅ Ação':'❌ Ação', msg, () => {
+    refreshAllUnits();
+    renderTurnBar();
+    if (!checkBattleEnd()) {
+      phase = 'action';
+      showBtns(false, true, false);
+      setPhase(`${cu.name} agiu — ESPERAR para encerrar turno`);
+    }
+  });
+}
+
+function buildHitMsg(attName, target, dmg, crit, killed) {
+  if (killed)
+    return crit
+      ? `<strong>⚡ CRÍTICO!</strong> — ${attName} desfere um golpe letal em <strong>${target.name}</strong> causando <strong>${dmg} de dano</strong> — o inimigo é abatido!`
+      : `<strong>✅ ACERTOU!</strong> — ${attName} acerta <strong>${target.name}</strong> com <strong>${dmg} de dano</strong>. O inimigo cai derrotado!`;
+  return crit
+    ? `<strong>⚡ CRÍTICO!</strong> — ${attName} esmaga <strong>${target.name}</strong> com <strong>${dmg} de dano</strong>. HP: ${target.hp}/${target.maxHp}`
+    : `<strong>✅ ACERTOU!</strong> — ${attName} atinge <strong>${target.name}</strong> por <strong>${dmg} de dano</strong>. HP: ${target.hp}/${target.maxHp}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  RESULT MODAL
+// ═══════════════════════════════════════════════════════════════════
+function showResult(title, bodyHtml, cb) {
+  _resultCb = cb || null;
+  document.getElementById('res-title').textContent  = title;
+  document.getElementById('res-body').innerHTML     = bodyHtml;
+  document.getElementById('modal-result').classList.add('open');
+}
+
+function closeResultModal() {
+  document.getElementById('modal-result').classList.remove('open');
+  const cb = _resultCb; _resultCb = null;
+  if (cb) cb();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  ENEMY AI
+// ═══════════════════════════════════════════════════════════════════
+async function runEnemyTurn(enemy) {
+  const players = units.filter(u=>u.team==='player'&&u.alive);
+  if (!players.length) return;
+  const target = players.sort((a,b)=>dist(enemy,a)-dist(enemy,b))[0];
+
+  // Move toward target if not in range
+  if (dist(enemy,target) > enemy.atkRange) {
+    const reach = reachableTiles(enemy);
+    let best=null, bestD=Infinity;
+    reach.forEach(key => {
+      const [c,r]=key.split(',').map(Number);
+      const d=Math.abs(c-target.col)+Math.abs(r-target.row);
+      if (d<bestD) { bestD=d; best={col:c,row:r}; }
+    });
+    if (best) {
+      await sleep(350);
+      moveUnitEl(enemy, best.col, best.row);
+      renderTurnBar();
+    }
+  }
+
+  await sleep(450);
+
+  // Attack if in range
+  if (dist(enemy,target) <= enemy.atkRange) {
+    const dado  = Math.floor(Math.random()*20)+1;
+    const mod   = Math.max(1, Math.floor(enemy.maxHp/15));
+    const total = dado+mod;
+    const crit  = dado===20;
+    const succ  = crit||(dado!==1&&total>=12);
+
+    if (succ) {
+      const dmg  = crit ? enemy.damage*2 : enemy.damage;
+      target.hp  = Math.max(0, target.hp-dmg);
+      if (target.hp<=0) target.alive=false;
+
+      const msg  = buildHitMsg(enemy.name, target, dmg, crit, target.hp<=0);
+
+      showResult(`👹 ${enemy.name} ataca!`, msg, async () => {
+        refreshAllUnits();
+        renderTurnBar();
+        if (!checkBattleEnd()) {
+          await sleep(200);
+          advanceTurn();
+        }
+      });
+    } else {
+      // Miss — auto-advance
+      await sleep(300);
+      if (!checkBattleEnd()) advanceTurn();
+    }
+  } else {
+    if (!checkBattleEnd()) advanceTurn();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  BATTLE END
+// ═══════════════════════════════════════════════════════════════════
+function checkBattleEnd() {
+  const pAlive = units.filter(u=>u.team==='player'&&u.alive).length;
+  const eAlive = units.filter(u=>u.team==='enemy'&&u.alive).length;
+  if (pAlive===0) {
+    phase='end'; clearHL(); showBtns(false,false,false);
+    setTimeout(() => showResult('💀 DERROTA',
+      'Todos os aventureiros caíram em batalha... A escuridão avança.', null), 400);
+    return true;
+  }
+  if (eAlive===0) {
+    phase='end'; clearHL(); showBtns(false,false,false);
+    setTimeout(() => showResult('🏆 VITÓRIA!',
+      '<strong>Todos os inimigos foram derrotados!</strong> Os aventureiros saem vitoriosos da batalha.', null), 400);
+    return true;
+  }
+  return false;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════════════
+function init() {
+  buildMap();
+  renderMap();
+  buildUnits();
+  units.forEach(u => createUnitEl(u));
+  buildQueue();
+  renderTurnBar();
+
+  const cu = curUnit();
+  if (cu.team==='player') {
+    phase='select';
+    setPhase(`TURNO DE ${cu.name.toUpperCase()} — Toque no personagem para selecionar`);
+    showBtns(false,false,false);
+  } else {
+    phase='enemy';
+    setPhase(`👹 ${cu.name} começa...`);
+    setTimeout(()=>runEnemyTurn(cu), 900);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
