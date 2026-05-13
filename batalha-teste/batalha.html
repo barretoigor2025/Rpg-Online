@@ -933,7 +933,7 @@ function createUnitEl(u){
   const div=document.createElement('div');
   div.id=`u_${u.id}`;div.className='unit';
   div.style.cssText=`left:${pos.left}px;top:${pos.top}px;z-index:${(u.col+u.row)*2+1}`;
-  const spLabel=u.maxSp>0?` · ${u.sp}SP`:''
+  const spLabel=u.maxSp>0?` · ${u.sp}SP`:'';
   const spBar=u.maxSp>0?`<div class="u-sp-bar"><div class="u-sp-fill" style="width:100%"></div></div>`:'';
   const label=`<div class="u-label">
     <span class="u-name-tag">${u.name}</span>
