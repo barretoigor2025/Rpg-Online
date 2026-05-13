@@ -39,7 +39,7 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:Ge
 .tc-name { font-size:8px; color:var(--text2); white-space:nowrap; }
 .tc-hp   { font-size:8px; color:var(--hp); }
 
-/* ── GRID WRAP ── */
+/* ── GRID ── */
 #grid-wrap {
   flex:1; overflow:auto; display:flex; align-items:center; justify-content:center;
   background:#6a6860;
@@ -51,12 +51,12 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:Ge
 .tile { position:absolute; cursor:pointer; transition:filter .12s; }
 .tile svg { display:block; overflow:visible; }
 .tile:hover .tile-poly { filter:brightness(1.18); }
-.tile.hl-move .tile-poly { fill:#3a80cc !important; fill-opacity:.9; }
-.tile.hl-atk  .tile-poly { fill:#bb3535 !important; fill-opacity:.88; }
-.tile.hl-sel  .tile-poly { fill:var(--gold) !important; fill-opacity:.85; }
+.tile.hl-move  .tile-poly { fill:#3a80cc !important; fill-opacity:.9; }
+.tile.hl-atk   .tile-poly { fill:#bb3535 !important; fill-opacity:.88; }
+.tile.hl-sel   .tile-poly { fill:var(--gold) !important; fill-opacity:.85; }
 .tile.hl-skill .tile-poly { fill:#27ae60 !important; fill-opacity:.88; }
-.tile.hl-move:hover .tile-poly { fill:#50a0ef !important; }
-.tile.hl-atk:hover  .tile-poly { fill:#d84040 !important; }
+.tile.hl-move:hover  .tile-poly { fill:#50a0ef !important; }
+.tile.hl-atk:hover   .tile-poly { fill:#d84040 !important; }
 .tile.hl-skill:hover .tile-poly { fill:#2ecc71 !important; }
 
 /* ── UNIT ── */
@@ -65,72 +65,38 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:Ge
   cursor:pointer;
   transition:left .50s cubic-bezier(.4,0,.2,1), top .50s cubic-bezier(.4,0,.2,1);
 }
-/* Name + HP/SP label above sprite */
 .u-label {
-  background:rgba(0,0,0,.82);
-  border:1px solid rgba(212,168,67,.35);
-  border-radius:4px;
-  padding:2px 6px;
-  font-size:8px;
-  color:var(--gold2);
-  white-space:nowrap;
-  margin-bottom:2px;
-  text-align:center;
-  line-height:1.4;
-  pointer-events:none;
-  user-select:none;
+  background:rgba(0,0,0,.85); border:1px solid rgba(212,168,67,.4);
+  border-radius:4px; padding:2px 6px; font-size:8px; color:var(--gold2);
+  white-space:nowrap; margin-bottom:2px; text-align:center; line-height:1.4;
+  pointer-events:none; user-select:none;
 }
 .u-label .u-hpsp { color:var(--text2); font-size:7px; display:block; }
 .unit .u-sprite {
   width:38px; height:52px; object-fit:contain; object-position:bottom;
-  image-rendering:pixelated;
-  filter:drop-shadow(0 3px 6px rgba(0,0,0,.95));
+  image-rendering:pixelated; filter:drop-shadow(0 3px 6px rgba(0,0,0,.95));
+}
+/* Goblin sprite container */
+.u-goblin {
+  width:44px; height:58px; display:flex; align-items:flex-end; justify-content:center;
+  overflow:hidden;
+}
+.u-goblin img {
+  max-width:44px; max-height:60px;
+  object-fit:contain; object-position:bottom;
+  image-rendering:auto;
+  filter:drop-shadow(0 3px 8px rgba(0,0,0,.95)) saturate(1.1);
 }
 .unit .u-icon {
-  font-size:30px; line-height:1;
-  filter:drop-shadow(0 2px 6px rgba(0,0,0,.9));
+  font-size:30px; line-height:1; filter:drop-shadow(0 2px 6px rgba(0,0,0,.9));
 }
 .unit .u-bar  { width:34px; height:3px; background:rgba(0,0,0,.5); border-radius:2px; margin-top:2px; overflow:hidden; }
 .unit .u-fill { height:100%; border-radius:2px; transition:width .4s; }
 .unit .u-sp-bar  { width:34px; height:2px; background:rgba(0,0,0,.5); border-radius:2px; margin-top:1px; overflow:hidden; }
-.unit .u-sp-fill { height:100%; border-radius:2px; background:#3a80cc; transition:width .4s; }
+.unit .u-sp-fill { height:100%; border-radius:2px; background:var(--blue); transition:width .4s; }
 .unit.u-active   { filter:drop-shadow(0 0 8px #f0c866); }
 .unit.u-selected { filter:drop-shadow(0 0 12px #ffe066) brightness(1.15); }
 .unit.u-dead     { opacity:.2; pointer-events:none; transition:opacity .7s; }
-
-/* ── SPEECH BUBBLE ── */
-.speech-bubble {
-  position:absolute; z-index:500;
-  background:#110d05;
-  border:2px solid var(--gold);
-  border-radius:12px;
-  padding:12px 14px;
-  max-width:240px; min-width:160px;
-  pointer-events:none;
-  animation:sb-in .28s cubic-bezier(.34,1.56,.64,1);
-}
-.speech-bubble::after {
-  content:''; position:absolute; bottom:-14px; left:50%;
-  transform:translateX(-50%);
-  border:12px solid transparent; border-top:14px solid var(--gold);
-}
-.speech-bubble::before {
-  content:''; position:absolute; bottom:-10px; left:50%;
-  transform:translateX(-50%); z-index:1;
-  border:10px solid transparent; border-top:12px solid #110d05;
-}
-.sb-head {
-  display:flex; align-items:center; gap:6px;
-  margin-bottom:7px; padding-bottom:6px;
-  border-bottom:1px solid rgba(212,168,67,.3);
-}
-.sb-icon { font-size:14px; line-height:1; }
-.sb-name { font-size:9px; color:var(--gold); letter-spacing:2px; font-weight:bold; }
-.sb-text { font-size:12px; color:var(--text); line-height:1.65; }
-@keyframes sb-in {
-  from { opacity:0; transform:translateY(10px) scale(.92); }
-  to   { opacity:1; transform:translateY(0) scale(1); }
-}
 
 /* ── BOTTOM BAR ── */
 #bottom-bar {
@@ -148,13 +114,70 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:Ge
 .btn:active { opacity:.75; }
 .btn-primary   { background:var(--gold); color:#1a0d00; font-weight:bold; }
 .btn-secondary { background:transparent; border:1px solid var(--border); color:var(--text); }
-.btn-info      { background:transparent; border:1px solid #3a80cc; color:#7ab8f5; }
+.btn-info      { background:transparent; border:1px solid var(--blue); color:#7ab8f5; }
 .btn:disabled  { opacity:.35; cursor:not-allowed; }
+
+/* ── RPG DIALOG (replaces floating bubble) ── */
+#rpg-dialog {
+  position:fixed; bottom:0; left:0; right:0;
+  z-index:400;
+  background:rgba(8,5,2,.97);
+  border-top:2px solid var(--gold);
+  border-left:none; border-right:none;
+  transform:translateY(100%);
+  transition:transform .32s cubic-bezier(.34,1.1,.64,1);
+  pointer-events:none;
+  /* decorative inner border */
+  box-shadow:0 -4px 0 0 rgba(212,168,67,.15) inset;
+}
+#rpg-dialog.open { transform:translateY(0); pointer-events:all; }
+
+.dlg-main {
+  display:flex; align-items:stretch; gap:14px;
+  padding:14px 16px 10px;
+}
+.dlg-portrait {
+  width:78px; flex-shrink:0;
+  border:2px solid var(--gold); border-radius:8px;
+  background:#0d0905; overflow:hidden;
+  display:flex; align-items:flex-start; justify-content:center;
+}
+.dlg-portrait img {
+  width:100%; height:100%; object-fit:cover; object-position:top center;
+}
+.dlg-portrait .dlg-icon {
+  font-size:42px; line-height:1;
+  display:flex; align-items:center; justify-content:center;
+  width:100%; height:100%; min-height:78px;
+}
+.dlg-body { flex:1; display:flex; flex-direction:column; gap:6px; min-width:0; }
+.dlg-actor { font-size:9px; color:var(--gold); letter-spacing:2.5px; font-weight:bold; }
+.dlg-roll  {
+  font-size:10px; color:#9b8fd4;
+  background:rgba(15,10,35,.7); border:1px solid rgba(120,90,220,.3);
+  border-radius:5px; padding:4px 8px; letter-spacing:.5px;
+}
+.dlg-roll .roll-val { font-weight:bold; font-size:12px; }
+.dlg-roll .roll-crit { color:#f39c12; }
+.dlg-roll .roll-ok   { color:var(--green); }
+.dlg-roll .roll-fail { color:var(--red); }
+.dlg-text { font-size:13px; color:var(--text); line-height:1.7; }
+
+.dlg-footer {
+  display:flex; align-items:center; justify-content:flex-end;
+  padding:0 16px 12px; gap:8px;
+}
+/* blinking cursor while waiting for TTS */
+.dlg-wait {
+  font-size:11px; color:var(--text3); letter-spacing:1px;
+  animation:blink 1.1s step-end infinite;
+}
+@keyframes blink { 50% { opacity:0; } }
 
 /* ── MODALS ── */
 .modal {
   display:none; position:fixed; inset:0;
-  background:rgba(0,0,0,.82); z-index:100;
+  background:rgba(0,0,0,.82); z-index:200;
   align-items:flex-end; justify-content:center;
 }
 .modal.open { display:flex; }
@@ -176,19 +199,16 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:Ge
 .modal-footer { display:flex; gap:8px; }
 .modal-footer .btn { flex:1; }
 
-/* skill grid inside action modal */
-.skill-section label { margin-bottom:8px; }
-.skill-grid {
-  display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:6px;
-}
+/* skill grid */
+.skill-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:6px; }
 .skill-btn {
   background:rgba(58,128,204,.12); border:1px solid rgba(58,128,204,.35);
-  border-radius:var(--r); padding:8px 8px;
-  color:var(--text); font-family:inherit; font-size:11px;
-  cursor:pointer; text-align:left; transition:background .15s;
+  border-radius:var(--r); padding:8px; color:var(--text);
+  font-family:inherit; font-size:11px; cursor:pointer;
+  text-align:left; transition:background .15s;
   display:flex; flex-direction:column; gap:2px;
 }
-.skill-btn:hover { background:rgba(58,128,204,.28); border-color:#3a80cc; }
+.skill-btn:hover { background:rgba(58,128,204,.28); border-color:var(--blue); }
 .skill-btn.sp-empty { opacity:.4; cursor:not-allowed; }
 .skill-btn .sk-name { font-weight:bold; font-size:12px; }
 .skill-btn .sk-sp   { font-size:9px; color:#7ab8f5; }
@@ -204,52 +224,33 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:Ge
 .d-info   { font-size:10px; color:#9b8fd4; letter-spacing:1px; }
 .d-num    { font-size:26px; font-weight:bold; }
 .d-status { font-size:13px; font-weight:bold; }
-.d-ok   { color:var(--green); }
-.d-crit { color:#f39c12; }
-.d-fail { color:var(--red); }
+.d-ok     { color:var(--green); }
+.d-crit   { color:#f39c12; }
+.d-fail   { color:var(--red); }
 
-/* ── CHARACTER SHEET ── */
+/* ── FICHA ── */
 .ficha-section { display:flex; flex-direction:column; gap:8px; }
-.ficha-header {
-  display:flex; align-items:center; gap:10px;
-  padding-bottom:12px; border-bottom:1px solid rgba(122,85,0,.3);
-}
+.ficha-header { display:flex; align-items:center; gap:10px; padding-bottom:12px; border-bottom:1px solid rgba(122,85,0,.3); }
 .ficha-header .fh-icon { font-size:32px; }
-.ficha-header .fh-info { flex:1; }
 .fh-name   { font-size:18px; color:var(--gold2); }
 .fh-classe { font-size:11px; color:var(--text2); letter-spacing:1.5px; }
 .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
-.stat-box {
-  background:rgba(0,0,0,.35); border:1px solid rgba(122,85,0,.2);
-  border-radius:6px; padding:8px 10px;
-}
+.stat-box  { background:rgba(0,0,0,.35); border:1px solid rgba(122,85,0,.2); border-radius:6px; padding:8px 10px; }
 .stat-label { font-size:9px; color:var(--text3); letter-spacing:1.5px; }
 .stat-val   { font-size:18px; color:var(--text); font-weight:bold; }
-.stat-val.hp-val { color:#e74c3c; }
-.stat-val.sp-val { color:#3a80cc; }
+.stat-val.hp-val { color:var(--red); }
+.stat-val.sp-val { color:var(--blue); }
+.section-title { font-size:9px; color:var(--text3); letter-spacing:2px; padding-bottom:4px; border-bottom:1px solid rgba(122,85,0,.2); }
 .skill-list { display:flex; flex-direction:column; gap:6px; }
-.skill-row {
-  display:flex; align-items:center; gap:8px;
-  background:rgba(58,128,204,.08); border:1px solid rgba(58,128,204,.2);
-  border-radius:6px; padding:8px 10px;
-}
+.skill-row  { display:flex; align-items:center; gap:8px; background:rgba(58,128,204,.08); border:1px solid rgba(58,128,204,.2); border-radius:6px; padding:8px 10px; }
 .sk-icon2 { font-size:18px; }
 .sk-info  { flex:1; }
 .sk-nm    { font-size:13px; color:var(--text); }
 .sk-dsc   { font-size:10px; color:var(--text2); }
 .sk-spcost { font-size:10px; color:#7ab8f5; white-space:nowrap; }
 .equip-list { display:flex; flex-direction:column; gap:4px; }
-.equip-row  {
-  display:flex; align-items:center; gap:8px;
-  padding:6px 10px;
-  background:rgba(122,85,0,.08); border:1px solid rgba(122,85,0,.15);
-  border-radius:6px; font-size:12px; color:var(--text);
-}
+.equip-row  { display:flex; align-items:center; gap:8px; padding:6px 10px; background:rgba(122,85,0,.08); border:1px solid rgba(122,85,0,.15); border-radius:6px; font-size:12px; }
 .equip-slot { font-size:9px; color:var(--text3); letter-spacing:1px; min-width:60px; }
-.section-title {
-  font-size:9px; color:var(--text3); letter-spacing:2px;
-  padding-bottom:4px; border-bottom:1px solid rgba(122,85,0,.2);
-}
 
 /* ── TOAST ── */
 #toast {
@@ -274,11 +275,26 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:Ge
 
   <div id="bottom-bar">
     <span id="phase-txt">Carregando...</span>
-    <button id="btn-ficha"    class="btn btn-info"      onclick="openFicha()"        style="display:none">📋 FICHA</button>
-    <button id="btn-agir"     class="btn btn-primary"   onclick="openActionModal()"  style="display:none">⚔️ AGIR</button>
-    <button id="btn-continuar"class="btn btn-primary"   onclick="onContinuar()"      style="display:none">▶ CONTINUAR</button>
-    <button id="btn-esperar"  class="btn btn-secondary" onclick="playerEndTurn()"    style="display:none">⏭ ESPERAR</button>
-    <button id="btn-cancelar" class="btn btn-secondary" onclick="cancelSelect()"     style="display:none">✕ CANCELAR</button>
+    <button id="btn-ficha"   class="btn btn-info"      onclick="openFicha()"       style="display:none">📋 FICHA</button>
+    <button id="btn-agir"    class="btn btn-primary"   onclick="openActionModal()" style="display:none">⚔️ AGIR</button>
+    <button id="btn-esperar" class="btn btn-secondary" onclick="playerEndTurn()"   style="display:none">⏭ ESPERAR</button>
+    <button id="btn-cancelar"class="btn btn-secondary" onclick="cancelSelect()"    style="display:none">✕ CANCELAR</button>
+  </div>
+</div>
+
+<!-- RPG Dialog — fixed bottom panel -->
+<div id="rpg-dialog">
+  <div class="dlg-main">
+    <div class="dlg-portrait" id="dlg-portrait"></div>
+    <div class="dlg-body">
+      <div class="dlg-actor" id="dlg-actor"></div>
+      <div class="dlg-roll"  id="dlg-roll"></div>
+      <div class="dlg-text"  id="dlg-text"></div>
+    </div>
+  </div>
+  <div class="dlg-footer" id="dlg-footer">
+    <span class="dlg-wait" id="dlg-wait">▌ narrando...</span>
+    <button class="btn btn-primary" id="dlg-continuar" onclick="onContinuar()" style="display:none">▶ CONTINUAR</button>
   </div>
 </div>
 
@@ -286,26 +302,20 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:Ge
 <div id="modal-action" class="modal">
   <div class="modal-sheet">
     <h3 id="act-title">⚔️ Agir</h3>
-
-    <!-- Skills -->
-    <div class="skill-section">
+    <div>
       <label>HABILIDADES</label>
       <div id="skill-grid" class="skill-grid"></div>
     </div>
-
-    <!-- Free text -->
     <div>
       <label>OU DESCREVA LIVREMENTE</label>
       <textarea id="act-txt" rows="3"
         placeholder="Ex: Ataco o goblin mirado no pescoço com um golpe diagonal"></textarea>
     </div>
-
     <div class="dice-box" id="dice-box">
       <div class="d-info"   id="d-info">—</div>
       <div class="d-num"    id="d-num">—</div>
       <div class="d-status" id="d-status">—</div>
     </div>
-
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeActionModal()">← Voltar</button>
       <button class="btn btn-info"      onclick="openFicha()">📋 Ficha</button>
@@ -334,7 +344,7 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:Ge
 const COLS = 10, ROWS = 8;
 const TW = 64, TH = 32, HW = 32, HH = 16;
 const OFFSET_X = (ROWS - 1) * HW;
-const OFFSET_Y = 80;  // more top padding for labels
+const OFFSET_Y = 90;
 const GRID_W   = (COLS + ROWS - 2) * HW + TW;
 const GRID_H   = (COLS + ROWS - 2) * HH + TH + OFFSET_Y + 20;
 
@@ -356,43 +366,41 @@ const MODS = {
 };
 const DC = { atacar:12, skill:13, defender:10, falar:11, mover:10, livre:11 };
 
-// Skills per class
 const SKILLS = {
   guerreiro:[
-    { id:'golpe_duplo',  name:'Golpe Duplo',   icon:'⚔️',  sp:20, tipo:'atacar',   desc:'Dois golpes consecutivos (+2 dano)' },
-    { id:'provocar',     name:'Provocar',       icon:'😤',  sp:10, tipo:'falar',    desc:'Força inimigo próximo a te atacar' },
-    { id:'bater_escudo', name:'Bater Escudo',   icon:'🛡️', sp:15, tipo:'defender', desc:'Reduz próximo dano recebido' },
+    { id:'golpe_duplo',  name:'Golpe Duplo',    icon:'⚔️',  sp:20, tipo:'atacar',   desc:'Dois golpes (+2 dano)' },
+    { id:'provocar',     name:'Provocar',        icon:'😤',  sp:10, tipo:'falar',    desc:'Força inimigo a atacar você' },
+    { id:'bater_escudo', name:'Bater Escudo',    icon:'🛡️', sp:15, tipo:'defender', desc:'Reduz próximo dano' },
   ],
   mago:[
-    { id:'bola_fogo',    name:'Bola de Fogo',   icon:'🔥',  sp:30, tipo:'skill',   desc:'Dano mágico em área' },
-    { id:'cura',         name:'Cura',           icon:'💚',  sp:20, tipo:'skill',   desc:'Restaura HP de aliado' },
-    { id:'escudo_magico',name:'Escudo Mágico',  icon:'🔵',  sp:15, tipo:'defender',desc:'Cria barreira protetora' },
-    { id:'raio',         name:'Raio',           icon:'⚡',  sp:25, tipo:'skill',   desc:'Ataque mágico de longa distância' },
+    { id:'bola_fogo',    name:'Bola de Fogo',    icon:'🔥',  sp:30, tipo:'skill',   desc:'Dano mágico em área' },
+    { id:'cura',         name:'Cura',            icon:'💚',  sp:20, tipo:'skill',   desc:'Restaura HP de aliado', heal:true },
+    { id:'escudo_magico',name:'Escudo Mágico',   icon:'🔵',  sp:15, tipo:'defender',desc:'Barreira protetora' },
+    { id:'raio',         name:'Raio',            icon:'⚡',  sp:25, tipo:'skill',   desc:'Ataque mágico à distância' },
   ],
   ladino:[
-    { id:'ataque_furtivo',name:'Atq Furtivo',   icon:'🗡️', sp:20, tipo:'atacar',  desc:'+4 dano se inimigo distraído' },
-    { id:'fumar',         name:'Névoa de Fumaça',icon:'💨', sp:15, tipo:'livre',   desc:'Dificulta ataques ao redor' },
-    { id:'veneno',        name:'Envenenar',      icon:'☠️', sp:25, tipo:'skill',   desc:'Dano contínuo por veneno' },
+    { id:'ataque_furtivo',name:'Atq Furtivo',    icon:'🗡️', sp:20, tipo:'atacar',  desc:'+4 dano se inimigo distraído' },
+    { id:'fumaca',        name:'Névoa de Fumaça', icon:'💨', sp:15, tipo:'livre',   desc:'Dificulta ataques ao redor' },
+    { id:'veneno',        name:'Envenenar',       icon:'☠️', sp:25, tipo:'skill',   desc:'Dano por veneno contínuo' },
   ],
   clerigo:[
-    { id:'cura_sagrada',  name:'Cura Sagrada',  icon:'✨',  sp:20, tipo:'skill',   desc:'Restaura HP significativo de aliado' },
-    { id:'luz_divina',    name:'Luz Divina',    icon:'🌟',  sp:25, tipo:'skill',   desc:'Dano sagrado em inimigo undead' },
-    { id:'proteger',      name:'Proteger',      icon:'🛡️', sp:10, tipo:'defender',desc:'Escudo divino por 1 turno' },
-    { id:'benção',        name:'Bênção',        icon:'🙏',  sp:15, tipo:'skill',   desc:'+2 em todos os rolls aliados' },
+    { id:'cura_sagrada',  name:'Cura Sagrada',   icon:'✨',  sp:20, tipo:'skill',   desc:'Restaura HP significativo', heal:true },
+    { id:'luz_divina',    name:'Luz Divina',      icon:'🌟',  sp:25, tipo:'skill',   desc:'Dano sagrado em undead' },
+    { id:'proteger',      name:'Proteger',        icon:'🛡️', sp:10, tipo:'defender',desc:'Escudo divino 1 turno' },
+    { id:'bencao',        name:'Bênção',          icon:'🙏',  sp:15, tipo:'skill',   desc:'+2 nos rolls de aliados', heal:true },
   ],
   barbaro:[
-    { id:'furia',         name:'Fúria Bárbara', icon:'🪓',  sp:20, tipo:'atacar',  desc:'+6 dano mas -2 defesa por 1 turno' },
-    { id:'rugido',        name:'Rugido',        icon:'😱',  sp:10, tipo:'falar',   desc:'Aterroriza inimigos próximos' },
-    { id:'pancada',       name:'Pancada',       icon:'💥',  sp:15, tipo:'atacar',  desc:'Golpe forte que empurra inimigo' },
+    { id:'furia',         name:'Fúria Bárbara',   icon:'🪓',  sp:20, tipo:'atacar',  desc:'+6 dano, -2 defesa por 1 turno' },
+    { id:'rugido',        name:'Rugido',           icon:'😱',  sp:10, tipo:'falar',   desc:'Aterroriza inimigos próximos' },
+    { id:'pancada',       name:'Pancada',          icon:'💥',  sp:15, tipo:'atacar',  desc:'Empurra inimigo' },
   ],
   arqueiro:[
-    { id:'flechada',      name:'Flechada Certa', icon:'🎯', sp:15, tipo:'atacar',  desc:'+3 precisão, ignora cobertura' },
-    { id:'chuva_flechas', name:'Chuva de Flechas',icon:'🏹',sp:30, tipo:'skill',  desc:'Atinge múltiplos inimigos em área' },
-    { id:'armadilha',     name:'Armadilha',      icon:'🪤', sp:20, tipo:'livre',   desc:'Coloca armadilha em tile adjacente' },
+    { id:'flechada',      name:'Flechada Certa',   icon:'🎯', sp:15, tipo:'atacar',  desc:'+3 precisão, ignora cobertura' },
+    { id:'chuva_flechas', name:'Chuva de Flechas', icon:'🏹', sp:30, tipo:'skill',   desc:'Múltiplos inimigos em área' },
+    { id:'armadilha',     name:'Armadilha',         icon:'🪤', sp:20, tipo:'livre',   desc:'Armadilha em tile adjacente' },
   ],
 };
 
-// Equipment per class (flavor)
 const EQUIP = {
   guerreiro: [['ARMA','Espada Longa'],['ARMADURA','Cota de Malha'],['ACESSÓRIO','Amuleto de Pedra']],
   mago:      [['ARMA','Cajado Arcano'],['ARMADURA','Manto de Estudioso'],['ACESSÓRIO','Anel de Foco']],
@@ -403,10 +411,10 @@ const EQUIP = {
 };
 
 const ENEMY_TEMPLATES = [
-  { name:'Goblin',       icon:'👺', hp:30, mv:3, atk:1, spd:7, dmg:5  },
-  { name:'Arq. Goblin',  icon:'🏹', hp:20, mv:2, atk:4, spd:6, dmg:4  },
-  { name:'Líder Goblin', icon:'👹', hp:55, mv:2, atk:1, spd:5, dmg:8  },
-  { name:'Goblin Bruto', icon:'🧌', hp:40, mv:2, atk:1, spd:5, dmg:7  },
+  { name:'Goblin',       icon:'👺', sprite:'goblin_batedor',  hp:30, mv:3, atk:1, spd:7, dmg:5  },
+  { name:'Arq. Goblin',  icon:'🏹', sprite:'goblin_arqueiro', hp:20, mv:2, atk:4, spd:6, dmg:4  },
+  { name:'Líder Goblin', icon:'👹', sprite:'goblin_lider',    hp:55, mv:2, atk:1, spd:5, dmg:8  },
+  { name:'Goblin Bruto', icon:'🧌', sprite:'goblin_bruto',    hp:40, mv:2, atk:1, spd:5, dmg:7  },
 ];
 
 // ═══════════════════════════════════════════════════════
@@ -416,9 +424,9 @@ let units = [], turnQueue = [], curIdx = 0;
 let phase = 'idle';
 let selUnit = null, hlMove = new Set(), hlAtk = new Set();
 let hasMoved = false, hasActed = false;
-let _continuarCb = null;
+let _continuarCb  = null;
 let _currentAudio = null;
-let _activeSkill  = null; // skill selected for targeting
+let _activeSkill  = null;
 
 // ═══════════════════════════════════════════════════════
 //  UTILS
@@ -432,46 +440,31 @@ function toast(msg, dur=3000) {
   clearTimeout(el._t);
   el._t = setTimeout(() => el.style.display='none', dur);
 }
-
-function gridToScreen(col, row) {
-  return { x:(col-row)*HW + OFFSET_X, y:(col+row)*HH + OFFSET_Y };
-}
-function unitScreenPos(col, row) {
-  const {x, y} = gridToScreen(col, row);
-  return { left: x + HW - 19, top: y - 58 };
-}
-function dist(a, b) { return Math.abs(a.col-b.col) + Math.abs(a.row-b.row); }
-function unitAt(col, row) { return units.find(u => u.alive && u.col===col && u.row===row) || null; }
-function getTileEl(c, r)  { return document.getElementById(`t${c}_${r}`); }
+function gridToScreen(col, row) { return { x:(col-row)*HW+OFFSET_X, y:(col+row)*HH+OFFSET_Y }; }
+function unitScreenPos(col, row) { const {x,y}=gridToScreen(col,row); return { left:x+HW-19, top:y-68 }; }
+function dist(a,b) { return Math.abs(a.col-b.col)+Math.abs(a.row-b.row); }
+function unitAt(col,row) { return units.find(u=>u.alive&&u.col===col&&u.row===row)||null; }
+function getTileEl(c,r) { return document.getElementById(`t${c}_${r}`); }
 
 // ═══════════════════════════════════════════════════════
 //  MAP
 // ═══════════════════════════════════════════════════════
 function renderMap() {
   const cont = document.getElementById('grid-container');
-  cont.innerHTML = '';
-  cont.style.width  = GRID_W + 'px';
-  cont.style.height = GRID_H + 'px';
-
-  const order = [];
-  for (let r=0; r<ROWS; r++)
-    for (let c=0; c<COLS; c++)
-      order.push({c, r, z:c+r});
-  order.sort((a,b) => a.z - b.z);
-
-  order.forEach(({c, r}) => {
-    const {x, y} = gridToScreen(c, r);
-    const div = document.createElement('div');
-    div.id = `t${c}_${r}`;
-    div.className = 'tile';
-    div.style.cssText = `left:${x}px;top:${y}px;width:${TW}px;height:${TH}px;z-index:${(c+r)*2}`;
-    div.innerHTML = `<svg viewBox="0 0 64 32" width="64" height="32" xmlns="http://www.w3.org/2000/svg">
-      <polygon class="tile-poly"
-        points="32,1 63,16 32,31 1,16"
-        fill="#b0ada4" stroke="#d4a843" stroke-width="1.6"/>
+  cont.innerHTML = ''; cont.style.width=GRID_W+'px'; cont.style.height=GRID_H+'px';
+  const order=[];
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) order.push({c,r,z:c+r});
+  order.sort((a,b)=>a.z-b.z);
+  order.forEach(({c,r})=>{
+    const {x,y}=gridToScreen(c,r);
+    const div=document.createElement('div');
+    div.id=`t${c}_${r}`; div.className='tile';
+    div.style.cssText=`left:${x}px;top:${y}px;width:${TW}px;height:${TH}px;z-index:${(c+r)*2}`;
+    div.innerHTML=`<svg viewBox="0 0 64 32" width="64" height="32" xmlns="http://www.w3.org/2000/svg">
+      <polygon class="tile-poly" points="32,1 63,16 32,31 1,16" fill="#b0ada4" stroke="#d4a843" stroke-width="1.6"/>
     </svg>`;
-    div.dataset.c = c; div.dataset.r = r;
-    div.addEventListener('click', () => onTileClick(c, r));
+    div.dataset.c=c; div.dataset.r=r;
+    div.addEventListener('click',()=>onTileClick(c,r));
     cont.appendChild(div);
   });
 }
@@ -481,158 +474,130 @@ function renderMap() {
 // ═══════════════════════════════════════════════════════
 function buildUnits() {
   [
-    { name:'Guerreiro', classe:'guerreiro', sexo:'m', col:1, row:1 },
-    { name:'Mago',      classe:'mago',      sexo:'m', col:1, row:4 },
-    { name:'Arqueira',  classe:'arqueiro',  sexo:'f', col:2, row:6 },
-  ].forEach((p, i) => {
-    const c = CLASS_CFG[p.classe];
-    units.push({
-      id:`p${i}`, team:'player', name:p.name, classe:p.classe, sexo:p.sexo,
-      col:p.col, row:p.row, hp:c.hp, maxHp:c.hp, sp:c.sp, maxSp:c.sp,
-      dmg:c.dmg, mv:c.mv, atkRange:c.atk, spd:c.spd, alive:true,
-    });
+    {name:'Guerreiro',classe:'guerreiro',sexo:'m',col:1,row:1},
+    {name:'Mago',     classe:'mago',     sexo:'m',col:1,row:4},
+    {name:'Arqueira', classe:'arqueiro', sexo:'f',col:2,row:6},
+  ].forEach((p,i)=>{
+    const c=CLASS_CFG[p.classe];
+    units.push({id:`p${i}`,team:'player',name:p.name,classe:p.classe,sexo:p.sexo,
+      col:p.col,row:p.row,hp:c.hp,maxHp:c.hp,sp:c.sp,maxSp:c.sp,
+      dmg:c.dmg,mv:c.mv,atkRange:c.atk,spd:c.spd,alive:true});
   });
-
   [
-    { t:0, col:8, row:1 },
-    { t:1, col:9, row:3 },
-    { t:0, col:8, row:5, name:'Goblin 2' },
-    { t:2, col:9, row:6 },
-  ].forEach((e, i) => {
-    const tmpl = ENEMY_TEMPLATES[e.t];
-    units.push({
-      id:`e${i}`, team:'enemy', name:e.name||tmpl.name, icon:tmpl.icon,
-      col:e.col, row:e.row, hp:tmpl.hp, maxHp:tmpl.hp, sp:0, maxSp:0,
-      dmg:tmpl.dmg, mv:tmpl.mv, atkRange:tmpl.atk, spd:tmpl.spd, alive:true,
-    });
+    {t:0,col:8,row:1},{t:1,col:9,row:3},
+    {t:0,col:8,row:5,name:'Goblin 2'},{t:2,col:9,row:6},
+  ].forEach((e,i)=>{
+    const tmpl=ENEMY_TEMPLATES[e.t];
+    units.push({id:`e${i}`,team:'enemy',name:e.name||tmpl.name,
+      icon:tmpl.icon,sprite:tmpl.sprite,
+      col:e.col,row:e.row,hp:tmpl.hp,maxHp:tmpl.hp,sp:0,maxSp:0,
+      dmg:tmpl.dmg,mv:tmpl.mv,atkRange:tmpl.atk,spd:tmpl.spd,alive:true});
   });
 }
 
 function createUnitEl(u) {
-  const cont = document.getElementById('grid-container');
-  const pos  = unitScreenPos(u.col, u.row);
-  const div  = document.createElement('div');
-  div.id = `u_${u.id}`; div.className = 'unit';
-  div.style.cssText = `left:${pos.left}px;top:${pos.top}px;z-index:${(u.col+u.row)*2+1}`;
+  const cont=document.getElementById('grid-container');
+  const pos=unitScreenPos(u.col,u.row);
+  const div=document.createElement('div');
+  div.id=`u_${u.id}`; div.className='unit';
+  div.style.cssText=`left:${pos.left}px;top:${pos.top}px;z-index:${(u.col+u.row)*2+1}`;
 
-  const spBar = u.maxSp > 0 ? `<div class="u-sp-bar"><div class="u-sp-fill" style="width:100%"></div></div>` : '';
-  const spLabel = u.maxSp > 0 ? `${u.sp}SP` : '';
+  const spLabel = u.maxSp>0 ? ` · ${u.sp}SP` : '';
+  const spBar   = u.maxSp>0 ? `<div class="u-sp-bar"><div class="u-sp-fill" style="width:100%"></div></div>` : '';
+  const label   = `<div class="u-label">
+    <span class="u-name-tag">${u.name}</span>
+    <span class="u-hpsp">${u.hp}/${u.maxHp}HP${spLabel}</span>
+  </div>`;
 
-  if (u.team === 'player') {
-    div.innerHTML = `
-      <div class="u-label">
-        <span class="u-name-tag">${u.name}</span>
-        <span class="u-hpsp">${u.hp}/${u.maxHp}HP${spLabel?' · '+spLabel:''}</span>
-      </div>
+  if (u.team==='player') {
+    div.innerHTML = `${label}
       <img class="u-sprite" src="../sprites/${u.classe}_${u.sexo}.png"
         onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
       <span class="u-icon" style="display:none">${CLASS_CFG[u.classe]?.icon||'⚔️'}</span>
-      <div class="u-bar"><div class="u-fill" style="width:100%;background:var(--green)"></div></div>
-      ${spBar}`;
+      <div class="u-bar"><div class="u-fill" style="width:100%;background:var(--green)"></div></div>${spBar}`;
   } else {
-    div.innerHTML = `
-      <div class="u-label">
-        <span class="u-name-tag">${u.name}</span>
-        <span class="u-hpsp">${u.hp}/${u.maxHp}HP</span>
+    // Enemy — use extracted goblin sprite
+    div.innerHTML = `${label}
+      <div class="u-goblin">
+        <img src="../sprites/${u.sprite}.png"
+          onerror="this.parentElement.innerHTML='<span class=\\'u-icon\\'>${u.icon}</span>'">
       </div>
-      <span class="u-icon">${u.icon}</span>
       <div class="u-bar"><div class="u-fill" style="width:100%;background:var(--green)"></div></div>`;
   }
 
-  div.addEventListener('click', e => { e.stopPropagation(); onUnitClick(u); });
+  div.addEventListener('click', e=>{e.stopPropagation();onUnitClick(u);});
   cont.appendChild(div);
 }
 
-function moveUnitEl(u, col, row) {
-  u.col = col; u.row = row;
-  const el = document.getElementById(`u_${u.id}`);
-  const pos = unitScreenPos(col, row);
-  if (!el) return;
-  el.style.left   = pos.left + 'px';
-  el.style.top    = pos.top  + 'px';
-  el.style.zIndex = (col+row)*2+1;
+function moveUnitEl(u,col,row) {
+  u.col=col; u.row=row;
+  const el=document.getElementById(`u_${u.id}`);
+  const pos=unitScreenPos(col,row);
+  if(!el) return;
+  el.style.left=pos.left+'px'; el.style.top=pos.top+'px';
+  el.style.zIndex=(col+row)*2+1;
 }
 
 function refreshUnitEl(u) {
-  const el = document.getElementById(`u_${u.id}`);
-  if (!el) return;
-
-  // HP bar
-  const hpPct = Math.max(0, Math.round((u.hp/u.maxHp)*100));
-  const hpClr = hpPct>50?'var(--green)':hpPct>25?'#f39c12':'var(--red)';
-  const fill  = el.querySelector('.u-fill');
-  if (fill) { fill.style.width=hpPct+'%'; fill.style.background=hpClr; }
-
-  // SP bar
-  if (u.maxSp > 0) {
-    const spPct = Math.max(0, Math.round((u.sp/u.maxSp)*100));
-    const spFill = el.querySelector('.u-sp-fill');
-    if (spFill) spFill.style.width = spPct + '%';
+  const el=document.getElementById(`u_${u.id}`); if(!el) return;
+  const hpPct=Math.max(0,Math.round((u.hp/u.maxHp)*100));
+  const hpClr=hpPct>50?'var(--green)':hpPct>25?'#f39c12':'var(--red)';
+  const fill=el.querySelector('.u-fill');
+  if(fill){fill.style.width=hpPct+'%';fill.style.background=hpClr;}
+  if(u.maxSp>0){
+    const spPct=Math.max(0,Math.round((u.sp/u.maxSp)*100));
+    const spF=el.querySelector('.u-sp-fill');
+    if(spF) spF.style.width=spPct+'%';
   }
-
-  // Label
-  const nameTag = el.querySelector('.u-name-tag');
-  const hpspTag = el.querySelector('.u-hpsp');
-  if (nameTag) nameTag.textContent = u.name;
-  if (hpspTag) {
-    const spLabel = u.maxSp > 0 ? ` · ${u.sp}SP` : '';
-    hpspTag.textContent = `${u.hp}/${u.maxHp}HP${spLabel}`;
-  }
-
-  // Unit classes
-  const cls = ['unit'];
-  if (selUnit === u)     cls.push('u-selected');
-  if (curUnit() === u)   cls.push('u-active');
-  if (!u.alive)          cls.push('u-dead');
-  el.className = cls.join(' ');
+  const nt=el.querySelector('.u-name-tag'), hs=el.querySelector('.u-hpsp');
+  if(nt) nt.textContent=u.name;
+  if(hs) hs.textContent=`${u.hp}/${u.maxHp}HP${u.maxSp>0?' · '+u.sp+'SP':''}`;
+  const cls=['unit'];
+  if(selUnit===u) cls.push('u-selected');
+  if(curUnit()===u) cls.push('u-active');
+  if(!u.alive) cls.push('u-dead');
+  el.className=cls.join(' ');
 }
 
 // ═══════════════════════════════════════════════════════
 //  TURN ORDER
 // ═══════════════════════════════════════════════════════
-function buildQueue() {
-  turnQueue = [...units].sort((a,b) => b.spd - a.spd);
-  curIdx = 0;
-}
-
-function curUnit() { return turnQueue[curIdx % turnQueue.length]; }
+function buildQueue()  { turnQueue=[...units].sort((a,b)=>b.spd-a.spd); curIdx=0; }
+function curUnit()     { return turnQueue[curIdx%turnQueue.length]; }
 
 function advanceTurn() {
-  hasMoved = false; hasActed = false; selUnit = null; _activeSkill = null;
+  hasMoved=false; hasActed=false; selUnit=null; _activeSkill=null;
   clearHL(); hideBtns();
-  let tries = turnQueue.length;
-  do { curIdx = (curIdx+1) % turnQueue.length; tries--; }
-  while (!curUnit().alive && tries > 0);
-  units.forEach(u => refreshUnitEl(u));
+  let tries=turnQueue.length;
+  do{curIdx=(curIdx+1)%turnQueue.length;tries--;}while(!curUnit().alive&&tries>0);
+  units.forEach(u=>refreshUnitEl(u));
   renderTurnBar();
-  if (!checkBattleEnd()) startUnitTurn();
+  if(!checkBattleEnd()) startUnitTurn();
 }
 
 function startUnitTurn() {
-  const cu = curUnit();
-  if (cu.team === 'player') {
-    phase = 'select';
+  const cu=curUnit();
+  if(cu.team==='player'){
+    phase='select';
     setPhase(`TURNO DE ${cu.name.toUpperCase()} — toque no personagem`);
-    showBtns({ ficha:true });
+    showBtns({ficha:true});
   } else {
-    phase = 'enemy';
+    phase='enemy';
     setPhase(`${cu.icon||'👹'} ${cu.name} está agindo...`);
     hideBtns();
-    setTimeout(() => runEnemyTurn(cu), 600);
+    setTimeout(()=>runEnemyTurn(cu),600);
   }
 }
 
 function renderTurnBar() {
-  const chips = document.getElementById('turn-chips');
-  chips.innerHTML = '';
-  const n = Math.min(10, turnQueue.length);
-  for (let i=0; i<n; i++) {
-    const idx  = (curIdx+i) % turnQueue.length;
-    const u    = turnQueue[idx];
-    const chip = document.createElement('div');
-    chip.className = `turn-chip${i===0?' active':''}${u.team==='enemy'?' enemy':''}${!u.alive?' dead':''}`;
-    const icon = u.team==='player' ? (CLASS_CFG[u.classe]?.icon||'⚔️') : u.icon;
-    chip.innerHTML = `<span class="tc-icon">${icon}</span><span class="tc-name">${u.name}</span><span class="tc-hp">${u.hp}/${u.maxHp}</span>`;
+  const chips=document.getElementById('turn-chips'); chips.innerHTML='';
+  const n=Math.min(10,turnQueue.length);
+  for(let i=0;i<n;i++){
+    const idx=(curIdx+i)%turnQueue.length, u=turnQueue[idx];
+    const chip=document.createElement('div');
+    chip.className=`turn-chip${i===0?' active':''}${u.team==='enemy'?' enemy':''}${!u.alive?' dead':''}`;
+    const icon=u.team==='player'?(CLASS_CFG[u.classe]?.icon||'⚔️'):u.icon;
+    chip.innerHTML=`<span class="tc-icon">${icon}</span><span class="tc-name">${u.name}</span><span class="tc-hp">${u.hp}/${u.maxHp}</span>`;
     chips.appendChild(chip);
   }
 }
@@ -641,31 +606,29 @@ function renderTurnBar() {
 //  BFS
 // ═══════════════════════════════════════════════════════
 function reachableTiles(u) {
-  const res = new Set(), vis = new Set([`${u.col},${u.row}`]);
-  const q = [{col:u.col, row:u.row, left:u.mv}];
-  while (q.length) {
-    const {col, row, left} = q.shift();
-    if (left <= 0) continue;
-    for (const [dc,dr] of [[1,0],[-1,0],[0,1],[0,-1]]) {
-      const nc=col+dc, nr=row+dr, key=`${nc},${nr}`;
-      if (vis.has(key)||nc<0||nc>=COLS||nr<0||nr>=ROWS) continue;
-      if (unitAt(nc,nr)) continue;
+  const res=new Set(),vis=new Set([`${u.col},${u.row}`]);
+  const q=[{col:u.col,row:u.row,left:u.mv}];
+  while(q.length){
+    const {col,row,left}=q.shift(); if(left<=0) continue;
+    for(const[dc,dr]of[[1,0],[-1,0],[0,1],[0,-1]]){
+      const nc=col+dc,nr=row+dr,key=`${nc},${nr}`;
+      if(vis.has(key)||nc<0||nc>=COLS||nr<0||nr>=ROWS) continue;
+      if(unitAt(nc,nr)) continue;
       vis.add(key); res.add(key);
-      if (left>1) q.push({col:nc,row:nr,left:left-1});
+      if(left>1) q.push({col:nc,row:nr,left:left-1});
     }
   }
   return res;
 }
 
-function atkTiles(u, fc, fr) {
-  const res = new Set(), r = u.atkRange;
-  for (let dc=-r; dc<=r; dc++)
-    for (let dr=-r; dr<=r; dr++) {
-      const d=Math.abs(dc)+Math.abs(dr);
-      if (d===0||d>r) continue;
-      const nc=fc+dc, nr=fr+dr;
-      if (nc>=0&&nc<COLS&&nr>=0&&nr<ROWS) res.add(`${nc},${nr}`);
-    }
+function atkTiles(u,fc,fr) {
+  const res=new Set(),r=u.atkRange;
+  for(let dc=-r;dc<=r;dc++) for(let dr=-r;dr<=r;dr++){
+    const d=Math.abs(dc)+Math.abs(dr);
+    if(d===0||d>r) continue;
+    const nc=fc+dc,nr=fr+dr;
+    if(nc>=0&&nc<COLS&&nr>=0&&nr<ROWS) res.add(`${nc},${nr}`);
+  }
   return res;
 }
 
@@ -674,138 +637,179 @@ function atkTiles(u, fc, fr) {
 // ═══════════════════════════════════════════════════════
 function clearHL() {
   document.querySelectorAll('.tile.hl-move,.tile.hl-atk,.tile.hl-sel,.tile.hl-skill')
-    .forEach(el => el.classList.remove('hl-move','hl-atk','hl-sel','hl-skill'));
+    .forEach(el=>el.classList.remove('hl-move','hl-atk','hl-sel','hl-skill'));
 }
-function applyHL(movSet, atkSet, sc, sr) {
+function applyHL(movSet,atkSet,sc,sr) {
   clearHL();
-  movSet.forEach(k => { const [c,r]=k.split(',').map(Number); getTileEl(c,r)?.classList.add('hl-move'); });
-  atkSet.forEach(k => {
-    const [c,r]=k.split(',').map(Number);
-    const el=getTileEl(c,r);
-    if (el && !el.classList.contains('hl-move')) el.classList.add('hl-atk');
-  });
-  if (sc!=null) getTileEl(sc,sr)?.classList.add('hl-sel');
+  movSet.forEach(k=>{const[c,r]=k.split(',').map(Number);getTileEl(c,r)?.classList.add('hl-move');});
+  atkSet.forEach(k=>{const[c,r]=k.split(',').map(Number);const el=getTileEl(c,r);if(el&&!el.classList.contains('hl-move'))el.classList.add('hl-atk');});
+  if(sc!=null) getTileEl(sc,sr)?.classList.add('hl-sel');
 }
 
 // ═══════════════════════════════════════════════════════
 //  INPUT
 // ═══════════════════════════════════════════════════════
 function onUnitClick(u) {
-  const cu = curUnit();
-  if (phase==='end') return;
+  const cu=curUnit(); if(phase==='end') return;
 
-  // Skill targeting: clicking an ally for heal/buff
-  if (_activeSkill && phase==='skill-target') {
-    const validAlly = u.team==='player' && u.alive;
-    const validEnemy = u.team==='enemy' && u.alive && hlAtk.has(`${u.col},${u.row}`);
-    if (validAlly || validEnemy) {
-      _executeSkillOn(cu, u);
-      return;
-    }
+  if(_activeSkill&&phase==='skill-target'){
+    const validAlly=u.team==='player'&&u.alive;
+    const validEnemy=u.team==='enemy'&&u.alive&&hlAtk.has(`${u.col},${u.row}`);
+    if(validAlly||validEnemy){_executeSkillOn(cu,u);return;}
   }
 
-  if (phase==='select' && u===cu && cu.team==='player') {
-    selUnit = cu;
-    hlMove  = hasMoved ? new Set() : reachableTiles(cu);
-    hlAtk   = atkTiles(cu, cu.col, cu.row);
-    applyHL(hlMove, hlAtk, cu.col, cu.row);
+  if(phase==='select'&&u===cu&&cu.team==='player'){
+    selUnit=cu;
+    hlMove=hasMoved?new Set():reachableTiles(cu);
+    hlAtk=atkTiles(cu,cu.col,cu.row);
+    applyHL(hlMove,hlAtk,cu.col,cu.row);
     units.forEach(u=>refreshUnitEl(u));
-    phase = 'move';
-    setPhase(`${cu.name}${hasMoved?'':', tile AZUL pra mover'} · VERMELHO pra atacar`);
-    showBtns({ agir:!hasActed, esperar:true, cancelar:true, ficha:true });
+    phase='move';
+    setPhase(`${cu.name}${hasMoved?'':', AZUL pra mover'} · VERMELHO pra atacar`);
+    showBtns({agir:!hasActed,esperar:true,cancelar:true,ficha:true});
     return;
   }
 
-  if ((phase==='move'||phase==='action') && u.team==='enemy' && hlAtk.has(`${u.col},${u.row}`)) {
-    document.getElementById('act-txt').value = `Ataco ${u.name}`;
+  if((phase==='move'||phase==='action')&&u.team==='enemy'&&hlAtk.has(`${u.col},${u.row}`)){
+    document.getElementById('act-txt').value=`Ataco ${u.name}`;
     openActionModal();
   }
 }
 
-function onTileClick(col, row) {
-  const cu = curUnit();
-  if (!cu||cu.team!=='player'||phase==='end') return;
-  if (phase==='move' && hlMove.has(`${col},${row}`)) {
-    moveUnitEl(cu, col, row);
-    hasMoved = true;
-    hlMove   = new Set();
-    hlAtk    = atkTiles(cu, col, row);
-    applyHL(new Set(), hlAtk, col, row);
+function onTileClick(col,row) {
+  const cu=curUnit(); if(!cu||cu.team!=='player'||phase==='end') return;
+  if(phase==='move'&&hlMove.has(`${col},${row}`)){
+    moveUnitEl(cu,col,row); hasMoved=true;
+    hlMove=new Set(); hlAtk=atkTiles(cu,col,row);
+    applyHL(new Set(),hlAtk,col,row);
     units.forEach(u=>refreshUnitEl(u));
-    phase = 'action';
+    phase='action';
     setPhase(`${cu.name} moveu · AGIR ou ESPERAR`);
-    showBtns({ agir:!hasActed, esperar:true, cancelar:true, ficha:true });
+    showBtns({agir:!hasActed,esperar:true,cancelar:true,ficha:true});
   }
 }
 
 // ═══════════════════════════════════════════════════════
 //  UI HELPERS
 // ═══════════════════════════════════════════════════════
-function setPhase(txt) { document.getElementById('phase-txt').textContent = txt; }
+function setPhase(txt) { document.getElementById('phase-txt').textContent=txt; }
 
 function hideBtns() {
-  ['btn-ficha','btn-agir','btn-continuar','btn-esperar','btn-cancelar']
-    .forEach(id => document.getElementById(id).style.display='none');
+  ['btn-ficha','btn-agir','btn-esperar','btn-cancelar']
+    .forEach(id=>document.getElementById(id).style.display='none');
 }
-
-function showBtns({ ficha=false, agir=false, continuar=false, esperar=false, cancelar=false } = {}) {
-  document.getElementById('btn-ficha').style.display     = ficha    ? '' : 'none';
-  document.getElementById('btn-agir').style.display      = agir     ? '' : 'none';
-  document.getElementById('btn-continuar').style.display = continuar ? '' : 'none';
-  document.getElementById('btn-esperar').style.display   = esperar  ? '' : 'none';
-  document.getElementById('btn-cancelar').style.display  = cancelar ? '' : 'none';
+function showBtns({ficha=false,agir=false,esperar=false,cancelar=false}={}) {
+  document.getElementById('btn-ficha').style.display   =ficha   ?'':'none';
+  document.getElementById('btn-agir').style.display    =agir    ?'':'none';
+  document.getElementById('btn-esperar').style.display =esperar ?'':'none';
+  document.getElementById('btn-cancelar').style.display=cancelar?'':'none';
 }
 
 function cancelSelect() {
-  selUnit=null; _activeSkill=null; clearHL(); units.forEach(u=>refreshUnitEl(u));
+  selUnit=null;_activeSkill=null;clearHL();units.forEach(u=>refreshUnitEl(u));
   phase='select';
   setPhase(`TURNO DE ${curUnit()?.name?.toUpperCase()||'?'} — toque no personagem`);
-  showBtns({ ficha:true });
+  showBtns({ficha:true});
 }
 
 function playerEndTurn() { clearHL(); advanceTurn(); }
 
 function onContinuar() {
-  const cb = _continuarCb; _continuarCb = null;
+  const cb=_continuarCb; _continuarCb=null;
   stopAudio();
-  document.querySelectorAll('.speech-bubble').forEach(el => el.remove());
+  hideDialog();
   hideBtns();
-  if (cb) cb();
+  if(cb) cb();
 }
 
 function stopAudio() {
-  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
-  if (window.speechSynthesis) speechSynthesis.cancel();
+  if(_currentAudio){_currentAudio.pause();_currentAudio=null;}
+  if(window.speechSynthesis) speechSynthesis.cancel();
+}
+
+// ═══════════════════════════════════════════════════════
+//  RPG DIALOG
+// ═══════════════════════════════════════════════════════
+function showDialog(unit, narration, rollInfo, onDone) {
+  stopAudio();
+  const dlg = document.getElementById('rpg-dialog');
+
+  // Portrait
+  const portrait = document.getElementById('dlg-portrait');
+  if(unit.team==='player'){
+    portrait.innerHTML=`<img src="../sprites/${unit.classe}_${unit.sexo}.png"
+      onerror="this.parentElement.innerHTML='<div class=\\'dlg-icon\\'>${CLASS_CFG[unit.classe]?.icon||'⚔️'}</div>'">`;
+  } else if(unit.sprite){
+    portrait.innerHTML=`<img src="../sprites/${unit.sprite}.png"
+      onerror="this.parentElement.innerHTML='<div class=\\'dlg-icon\\'>${unit.icon||'👹'}</div>'">`;
+  } else {
+    portrait.innerHTML=`<div class="dlg-icon">${unit.icon||'👹'}</div>`;
+  }
+
+  // Actor name
+  document.getElementById('dlg-actor').textContent = unit.name.toUpperCase();
+
+  // Roll info
+  const rollEl = document.getElementById('dlg-roll');
+  if(rollInfo){
+    const cls = rollInfo.crit?'crit':(!rollInfo.succ||rollInfo.fail)?'fail':'ok';
+    const label = rollInfo.crit?'⚡ CRÍTICO!':rollInfo.fail?'💀 FALHA!':rollInfo.succ?'✅ SUCESSO':'❌ FALHOU';
+    rollEl.innerHTML = `${rollInfo.label} · <span class="roll-val roll-${cls}">${label}</span>`;
+    rollEl.style.display='block';
+  } else {
+    rollEl.style.display='none';
+  }
+
+  // Narration text
+  document.getElementById('dlg-text').textContent = narration;
+
+  // Footer: show "narrando..." spinner, hide CONTINUAR
+  document.getElementById('dlg-wait').style.display='';
+  document.getElementById('dlg-continuar').style.display='none';
+
+  // Wire callback
+  _continuarCb = () => { if(onDone) onDone(); };
+
+  // Open dialog
+  dlg.classList.add('open');
+  setPhase('⏳ Aguarde a narração...');
+  hideBtns();
+
+  // Play TTS then reveal CONTINUAR
+  narrar(narration).then(()=>{
+    document.getElementById('dlg-wait').style.display='none';
+    document.getElementById('dlg-continuar').style.display='';
+    setPhase('▼ Toque CONTINUAR no painel abaixo');
+    // Auto-advance after 5s
+    setTimeout(()=>{ if(_continuarCb) onContinuar(); }, 5000);
+  });
+}
+
+function hideDialog() {
+  document.getElementById('rpg-dialog').classList.remove('open');
 }
 
 // ═══════════════════════════════════════════════════════
 //  CHARACTER SHEET
 // ═══════════════════════════════════════════════════════
 function openFicha() {
-  const cu = curUnit();
-  if (!cu || cu.team !== 'player') return;
-  const cfg   = CLASS_CFG[cu.classe] || {};
-  const skills = SKILLS[cu.classe]   || [];
-  const equip  = EQUIP[cu.classe]    || [];
-  const icon   = cfg.icon || '⚔️';
+  const cu=curUnit(); if(!cu||cu.team!=='player') return;
+  const cfg=CLASS_CFG[cu.classe]||{};
+  const skills=SKILLS[cu.classe]||[];
+  const equip=EQUIP[cu.classe]||[];
+  const icon=cfg.icon||'⚔️';
 
-  const skillRows = skills.map(sk => `
+  const skillRows=skills.map(sk=>`
     <div class="skill-row">
       <span class="sk-icon2">${sk.icon}</span>
-      <div class="sk-info">
-        <div class="sk-nm">${sk.name}</div>
-        <div class="sk-dsc">${sk.desc}</div>
-      </div>
+      <div class="sk-info"><div class="sk-nm">${sk.name}</div><div class="sk-dsc">${sk.desc}</div></div>
       <span class="sk-spcost">${sk.sp}SP</span>
     </div>`).join('');
 
-  const equipRows = equip.map(([slot,item]) => `
-    <div class="equip-row">
-      <span class="equip-slot">${slot}</span>
-      <span>${item}</span>
-    </div>`).join('');
+  const equipRows=equip.map(([slot,item])=>`
+    <div class="equip-row"><span class="equip-slot">${slot}</span><span>${item}</span></div>`).join('');
 
-  document.getElementById('ficha-content').innerHTML = `
+  document.getElementById('ficha-content').innerHTML=`
     <div class="ficha-header">
       <span class="fh-icon">${icon}</span>
       <div class="fh-info">
@@ -826,196 +830,152 @@ function openFicha() {
 
   document.getElementById('modal-ficha').classList.add('open');
 }
-
-function closeFicha() {
-  document.getElementById('modal-ficha').classList.remove('open');
-}
+function closeFicha() { document.getElementById('modal-ficha').classList.remove('open'); }
 
 // ═══════════════════════════════════════════════════════
 //  ACTION MODAL
 // ═══════════════════════════════════════════════════════
 function openActionModal() {
-  const cu = curUnit();
-  if (!cu) return;
-  document.getElementById('act-title').textContent = `⚔️ ${cu.name} age`;
-  document.getElementById('act-txt').value = '';
+  const cu=curUnit(); if(!cu) return;
+  document.getElementById('act-title').textContent=`⚔️ ${cu.name} age`;
+  document.getElementById('act-txt').value='';
   document.getElementById('dice-box').classList.remove('show');
-  document.getElementById('btn-roll').disabled = false;
+  document.getElementById('btn-roll').disabled=false;
 
-  // Build skill buttons
-  const skills = SKILLS[cu.classe] || [];
-  const grid = document.getElementById('skill-grid');
-  grid.innerHTML = '';
-  skills.forEach(sk => {
-    const btn = document.createElement('button');
-    const canUse = cu.sp >= sk.sp;
-    btn.className = `skill-btn${canUse?'':' sp-empty'}`;
-    btn.innerHTML = `<span class="sk-name">${sk.icon} ${sk.name}</span><span class="sk-sp">${sk.sp} SP</span><span class="sk-desc">${sk.desc}</span>`;
-    if (canUse) {
-      btn.onclick = () => activateSkill(sk);
-    } else {
-      btn.title = 'SP insuficiente';
-    }
+  const skills=SKILLS[cu.classe]||[];
+  const grid=document.getElementById('skill-grid'); grid.innerHTML='';
+  skills.forEach(sk=>{
+    const canUse=cu.sp>=sk.sp;
+    const btn=document.createElement('button');
+    btn.className=`skill-btn${canUse?'':' sp-empty'}`;
+    btn.innerHTML=`<span class="sk-name">${sk.icon} ${sk.name}</span><span class="sk-sp">${sk.sp} SP</span><span class="sk-desc">${sk.desc}</span>`;
+    if(canUse) btn.onclick=()=>activateSkill(sk);
+    else btn.title='SP insuficiente';
     grid.appendChild(btn);
   });
 
   document.getElementById('modal-action').classList.add('open');
-  setTimeout(() => document.getElementById('act-txt').focus(), 80);
+  setTimeout(()=>document.getElementById('act-txt').focus(),80);
 }
 
 function activateSkill(sk) {
-  const cu = curUnit();
-  closeActionModal();
-  _activeSkill = sk;
-
-  // Skills that need a target
-  const needsTarget = ['cura','cura_sagrada','benção','escudo_magico','proteger'].includes(sk.id);
-  if (needsTarget) {
-    hlAtk = atkTiles(cu, cu.col, cu.row);
-    // Show ally positions for heal-type skills
-    const allies = units.filter(u=>u.team==='player'&&u.alive&&u!==cu);
+  const cu=curUnit(); closeActionModal(); _activeSkill=sk;
+  if(sk.heal){
+    hlAtk=atkTiles(cu,cu.col,cu.row);
     clearHL();
-    allies.forEach(a => getTileEl(a.col,a.row)?.classList.add('hl-skill'));
-    phase = 'skill-target';
-    setPhase(`${sk.icon} ${sk.name}: toque no alvo`);
-    showBtns({ cancelar:true, ficha:true });
+    units.filter(u=>u.team==='player'&&u.alive&&u!==cu)
+      .forEach(a=>getTileEl(a.col,a.row)?.classList.add('hl-skill'));
+    phase='skill-target';
+    setPhase(`${sk.icon} ${sk.name}: toque no aliado alvo`);
+    showBtns({cancelar:true,ficha:true});
   } else {
-    // Execute on nearest visible enemy or self
-    document.getElementById('act-txt').value = `${sk.name}: ${sk.desc}`;
-    _executeSkillSelf(cu, sk);
+    _executeSkillSelf(cu,sk);
   }
 }
 
-function _executeSkillSelf(cu, sk) {
-  cu.sp = Math.max(0, cu.sp - sk.sp);
-  const tipo  = sk.tipo;
-  const mod   = (MODS[cu.classe]||{})[tipo] ?? 2;
-  const dc    = DC[tipo] || 11;
-  const dado  = Math.floor(Math.random()*20)+1;
-  const total = dado + mod;
-  const crit  = dado === 20;
-  const fail  = dado === 1;
-  const succ  = crit || (!fail && total >= dc);
+function _executeSkillSelf(cu,sk) {
+  cu.sp=Math.max(0,cu.sp-sk.sp);
+  const mod=(MODS[cu.classe]||{})[sk.tipo]??2;
+  const dc=DC[sk.tipo]||11;
+  const dado=Math.floor(Math.random()*20)+1;
+  const total=dado+mod;
+  const crit=dado===20, fail=dado===1;
+  const succ=crit||(!fail&&total>=dc);
+  const modStr=mod>=0?`+${mod}`:String(mod);
 
-  const enemies = units.filter(u=>u.team==='enemy'&&u.alive&&hlAtk.has(`${u.col},${u.row}`));
-  const target  = enemies.sort((a,b)=>dist(cu,a)-dist(cu,b))[0];
-  let dmg = 0;
-  if (succ && target) {
-    dmg = crit ? (cu.dmg+4)*2 : cu.dmg+4;
-    target.hp = Math.max(0, target.hp - dmg);
-    if (target.hp <= 0) target.alive = false;
-  }
+  const enemies=units.filter(u=>u.team==='enemy'&&u.alive&&hlAtk.has(`${u.col},${u.row}`));
+  const target=enemies.sort((a,b)=>dist(cu,a)-dist(cu,b))[0];
+  let dmg=0;
+  if(succ&&target){dmg=crit?(cu.dmg+4)*2:cu.dmg+4;target.hp=Math.max(0,target.hp-dmg);if(target.hp<=0)target.alive=false;}
 
-  hasActed = true;
-  units.forEach(u => refreshUnitEl(u)); renderTurnBar();
-  const narr = buildSkillNarration(cu, target, sk, succ, crit, fail, dmg);
-  showBubble(cu, narr, () => {
-    if (!checkBattleEnd()) {
-      phase = 'action';
-      showBtns({ esperar:true, ficha:true });
-      setPhase(`${cu.name} usou ${sk.name} · ESPERAR para encerrar`);
-    }
+  hasActed=true;
+  units.forEach(u=>refreshUnitEl(u)); renderTurnBar();
+  const rollInfo={label:`${cu.name} · 1d20${modStr}=${total} vs DC${dc}`,succ,crit,fail};
+  showDialog(cu,buildSkillNarration(cu,target,sk,succ,crit,fail,dmg),rollInfo,()=>{
+    if(!checkBattleEnd()){phase='action';showBtns({esperar:true,ficha:true});setPhase(`${cu.name} usou ${sk.name} · ESPERAR para encerrar`);}
   });
 }
 
-function _executeSkillOn(cu, target) {
-  const sk = _activeSkill; _activeSkill = null;
-  cu.sp = Math.max(0, cu.sp - sk.sp);
-  clearHL();
+function _executeSkillOn(cu,target) {
+  const sk=_activeSkill; _activeSkill=null;
+  cu.sp=Math.max(0,cu.sp-sk.sp); clearHL();
+  const mod=(MODS[cu.classe]||{})['skill']??2;
+  const dc=DC.skill;
+  const dado=Math.floor(Math.random()*20)+1;
+  const total=dado+mod;
+  const succ=dado===20||(dado!==1&&total>=dc);
+  const crit=dado===20;
+  const modStr=mod>=0?`+${mod}`:String(mod);
+  let healed=0;
+  if(succ&&target.team==='player'){healed=crit?30:18;target.hp=Math.min(target.maxHp,target.hp+healed);}
 
-  const dado = Math.floor(Math.random()*20)+1;
-  const mod  = (MODS[cu.classe]||{})['skill'] ?? 2;
-  const succ = dado === 20 || (dado !== 1 && dado+mod >= DC.skill);
-  const crit = dado === 20;
-
-  let healed = 0;
-  if (succ && target.team === 'player') {
-    healed = crit ? 30 : 18;
-    target.hp = Math.min(target.maxHp, target.hp + healed);
-  }
-
-  hasActed = true;
-  units.forEach(u => refreshUnitEl(u)); renderTurnBar();
-  const narr = buildHealNarration(cu, target, sk, succ, crit, healed);
-  showBubble(cu, narr, () => {
-    if (!checkBattleEnd()) {
-      phase = 'action';
-      showBtns({ esperar:true, ficha:true });
-      setPhase(`${cu.name} usou ${sk.name} · ESPERAR para encerrar`);
-    }
+  hasActed=true;
+  units.forEach(u=>refreshUnitEl(u)); renderTurnBar();
+  const rollInfo={label:`${cu.name} · 1d20${modStr}=${total} vs DC${dc}`,succ,crit,fail:false};
+  showDialog(cu,buildHealNarration(cu,target,sk,succ,crit,healed),rollInfo,()=>{
+    if(!checkBattleEnd()){phase='action';showBtns({esperar:true,ficha:true});setPhase(`${cu.name} usou ${sk.name} · ESPERAR para encerrar`);}
   });
 }
 
 function closeActionModal() { document.getElementById('modal-action').classList.remove('open'); }
 
 function rollAction() {
-  const txt = document.getElementById('act-txt').value.trim();
-  if (!txt) { toast('Descreva a ação!'); return; }
+  const txt=document.getElementById('act-txt').value.trim();
+  if(!txt){toast('Descreva a ação!');return;}
+  const cu=curUnit();
+  const tipo=detectType(txt);
+  const mod=(MODS[cu.classe]||{})[tipo]??2;
+  const dc=DC[tipo]||11;
+  const dado=Math.floor(Math.random()*20)+1;
+  const total=dado+mod;
+  const crit=dado===20, fail=dado===1;
+  const succ=crit||(!fail&&total>=dc);
+  const modStr=mod>=0?`+${mod}`:String(mod);
+  const cls=crit?'d-crit':(!succ||fail)?'d-fail':'d-ok';
+  const label=crit?'⚡ CRÍTICO!':fail?'💀 FALHA CRÍTICA!':succ?'✅ SUCESSO':'❌ FALHOU';
 
-  const cu    = curUnit();
-  const tipo  = detectType(txt);
-  const mod   = (MODS[cu.classe]||{})[tipo] ?? 2;
-  const dc    = DC[tipo] || 11;
-  const dado  = Math.floor(Math.random()*20)+1;
-  const total = dado + mod;
-  const crit  = dado === 20;
-  const fail  = dado === 1;
-  const succ  = crit || (!fail && total >= dc);
-
-  const modStr = mod>=0?`+${mod}`:String(mod);
-  const cls    = crit?'d-crit':(!succ||fail)?'d-fail':'d-ok';
-  const label  = crit?'⚡ CRÍTICO!':fail?'💀 FALHA CRÍTICA!':succ?'✅ SUCESSO':'❌ FALHOU';
-
-  document.getElementById('d-info').textContent   = `${cu.name} · 1d20${modStr} vs DC${dc}`;
-  document.getElementById('d-num').textContent    = `${dado}${modStr} = ${total}`;
-  document.getElementById('d-num').className      = `d-num ${cls}`;
-  document.getElementById('d-status').textContent = label;
-  document.getElementById('d-status').className   = `d-status ${cls}`;
+  document.getElementById('d-info').textContent=`${cu.name} · 1d20${modStr} vs DC${dc}`;
+  document.getElementById('d-num').textContent=`${dado}${modStr} = ${total}`;
+  document.getElementById('d-num').className=`d-num ${cls}`;
+  document.getElementById('d-status').textContent=label;
+  document.getElementById('d-status').className=`d-status ${cls}`;
   document.getElementById('dice-box').classList.add('show');
-  document.getElementById('btn-roll').disabled = true;
+  document.getElementById('btn-roll').disabled=true;
 
-  setTimeout(() => {
+  setTimeout(()=>{
     closeActionModal();
-    applyPlayerAction(cu, txt, succ, crit, fail, total);
-  }, 1700);
+    applyPlayerAction(cu,txt,succ,crit,fail,total,mod,dc);
+  },1700);
 }
 
 function detectType(txt) {
-  const a = txt.toLowerCase();
-  if (/falar|conversar|negociar|persuad/.test(a)) return 'falar';
-  if (/atac|golpe|cortar|bater|ferir|lança|arremessa/.test(a)) return 'atacar';
-  if (/magia|feitiç|curar|invocar|runa/.test(a)) return 'skill';
-  if (/defend|bloquear|esquivar|proteger|recuar/.test(a)) return 'defender';
-  if (/correr|fugir|mover|saltar|avança/.test(a)) return 'mover';
+  const a=txt.toLowerCase();
+  if(/falar|conversar|negociar|persuad/.test(a)) return 'falar';
+  if(/atac|golpe|cortar|bater|ferir|lança|arremessa/.test(a)) return 'atacar';
+  if(/magia|feitiç|curar|invocar|runa/.test(a)) return 'skill';
+  if(/defend|bloquear|esquivar|proteger|recuar/.test(a)) return 'defender';
+  if(/correr|fugir|mover|saltar|avança/.test(a)) return 'mover';
   return 'livre';
 }
 
 // ═══════════════════════════════════════════════════════
 //  APPLY ACTION
 // ═══════════════════════════════════════════════════════
-function applyPlayerAction(cu, txt, succ, crit, fail, total) {
-  hasActed = true;
+function applyPlayerAction(cu,txt,succ,crit,fail,total,mod,dc) {
+  hasActed=true;
+  const enemies=units.filter(u=>u.team==='enemy'&&u.alive&&hlAtk.has(`${u.col},${u.row}`));
+  const target=enemies.sort((a,b)=>dist(cu,a)-dist(cu,b))[0];
+  let dmg=0;
+  if(succ&&target){dmg=crit?cu.dmg*2:cu.dmg;target.hp=Math.max(0,target.hp-dmg);if(target.hp<=0)target.alive=false;}
+  else if(fail){cu.hp=Math.max(0,cu.hp-2);}
 
-  const enemies = units.filter(u=>u.team==='enemy'&&u.alive&&hlAtk.has(`${u.col},${u.row}`));
-  const target  = enemies.sort((a,b)=>dist(cu,a)-dist(cu,b))[0];
-  let dmg = 0;
-
-  if (succ && target) {
-    dmg = crit ? cu.dmg * 2 : cu.dmg;
-    target.hp = Math.max(0, target.hp - dmg);
-    if (target.hp <= 0) target.alive = false;
-  } else if (fail) {
-    cu.hp = Math.max(0, cu.hp - 2);
-  }
-
-  units.forEach(u => refreshUnitEl(u));
-  renderTurnBar();
-
-  const narration = buildNarration(cu, target, txt, succ, crit, fail, dmg);
-  showBubble(cu, narration, () => {
-    if (!checkBattleEnd()) {
-      phase = 'action';
-      showBtns({ esperar:true, ficha:true });
+  units.forEach(u=>refreshUnitEl(u)); renderTurnBar();
+  const modStr=(mod>=0)?`+${mod}`:String(mod);
+  const rollInfo={label:`${cu.name} · 1d20${modStr}=${total} vs DC${dc}`,succ,crit,fail};
+  showDialog(cu,buildNarration(cu,target,txt,succ,crit,fail,dmg),rollInfo,()=>{
+    if(!checkBattleEnd()){
+      phase='action';
+      showBtns({esperar:true,ficha:true});
       setPhase(`${cu.name} agiu · ESPERAR para encerrar turno`);
     }
   });
@@ -1025,46 +985,36 @@ function applyPlayerAction(cu, txt, succ, crit, fail, total) {
 //  ENEMY AI
 // ═══════════════════════════════════════════════════════
 async function runEnemyTurn(enemy) {
-  const players = units.filter(u=>u.team==='player'&&u.alive);
-  if (!players.length) return;
-  const target = players.sort((a,b)=>dist(enemy,a)-dist(enemy,b))[0];
+  const players=units.filter(u=>u.team==='player'&&u.alive);
+  if(!players.length) return;
+  const target=players.sort((a,b)=>dist(enemy,a)-dist(enemy,b))[0];
 
-  if (dist(enemy,target) > enemy.atkRange) {
-    const reach = reachableTiles(enemy);
-    let best=null, bestD=Infinity;
-    reach.forEach(k => {
-      const [c,r]=k.split(',').map(Number);
-      const d=Math.abs(c-target.col)+Math.abs(r-target.row);
-      if (d<bestD) { bestD=d; best={col:c,row:r}; }
-    });
-    if (best) { await sleep(300); moveUnitEl(enemy, best.col, best.row); }
+  if(dist(enemy,target)>enemy.atkRange){
+    const reach=reachableTiles(enemy);
+    let best=null,bestD=Infinity;
+    reach.forEach(k=>{const[c,r]=k.split(',').map(Number);const d=Math.abs(c-target.col)+Math.abs(r-target.row);if(d<bestD){bestD=d;best={col:c,row:r};}});
+    if(best){await sleep(300);moveUnitEl(enemy,best.col,best.row);}
   }
 
   await sleep(520);
 
-  if (dist(enemy,target) <= enemy.atkRange) {
-    const dado  = Math.floor(Math.random()*20)+1;
-    const mod   = Math.max(1, Math.floor(enemy.maxHp/15));
-    const total = dado + mod;
-    const crit  = dado === 20;
-    const succ  = crit || (dado !== 1 && total >= 12);
-    let dmg = 0;
+  if(dist(enemy,target)<=enemy.atkRange){
+    const dado=Math.floor(Math.random()*20)+1;
+    const mod=Math.max(1,Math.floor(enemy.maxHp/15));
+    const total=dado+mod;
+    const crit=dado===20;
+    const succ=crit||(dado!==1&&total>=12);
+    let dmg=0;
+    if(succ){dmg=crit?enemy.dmg*2:enemy.dmg;target.hp=Math.max(0,target.hp-dmg);if(target.hp<=0)target.alive=false;}
 
-    if (succ) {
-      dmg = crit ? enemy.dmg * 2 : enemy.dmg;
-      target.hp = Math.max(0, target.hp - dmg);
-      if (target.hp <= 0) target.alive = false;
-    }
-
-    units.forEach(u => refreshUnitEl(u));
-    renderTurnBar();
-
-    const narration = buildNarration(enemy, target, 'ataca', succ, crit, false, dmg);
-    showBubble(enemy, narration, () => {
-      if (!checkBattleEnd()) advanceTurn();
+    units.forEach(u=>refreshUnitEl(u)); renderTurnBar();
+    const modStr=mod>=0?`+${mod}`:String(mod);
+    const rollInfo={label:`${enemy.name} · 1d20${modStr}=${total} vs DC12`,succ,crit,fail:dado===1};
+    showDialog(enemy,buildNarration(enemy,target,'ataca',succ,crit,false,dmg),rollInfo,()=>{
+      if(!checkBattleEnd()) advanceTurn();
     });
   } else {
-    if (!checkBattleEnd()) advanceTurn();
+    if(!checkBattleEnd()) advanceTurn();
   }
 }
 
@@ -1072,195 +1022,125 @@ async function runEnemyTurn(enemy) {
 //  BATTLE END
 // ═══════════════════════════════════════════════════════
 function checkBattleEnd() {
-  const pAlive = units.filter(u=>u.team==='player'&&u.alive).length;
-  const eAlive = units.filter(u=>u.team==='enemy'&&u.alive).length;
-  if (pAlive === 0) {
-    phase = 'end'; clearHL(); hideBtns();
-    setTimeout(() => showBubble(
-      { col:4, row:4, name:'DERROTA', icon:'💀', team:'enemy' },
-      'Todos os aventureiros caíram em batalha... A escuridão avança sobre o campo.', null
-    ), 500);
+  const pAlive=units.filter(u=>u.team==='player'&&u.alive).length;
+  const eAlive=units.filter(u=>u.team==='enemy'&&u.alive).length;
+  if(pAlive===0){
+    phase='end'; clearHL(); hideBtns();
+    setTimeout(()=>showDialog({col:4,row:4,name:'DERROTA',icon:'💀',team:'enemy'},
+      'Todos os aventureiros caíram em batalha... A escuridão avança sobre o campo.',null,null),500);
     return true;
   }
-  if (eAlive === 0) {
-    phase = 'end'; clearHL(); hideBtns();
-    setTimeout(() => showBubble(
-      { col:4, row:4, name:'VITÓRIA', icon:'🏆', team:'player', classe:'guerreiro' },
-      'Todos os inimigos foram derrotados! Os aventureiros saem vitoriosos desta batalha!', null
-    ), 500);
+  if(eAlive===0){
+    phase='end'; clearHL(); hideBtns();
+    setTimeout(()=>showDialog({col:4,row:4,name:'VITÓRIA',icon:'🏆',team:'player',classe:'guerreiro',sexo:'m'},
+      'Todos os inimigos foram derrotados! Os aventureiros saem vitoriosos desta batalha!',null,null),500);
     return true;
   }
   return false;
 }
 
 // ═══════════════════════════════════════════════════════
-//  SPEECH BUBBLE — waits for TTS then shows CONTINUAR
+//  NARRATION
 // ═══════════════════════════════════════════════════════
-let _autoDismiss = null;
-
-function showBubble(unit, narration, onDone) {
-  document.querySelectorAll('.speech-bubble').forEach(el => el.remove());
-  clearTimeout(_autoDismiss);
-  stopAudio();
-
-  const cont = document.getElementById('grid-container');
-  const pos  = unitScreenPos(unit.col, unit.row);
-
-  const BUBBLE_W = 240;
-  const unitCX   = pos.left + 19;
-  const left     = Math.max(8, Math.min(GRID_W - BUBBLE_W - 8, unitCX - BUBBLE_W/2));
-  const top      = Math.max(8, pos.top - 120);
-
-  const bubble = document.createElement('div');
-  bubble.className = 'speech-bubble';
-  bubble.style.cssText = `left:${left}px;top:${top}px;`;
-
-  const icon = unit.team==='player' ? (CLASS_CFG[unit.classe]?.icon||'⚔️') : (unit.icon||'👹');
-  bubble.innerHTML = `
-    <div class="sb-head">
-      <span class="sb-icon">${icon}</span>
-      <span class="sb-name">${unit.name.toUpperCase()}</span>
-    </div>
-    <div class="sb-text">${narration}</div>`;
-  cont.appendChild(bubble);
-
-  document.getElementById('grid-wrap').scrollTo({ top: Math.max(0, top - 80), behavior:'smooth' });
-
-  setPhase('⏳ Narrando...');
-  hideBtns();
-
-  // Wire callback — called when user clicks CONTINUAR or auto-advances
-  _continuarCb = () => {
-    bubble.remove();
-    if (onDone) onDone();
-  };
-
-  // Start TTS; reveal CONTINUAR when audio ends (or on timeout)
-  narrar(narration).then(() => {
-    // TTS done → show CONTINUAR
-    setPhase('▼ CONTINUAR para prosseguir');
-    showBtns({ continuar:true });
-    // Auto-advance after 4s if user doesn't click
-    _autoDismiss = setTimeout(() => { if (_continuarCb) onContinuar(); }, 4000);
-  });
-}
-
-// ═══════════════════════════════════════════════════════
-//  NARRATION GENERATORS
-// ═══════════════════════════════════════════════════════
-function buildNarration(actor, target, acao, succ, crit, fail, dmg) {
-  const an = actor.name, tn = target?.name, th = target?.hp, tm = target?.maxHp;
-
-  if (fail) return rnd([
+function buildNarration(actor,target,acao,succ,crit,fail,dmg) {
+  const an=actor.name,tn=target?.name,th=target?.hp,tm=target?.maxHp;
+  if(fail) return rnd([
     `${an} perde o equilíbrio no momento crucial — a arma oscila pelo ar vazio, deixando uma abertura perigosa.`,
-    `O impulso de ${an} vai longe demais. ${an} luta para se recompor, completamente exposto por um instante.`,
+    `O impulso de ${an} vai longe demais. ${an} luta para se recompor, completamente exposto.`,
     `Falha catastrófica! ${an} tropeça e quase cai — por sorte ninguém aproveitou a abertura.`,
   ]);
-
-  if (crit && target) {
-    const dead = th <= 0;
-    if (dead) return rnd([
-      `Golpe LETAL! A lâmina de ${an} atravessa a defesa de ${tn} e penetra fundo — ${dmg} de dano! ${tn} desmorona no chão.`,
-      `CRÍTICO DEVASTADOR! ${an} encontra uma abertura fatal e desfere ${dmg} de dano em ${tn}. O inimigo cai para não mais se levantar.`,
+  if(crit&&target){
+    if(th<=0) return rnd([
+      `Golpe LETAL! A lâmina de ${an} atravessa a defesa de ${tn} — ${dmg} de dano! ${tn} desmorona no chão.`,
+      `CRÍTICO DEVASTADOR! ${an} desfere ${dmg} de dano em ${tn}. O inimigo cai para não mais se levantar.`,
     ]);
     return rnd([
       `Golpe perfeito! A arma de ${an} rasga a defesa de ${tn} — ${dmg} de dano! Sangue escorre enquanto ${tn} recua gritando.`,
-      `CRÍTICO! ${an} encontra uma abertura e descarrega tudo em ${tn}: ${dmg} de dano. O impacto ecoa pelo campo de batalha.`,
-      `${an} executa um golpe impecável — atinge ${tn} em ponto vital causando ${dmg} de dano. ${tn} vacila visivelmente.`,
+      `CRÍTICO! ${an} encontra uma abertura e descarrega tudo em ${tn}: ${dmg} de dano.`,
+      `${an} executa um golpe impecável em ponto vital de ${tn} causando ${dmg} de dano. ${tn} vacila.`,
     ]);
   }
-
-  if (succ && target) {
-    const dead = th <= 0;
-    const frac = th / tm;
-    const estado = dead       ? 'desmorona no chão derrotado'
-                 : frac<0.25 ? 'mal consegue se manter de pé, sangrando'
-                 : frac<0.55 ? 'vacila, com ferimentos visíveis'
-                 :             'recua, mas ainda está de pé';
-    if (dead) return rnd([
+  if(succ&&target){
+    const dead=th<=0;
+    const frac=th/tm;
+    const estado=dead?'desmorona no chão derrotado':frac<0.25?'mal consegue se manter de pé':frac<0.55?'vacila, com ferimentos visíveis':'recua, mas ainda está de pé';
+    if(dead) return rnd([
       `${an} acerta ${tn} com ${dmg} de dano — o golpe é decisivo! ${tn} cai, derrotado.`,
-      `O ataque de ${an} desfere ${dmg} de dano em ${tn}. ${tn} treme e ${estado}.`,
+      `O ataque de ${an} desfere ${dmg} de dano em ${tn}. ${tn} ${estado}.`,
     ]);
     return rnd([
-      `${an} conecta o ataque em ${tn}: ${dmg} de dano. ${tn} ${estado}. HP restante: ${th}/${tm}.`,
-      `O golpe de ${an} abre uma brecha na defesa de ${tn} — ${dmg} de dano. ${tn} ${estado}.`,
-      `${an} avança e acerta ${tn} com força. Sangue escorre enquanto ${tn} ${estado}. (${th}/${tm} HP)`,
+      `${an} conecta o ataque em ${tn}: ${dmg} de dano. ${tn} ${estado}. HP: ${th}/${tm}.`,
+      `O golpe de ${an} abre uma brecha — ${dmg} de dano. ${tn} ${estado}.`,
+      `${an} avança e acerta ${tn} com força. Sangue escorre enquanto ${tn} ${estado}.`,
     ]);
   }
-
-  if (!succ && target) return rnd([
+  if(!succ&&target) return rnd([
     `${tn} desvia no último segundo. O golpe de ${an} corta o ar sem efeito.`,
     `${an} tenta uma abertura mas ${tn} bloqueia e recua fora do alcance.`,
     `O ataque de ${an} passa por centímetros de ${tn}, que esquiva com agilidade.`,
     `${tn} lê o movimento de ${an} e se defende. O ataque não passa.`,
   ]);
-
   return `${an} age com determinação, mas o momento passa sem efeito concreto.`;
 }
 
-function buildSkillNarration(actor, target, sk, succ, crit, fail, dmg) {
-  const an = actor.name, tn = target?.name;
-  if (fail) return `${an} tenta usar ${sk.name} mas perde a concentração no momento crítico!`;
-  if (crit && target) return `${an} canaliza ${sk.icon} ${sk.name} com maestria — golpe crítico! ${tn} recebe ${dmg} de dano mágico!`;
-  if (succ && target) return `${an} usa ${sk.icon} ${sk.name}! O poder atinge ${tn} causando ${dmg} de dano.`;
-  if (!succ && target) return `${an} tenta ${sk.name} mas ${tn} resiste ao efeito!`;
+function buildSkillNarration(actor,target,sk,succ,crit,fail,dmg) {
+  const an=actor.name,tn=target?.name;
+  if(fail) return `${an} tenta ${sk.name} mas perde a concentração no momento crítico!`;
+  if(crit&&target) return `${an} canaliza ${sk.icon} ${sk.name} com maestria — crítico! ${tn} recebe ${dmg} de dano!`;
+  if(succ&&target) return `${an} usa ${sk.icon} ${sk.name}! O poder atinge ${tn} causando ${dmg} de dano.`;
+  if(!succ&&target) return `${an} tenta ${sk.name} mas ${tn} resiste ao efeito!`;
   return `${an} usa ${sk.icon} ${sk.name}!`;
 }
 
-function buildHealNarration(actor, target, sk, succ, crit, healed) {
-  const an = actor.name, tn = target.name;
-  if (!succ) return `${an} tenta ${sk.name} em ${tn} mas a energia se dissipa sem efeito.`;
-  if (crit)  return `Cura CRÍTICA! ${an} canaliza ${sk.icon} ${sk.name} em ${tn} — ${healed} HP restaurados! ${tn} brilha com energia divina.`;
+function buildHealNarration(actor,target,sk,succ,crit,healed) {
+  const an=actor.name,tn=target.name;
+  if(!succ) return `${an} tenta ${sk.name} em ${tn} mas a energia se dissipa sem efeito.`;
+  if(crit)  return `Cura CRÍTICA! ${an} canaliza ${sk.icon} em ${tn} — ${healed} HP restaurados! ${tn} brilha com energia divina.`;
   return `${an} usa ${sk.icon} ${sk.name} em ${tn}. ${healed} pontos de vida restaurados — ${tn} respira aliviado.`;
 }
 
 // ═══════════════════════════════════════════════════════
-//  TTS — returns Promise that resolves when audio ends
+//  TTS — returns Promise resolving when audio ends
 // ═══════════════════════════════════════════════════════
 function narrar(texto) {
-  const limpo = texto.replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim().substring(0, 600);
-  if (!limpo) return Promise.resolve();
-
-  return new Promise(async resolve => {
-    const apiKey = localStorage.getItem('rpg_groq_key') || '';
-    if (apiKey) {
-      try {
-        const res = await fetch('https://api.groq.com/openai/v1/audio/speech', {
+  const limpo=texto.replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim().substring(0,600);
+  if(!limpo) return Promise.resolve();
+  return new Promise(async resolve=>{
+    const apiKey=localStorage.getItem('rpg_groq_key')||'';
+    if(apiKey){
+      try{
+        const res=await fetch('https://api.groq.com/openai/v1/audio/speech',{
           method:'POST',
-          headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
-          body: JSON.stringify({ model:'playai-tts', input:limpo, voice:'Fritz-PlayAI', response_format:'mp3', speed:1.2 })
+          headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`},
+          body:JSON.stringify({model:'playai-tts',input:limpo,voice:'Fritz-PlayAI',response_format:'mp3',speed:1.2})
         });
-        if (res.ok) {
-          const blob  = await res.blob();
-          const url   = URL.createObjectURL(blob);
-          const audio = new Audio(url);
-          audio._url  = url;
-          _currentAudio = audio;
-          audio.onended = () => { URL.revokeObjectURL(url); _currentAudio = null; resolve(); };
-          audio.onerror = () => { URL.revokeObjectURL(url); _currentAudio = null; resolve(); };
-          audio.play().catch(() => { _webSpeech(limpo, resolve); });
+        if(res.ok){
+          const blob=await res.blob();
+          const url=URL.createObjectURL(blob);
+          const audio=new Audio(url);
+          audio._url=url;
+          _currentAudio=audio;
+          audio.onended=()=>{URL.revokeObjectURL(url);_currentAudio=null;resolve();};
+          audio.onerror=()=>{URL.revokeObjectURL(url);_currentAudio=null;resolve();};
+          audio.play().catch(()=>_webSpeech(limpo,resolve));
           return;
         }
-      } catch(e) {}
+      }catch(e){}
     }
-    _webSpeech(limpo, resolve);
+    _webSpeech(limpo,resolve);
   });
 }
 
-function _webSpeech(texto, onEnd) {
-  if (!window.speechSynthesis) { if (onEnd) onEnd(); return; }
-  const utt    = new SpeechSynthesisUtterance(texto);
-  const voices = speechSynthesis.getVoices();
-  const voz    = voices.find(v=>v.lang.startsWith('pt')) || voices.find(v=>v.lang.startsWith('es')) || null;
-  if (voz) utt.voice = voz;
-  utt.rate = 0.9; utt.pitch = 0.78;
-  utt.onend   = onEnd || null;
-  utt.onerror = onEnd || null;
+function _webSpeech(texto,onEnd) {
+  if(!window.speechSynthesis){if(onEnd)onEnd();return;}
+  const utt=new SpeechSynthesisUtterance(texto);
+  const voices=speechSynthesis.getVoices();
+  const voz=voices.find(v=>v.lang.startsWith('pt'))||voices.find(v=>v.lang.startsWith('es'))||null;
+  if(voz) utt.voice=voz;
+  utt.rate=0.9; utt.pitch=0.78;
+  utt.onend=onEnd||null; utt.onerror=onEnd||null;
   speechSynthesis.speak(utt);
-  // Fallback: if voices not loaded yet, resolve after estimated duration
-  if (!onEnd) return;
-  const estimated = Math.max(2000, texto.length * 60);
-  setTimeout(onEnd, estimated + 500);
+  if(onEnd) setTimeout(onEnd, Math.max(2500,texto.length*65));
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1269,7 +1149,7 @@ function _webSpeech(texto, onEnd) {
 function init() {
   renderMap();
   buildUnits();
-  units.forEach(u => createUnitEl(u));
+  units.forEach(u=>createUnitEl(u));
   buildQueue();
   renderTurnBar();
   startUnitTurn();
