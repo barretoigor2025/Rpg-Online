@@ -5,326 +5,477 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <title>⚔️ Batalha Tática</title>
 <style>
-* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-:root {
-  --bg:#0d0905; --surface:#1e1508; --border:#7a5500;
-  --gold:#d4a843; --gold2:#f0c866;
-  --text:#f0e4c8; --text2:#a89060; --text3:#6a5830;
-  --hp:#c0392b; --green:#27ae60; --red:#e74c3c; --blue:#3a80cc; --r:8px;
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0d0905;--surface:#1a1208;--surface2:#221a0a;
+  --border:#7a5500;--gold:#d4a843;--gold2:#f0c866;
+  --text:#f0e4c8;--text2:#a89060;--text3:#6a5830;
+  --hp:#c0392b;--green:#27ae60;--red:#e74c3c;--blue:#3a80cc;
+  --panel:#150f05;--r:6px;
 }
-html,body { height:100%; background:var(--bg); color:var(--text); font-family:Georgia,serif; overflow:hidden; }
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia,serif;overflow:hidden}
 
-/* ── LAYOUT ── */
-#app { display:flex; flex-direction:column; height:100vh; height:100dvh; }
+/* ═══ APP SHELL ═══ */
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh}
 
-/* ── TURN BAR ── */
-#turn-bar {
-  background:rgba(13,9,5,.97); border-bottom:1px solid var(--border);
-  padding:6px 10px; display:flex; align-items:center; gap:6px;
-  flex-shrink:0; overflow-x:auto; scrollbar-width:none;
+/* ═══ TURN BAR ═══ */
+#turn-bar{
+  background:rgba(13,9,5,.98);border-bottom:2px solid var(--border);
+  padding:5px 10px;display:flex;align-items:center;gap:6px;
+  flex-shrink:0;height:52px;overflow-x:auto;scrollbar-width:none;
 }
-#turn-bar::-webkit-scrollbar { display:none; }
-.tb-lbl { font-size:9px; color:var(--text3); letter-spacing:2px; flex-shrink:0; white-space:nowrap; }
-.turn-chip {
-  display:flex; flex-direction:column; align-items:center; gap:1px;
-  flex-shrink:0; min-width:44px;
-  background:rgba(30,21,8,.8); border:1px solid rgba(122,85,0,.3);
-  border-radius:8px; padding:4px 7px;
+#turn-bar::-webkit-scrollbar{display:none}
+.tb-lbl{font-size:9px;color:var(--text3);letter-spacing:2px;flex-shrink:0;white-space:nowrap}
+.turn-chip{
+  display:flex;flex-direction:column;align-items:center;gap:1px;
+  flex-shrink:0;min-width:46px;
+  background:rgba(30,21,8,.8);border:1px solid rgba(122,85,0,.3);
+  border-radius:8px;padding:4px 8px;cursor:default;
 }
-.turn-chip.active  { border-color:var(--gold2); background:rgba(212,168,67,.18); }
-.turn-chip.enemy   { border-color:rgba(200,50,50,.35); }
-.turn-chip.enemy.active { border-color:#e74c3c; background:rgba(200,50,50,.18); }
-.turn-chip.dead    { opacity:.3; }
-.tc-icon { font-size:16px; line-height:1; }
-.tc-name { font-size:8px; color:var(--text2); white-space:nowrap; }
-.tc-hp   { font-size:8px; color:var(--hp); }
+.turn-chip.active{border-color:var(--gold2);background:rgba(212,168,67,.18)}
+.turn-chip.enemy{border-color:rgba(200,50,50,.35)}
+.turn-chip.enemy.active{border-color:#e74c3c;background:rgba(200,50,50,.18)}
+.turn-chip.dead{opacity:.3}
+.tc-icon{font-size:16px;line-height:1}
+.tc-name{font-size:8px;color:var(--text2);white-space:nowrap}
+.tc-hp{font-size:8px;color:var(--hp)}
 
-/* ── GRID ── */
-#grid-wrap {
-  flex:1; overflow:auto; display:flex; align-items:center; justify-content:center;
-  background:#6a6860;
-  background-image: radial-gradient(ellipse at center, #787470 0%, #5a5855 100%);
-}
-#grid-container { position:relative; flex-shrink:0; }
+/* ═══ MIDDLE ROW (sidebars + map) ═══ */
+#mid-row{flex:1;display:flex;min-height:0;overflow:hidden}
 
-/* ── TILE ── */
-.tile { position:absolute; cursor:pointer; transition:filter .12s; }
-.tile svg { display:block; overflow:visible; }
-.tile:hover .tile-poly { filter:brightness(1.18); }
-.tile.hl-move  .tile-poly { fill:#3a80cc !important; fill-opacity:.9; }
-.tile.hl-atk   .tile-poly { fill:#bb3535 !important; fill-opacity:.88; }
-.tile.hl-sel   .tile-poly { fill:var(--gold) !important; fill-opacity:.85; }
-.tile.hl-skill .tile-poly { fill:#27ae60 !important; fill-opacity:.88; }
-.tile.hl-move:hover  .tile-poly { fill:#50a0ef !important; }
-.tile.hl-atk:hover   .tile-poly { fill:#d84040 !important; }
-.tile.hl-skill:hover .tile-poly { fill:#2ecc71 !important; }
+/* ── SIDEBAR LEFT ── */
+#sidebar-left{
+  width:162px;flex-shrink:0;
+  background:var(--panel);border-right:1px solid rgba(122,85,0,.25);
+  display:flex;flex-direction:column;gap:0;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:var(--border) transparent;
+}
+@media(max-width:680px){#sidebar-left,#sidebar-right{display:none}}
 
-/* ── UNIT ── */
-.unit {
-  position:absolute; display:flex; flex-direction:column; align-items:center;
-  cursor:pointer;
-  transition:left .50s cubic-bezier(.4,0,.2,1), top .50s cubic-bezier(.4,0,.2,1);
+.sb-section{padding:10px 10px 8px;border-bottom:1px solid rgba(122,85,0,.2)}
+.sb-title{
+  font-size:8px;color:var(--text3);letter-spacing:2px;
+  margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid rgba(122,85,0,.15);
 }
-.u-label {
-  background:rgba(0,0,0,.85); border:1px solid rgba(212,168,67,.4);
-  border-radius:4px; padding:2px 6px; font-size:8px; color:var(--gold2);
-  white-space:nowrap; margin-bottom:2px; text-align:center; line-height:1.4;
-  pointer-events:none; user-select:none;
+.qa-item{
+  display:flex;align-items:flex-start;gap:6px;
+  padding:5px 6px;border-radius:5px;cursor:pointer;margin-bottom:2px;
+  border:1px solid transparent;transition:background .12s;
 }
-.u-label .u-hpsp { color:var(--text2); font-size:7px; display:block; }
-.unit .u-sprite {
-  width:38px; height:52px; object-fit:contain; object-position:bottom;
-  image-rendering:pixelated; filter:drop-shadow(0 3px 6px rgba(0,0,0,.95));
-}
-/* Goblin sprite container */
-.u-goblin {
-  width:44px; height:58px; display:flex; align-items:flex-end; justify-content:center;
-  overflow:hidden;
-}
-.u-goblin img {
-  max-width:44px; max-height:60px;
-  object-fit:contain; object-position:bottom;
-  image-rendering:auto;
-  filter:drop-shadow(0 3px 8px rgba(0,0,0,.95)) saturate(1.1);
-}
-.unit .u-icon {
-  font-size:30px; line-height:1; filter:drop-shadow(0 2px 6px rgba(0,0,0,.9));
-}
-.unit .u-bar  { width:34px; height:3px; background:rgba(0,0,0,.5); border-radius:2px; margin-top:2px; overflow:hidden; }
-.unit .u-fill { height:100%; border-radius:2px; transition:width .4s; }
-.unit .u-sp-bar  { width:34px; height:2px; background:rgba(0,0,0,.5); border-radius:2px; margin-top:1px; overflow:hidden; }
-.unit .u-sp-fill { height:100%; border-radius:2px; background:var(--blue); transition:width .4s; }
-.unit.u-active   { filter:drop-shadow(0 0 8px #f0c866); }
-.unit.u-selected { filter:drop-shadow(0 0 12px #ffe066) brightness(1.15); }
-.unit.u-dead     { opacity:.2; pointer-events:none; transition:opacity .7s; }
+.qa-item:hover{background:rgba(212,168,67,.1);border-color:rgba(122,85,0,.3)}
+.qa-icon{font-size:14px;flex-shrink:0;line-height:1;margin-top:2px}
+.qa-info{flex:1;min-width:0}
+.qa-name{font-size:11px;color:var(--text);font-weight:bold}
+.qa-hint{font-size:9px;color:var(--text3);line-height:1.3;margin-top:1px}
+.qa-sp{font-size:8px;color:#7ab8f5}
 
-/* ── BOTTOM BAR ── */
-#bottom-bar {
-  background:rgba(13,9,5,.97); border-top:1px solid var(--border);
-  padding:10px 12px; flex-shrink:0;
-  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+/* ── MAP ── */
+#grid-wrap{
+  flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;
+  background:#636160;
+  background-image:radial-gradient(ellipse at center,#6e6b68 0%,#565350 100%);
+  min-width:0;
 }
-#phase-txt { font-size:11px; color:var(--gold); flex:1; letter-spacing:.5px; min-width:0; }
-.btn {
-  padding:9px 14px; border:none; border-radius:var(--r);
-  font-family:inherit; font-size:12px; cursor:pointer;
-  letter-spacing:.5px; white-space:nowrap; flex-shrink:0;
+#grid-container{position:relative;flex-shrink:0}
+
+/* ── SIDEBAR RIGHT ── */
+#sidebar-right{
+  width:162px;flex-shrink:0;
+  background:var(--panel);border-left:1px solid rgba(122,85,0,.25);
+  display:flex;flex-direction:column;gap:0;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:var(--border) transparent;
+}
+.cond-item{
+  display:flex;align-items:flex-start;gap:6px;
+  padding:5px 6px;font-size:10px;color:var(--text2);line-height:1.4;
+}
+.cond-icon{font-size:12px;flex-shrink:0;margin-top:2px}
+.sr-btn{
+  width:100%;padding:8px 6px;background:transparent;
+  border:1px solid rgba(122,85,0,.35);border-radius:var(--r);
+  color:var(--text2);font-family:inherit;font-size:10px;
+  cursor:pointer;text-align:left;letter-spacing:.5px;
+  transition:background .12s;margin-bottom:4px;
+}
+.sr-btn:hover{background:rgba(212,168,67,.08);color:var(--gold)}
+.sr-btn-row{padding:8px 10px;display:flex;gap:6px}
+.sr-btn-row .sr-btn{width:auto;flex:1;text-align:center;font-size:9px}
+
+/* ═══ BOTTOM AREA ═══ */
+#bottom-area{
+  flex-shrink:0;
+  background:rgba(10,7,3,.98);
+  border-top:2px solid var(--border);
+  display:flex;flex-direction:column;
+}
+
+/* ── ACTION PANEL ── */
+#action-panel{
+  display:flex;gap:0;border-bottom:1px solid rgba(122,85,0,.25);
+}
+
+/* Left: turn header + textarea */
+#ap-left{
+  flex:1;min-width:0;padding:10px 12px 8px;
+  display:flex;flex-direction:column;gap:6px;
+  border-right:1px solid rgba(122,85,0,.2);
+}
+#turn-header{
+  display:flex;align-items:center;gap:8px;flex-shrink:0;
+}
+#turn-name{font-size:13px;color:var(--gold2);font-weight:bold;letter-spacing:.5px}
+#turn-sub{font-size:9px;color:var(--text3);letter-spacing:1px}
+#action-input-wrap{position:relative;flex:1}
+#act-txt{
+  width:100%;height:62px;
+  background:rgba(0,0,0,.4);border:1px solid rgba(122,85,0,.4);
+  color:var(--text);font-family:Georgia,serif;font-size:13px;
+  padding:8px 10px;border-radius:var(--r);outline:none;resize:none;
+  transition:border-color .15s;line-height:1.5;
+}
+#act-txt:focus{border-color:var(--gold)}
+#act-txt:disabled{opacity:.45;cursor:not-allowed}
+#act-btns{display:flex;gap:6px;flex-shrink:0;align-items:center;margin-top:4px}
+
+/* Center: combat result */
+#combat-box{
+  width:200px;flex-shrink:0;padding:8px 10px;
+  display:flex;flex-direction:column;gap:6px;
+  border-right:1px solid rgba(122,85,0,.2);
+}
+.cb-title{
+  font-size:8px;color:var(--text3);letter-spacing:2px;
+  display:flex;align-items:center;gap:5px;
+}
+.cb-title::before{content:'';display:inline-block;width:8px;height:1px;background:var(--border)}
+#combat-portrait-row{display:flex;align-items:flex-start;gap:8px}
+#combat-portrait{
+  width:46px;height:54px;flex-shrink:0;
+  border:1.5px solid rgba(212,168,67,.45);border-radius:5px;
+  background:#090604;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+}
+#combat-portrait img{width:100%;height:100%;object-fit:cover;object-position:8% 18%;filter:brightness(1.6) contrast(1.3) saturate(1.4)}
+#combat-portrait .cp-icon{font-size:24px}
+#combat-info{flex:1;min-width:0}
+#combat-roll-line{font-size:9px;color:#9b8fd4;letter-spacing:.5px;line-height:1.3}
+.cr-crit{color:#f39c12;font-weight:bold}
+.cr-ok{color:var(--green)}
+.cr-fail{color:var(--red)}
+#combat-text{font-size:11px;color:var(--text);line-height:1.55;margin-top:4px;min-height:28px}
+
+/* Right: speed + roll button */
+#ap-right{
+  width:120px;flex-shrink:0;padding:8px 10px;
+  display:flex;flex-direction:column;gap:8px;align-items:stretch;
+}
+.speed-label{font-size:8px;color:var(--text3);letter-spacing:2px}
+#speed-row{display:flex;align-items:center;gap:6px}
+#speed-val{font-size:16px;color:var(--gold2);font-weight:bold;min-width:30px}
+#speed-slider{flex:1;accent-color:var(--gold)}
+#btn-rolar{
+  background:var(--gold);color:#1a0d00;font-weight:bold;
+  border:none;border-radius:var(--r);padding:10px 6px;
+  font-family:inherit;font-size:11px;cursor:pointer;letter-spacing:.5px;
   transition:opacity .15s;
 }
-.btn:active { opacity:.75; }
-.btn-primary   { background:var(--gold); color:#1a0d00; font-weight:bold; }
-.btn-secondary { background:transparent; border:1px solid var(--border); color:var(--text); }
-.btn-info      { background:transparent; border:1px solid var(--blue); color:#7ab8f5; }
-.btn:disabled  { opacity:.35; cursor:not-allowed; }
+#btn-rolar:hover{opacity:.85}
+#btn-rolar:disabled{opacity:.35;cursor:not-allowed}
+#btn-esperar{
+  background:transparent;border:1px solid var(--border);
+  color:var(--text2);border-radius:var(--r);padding:6px;
+  font-family:inherit;font-size:10px;cursor:pointer;
+}
+#btn-esperar:hover{background:rgba(122,85,0,.15)}
+#btn-esperar:disabled{opacity:.3;cursor:not-allowed}
 
-/* ── RPG DIALOG (replaces floating bubble) ── */
-#rpg-dialog {
-  position:fixed; bottom:0; left:0; right:0;
-  z-index:400;
-  background:rgba(8,5,2,.97);
-  border-top:2px solid var(--gold);
-  border-left:none; border-right:none;
-  transform:translateY(100%);
-  transition:transform .32s cubic-bezier(.34,1.1,.64,1);
-  pointer-events:none;
-  /* decorative inner border */
-  box-shadow:0 -4px 0 0 rgba(212,168,67,.15) inset;
+/* ── LOG + CHAT ROW ── */
+#log-chat-row{
+  display:flex;flex:1;min-height:0;height:72px;
+  border-bottom:1px solid rgba(122,85,0,.2);
 }
-#rpg-dialog.open { transform:translateY(0); pointer-events:all; }
+#cmd-log{
+  flex:1;min-width:0;overflow-y:auto;
+  padding:4px 8px;
+  border-right:1px solid rgba(122,85,0,.2);
+  scrollbar-width:thin;scrollbar-color:var(--border) transparent;
+}
+#chat-log{
+  flex:1;min-width:0;overflow-y:auto;
+  padding:4px 8px;
+  scrollbar-width:thin;scrollbar-color:var(--border) transparent;
+}
+.log-row-title{
+  font-size:7px;color:var(--text3);letter-spacing:2px;
+  padding-bottom:3px;border-bottom:1px solid rgba(122,85,0,.15);margin-bottom:3px;
+}
+.log-entry{
+  display:flex;gap:5px;align-items:baseline;
+  font-size:10px;padding:1px 0;line-height:1.3;
+}
+.le-actor{color:var(--gold);font-weight:bold;white-space:nowrap;flex-shrink:0}
+.le-action{color:var(--text2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.le-result{white-space:nowrap;flex-shrink:0;font-size:9px}
+.le-ok{color:var(--green)}.le-fail{color:var(--red)}.le-crit{color:#f39c12}
+.chat-entry{font-size:10px;padding:1px 0;line-height:1.35;color:var(--text2)}
+.chat-entry .ce-name{color:var(--gold2);font-weight:bold}
 
-.dlg-main {
-  display:flex; align-items:stretch; gap:14px;
-  padding:14px 16px 10px;
+/* ── CMD BAR ── */
+#cmd-bar{
+  display:flex;align-items:center;gap:6px;padding:6px 10px;
+  flex-shrink:0;
 }
-.dlg-portrait {
-  width:78px; flex-shrink:0;
-  border:2px solid var(--gold); border-radius:8px;
-  background:#0d0905; overflow:hidden;
-  display:flex; align-items:flex-start; justify-content:center;
+#chat-input{
+  flex:1;background:rgba(0,0,0,.35);border:1px solid rgba(122,85,0,.35);
+  color:var(--text);font-family:inherit;font-size:12px;
+  padding:6px 9px;border-radius:var(--r);outline:none;
 }
-.dlg-portrait img {
-  width:100%; height:100%; object-fit:cover; object-position:top center;
+#chat-input:focus{border-color:rgba(122,85,0,.7)}
+.btn{
+  padding:7px 12px;border:none;border-radius:var(--r);
+  font-family:inherit;font-size:11px;cursor:pointer;
+  letter-spacing:.5px;white-space:nowrap;flex-shrink:0;
+  transition:opacity .15s;
 }
-.dlg-portrait .dlg-icon {
-  font-size:42px; line-height:1;
-  display:flex; align-items:center; justify-content:center;
-  width:100%; height:100%; min-height:78px;
-}
-.dlg-body { flex:1; display:flex; flex-direction:column; gap:6px; min-width:0; }
-.dlg-actor { font-size:9px; color:var(--gold); letter-spacing:2.5px; font-weight:bold; }
-.dlg-roll  {
-  font-size:10px; color:#9b8fd4;
-  background:rgba(15,10,35,.7); border:1px solid rgba(120,90,220,.3);
-  border-radius:5px; padding:4px 8px; letter-spacing:.5px;
-}
-.dlg-roll .roll-val { font-weight:bold; font-size:12px; }
-.dlg-roll .roll-crit { color:#f39c12; }
-.dlg-roll .roll-ok   { color:var(--green); }
-.dlg-roll .roll-fail { color:var(--red); }
-.dlg-text { font-size:13px; color:var(--text); line-height:1.7; }
+.btn:active{opacity:.7}
+.btn-primary{background:var(--gold);color:#1a0d00;font-weight:bold}
+.btn-secondary{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-info{background:transparent;border:1px solid var(--blue);color:#7ab8f5}
+.btn:disabled{opacity:.35;cursor:not-allowed}
 
-.dlg-footer {
-  display:flex; align-items:center; justify-content:flex-end;
-  padding:0 16px 12px; gap:8px;
-}
-/* blinking cursor while waiting for TTS */
-.dlg-wait {
-  font-size:11px; color:var(--text3); letter-spacing:1px;
-  animation:blink 1.1s step-end infinite;
-}
-@keyframes blink { 50% { opacity:0; } }
+/* ═══ TILE ═══ */
+.tile{position:absolute;cursor:pointer;transition:filter .12s}
+.tile svg{display:block;overflow:visible}
+.tile:hover .tile-poly{filter:brightness(1.2)}
+.tile.hl-move .tile-poly{fill:#3a80cc!important;fill-opacity:.88}
+.tile.hl-atk  .tile-poly{fill:#bb3535!important;fill-opacity:.85}
+.tile.hl-sel  .tile-poly{fill:var(--gold)!important;fill-opacity:.82}
+.tile.hl-skill.tile-poly{fill:#27ae60!important;fill-opacity:.88}
+.tile.hl-move:hover .tile-poly{fill:#50a0ef!important}
+.tile.hl-atk:hover  .tile-poly{fill:#d84040!important}
 
-/* ── MODALS ── */
-.modal {
-  display:none; position:fixed; inset:0;
-  background:rgba(0,0,0,.82); z-index:200;
-  align-items:flex-end; justify-content:center;
+/* ═══ UNIT ═══ */
+.unit{
+  position:absolute;display:flex;flex-direction:column;align-items:center;
+  cursor:pointer;
+  transition:left .50s cubic-bezier(.4,0,.2,1),top .50s cubic-bezier(.4,0,.2,1);
 }
-.modal.open { display:flex; }
-.modal-sheet {
-  background:var(--surface); border:1px solid var(--border);
-  border-top:2px solid var(--gold); border-radius:16px 16px 0 0;
-  padding:20px; width:100%; max-width:520px;
-  display:flex; flex-direction:column; gap:14px;
-  max-height:88vh; overflow-y:auto;
+.u-label{
+  background:rgba(0,0,0,.88);border:1px solid rgba(212,168,67,.4);
+  border-radius:4px;padding:2px 5px;font-size:7px;color:var(--gold2);
+  white-space:nowrap;margin-bottom:2px;text-align:center;line-height:1.4;
+  pointer-events:none;user-select:none;
 }
-.modal-sheet h3 { font-size:16px; color:var(--gold); }
-.modal-sheet label { font-size:10px; color:var(--text2); letter-spacing:1.5px; display:block; margin-bottom:4px; }
-.modal-sheet textarea {
-  width:100%; background:#0d0905; border:1px solid var(--border);
-  color:var(--text); font-family:inherit; font-size:15px;
-  padding:10px 12px; border-radius:var(--r); outline:none; resize:none;
+.u-label .u-hpsp{color:var(--text2);font-size:6px;display:block}
+.unit .u-sprite{
+  width:36px;height:50px;object-fit:contain;object-position:bottom;
+  image-rendering:pixelated;filter:drop-shadow(0 3px 6px rgba(0,0,0,.95));
 }
-.modal-sheet textarea:focus { border-color:var(--gold); }
-.modal-footer { display:flex; gap:8px; }
-.modal-footer .btn { flex:1; }
+.u-goblin{
+  width:44px;height:60px;
+  border:1.5px solid rgba(212,168,67,.6);border-radius:5px;
+  overflow:hidden;background:#090604;flex-shrink:0;
+}
+.u-goblin img{
+  width:100%;height:100%;object-fit:cover;object-position:8% 18%;
+  filter:brightness(1.7) contrast(1.3) saturate(1.45);
+}
+.unit .u-icon{font-size:28px;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,.9))}
+.unit .u-bar{width:34px;height:3px;background:rgba(0,0,0,.5);border-radius:2px;margin-top:2px;overflow:hidden}
+.unit .u-fill{height:100%;border-radius:2px;transition:width .4s}
+.unit .u-sp-bar{width:34px;height:2px;background:rgba(0,0,0,.5);border-radius:2px;margin-top:1px;overflow:hidden}
+.unit .u-sp-fill{height:100%;border-radius:2px;background:var(--blue);transition:width .4s}
+.unit.u-active{filter:drop-shadow(0 0 8px #f0c866)}
+.unit.u-selected{filter:drop-shadow(0 0 12px #ffe066) brightness(1.15)}
+.unit.u-dead{opacity:.2;pointer-events:none;transition:opacity .7s}
 
-/* skill grid */
-.skill-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:6px; }
-.skill-btn {
-  background:rgba(58,128,204,.12); border:1px solid rgba(58,128,204,.35);
-  border-radius:var(--r); padding:8px; color:var(--text);
-  font-family:inherit; font-size:11px; cursor:pointer;
-  text-align:left; transition:background .15s;
-  display:flex; flex-direction:column; gap:2px;
+/* ═══ LEGEND ═══ */
+#legend{
+  position:absolute;bottom:6px;left:50%;transform:translateX(-50%);
+  display:flex;gap:10px;pointer-events:none;
 }
-.skill-btn:hover { background:rgba(58,128,204,.28); border-color:var(--blue); }
-.skill-btn.sp-empty { opacity:.4; cursor:not-allowed; }
-.skill-btn .sk-name { font-weight:bold; font-size:12px; }
-.skill-btn .sk-sp   { font-size:9px; color:#7ab8f5; }
-.skill-btn .sk-desc { font-size:9px; color:var(--text2); }
+.leg-item{display:flex;align-items:center;gap:4px;font-size:8px;color:var(--text3)}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 
-/* dice box */
-.dice-box {
-  background:rgba(15,10,35,.75); border:1px solid rgba(120,90,220,.35);
-  border-radius:var(--r); padding:12px 14px;
-  display:none; flex-direction:column; gap:4px;
+/* ═══ MODALS ═══ */
+.modal{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.82);z-index:300;
+  align-items:flex-end;justify-content:center;
 }
-.dice-box.show { display:flex; }
-.d-info   { font-size:10px; color:#9b8fd4; letter-spacing:1px; }
-.d-num    { font-size:26px; font-weight:bold; }
-.d-status { font-size:13px; font-weight:bold; }
-.d-ok     { color:var(--green); }
-.d-crit   { color:#f39c12; }
-.d-fail   { color:var(--red); }
-
-/* ── FICHA ── */
-.ficha-section { display:flex; flex-direction:column; gap:8px; }
-.ficha-header { display:flex; align-items:center; gap:10px; padding-bottom:12px; border-bottom:1px solid rgba(122,85,0,.3); }
-.ficha-header .fh-icon { font-size:32px; }
-.fh-name   { font-size:18px; color:var(--gold2); }
-.fh-classe { font-size:11px; color:var(--text2); letter-spacing:1.5px; }
-.stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
-.stat-box  { background:rgba(0,0,0,.35); border:1px solid rgba(122,85,0,.2); border-radius:6px; padding:8px 10px; }
-.stat-label { font-size:9px; color:var(--text3); letter-spacing:1.5px; }
-.stat-val   { font-size:18px; color:var(--text); font-weight:bold; }
-.stat-val.hp-val { color:var(--red); }
-.stat-val.sp-val { color:var(--blue); }
-.section-title { font-size:9px; color:var(--text3); letter-spacing:2px; padding-bottom:4px; border-bottom:1px solid rgba(122,85,0,.2); }
-.skill-list { display:flex; flex-direction:column; gap:6px; }
-.skill-row  { display:flex; align-items:center; gap:8px; background:rgba(58,128,204,.08); border:1px solid rgba(58,128,204,.2); border-radius:6px; padding:8px 10px; }
-.sk-icon2 { font-size:18px; }
-.sk-info  { flex:1; }
-.sk-nm    { font-size:13px; color:var(--text); }
-.sk-dsc   { font-size:10px; color:var(--text2); }
-.sk-spcost { font-size:10px; color:#7ab8f5; white-space:nowrap; }
-.equip-list { display:flex; flex-direction:column; gap:4px; }
-.equip-row  { display:flex; align-items:center; gap:8px; padding:6px 10px; background:rgba(122,85,0,.08); border:1px solid rgba(122,85,0,.15); border-radius:6px; font-size:12px; }
-.equip-slot { font-size:9px; color:var(--text3); letter-spacing:1px; min-width:60px; }
-
-/* ── TOAST ── */
-#toast {
-  display:none; position:fixed; bottom:80px; left:50%;
-  transform:translateX(-50%); background:#7b241c; color:#fff;
-  padding:10px 20px; border-radius:var(--r); font-size:13px;
-  z-index:600; pointer-events:none; white-space:nowrap;
+.modal.open{display:flex}
+.modal-sheet{
+  background:var(--surface);border:1px solid var(--border);
+  border-top:2px solid var(--gold);border-radius:16px 16px 0 0;
+  padding:20px;width:100%;max-width:540px;
+  display:flex;flex-direction:column;gap:14px;
+  max-height:88vh;overflow-y:auto;
+}
+.modal-sheet h3{font-size:16px;color:var(--gold)}
+.modal-footer{display:flex;gap:8px}
+.modal-footer .btn{flex:1}
+/* ficha */
+.ficha-section{display:flex;flex-direction:column;gap:8px}
+.ficha-header{display:flex;align-items:center;gap:10px;padding-bottom:12px;border-bottom:1px solid rgba(122,85,0,.3)}
+.fh-icon{font-size:32px}
+.fh-name{font-size:18px;color:var(--gold2)}
+.fh-classe{font-size:11px;color:var(--text2);letter-spacing:1.5px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.stat-box{background:rgba(0,0,0,.35);border:1px solid rgba(122,85,0,.2);border-radius:6px;padding:8px 10px}
+.stat-label{font-size:9px;color:var(--text3);letter-spacing:1.5px}
+.stat-val{font-size:18px;color:var(--text);font-weight:bold}
+.stat-val.hp-val{color:var(--red)}.stat-val.sp-val{color:var(--blue)}
+.section-title{font-size:9px;color:var(--text3);letter-spacing:2px;padding-bottom:4px;border-bottom:1px solid rgba(122,85,0,.2)}
+.skill-list{display:flex;flex-direction:column;gap:6px}
+.skill-row{display:flex;align-items:center;gap:8px;background:rgba(58,128,204,.08);border:1px solid rgba(58,128,204,.2);border-radius:6px;padding:8px 10px}
+.sk-icon2{font-size:18px}.sk-info{flex:1}.sk-nm{font-size:13px}.sk-dsc{font-size:10px;color:var(--text2)}.sk-spcost{font-size:10px;color:#7ab8f5;white-space:nowrap}
+.equip-list{display:flex;flex-direction:column;gap:4px}
+.equip-row{display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(122,85,0,.08);border:1px solid rgba(122,85,0,.15);border-radius:6px;font-size:12px}
+.equip-slot{font-size:9px;color:var(--text3);letter-spacing:1px;min-width:60px}
+/* toast */
+#toast{
+  display:none;position:fixed;bottom:90px;left:50%;
+  transform:translateX(-50%);background:#7b241c;color:#fff;
+  padding:8px 18px;border-radius:var(--r);font-size:12px;
+  z-index:600;pointer-events:none;white-space:nowrap;
 }
 </style>
 </head>
 <body>
-
 <div id="app">
+
+  <!-- ═══ TURN BAR ═══ -->
   <div id="turn-bar">
     <span class="tb-lbl">TURNOS ▶</span>
-    <div id="turn-chips" style="display:flex;gap:6px"></div>
+    <div id="turn-chips" style="display:flex;gap:5px"></div>
   </div>
 
-  <div id="grid-wrap">
-    <div id="grid-container"></div>
-  </div>
+  <!-- ═══ MIDDLE ROW ═══ -->
+  <div id="mid-row">
 
-  <div id="bottom-bar">
-    <span id="phase-txt">Carregando...</span>
-    <button id="btn-ficha"   class="btn btn-info"      onclick="openFicha()"       style="display:none">📋 FICHA</button>
-    <button id="btn-agir"    class="btn btn-primary"   onclick="openActionModal()" style="display:none">⚔️ AGIR</button>
-    <button id="btn-esperar" class="btn btn-secondary" onclick="playerEndTurn()"   style="display:none">⏭ ESPERAR</button>
-    <button id="btn-cancelar"class="btn btn-secondary" onclick="cancelSelect()"    style="display:none">✕ CANCELAR</button>
-  </div>
-</div>
+    <!-- Left sidebar: quick actions -->
+    <div id="sidebar-left">
+      <div class="sb-section">
+        <div class="sb-title">AÇÕES RÁPIDAS</div>
+        <div id="qa-list">
+          <!-- populated dynamically -->
+        </div>
+      </div>
+    </div>
 
-<!-- RPG Dialog — fixed bottom panel -->
-<div id="rpg-dialog">
-  <div class="dlg-main">
-    <div class="dlg-portrait" id="dlg-portrait"></div>
-    <div class="dlg-body">
-      <div class="dlg-actor" id="dlg-actor"></div>
-      <div class="dlg-roll"  id="dlg-roll"></div>
-      <div class="dlg-text"  id="dlg-text"></div>
+    <!-- Isometric map -->
+    <div id="grid-wrap">
+      <div id="grid-container">
+        <div id="legend">
+          <div class="leg-item"><div class="leg-dot" style="background:#3a80cc"></div>Mover</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#bb3535"></div>Atacar</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#d4a843"></div>Selecionado</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#27ae60"></div>Alvo</div>
+        </div>
+      </div>
     </div>
-  </div>
-  <div class="dlg-footer" id="dlg-footer">
-    <span class="dlg-wait" id="dlg-wait">▌ narrando...</span>
-    <button class="btn btn-primary" id="dlg-continuar" onclick="onContinuar()" style="display:none">▶ CONTINUAR</button>
-  </div>
-</div>
 
-<!-- Action modal -->
-<div id="modal-action" class="modal">
-  <div class="modal-sheet">
-    <h3 id="act-title">⚔️ Agir</h3>
-    <div>
-      <label>HABILIDADES</label>
-      <div id="skill-grid" class="skill-grid"></div>
+    <!-- Right sidebar: conditions + help -->
+    <div id="sidebar-right">
+      <div class="sb-section">
+        <div class="sr-btn-row">
+          <button class="sr-btn" onclick="openHelp()">❓ AJUDA</button>
+          <button class="sr-btn" onclick="openFicha()">📋 FICHA</button>
+        </div>
+      </div>
+      <div class="sb-section">
+        <div class="sb-title">Condições de Vitória</div>
+        <div class="cond-item"><span class="cond-icon">⚔️</span>Derrotar todos os inimigos do campo.</div>
+      </div>
+      <div class="sb-section">
+        <div class="sb-title">Condições de Derrota</div>
+        <div class="cond-item"><span class="cond-icon">💀</span>Todos os aliados foram derrotados.</div>
+      </div>
+      <div class="sb-section" id="sr-enemies-section">
+        <div class="sb-title">INIMIGOS VIVOS</div>
+        <div id="sr-enemies"></div>
+      </div>
     </div>
-    <div>
-      <label>OU DESCREVA LIVREMENTE</label>
-      <textarea id="act-txt" rows="3"
-        placeholder="Ex: Ataco o goblin mirado no pescoço com um golpe diagonal"></textarea>
-    </div>
-    <div class="dice-box" id="dice-box">
-      <div class="d-info"   id="d-info">—</div>
-      <div class="d-num"    id="d-num">—</div>
-      <div class="d-status" id="d-status">—</div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeActionModal()">← Voltar</button>
-      <button class="btn btn-info"      onclick="openFicha()">📋 Ficha</button>
-      <button class="btn btn-primary"   id="btn-roll" onclick="rollAction()">🎲 Rolar</button>
-    </div>
-  </div>
-</div>
 
-<!-- Character sheet modal -->
+  </div><!-- end mid-row -->
+
+  <!-- ═══ BOTTOM AREA ═══ -->
+  <div id="bottom-area">
+
+    <!-- Action panel -->
+    <div id="action-panel">
+
+      <!-- Left: turn info + text input -->
+      <div id="ap-left">
+        <div id="turn-header">
+          <span id="turn-name">CARREGANDO...</span>
+          <span id="turn-sub">aguarde</span>
+        </div>
+        <div id="action-input-wrap">
+          <textarea id="act-txt" rows="3" disabled
+            placeholder="Selecione seu personagem e descreva o que quer fazer..."></textarea>
+        </div>
+        <div id="act-btns">
+          <button class="btn btn-secondary" id="btn-esperar" onclick="playerEndTurn()" disabled style="font-size:10px;padding:5px 10px">⏭ ESPERAR</button>
+          <button class="btn btn-secondary" id="btn-cancelar" onclick="cancelSelect()" style="display:none;font-size:10px;padding:5px 10px">✕ CANCELAR</button>
+        </div>
+      </div>
+
+      <!-- Center: combat result -->
+      <div id="combat-box">
+        <div class="cb-title">× COMBATE</div>
+        <div id="combat-portrait-row">
+          <div id="combat-portrait"><span class="cp-icon">⚔️</span></div>
+          <div id="combat-info">
+            <div id="combat-roll-line">—</div>
+            <div id="combat-text" style="color:var(--text3);font-style:italic">Nenhuma ação ainda.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: speed + roll button -->
+      <div id="ap-right">
+        <div>
+          <div class="speed-label">VELOCIDADE</div>
+          <div id="speed-row">
+            <span id="speed-val">1.2×</span>
+            <input type="range" id="speed-slider" min="0.8" max="2.0" step="0.1" value="1.2"
+              oninput="onSpeedChange(this.value)" style="flex:1">
+          </div>
+        </div>
+        <button id="btn-rolar" disabled onclick="rollAction()">🎲 ROLAR LIVE ▼</button>
+        <button id="btn-esperar2" class="btn btn-secondary" onclick="playerEndTurn()" disabled
+          style="font-size:9px;padding:5px 4px">⏭ Encerrar turno</button>
+      </div>
+
+    </div><!-- end action-panel -->
+
+    <!-- Log + Chat row -->
+    <div id="log-chat-row">
+
+      <div id="cmd-log">
+        <div class="log-row-title">COMANDOS DIGITADOS</div>
+        <div id="cmd-log-content"></div>
+      </div>
+
+      <div id="chat-log">
+        <div class="log-row-title">BATE-PAPO</div>
+        <div id="chat-log-content"></div>
+      </div>
+
+    </div>
+
+    <!-- Bottom command bar -->
+    <div id="cmd-bar">
+      <input type="text" id="chat-input" placeholder="Digite no bate-papo e pressione Enter...">
+      <button class="btn btn-secondary" onclick="sendChat()" style="font-size:10px;padding:6px 10px">ENVIAR</button>
+      <button class="btn btn-info" onclick="openFicha()" style="font-size:10px;padding:6px 10px">📋 FICHA DO PERSONAGEM</button>
+    </div>
+
+  </div><!-- end bottom-area -->
+</div><!-- end app -->
+
+<!-- ─── CHARACTER SHEET MODAL ─── -->
 <div id="modal-ficha" class="modal">
   <div class="modal-sheet">
     <h3>📋 Ficha do Personagem</h3>
@@ -335,135 +486,157 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:Ge
   </div>
 </div>
 
+<!-- ─── HELP MODAL ─── -->
+<div id="modal-help" class="modal">
+  <div class="modal-sheet">
+    <h3>❓ Como jogar</h3>
+    <p style="font-size:13px;color:var(--text2);line-height:1.7">
+      <strong style="color:var(--gold)">1.</strong> Clique no seu personagem no mapa para selecioná-lo.<br>
+      <strong style="color:var(--gold)">2.</strong> Clique num tile <span style="color:#3a80cc">azul</span> para se mover.<br>
+      <strong style="color:var(--gold)">3.</strong> Descreva sua ação no campo de texto abaixo. Você pode digitar qualquer coisa!<br>
+      <strong style="color:var(--gold)">4.</strong> Exemplos: <em>"Ataco o goblin com minha espada mirado no pescoço"</em>, <em>"Tento convencer o líder a recuar"</em>, <em>"Uso Bola de Fogo no grupo de goblins"</em>.<br>
+      <strong style="color:var(--gold)">5.</strong> Clique <strong>ROLAR LIVE</strong> — o sistema calcula o resultado automaticamente com base nas suas habilidades.<br>
+      <strong style="color:var(--gold)">6.</strong> Após agir, clique <strong>ESPERAR</strong> para encerrar seu turno.
+    </p>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeHelp()">← Fechar</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
 // ═══════════════════════════════════════════════════════
 //  CONSTANTS
 // ═══════════════════════════════════════════════════════
-const COLS = 10, ROWS = 8;
-const TW = 64, TH = 32, HW = 32, HH = 16;
-const OFFSET_X = (ROWS - 1) * HW;
-const OFFSET_Y = 90;
-const GRID_W   = (COLS + ROWS - 2) * HW + TW;
-const GRID_H   = (COLS + ROWS - 2) * HH + TH + OFFSET_Y + 20;
+const COLS=10,ROWS=8;
+const TW=64,TH=32,HW=32,HH=16;
+const OFFSET_X=(ROWS-1)*HW;
+const OFFSET_Y=88;
+const GRID_W=(COLS+ROWS-2)*HW+TW;
+const GRID_H=(COLS+ROWS-2)*HH+TH+OFFSET_Y+20;
 
-const CLASS_CFG = {
-  guerreiro:{ mv:3, atk:1, spd:7, icon:'⚔️',  hp:120, sp:60,  dmg:13 },
-  mago:     { mv:2, atk:3, spd:5, icon:'🔮',  hp:60,  sp:120, dmg:9  },
-  ladino:   { mv:4, atk:1, spd:9, icon:'🗡️', hp:80,  sp:80,  dmg:10 },
-  clerigo:  { mv:3, atk:2, spd:6, icon:'✨',  hp:90,  sp:100, dmg:7  },
-  barbaro:  { mv:3, atk:1, spd:6, icon:'🪓',  hp:150, sp:40,  dmg:18 },
-  arqueiro: { mv:3, atk:4, spd:8, icon:'🏹',  hp:85,  sp:70,  dmg:12 },
+const CLASS_CFG={
+  guerreiro:{mv:3,atk:1,spd:7,icon:'⚔️', hp:120,sp:60, dmg:13},
+  mago:     {mv:2,atk:3,spd:5,icon:'🔮', hp:60, sp:120,dmg:9 },
+  ladino:   {mv:4,atk:1,spd:9,icon:'🗡️',hp:80, sp:80, dmg:10},
+  clerigo:  {mv:3,atk:2,spd:6,icon:'✨', hp:90, sp:100,dmg:7 },
+  barbaro:  {mv:3,atk:1,spd:6,icon:'🪓', hp:150,sp:40, dmg:18},
+  arqueiro: {mv:3,atk:4,spd:8,icon:'🏹', hp:85, sp:70, dmg:12},
 };
-const MODS = {
-  guerreiro:{ atacar:5, defender:3, falar:0, mover:1, skill:4, livre:2 },
-  mago:     { atacar:2, defender:0, falar:1, mover:0, skill:6, livre:3 },
-  ladino:   { atacar:4, defender:2, falar:2, mover:4, skill:5, livre:3 },
-  clerigo:  { atacar:2, defender:3, falar:2, mover:1, skill:5, livre:2 },
-  barbaro:  { atacar:6, defender:2, falar:-1,mover:2, skill:3, livre:3 },
-  arqueiro: { atacar:5, defender:2, falar:1, mover:3, skill:4, livre:3 },
+const MODS={
+  guerreiro:{atacar:5,defender:3,falar:0,mover:1,skill:4,livre:2},
+  mago:     {atacar:2,defender:0,falar:1,mover:0,skill:6,livre:3},
+  ladino:   {atacar:4,defender:2,falar:2,mover:4,skill:5,livre:3},
+  clerigo:  {atacar:2,defender:3,falar:2,mover:1,skill:5,livre:2},
+  barbaro:  {atacar:6,defender:2,falar:-1,mover:2,skill:3,livre:3},
+  arqueiro: {atacar:5,defender:2,falar:1,mover:3,skill:4,livre:3},
 };
-const DC = { atacar:12, skill:13, defender:10, falar:11, mover:10, livre:11 };
+const DC={atacar:12,skill:13,defender:10,falar:11,mover:10,livre:11};
 
-const SKILLS = {
+const SKILLS={
   guerreiro:[
-    { id:'golpe_duplo',  name:'Golpe Duplo',    icon:'⚔️',  sp:20, tipo:'atacar',   desc:'Dois golpes (+2 dano)' },
-    { id:'provocar',     name:'Provocar',        icon:'😤',  sp:10, tipo:'falar',    desc:'Força inimigo a atacar você' },
-    { id:'bater_escudo', name:'Bater Escudo',    icon:'🛡️', sp:15, tipo:'defender', desc:'Reduz próximo dano' },
+    {id:'golpe_duplo', name:'Golpe Duplo',    icon:'⚔️', sp:20,tipo:'atacar',  desc:'Dois golpes (+2 dano)',hint:'Uso Golpe Duplo em [alvo]'},
+    {id:'provocar',    name:'Provocar',       icon:'😤', sp:10,tipo:'falar',   desc:'Força inimigo a te atacar',hint:'Provoco [alvo] para me atacar'},
+    {id:'bater_esc',   name:'Bater Escudo',   icon:'🛡️',sp:15,tipo:'defender',desc:'Reduz próximo dano',hint:'Bato meu escudo para intimidar'},
   ],
   mago:[
-    { id:'bola_fogo',    name:'Bola de Fogo',    icon:'🔥',  sp:30, tipo:'skill',   desc:'Dano mágico em área' },
-    { id:'cura',         name:'Cura',            icon:'💚',  sp:20, tipo:'skill',   desc:'Restaura HP de aliado', heal:true },
-    { id:'escudo_magico',name:'Escudo Mágico',   icon:'🔵',  sp:15, tipo:'defender',desc:'Barreira protetora' },
-    { id:'raio',         name:'Raio',            icon:'⚡',  sp:25, tipo:'skill',   desc:'Ataque mágico à distância' },
+    {id:'bola_fogo',   name:'Bola de Fogo',   icon:'🔥', sp:30,tipo:'skill',  desc:'Dano mágico em área',hint:'Conjuro Bola de Fogo em [área]'},
+    {id:'cura',        name:'Cura',           icon:'💚', sp:20,tipo:'skill',  desc:'Restaura HP de aliado',hint:'Curo [aliado] com magia sagrada',heal:true},
+    {id:'escudo_mag',  name:'Escudo Mágico',  icon:'🔵', sp:15,tipo:'defender',desc:'Barreira arcana',hint:'Conjuro Escudo Mágico em mim'},
+    {id:'raio',        name:'Raio',           icon:'⚡', sp:25,tipo:'skill',  desc:'Ataque mágico à distância',hint:'Disparo um Raio em [alvo]'},
   ],
   ladino:[
-    { id:'ataque_furtivo',name:'Atq Furtivo',    icon:'🗡️', sp:20, tipo:'atacar',  desc:'+4 dano se inimigo distraído' },
-    { id:'fumaca',        name:'Névoa de Fumaça', icon:'💨', sp:15, tipo:'livre',   desc:'Dificulta ataques ao redor' },
-    { id:'veneno',        name:'Envenenar',       icon:'☠️', sp:25, tipo:'skill',   desc:'Dano por veneno contínuo' },
+    {id:'furtivo',     name:'Atq Furtivo',    icon:'🗡️',sp:20,tipo:'atacar',  desc:'+4 dano se inimigo distraído',hint:'Ataco furtivamente [alvo] nas costas'},
+    {id:'fumaca',      name:'Névoa de Fumaça',icon:'💨', sp:15,tipo:'livre',  desc:'Dificulta ataques',hint:'Lanço Granada de Fumaça na área'},
+    {id:'veneno',      name:'Envenenar',      icon:'☠️', sp:25,tipo:'skill',  desc:'Dano contínuo por veneno',hint:'Enveneno a arma e ataco [alvo]'},
   ],
   clerigo:[
-    { id:'cura_sagrada',  name:'Cura Sagrada',   icon:'✨',  sp:20, tipo:'skill',   desc:'Restaura HP significativo', heal:true },
-    { id:'luz_divina',    name:'Luz Divina',      icon:'🌟',  sp:25, tipo:'skill',   desc:'Dano sagrado em undead' },
-    { id:'proteger',      name:'Proteger',        icon:'🛡️', sp:10, tipo:'defender',desc:'Escudo divino 1 turno' },
-    { id:'bencao',        name:'Bênção',          icon:'🙏',  sp:15, tipo:'skill',   desc:'+2 nos rolls de aliados', heal:true },
+    {id:'cura_sag',    name:'Cura Sagrada',   icon:'✨', sp:20,tipo:'skill',  desc:'Restaura HP significativo',hint:'Curo [aliado] com Luz Sagrada',heal:true},
+    {id:'luz_div',     name:'Luz Divina',     icon:'🌟', sp:25,tipo:'skill',  desc:'Dano sagrado em undead',hint:'Invoco Luz Divina sobre [alvo]'},
+    {id:'proteger',    name:'Proteger',       icon:'🛡️',sp:10,tipo:'defender',desc:'Escudo divino por 1 turno',hint:'Conjuro proteção divina sobre mim'},
+    {id:'bencao',      name:'Bênção',         icon:'🙏', sp:15,tipo:'skill',  desc:'+2 nos rolls de aliados',hint:'Abençoo todos os aliados próximos',heal:true},
   ],
   barbaro:[
-    { id:'furia',         name:'Fúria Bárbara',   icon:'🪓',  sp:20, tipo:'atacar',  desc:'+6 dano, -2 defesa por 1 turno' },
-    { id:'rugido',        name:'Rugido',           icon:'😱',  sp:10, tipo:'falar',   desc:'Aterroriza inimigos próximos' },
-    { id:'pancada',       name:'Pancada',          icon:'💥',  sp:15, tipo:'atacar',  desc:'Empurra inimigo' },
+    {id:'furia',       name:'Fúria Bárbara',  icon:'🪓', sp:20,tipo:'atacar', desc:'+6 dano, -2 defesa',hint:'Entro em Fúria e ataco [alvo]'},
+    {id:'rugido',      name:'Rugido',         icon:'😱', sp:10,tipo:'falar',  desc:'Aterroriza inimigos',hint:'Solto um Rugido de guerra'},
+    {id:'pancada',     name:'Pancada',        icon:'💥', sp:15,tipo:'atacar', desc:'Empurra inimigo',hint:'Dou uma pancada brutal em [alvo]'},
   ],
   arqueiro:[
-    { id:'flechada',      name:'Flechada Certa',   icon:'🎯', sp:15, tipo:'atacar',  desc:'+3 precisão, ignora cobertura' },
-    { id:'chuva_flechas', name:'Chuva de Flechas', icon:'🏹', sp:30, tipo:'skill',   desc:'Múltiplos inimigos em área' },
-    { id:'armadilha',     name:'Armadilha',         icon:'🪤', sp:20, tipo:'livre',   desc:'Armadilha em tile adjacente' },
+    {id:'flechada',    name:'Flechada Certa', icon:'🎯', sp:15,tipo:'atacar', desc:'+3 precisão',hint:'Disparo uma Flechada Certeira em [alvo]'},
+    {id:'chuva',       name:'Chuva de Flechas',icon:'🏹',sp:30,tipo:'skill', desc:'Múltiplos inimigos',hint:'Disparo Chuva de Flechas na área'},
+    {id:'armadilha',   name:'Armadilha',      icon:'🪤', sp:20,tipo:'livre', desc:'Armadilha em tile adjacente',hint:'Coloco uma Armadilha no caminho'},
   ],
 };
 
-const EQUIP = {
-  guerreiro: [['ARMA','Espada Longa'],['ARMADURA','Cota de Malha'],['ACESSÓRIO','Amuleto de Pedra']],
-  mago:      [['ARMA','Cajado Arcano'],['ARMADURA','Manto de Estudioso'],['ACESSÓRIO','Anel de Foco']],
-  ladino:    [['ARMA','Adaga Dupla'],['ARMADURA','Armadura de Couro'],['ACESSÓRIO','Luvas Sombrias']],
-  clerigo:   [['ARMA','Maça Sagrada'],['ARMADURA','Armadura de Tecido'],['ACESSÓRIO','Símbolo Sagrado']],
-  barbaro:   [['ARMA','Machado de Guerra'],['ARMADURA','Armadura Pesada'],['ACESSÓRIO','Colar de Dentes']],
-  arqueiro:  [['ARMA','Arco Longo'],['ARMADURA','Armadura de Couro'],['ACESSÓRIO','Aljava de Setas']],
+const EQUIP={
+  guerreiro:[['ARMA','Espada Longa'],['ARMADURA','Cota de Malha'],['ACESSÓRIO','Amuleto de Pedra']],
+  mago:     [['ARMA','Cajado Arcano'],['ARMADURA','Manto Arcano'],['ACESSÓRIO','Anel de Foco']],
+  ladino:   [['ARMA','Adaga Dupla'],['ARMADURA','Armadura de Couro'],['ACESSÓRIO','Luvas Sombrias']],
+  clerigo:  [['ARMA','Maça Sagrada'],['ARMADURA','Armadura de Tecido'],['ACESSÓRIO','Símbolo Sagrado']],
+  barbaro:  [['ARMA','Machado de Guerra'],['ARMADURA','Armadura Pesada'],['ACESSÓRIO','Colar de Dentes']],
+  arqueiro: [['ARMA','Arco Longo'],['ARMADURA','Armadura de Couro'],['ACESSÓRIO','Aljava de Setas']],
 };
 
-const ENEMY_TEMPLATES = [
-  { name:'Goblin',       icon:'👺', sprite:'goblin_batedor',  hp:30, mv:3, atk:1, spd:7, dmg:5  },
-  { name:'Arq. Goblin',  icon:'🏹', sprite:'goblin_arqueiro', hp:20, mv:2, atk:4, spd:6, dmg:4  },
-  { name:'Líder Goblin', icon:'👹', sprite:'goblin_lider',    hp:55, mv:2, atk:1, spd:5, dmg:8  },
-  { name:'Goblin Bruto', icon:'🧌', sprite:'goblin_bruto',    hp:40, mv:2, atk:1, spd:5, dmg:7  },
+const ENEMY_TEMPLATES=[
+  {name:'Goblin',      icon:'👺',sprite:'goblin_batedor', hp:30,mv:3,atk:1,spd:7,dmg:5},
+  {name:'Arq. Goblin', icon:'🏹',sprite:'goblin_arqueiro',hp:20,mv:2,atk:4,spd:6,dmg:4},
+  {name:'Líder Goblin',icon:'👹',sprite:'goblin_lider',   hp:55,mv:2,atk:1,spd:5,dmg:8},
+  {name:'Goblin Bruto',icon:'🧌',sprite:'goblin_bruto',   hp:40,mv:2,atk:1,spd:5,dmg:7},
 ];
 
 // ═══════════════════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════════════════
-let units = [], turnQueue = [], curIdx = 0;
-let phase = 'idle';
-let selUnit = null, hlMove = new Set(), hlAtk = new Set();
-let hasMoved = false, hasActed = false;
-let _continuarCb  = null;
-let _currentAudio = null;
-let _activeSkill  = null;
+let units=[],turnQueue=[],curIdx=0;
+let phase='idle';
+let selUnit=null,hlMove=new Set(),hlAtk=new Set();
+let hasMoved=false,hasActed=false;
+let _activeSkill=null;
+let _currentAudio=null;
+let _ttsSpeed=1.2;
+let battleLog=[];
 
 // ═══════════════════════════════════════════════════════
 //  UTILS
 // ═══════════════════════════════════════════════════════
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-const rnd   = arr => arr[Math.floor(Math.random() * arr.length)];
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const rnd=arr=>arr[Math.floor(Math.random()*arr.length)];
 
-function toast(msg, dur=3000) {
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.style.display = 'block';
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.style.display='none', dur);
+function toast(msg,dur=2800){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.style.display='block';
+  clearTimeout(el._t);el._t=setTimeout(()=>el.style.display='none',dur);
 }
-function gridToScreen(col, row) { return { x:(col-row)*HW+OFFSET_X, y:(col+row)*HH+OFFSET_Y }; }
-function unitScreenPos(col, row) { const {x,y}=gridToScreen(col,row); return { left:x+HW-19, top:y-68 }; }
-function dist(a,b) { return Math.abs(a.col-b.col)+Math.abs(a.row-b.row); }
-function unitAt(col,row) { return units.find(u=>u.alive&&u.col===col&&u.row===row)||null; }
-function getTileEl(c,r) { return document.getElementById(`t${c}_${r}`); }
+function gridToScreen(col,row){return{x:(col-row)*HW+OFFSET_X,y:(col+row)*HH+OFFSET_Y}}
+function unitScreenPos(col,row){const{x,y}=gridToScreen(col,row);return{left:x+HW-19,top:y-68}}
+function dist(a,b){return Math.abs(a.col-b.col)+Math.abs(a.row-b.row)}
+function unitAt(col,row){return units.find(u=>u.alive&&u.col===col&&u.row===row)||null}
+function getTileEl(c,r){return document.getElementById(`t${c}_${r}`)}
 
 // ═══════════════════════════════════════════════════════
 //  MAP
 // ═══════════════════════════════════════════════════════
-function renderMap() {
-  const cont = document.getElementById('grid-container');
-  cont.innerHTML = ''; cont.style.width=GRID_W+'px'; cont.style.height=GRID_H+'px';
+function renderMap(){
+  const cont=document.getElementById('grid-container');
+  // keep legend
+  const legend=document.getElementById('legend');
+  cont.innerHTML='';
+  cont.appendChild(legend);
+  cont.style.width=GRID_W+'px';cont.style.height=GRID_H+'px';
   const order=[];
-  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) order.push({c,r,z:c+r});
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)order.push({c,r,z:c+r});
   order.sort((a,b)=>a.z-b.z);
   order.forEach(({c,r})=>{
-    const {x,y}=gridToScreen(c,r);
+    const{x,y}=gridToScreen(c,r);
     const div=document.createElement('div');
-    div.id=`t${c}_${r}`; div.className='tile';
+    div.id=`t${c}_${r}`;div.className='tile';
     div.style.cssText=`left:${x}px;top:${y}px;width:${TW}px;height:${TH}px;z-index:${(c+r)*2}`;
     div.innerHTML=`<svg viewBox="0 0 64 32" width="64" height="32" xmlns="http://www.w3.org/2000/svg">
       <polygon class="tile-poly" points="32,1 63,16 32,31 1,16" fill="#b0ada4" stroke="#d4a843" stroke-width="1.6"/>
     </svg>`;
-    div.dataset.c=c; div.dataset.r=r;
+    div.dataset.c=c;div.dataset.r=r;
     div.addEventListener('click',()=>onTileClick(c,r));
     cont.appendChild(div);
   });
@@ -472,7 +645,7 @@ function renderMap() {
 // ═══════════════════════════════════════════════════════
 //  UNITS
 // ═══════════════════════════════════════════════════════
-function buildUnits() {
+function buildUnits(){
   [
     {name:'Guerreiro',classe:'guerreiro',sexo:'m',col:1,row:1},
     {name:'Mago',     classe:'mago',     sexo:'m',col:1,row:4},
@@ -483,10 +656,8 @@ function buildUnits() {
       col:p.col,row:p.row,hp:c.hp,maxHp:c.hp,sp:c.sp,maxSp:c.sp,
       dmg:c.dmg,mv:c.mv,atkRange:c.atk,spd:c.spd,alive:true});
   });
-  [
-    {t:0,col:8,row:1},{t:1,col:9,row:3},
-    {t:0,col:8,row:5,name:'Goblin 2'},{t:2,col:9,row:6},
-  ].forEach((e,i)=>{
+  [{t:0,col:8,row:1},{t:1,col:9,row:3},{t:0,col:8,row:5,name:'Goblin 2'},{t:2,col:9,row:6}]
+  .forEach((e,i)=>{
     const tmpl=ENEMY_TEMPLATES[e.t];
     units.push({id:`e${i}`,team:'enemy',name:e.name||tmpl.name,
       icon:tmpl.icon,sprite:tmpl.sprite,
@@ -495,105 +666,100 @@ function buildUnits() {
   });
 }
 
-function createUnitEl(u) {
+function createUnitEl(u){
   const cont=document.getElementById('grid-container');
   const pos=unitScreenPos(u.col,u.row);
   const div=document.createElement('div');
-  div.id=`u_${u.id}`; div.className='unit';
+  div.id=`u_${u.id}`;div.className='unit';
   div.style.cssText=`left:${pos.left}px;top:${pos.top}px;z-index:${(u.col+u.row)*2+1}`;
-
-  const spLabel = u.maxSp>0 ? ` · ${u.sp}SP` : '';
-  const spBar   = u.maxSp>0 ? `<div class="u-sp-bar"><div class="u-sp-fill" style="width:100%"></div></div>` : '';
-  const label   = `<div class="u-label">
-    <span class="u-name-tag">${u.name}</span>
-    <span class="u-hpsp">${u.hp}/${u.maxHp}HP${spLabel}</span>
-  </div>`;
-
-  if (u.team==='player') {
-    div.innerHTML = `${label}
+  const spLabel=u.maxSp>0?` · ${u.sp}SP`:'';
+  const spBar=u.maxSp>0?`<div class="u-sp-bar"><div class="u-sp-fill" style="width:100%"></div></div>`:'';
+  const label=`<div class="u-label"><span class="u-name-tag">${u.name}</span><span class="u-hpsp">${u.hp}/${u.maxHp}HP${spLabel}</span></div>`;
+  if(u.team==='player'){
+    div.innerHTML=`${label}
       <img class="u-sprite" src="../sprites/${u.classe}_${u.sexo}.png"
         onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
       <span class="u-icon" style="display:none">${CLASS_CFG[u.classe]?.icon||'⚔️'}</span>
       <div class="u-bar"><div class="u-fill" style="width:100%;background:var(--green)"></div></div>${spBar}`;
-  } else {
-    // Enemy — use extracted goblin sprite
-    div.innerHTML = `${label}
-      <div class="u-goblin">
-        <img src="../sprites/${u.sprite}.png"
-          onerror="this.parentElement.innerHTML='<span class=\\'u-icon\\'>${u.icon}</span>'">
-      </div>
+  }else{
+    div.innerHTML=`${label}
+      <div class="u-goblin"><img id="gimg_${u.id}" src="../sprites/${u.sprite}.png"></div>
       <div class="u-bar"><div class="u-fill" style="width:100%;background:var(--green)"></div></div>`;
   }
-
-  div.addEventListener('click', e=>{e.stopPropagation();onUnitClick(u);});
+  div.addEventListener('click',e=>{e.stopPropagation();onUnitClick(u);});
   cont.appendChild(div);
+  if(u.team==='enemy'){
+    const gimg=div.querySelector(`#gimg_${u.id}`);
+    if(gimg) gimg.addEventListener('error',()=>{
+      const gd=gimg.parentElement;
+      if(gd) gd.innerHTML=`<span class="u-icon" style="font-size:28px">${u.icon}</span>`;
+    });
+  }
 }
 
-function moveUnitEl(u,col,row) {
-  u.col=col; u.row=row;
+function moveUnitEl(u,col,row){
+  u.col=col;u.row=row;
   const el=document.getElementById(`u_${u.id}`);
   const pos=unitScreenPos(col,row);
-  if(!el) return;
-  el.style.left=pos.left+'px'; el.style.top=pos.top+'px';
+  if(!el)return;
+  el.style.left=pos.left+'px';el.style.top=pos.top+'px';
   el.style.zIndex=(col+row)*2+1;
 }
 
-function refreshUnitEl(u) {
-  const el=document.getElementById(`u_${u.id}`); if(!el) return;
+function refreshUnitEl(u){
+  const el=document.getElementById(`u_${u.id}`);if(!el)return;
   const hpPct=Math.max(0,Math.round((u.hp/u.maxHp)*100));
   const hpClr=hpPct>50?'var(--green)':hpPct>25?'#f39c12':'var(--red)';
   const fill=el.querySelector('.u-fill');
   if(fill){fill.style.width=hpPct+'%';fill.style.background=hpClr;}
-  if(u.maxSp>0){
-    const spPct=Math.max(0,Math.round((u.sp/u.maxSp)*100));
-    const spF=el.querySelector('.u-sp-fill');
-    if(spF) spF.style.width=spPct+'%';
-  }
-  const nt=el.querySelector('.u-name-tag'), hs=el.querySelector('.u-hpsp');
-  if(nt) nt.textContent=u.name;
-  if(hs) hs.textContent=`${u.hp}/${u.maxHp}HP${u.maxSp>0?' · '+u.sp+'SP':''}`;
+  if(u.maxSp>0){const sf=el.querySelector('.u-sp-fill');if(sf)sf.style.width=Math.max(0,Math.round(u.sp/u.maxSp*100))+'%';}
+  const nt=el.querySelector('.u-name-tag'),hs=el.querySelector('.u-hpsp');
+  if(nt)nt.textContent=u.name;
+  if(hs)hs.textContent=`${u.hp}/${u.maxHp}HP${u.maxSp>0?' · '+u.sp+'SP':''}`;
   const cls=['unit'];
-  if(selUnit===u) cls.push('u-selected');
-  if(curUnit()===u) cls.push('u-active');
-  if(!u.alive) cls.push('u-dead');
+  if(selUnit===u)cls.push('u-selected');
+  if(curUnit()===u)cls.push('u-active');
+  if(!u.alive)cls.push('u-dead');
   el.className=cls.join(' ');
 }
 
 // ═══════════════════════════════════════════════════════
 //  TURN ORDER
 // ═══════════════════════════════════════════════════════
-function buildQueue()  { turnQueue=[...units].sort((a,b)=>b.spd-a.spd); curIdx=0; }
-function curUnit()     { return turnQueue[curIdx%turnQueue.length]; }
+function buildQueue(){turnQueue=[...units].sort((a,b)=>b.spd-a.spd);curIdx=0;}
+function curUnit(){return turnQueue[curIdx%turnQueue.length];}
 
-function advanceTurn() {
-  hasMoved=false; hasActed=false; selUnit=null; _activeSkill=null;
-  clearHL(); hideBtns();
+function advanceTurn(){
+  hasMoved=false;hasActed=false;selUnit=null;_activeSkill=null;
+  clearHL();setInputEnabled(false);
   let tries=turnQueue.length;
   do{curIdx=(curIdx+1)%turnQueue.length;tries--;}while(!curUnit().alive&&tries>0);
   units.forEach(u=>refreshUnitEl(u));
   renderTurnBar();
-  if(!checkBattleEnd()) startUnitTurn();
+  renderEnemyList();
+  if(!checkBattleEnd())startUnitTurn();
 }
 
-function startUnitTurn() {
+function startUnitTurn(){
   const cu=curUnit();
   if(cu.team==='player'){
     phase='select';
-    setPhase(`TURNO DE ${cu.name.toUpperCase()} — toque no personagem`);
-    showBtns({ficha:true});
-  } else {
+    setTurnHeader(`TURNO DE ${cu.name.toUpperCase()}`,`Toque no personagem para selecionar`);
+    setInputEnabled(false);
+    renderQuickActions(cu);
+  }else{
     phase='enemy';
-    setPhase(`${cu.icon||'👹'} ${cu.name} está agindo...`);
-    hideBtns();
+    setTurnHeader(`${cu.icon||'👹'} ${cu.name.toUpperCase()}`,`Inimigo está agindo...`);
+    setInputEnabled(false);
     setTimeout(()=>runEnemyTurn(cu),600);
   }
 }
 
-function renderTurnBar() {
-  const chips=document.getElementById('turn-chips'); chips.innerHTML='';
+function renderTurnBar(){
+  const chips=document.getElementById('turn-chips');chips.innerHTML='';
   const n=Math.min(10,turnQueue.length);
   for(let i=0;i<n;i++){
-    const idx=(curIdx+i)%turnQueue.length, u=turnQueue[idx];
+    const idx=(curIdx+i)%turnQueue.length,u=turnQueue[idx];
     const chip=document.createElement('div');
     chip.className=`turn-chip${i===0?' active':''}${u.team==='enemy'?' enemy':''}${!u.alive?' dead':''}`;
     const icon=u.team==='player'?(CLASS_CFG[u.classe]?.icon||'⚔️'):u.icon;
@@ -602,32 +768,76 @@ function renderTurnBar() {
   }
 }
 
+function renderEnemyList(){
+  const el=document.getElementById('sr-enemies');el.innerHTML='';
+  units.filter(u=>u.team==='enemy'&&u.alive).forEach(u=>{
+    const d=document.createElement('div');
+    d.className='cond-item';
+    d.innerHTML=`<span class="cond-icon">${u.icon}</span><span>${u.name}<br><span style="font-size:8px;color:var(--red)">${u.hp}/${u.maxHp} HP</span></span>`;
+    el.appendChild(d);
+  });
+}
+
+function renderQuickActions(u){
+  const list=document.getElementById('qa-list');list.innerHTML='';
+  // Generic actions
+  const generic=[
+    {icon:'⚔️',name:'Atacar',hint:`Ataco [alvo] com minha ${EQUIP[u.classe]?.[0]?.[1]||'arma'}`},
+    {icon:'🏃',name:'Mover',hint:`Me movimento para cobrir [posição]`},
+    {icon:'🛡️',name:'Defender',hint:`Me defendo do próximo ataque`},
+    {icon:'💬',name:'Falar',hint:`Digo para [alvo]: [mensagem]`},
+  ];
+  generic.forEach(a=>list.appendChild(makeQAItem(a.icon,a.name,a.hint,null)));
+  // Class skills
+  const skills=SKILLS[u.classe]||[];
+  skills.forEach(sk=>{
+    const canUse=u.sp>=sk.sp;
+    list.appendChild(makeQAItem(sk.icon,sk.name,sk.hint,canUse?sk.sp:null,!canUse));
+  });
+}
+
+function makeQAItem(icon,name,hint,sp,disabled=false){
+  const d=document.createElement('div');
+  d.className='qa-item'+(disabled?' qa-disabled':'');
+  if(disabled)d.style.opacity='.4';
+  d.innerHTML=`<span class="qa-icon">${icon}</span>
+    <div class="qa-info">
+      <div class="qa-name">${name}</div>
+      <div class="qa-hint">${hint}</div>
+      ${sp!=null?`<div class="qa-sp">${sp} SP</div>`:''}
+    </div>`;
+  if(!disabled){
+    d.addEventListener('click',()=>{
+      const ta=document.getElementById('act-txt');
+      if(!ta.disabled){ta.value=hint.replace(/\[.*?\]/g,'');ta.focus();}
+    });
+  }
+  return d;
+}
+
 // ═══════════════════════════════════════════════════════
 //  BFS
 // ═══════════════════════════════════════════════════════
-function reachableTiles(u) {
+function reachableTiles(u){
   const res=new Set(),vis=new Set([`${u.col},${u.row}`]);
   const q=[{col:u.col,row:u.row,left:u.mv}];
   while(q.length){
-    const {col,row,left}=q.shift(); if(left<=0) continue;
+    const{col,row,left}=q.shift();if(left<=0)continue;
     for(const[dc,dr]of[[1,0],[-1,0],[0,1],[0,-1]]){
       const nc=col+dc,nr=row+dr,key=`${nc},${nr}`;
-      if(vis.has(key)||nc<0||nc>=COLS||nr<0||nr>=ROWS) continue;
-      if(unitAt(nc,nr)) continue;
-      vis.add(key); res.add(key);
-      if(left>1) q.push({col:nc,row:nr,left:left-1});
+      if(vis.has(key)||nc<0||nc>=COLS||nr<0||nr>=ROWS||unitAt(nc,nr))continue;
+      vis.add(key);res.add(key);
+      if(left>1)q.push({col:nc,row:nr,left:left-1});
     }
   }
   return res;
 }
-
-function atkTiles(u,fc,fr) {
+function atkTiles(u,fc,fr){
   const res=new Set(),r=u.atkRange;
-  for(let dc=-r;dc<=r;dc++) for(let dr=-r;dr<=r;dr++){
-    const d=Math.abs(dc)+Math.abs(dr);
-    if(d===0||d>r) continue;
+  for(let dc=-r;dc<=r;dc++)for(let dr=-r;dr<=r;dr++){
+    const d=Math.abs(dc)+Math.abs(dr);if(d===0||d>r)continue;
     const nc=fc+dc,nr=fr+dr;
-    if(nc>=0&&nc<COLS&&nr>=0&&nr<ROWS) res.add(`${nc},${nr}`);
+    if(nc>=0&&nc<COLS&&nr>=0&&nr<ROWS)res.add(`${nc},${nr}`);
   }
   return res;
 }
@@ -635,29 +845,22 @@ function atkTiles(u,fc,fr) {
 // ═══════════════════════════════════════════════════════
 //  HIGHLIGHTS
 // ═══════════════════════════════════════════════════════
-function clearHL() {
+function clearHL(){
   document.querySelectorAll('.tile.hl-move,.tile.hl-atk,.tile.hl-sel,.tile.hl-skill')
     .forEach(el=>el.classList.remove('hl-move','hl-atk','hl-sel','hl-skill'));
 }
-function applyHL(movSet,atkSet,sc,sr) {
+function applyHL(movSet,atkSet,sc,sr){
   clearHL();
   movSet.forEach(k=>{const[c,r]=k.split(',').map(Number);getTileEl(c,r)?.classList.add('hl-move');});
   atkSet.forEach(k=>{const[c,r]=k.split(',').map(Number);const el=getTileEl(c,r);if(el&&!el.classList.contains('hl-move'))el.classList.add('hl-atk');});
-  if(sc!=null) getTileEl(sc,sr)?.classList.add('hl-sel');
+  if(sc!=null)getTileEl(sc,sr)?.classList.add('hl-sel');
 }
 
 // ═══════════════════════════════════════════════════════
 //  INPUT
 // ═══════════════════════════════════════════════════════
-function onUnitClick(u) {
-  const cu=curUnit(); if(phase==='end') return;
-
-  if(_activeSkill&&phase==='skill-target'){
-    const validAlly=u.team==='player'&&u.alive;
-    const validEnemy=u.team==='enemy'&&u.alive&&hlAtk.has(`${u.col},${u.row}`);
-    if(validAlly||validEnemy){_executeSkillOn(cu,u);return;}
-  }
-
+function onUnitClick(u){
+  const cu=curUnit();if(phase==='end')return;
   if(phase==='select'&&u===cu&&cu.team==='player'){
     selUnit=cu;
     hlMove=hasMoved?new Set():reachableTiles(cu);
@@ -665,318 +868,179 @@ function onUnitClick(u) {
     applyHL(hlMove,hlAtk,cu.col,cu.row);
     units.forEach(u=>refreshUnitEl(u));
     phase='move';
-    setPhase(`${cu.name}${hasMoved?'':', AZUL pra mover'} · VERMELHO pra atacar`);
-    showBtns({agir:!hasActed,esperar:true,cancelar:true,ficha:true});
+    setTurnHeader(`TURNO DE ${cu.name.toUpperCase()}`,hasMoved?'Descreva sua ação abaixo':'AZUL = mover · VERMELHO = atacar');
+    setInputEnabled(!hasActed,`Descreva a ação de ${cu.name}...`);
+    setBtns(true,false,true);
     return;
   }
-
   if((phase==='move'||phase==='action')&&u.team==='enemy'&&hlAtk.has(`${u.col},${u.row}`)){
-    document.getElementById('act-txt').value=`Ataco ${u.name}`;
-    openActionModal();
+    const ta=document.getElementById('act-txt');
+    ta.value=`Ataco ${u.name} `;ta.focus();
   }
 }
 
-function onTileClick(col,row) {
-  const cu=curUnit(); if(!cu||cu.team!=='player'||phase==='end') return;
+function onTileClick(col,row){
+  const cu=curUnit();if(!cu||cu.team!=='player'||phase==='end')return;
   if(phase==='move'&&hlMove.has(`${col},${row}`)){
-    moveUnitEl(cu,col,row); hasMoved=true;
-    hlMove=new Set(); hlAtk=atkTiles(cu,col,row);
+    moveUnitEl(cu,col,row);hasMoved=true;
+    hlMove=new Set();hlAtk=atkTiles(cu,col,row);
     applyHL(new Set(),hlAtk,col,row);
     units.forEach(u=>refreshUnitEl(u));
     phase='action';
-    setPhase(`${cu.name} moveu · AGIR ou ESPERAR`);
-    showBtns({agir:!hasActed,esperar:true,cancelar:true,ficha:true});
+    setTurnHeader(`TURNO DE ${cu.name.toUpperCase()}`,'Personagem moveu — descreva sua ação ou encerre o turno');
+    setInputEnabled(!hasActed,`Descreva a ação de ${cu.name}...`);
+    setBtns(!hasActed,false,true);
   }
 }
 
 // ═══════════════════════════════════════════════════════
 //  UI HELPERS
 // ═══════════════════════════════════════════════════════
-function setPhase(txt) { document.getElementById('phase-txt').textContent=txt; }
-
-function hideBtns() {
-  ['btn-ficha','btn-agir','btn-esperar','btn-cancelar']
-    .forEach(id=>document.getElementById(id).style.display='none');
+function setTurnHeader(name,sub){
+  document.getElementById('turn-name').textContent=name;
+  document.getElementById('turn-sub').textContent=sub;
 }
-function showBtns({ficha=false,agir=false,esperar=false,cancelar=false}={}) {
-  document.getElementById('btn-ficha').style.display   =ficha   ?'':'none';
-  document.getElementById('btn-agir').style.display    =agir    ?'':'none';
-  document.getElementById('btn-esperar').style.display =esperar ?'':'none';
-  document.getElementById('btn-cancelar').style.display=cancelar?'':'none';
+function setInputEnabled(enabled,placeholder=''){
+  const ta=document.getElementById('act-txt');
+  ta.disabled=!enabled;
+  if(placeholder)ta.placeholder=placeholder;
+  const rb=document.getElementById('btn-rolar');
+  rb.disabled=!enabled;
+}
+function setBtns(rolar,esperar1,esperar2){
+  document.getElementById('btn-rolar').disabled=!rolar;
+  document.getElementById('btn-esperar').disabled=!esperar1;
+  document.getElementById('btn-esperar2').disabled=!esperar2;
+  document.getElementById('btn-cancelar').style.display=rolar?'':'none';
 }
 
-function cancelSelect() {
+function cancelSelect(){
   selUnit=null;_activeSkill=null;clearHL();units.forEach(u=>refreshUnitEl(u));
   phase='select';
-  setPhase(`TURNO DE ${curUnit()?.name?.toUpperCase()||'?'} — toque no personagem`);
-  showBtns({ficha:true});
+  setTurnHeader(`TURNO DE ${curUnit()?.name?.toUpperCase()||'?'}`,'Toque no personagem para selecionar');
+  setInputEnabled(false);
+  setBtns(false,false,false);
+  document.getElementById('btn-cancelar').style.display='none';
 }
 
-function playerEndTurn() { clearHL(); advanceTurn(); }
+function playerEndTurn(){clearHL();advanceTurn();}
 
-function onContinuar() {
-  const cb=_continuarCb; _continuarCb=null;
-  stopAudio();
-  hideDialog();
-  hideBtns();
-  if(cb) cb();
-}
-
-function stopAudio() {
-  if(_currentAudio){_currentAudio.pause();_currentAudio=null;}
-  if(window.speechSynthesis) speechSynthesis.cancel();
+function onSpeedChange(v){
+  _ttsSpeed=parseFloat(v);
+  document.getElementById('speed-val').textContent=parseFloat(v).toFixed(1)+'×';
 }
 
 // ═══════════════════════════════════════════════════════
-//  RPG DIALOG
+//  COMBAT RESULT DISPLAY
 // ═══════════════════════════════════════════════════════
-function showDialog(unit, narration, rollInfo, onDone) {
-  stopAudio();
-  const dlg = document.getElementById('rpg-dialog');
-
+function showCombat(unit,narration,rollInfo){
   // Portrait
-  const portrait = document.getElementById('dlg-portrait');
+  const portEl=document.getElementById('combat-portrait');
   if(unit.team==='player'){
-    portrait.innerHTML=`<img src="../sprites/${unit.classe}_${unit.sexo}.png"
-      onerror="this.parentElement.innerHTML='<div class=\\'dlg-icon\\'>${CLASS_CFG[unit.classe]?.icon||'⚔️'}</div>'">`;
-  } else if(unit.sprite){
-    portrait.innerHTML=`<img src="../sprites/${unit.sprite}.png"
-      onerror="this.parentElement.innerHTML='<div class=\\'dlg-icon\\'>${unit.icon||'👹'}</div>'">`;
-  } else {
-    portrait.innerHTML=`<div class="dlg-icon">${unit.icon||'👹'}</div>`;
+    portEl.innerHTML=`<img src="../sprites/${unit.classe}_${unit.sexo}.png"
+      onerror="this.parentElement.innerHTML='<span class=\\'cp-icon\\'>${CLASS_CFG[unit.classe]?.icon||'⚔️'}</span>'">`;
+  }else if(unit.sprite){
+    portEl.innerHTML=`<img src="../sprites/${unit.sprite}.png"
+      onerror="this.parentElement.innerHTML='<span class=\\'cp-icon\\'>${unit.icon||'👹'}</span>'">`;
+  }else{
+    portEl.innerHTML=`<span class="cp-icon">${unit.icon||'👹'}</span>`;
   }
-
-  // Actor name
-  document.getElementById('dlg-actor').textContent = unit.name.toUpperCase();
-
-  // Roll info
-  const rollEl = document.getElementById('dlg-roll');
+  // Roll line
+  const rollEl=document.getElementById('combat-roll-line');
   if(rollInfo){
-    const cls = rollInfo.crit?'crit':(!rollInfo.succ||rollInfo.fail)?'fail':'ok';
-    const label = rollInfo.crit?'⚡ CRÍTICO!':rollInfo.fail?'💀 FALHA!':rollInfo.succ?'✅ SUCESSO':'❌ FALHOU';
-    rollEl.innerHTML = `${rollInfo.label} · <span class="roll-val roll-${cls}">${label}</span>`;
-    rollEl.style.display='block';
-  } else {
-    rollEl.style.display='none';
+    const cls=rollInfo.crit?'cr-crit':(!rollInfo.succ||rollInfo.fail)?'cr-fail':'cr-ok';
+    const lbl=rollInfo.crit?'⚡ CRÍTICO!':rollInfo.fail?'💀 FALHA!':rollInfo.succ?'✅ SUCESSO':'❌ FALHOU';
+    rollEl.innerHTML=`${rollInfo.label} · <span class="${cls}">${lbl}</span>`;
+  }else{
+    rollEl.textContent='—';
   }
-
-  // Narration text
-  document.getElementById('dlg-text').textContent = narration;
-
-  // Footer: show "narrando..." spinner, hide CONTINUAR
-  document.getElementById('dlg-wait').style.display='';
-  document.getElementById('dlg-continuar').style.display='none';
-
-  // Wire callback
-  _continuarCb = () => { if(onDone) onDone(); };
-
-  // Open dialog
-  dlg.classList.add('open');
-  setPhase('⏳ Aguarde a narração...');
-  hideBtns();
-
-  // Play TTS then reveal CONTINUAR
-  narrar(narration).then(()=>{
-    document.getElementById('dlg-wait').style.display='none';
-    document.getElementById('dlg-continuar').style.display='';
-    setPhase('▼ Toque CONTINUAR no painel abaixo');
-    // Auto-advance after 5s
-    setTimeout(()=>{ if(_continuarCb) onContinuar(); }, 5000);
-  });
-}
-
-function hideDialog() {
-  document.getElementById('rpg-dialog').classList.remove('open');
+  // Narration
+  document.getElementById('combat-text').textContent=narration;
+  document.getElementById('combat-text').style.color='var(--text)';
+  document.getElementById('combat-text').style.fontStyle='normal';
 }
 
 // ═══════════════════════════════════════════════════════
-//  CHARACTER SHEET
+//  BATTLE LOG
 // ═══════════════════════════════════════════════════════
-function openFicha() {
-  const cu=curUnit(); if(!cu||cu.team!=='player') return;
-  const cfg=CLASS_CFG[cu.classe]||{};
-  const skills=SKILLS[cu.classe]||[];
-  const equip=EQUIP[cu.classe]||[];
-  const icon=cfg.icon||'⚔️';
-
-  const skillRows=skills.map(sk=>`
-    <div class="skill-row">
-      <span class="sk-icon2">${sk.icon}</span>
-      <div class="sk-info"><div class="sk-nm">${sk.name}</div><div class="sk-dsc">${sk.desc}</div></div>
-      <span class="sk-spcost">${sk.sp}SP</span>
-    </div>`).join('');
-
-  const equipRows=equip.map(([slot,item])=>`
-    <div class="equip-row"><span class="equip-slot">${slot}</span><span>${item}</span></div>`).join('');
-
-  document.getElementById('ficha-content').innerHTML=`
-    <div class="ficha-header">
-      <span class="fh-icon">${icon}</span>
-      <div class="fh-info">
-        <div class="fh-name">${cu.name}</div>
-        <div class="fh-classe">${cu.classe.toUpperCase()} · VEL ${cu.spd} · ALV ${cu.mv}</div>
-      </div>
-    </div>
-    <div class="stat-grid">
-      <div class="stat-box"><div class="stat-label">HP</div><div class="stat-val hp-val">${cu.hp}/${cu.maxHp}</div></div>
-      <div class="stat-box"><div class="stat-label">SP</div><div class="stat-val sp-val">${cu.sp}/${cu.maxSp}</div></div>
-      <div class="stat-box"><div class="stat-label">DANO BASE</div><div class="stat-val">${cu.dmg}</div></div>
-      <div class="stat-box"><div class="stat-label">ALCANCE ATK</div><div class="stat-val">${cu.atkRange}</div></div>
-    </div>
-    <div class="section-title">HABILIDADES</div>
-    <div class="skill-list">${skillRows}</div>
-    <div class="section-title">EQUIPAMENTOS</div>
-    <div class="equip-list">${equipRows}</div>`;
-
-  document.getElementById('modal-ficha').classList.add('open');
+function addLog(actor,action,rollInfo){
+  battleLog.push({actor,action,rollInfo});
+  const el=document.getElementById('cmd-log-content');
+  const d=document.createElement('div');
+  d.className='log-entry';
+  const cls=rollInfo?.crit?'le-crit':(!rollInfo?.succ||rollInfo?.fail)?'le-fail':'le-ok';
+  const lbl=rollInfo?.crit?'⚡':rollInfo?.fail?'💀':rollInfo?.succ?'✓':'✗';
+  d.innerHTML=`<span class="le-actor">${actor}</span>
+    <span class="le-action">${action.substring(0,30)}</span>
+    <span class="le-result ${cls}">${lbl}</span>`;
+  el.insertBefore(d,el.firstChild);
+  // Keep max 8 entries
+  while(el.children.length>8)el.removeChild(el.lastChild);
 }
-function closeFicha() { document.getElementById('modal-ficha').classList.remove('open'); }
+
+function sendChat(){
+  const inp=document.getElementById('chat-input');
+  const msg=inp.value.trim();if(!msg)return;
+  inp.value='';
+  const el=document.getElementById('chat-log-content');
+  const d=document.createElement('div');
+  d.className='chat-entry';
+  d.innerHTML=`<span class="ce-name">Jogador:</span> ${msg}`;
+  el.insertBefore(d,el.firstChild);
+  while(el.children.length>8)el.removeChild(el.lastChild);
+}
 
 // ═══════════════════════════════════════════════════════
-//  ACTION MODAL
+//  ROLL ACTION
 // ═══════════════════════════════════════════════════════
-function openActionModal() {
-  const cu=curUnit(); if(!cu) return;
-  document.getElementById('act-title').textContent=`⚔️ ${cu.name} age`;
-  document.getElementById('act-txt').value='';
-  document.getElementById('dice-box').classList.remove('show');
-  document.getElementById('btn-roll').disabled=false;
-
-  const skills=SKILLS[cu.classe]||[];
-  const grid=document.getElementById('skill-grid'); grid.innerHTML='';
-  skills.forEach(sk=>{
-    const canUse=cu.sp>=sk.sp;
-    const btn=document.createElement('button');
-    btn.className=`skill-btn${canUse?'':' sp-empty'}`;
-    btn.innerHTML=`<span class="sk-name">${sk.icon} ${sk.name}</span><span class="sk-sp">${sk.sp} SP</span><span class="sk-desc">${sk.desc}</span>`;
-    if(canUse) btn.onclick=()=>activateSkill(sk);
-    else btn.title='SP insuficiente';
-    grid.appendChild(btn);
-  });
-
-  document.getElementById('modal-action').classList.add('open');
-  setTimeout(()=>document.getElementById('act-txt').focus(),80);
-}
-
-function activateSkill(sk) {
-  const cu=curUnit(); closeActionModal(); _activeSkill=sk;
-  if(sk.heal){
-    hlAtk=atkTiles(cu,cu.col,cu.row);
-    clearHL();
-    units.filter(u=>u.team==='player'&&u.alive&&u!==cu)
-      .forEach(a=>getTileEl(a.col,a.row)?.classList.add('hl-skill'));
-    phase='skill-target';
-    setPhase(`${sk.icon} ${sk.name}: toque no aliado alvo`);
-    showBtns({cancelar:true,ficha:true});
-  } else {
-    _executeSkillSelf(cu,sk);
-  }
-}
-
-function _executeSkillSelf(cu,sk) {
-  cu.sp=Math.max(0,cu.sp-sk.sp);
-  const mod=(MODS[cu.classe]||{})[sk.tipo]??2;
-  const dc=DC[sk.tipo]||11;
-  const dado=Math.floor(Math.random()*20)+1;
-  const total=dado+mod;
-  const crit=dado===20, fail=dado===1;
-  const succ=crit||(!fail&&total>=dc);
-  const modStr=mod>=0?`+${mod}`:String(mod);
-
-  const enemies=units.filter(u=>u.team==='enemy'&&u.alive&&hlAtk.has(`${u.col},${u.row}`));
-  const target=enemies.sort((a,b)=>dist(cu,a)-dist(cu,b))[0];
-  let dmg=0;
-  if(succ&&target){dmg=crit?(cu.dmg+4)*2:cu.dmg+4;target.hp=Math.max(0,target.hp-dmg);if(target.hp<=0)target.alive=false;}
-
-  hasActed=true;
-  units.forEach(u=>refreshUnitEl(u)); renderTurnBar();
-  const rollInfo={label:`${cu.name} · 1d20${modStr}=${total} vs DC${dc}`,succ,crit,fail};
-  showDialog(cu,buildSkillNarration(cu,target,sk,succ,crit,fail,dmg),rollInfo,()=>{
-    if(!checkBattleEnd()){phase='action';showBtns({esperar:true,ficha:true});setPhase(`${cu.name} usou ${sk.name} · ESPERAR para encerrar`);}
-  });
-}
-
-function _executeSkillOn(cu,target) {
-  const sk=_activeSkill; _activeSkill=null;
-  cu.sp=Math.max(0,cu.sp-sk.sp); clearHL();
-  const mod=(MODS[cu.classe]||{})['skill']??2;
-  const dc=DC.skill;
-  const dado=Math.floor(Math.random()*20)+1;
-  const total=dado+mod;
-  const succ=dado===20||(dado!==1&&total>=dc);
-  const crit=dado===20;
-  const modStr=mod>=0?`+${mod}`:String(mod);
-  let healed=0;
-  if(succ&&target.team==='player'){healed=crit?30:18;target.hp=Math.min(target.maxHp,target.hp+healed);}
-
-  hasActed=true;
-  units.forEach(u=>refreshUnitEl(u)); renderTurnBar();
-  const rollInfo={label:`${cu.name} · 1d20${modStr}=${total} vs DC${dc}`,succ,crit,fail:false};
-  showDialog(cu,buildHealNarration(cu,target,sk,succ,crit,healed),rollInfo,()=>{
-    if(!checkBattleEnd()){phase='action';showBtns({esperar:true,ficha:true});setPhase(`${cu.name} usou ${sk.name} · ESPERAR para encerrar`);}
-  });
-}
-
-function closeActionModal() { document.getElementById('modal-action').classList.remove('open'); }
-
-function rollAction() {
+function rollAction(){
   const txt=document.getElementById('act-txt').value.trim();
-  if(!txt){toast('Descreva a ação!');return;}
+  if(!txt){toast('Descreva a ação primeiro!');return;}
   const cu=curUnit();
   const tipo=detectType(txt);
   const mod=(MODS[cu.classe]||{})[tipo]??2;
   const dc=DC[tipo]||11;
   const dado=Math.floor(Math.random()*20)+1;
   const total=dado+mod;
-  const crit=dado===20, fail=dado===1;
+  const crit=dado===20,fail=dado===1;
   const succ=crit||(!fail&&total>=dc);
   const modStr=mod>=0?`+${mod}`:String(mod);
-  const cls=crit?'d-crit':(!succ||fail)?'d-fail':'d-ok';
-  const label=crit?'⚡ CRÍTICO!':fail?'💀 FALHA CRÍTICA!':succ?'✅ SUCESSO':'❌ FALHOU';
+  const rollInfo={label:`${cu.name} · 1d20${modStr}=${total} vs DC${dc}`,succ,crit,fail};
 
-  document.getElementById('d-info').textContent=`${cu.name} · 1d20${modStr} vs DC${dc}`;
-  document.getElementById('d-num').textContent=`${dado}${modStr} = ${total}`;
-  document.getElementById('d-num').className=`d-num ${cls}`;
-  document.getElementById('d-status').textContent=label;
-  document.getElementById('d-status').className=`d-status ${cls}`;
-  document.getElementById('dice-box').classList.add('show');
-  document.getElementById('btn-roll').disabled=true;
-
-  setTimeout(()=>{
-    closeActionModal();
-    applyPlayerAction(cu,txt,succ,crit,fail,total,mod,dc);
-  },1700);
+  setInputEnabled(false);
+  setBtns(false,false,false);
+  applyPlayerAction(cu,txt,succ,crit,fail,total,mod,dc,rollInfo);
 }
 
-function detectType(txt) {
+function detectType(txt){
   const a=txt.toLowerCase();
-  if(/falar|conversar|negociar|persuad/.test(a)) return 'falar';
-  if(/atac|golpe|cortar|bater|ferir|lança|arremessa/.test(a)) return 'atacar';
-  if(/magia|feitiç|curar|invocar|runa/.test(a)) return 'skill';
-  if(/defend|bloquear|esquivar|proteger|recuar/.test(a)) return 'defender';
-  if(/correr|fugir|mover|saltar|avança/.test(a)) return 'mover';
+  if(/falar|conversar|negociar|persuad|digo|grito/.test(a))return 'falar';
+  if(/atac|golpe|cortar|bater|ferir|lança|arremessa|disparo|flechada/.test(a))return 'atacar';
+  if(/magia|feitiç|curar|invocar|runa|bola|raio|chama|invoco|conjuro/.test(a))return 'skill';
+  if(/defend|bloquear|esquivar|proteger|recuar|escudo/.test(a))return 'defender';
+  if(/correr|fugir|mover|saltar|avança|movimento/.test(a))return 'mover';
   return 'livre';
 }
 
 // ═══════════════════════════════════════════════════════
 //  APPLY ACTION
 // ═══════════════════════════════════════════════════════
-function applyPlayerAction(cu,txt,succ,crit,fail,total,mod,dc) {
+function applyPlayerAction(cu,txt,succ,crit,fail,total,mod,dc,rollInfo){
   hasActed=true;
   const enemies=units.filter(u=>u.team==='enemy'&&u.alive&&hlAtk.has(`${u.col},${u.row}`));
   const target=enemies.sort((a,b)=>dist(cu,a)-dist(cu,b))[0];
   let dmg=0;
   if(succ&&target){dmg=crit?cu.dmg*2:cu.dmg;target.hp=Math.max(0,target.hp-dmg);if(target.hp<=0)target.alive=false;}
   else if(fail){cu.hp=Math.max(0,cu.hp-2);}
-
-  units.forEach(u=>refreshUnitEl(u)); renderTurnBar();
-  const modStr=(mod>=0)?`+${mod}`:String(mod);
-  const rollInfo={label:`${cu.name} · 1d20${modStr}=${total} vs DC${dc}`,succ,crit,fail};
-  showDialog(cu,buildNarration(cu,target,txt,succ,crit,fail,dmg),rollInfo,()=>{
+  units.forEach(u=>refreshUnitEl(u));renderTurnBar();renderEnemyList();
+  const narr=buildNarration(cu,target,txt,succ,crit,fail,dmg);
+  showCombat(cu,narr,rollInfo);
+  addLog(cu.name,txt,rollInfo);
+  narrar(narr).then(()=>{
     if(!checkBattleEnd()){
       phase='action';
-      showBtns({esperar:true,ficha:true});
-      setPhase(`${cu.name} agiu · ESPERAR para encerrar turno`);
+      setTurnHeader(`TURNO DE ${cu.name.toUpperCase()}`,'Ação realizada — ESPERAR para encerrar turno');
+      setBtns(false,true,true);
     }
   });
 }
@@ -984,56 +1048,53 @@ function applyPlayerAction(cu,txt,succ,crit,fail,total,mod,dc) {
 // ═══════════════════════════════════════════════════════
 //  ENEMY AI
 // ═══════════════════════════════════════════════════════
-async function runEnemyTurn(enemy) {
+async function runEnemyTurn(enemy){
   const players=units.filter(u=>u.team==='player'&&u.alive);
-  if(!players.length) return;
+  if(!players.length)return;
   const target=players.sort((a,b)=>dist(enemy,a)-dist(enemy,b))[0];
-
   if(dist(enemy,target)>enemy.atkRange){
     const reach=reachableTiles(enemy);
     let best=null,bestD=Infinity;
     reach.forEach(k=>{const[c,r]=k.split(',').map(Number);const d=Math.abs(c-target.col)+Math.abs(r-target.row);if(d<bestD){bestD=d;best={col:c,row:r};}});
-    if(best){await sleep(300);moveUnitEl(enemy,best.col,best.row);}
+    if(best){await sleep(280);moveUnitEl(enemy,best.col,best.row);}
   }
-
-  await sleep(520);
-
+  await sleep(500);
   if(dist(enemy,target)<=enemy.atkRange){
     const dado=Math.floor(Math.random()*20)+1;
     const mod=Math.max(1,Math.floor(enemy.maxHp/15));
     const total=dado+mod;
-    const crit=dado===20;
-    const succ=crit||(dado!==1&&total>=12);
+    const crit=dado===20,succ=crit||(dado!==1&&total>=12);
+    const fail=dado===1;
     let dmg=0;
     if(succ){dmg=crit?enemy.dmg*2:enemy.dmg;target.hp=Math.max(0,target.hp-dmg);if(target.hp<=0)target.alive=false;}
-
-    units.forEach(u=>refreshUnitEl(u)); renderTurnBar();
+    units.forEach(u=>refreshUnitEl(u));renderTurnBar();renderEnemyList();
     const modStr=mod>=0?`+${mod}`:String(mod);
-    const rollInfo={label:`${enemy.name} · 1d20${modStr}=${total} vs DC12`,succ,crit,fail:dado===1};
-    showDialog(enemy,buildNarration(enemy,target,'ataca',succ,crit,false,dmg),rollInfo,()=>{
-      if(!checkBattleEnd()) advanceTurn();
-    });
-  } else {
-    if(!checkBattleEnd()) advanceTurn();
+    const rollInfo={label:`${enemy.name} · 1d20${modStr}=${total} vs DC12`,succ,crit,fail};
+    const narr=buildNarration(enemy,target,'ataca',succ,crit,fail,dmg);
+    showCombat(enemy,narr,rollInfo);
+    addLog(enemy.name,'ataca '+target.name,rollInfo);
+    narrar(narr).then(()=>{if(!checkBattleEnd())advanceTurn();});
+  }else{
+    if(!checkBattleEnd())advanceTurn();
   }
 }
 
 // ═══════════════════════════════════════════════════════
 //  BATTLE END
 // ═══════════════════════════════════════════════════════
-function checkBattleEnd() {
+function checkBattleEnd(){
   const pAlive=units.filter(u=>u.team==='player'&&u.alive).length;
   const eAlive=units.filter(u=>u.team==='enemy'&&u.alive).length;
   if(pAlive===0){
-    phase='end'; clearHL(); hideBtns();
-    setTimeout(()=>showDialog({col:4,row:4,name:'DERROTA',icon:'💀',team:'enemy'},
-      'Todos os aventureiros caíram em batalha... A escuridão avança sobre o campo.',null,null),500);
+    phase='end';clearHL();setInputEnabled(false);setBtns(false,false,false);
+    setTurnHeader('💀 DERROTA','Todos os aventureiros caíram...');
+    showCombat({name:'DERROTA',icon:'💀',team:'enemy'},'Todos os aventureiros caíram em batalha... A escuridão avança sobre o campo.',null);
     return true;
   }
   if(eAlive===0){
-    phase='end'; clearHL(); hideBtns();
-    setTimeout(()=>showDialog({col:4,row:4,name:'VITÓRIA',icon:'🏆',team:'player',classe:'guerreiro',sexo:'m'},
-      'Todos os inimigos foram derrotados! Os aventureiros saem vitoriosos desta batalha!',null,null),500);
+    phase='end';clearHL();setInputEnabled(false);setBtns(false,false,false);
+    setTurnHeader('🏆 VITÓRIA!','Os aventureiros triunfam!');
+    showCombat({name:'VITÓRIA',icon:'🏆',team:'player',classe:'guerreiro',sexo:'m'},'Todos os inimigos foram derrotados! Os aventureiros saem vitoriosos desta batalha!',null);
     return true;
   }
   return false;
@@ -1042,84 +1103,49 @@ function checkBattleEnd() {
 // ═══════════════════════════════════════════════════════
 //  NARRATION
 // ═══════════════════════════════════════════════════════
-function buildNarration(actor,target,acao,succ,crit,fail,dmg) {
+function buildNarration(actor,target,acao,succ,crit,fail,dmg){
   const an=actor.name,tn=target?.name,th=target?.hp,tm=target?.maxHp;
-  if(fail) return rnd([
-    `${an} perde o equilíbrio no momento crucial — a arma oscila pelo ar vazio, deixando uma abertura perigosa.`,
-    `O impulso de ${an} vai longe demais. ${an} luta para se recompor, completamente exposto.`,
-    `Falha catastrófica! ${an} tropeça e quase cai — por sorte ninguém aproveitou a abertura.`,
+  if(fail)return rnd([
+    `${an} perde o equilíbrio no momento crucial — a arma oscila pelo ar vazio.`,
+    `Falha catastrófica! O impulso de ${an} vai longe demais — completamente exposto.`,
+    `${an} tropeça no momento crucial, deixando uma abertura perigosa.`,
   ]);
   if(crit&&target){
-    if(th<=0) return rnd([
-      `Golpe LETAL! A lâmina de ${an} atravessa a defesa de ${tn} — ${dmg} de dano! ${tn} desmorona no chão.`,
-      `CRÍTICO DEVASTADOR! ${an} desfere ${dmg} de dano em ${tn}. O inimigo cai para não mais se levantar.`,
-    ]);
-    return rnd([
-      `Golpe perfeito! A arma de ${an} rasga a defesa de ${tn} — ${dmg} de dano! Sangue escorre enquanto ${tn} recua gritando.`,
-      `CRÍTICO! ${an} encontra uma abertura e descarrega tudo em ${tn}: ${dmg} de dano.`,
-      `${an} executa um golpe impecável em ponto vital de ${tn} causando ${dmg} de dano. ${tn} vacila.`,
-    ]);
+    if(th<=0)return rnd([`Golpe LETAL! ${an} atravessa a defesa de ${tn} — ${dmg} de dano! ${tn} cai!`,`CRÍTICO DEVASTADOR! ${an} desfere ${dmg} em ${tn}. O inimigo cai para não se levantar.`]);
+    return rnd([`Golpe perfeito! ${an} rasga a defesa de ${tn} — ${dmg} de dano! Sangue escorre.`,`CRÍTICO! ${an} encontra ponto vital de ${tn}: ${dmg} de dano. ${tn} vacila.`,`${an} executa um golpe impecável em ${tn} causando ${dmg} de dano!`]);
   }
   if(succ&&target){
     const dead=th<=0;
-    const frac=th/tm;
-    const estado=dead?'desmorona no chão derrotado':frac<0.25?'mal consegue se manter de pé':frac<0.55?'vacila, com ferimentos visíveis':'recua, mas ainda está de pé';
-    if(dead) return rnd([
-      `${an} acerta ${tn} com ${dmg} de dano — o golpe é decisivo! ${tn} cai, derrotado.`,
-      `O ataque de ${an} desfere ${dmg} de dano em ${tn}. ${tn} ${estado}.`,
-    ]);
-    return rnd([
-      `${an} conecta o ataque em ${tn}: ${dmg} de dano. ${tn} ${estado}. HP: ${th}/${tm}.`,
-      `O golpe de ${an} abre uma brecha — ${dmg} de dano. ${tn} ${estado}.`,
-      `${an} avança e acerta ${tn} com força. Sangue escorre enquanto ${tn} ${estado}.`,
-    ]);
+    const est=dead?'desmorona derrotado':th/tm<0.25?'mal se mantém de pé':th/tm<0.55?'vacila com ferimentos':'recua ainda de pé';
+    if(dead)return rnd([`${an} acerta ${tn} — ${dmg} de dano! O golpe é decisivo! ${tn} cai.`,`O ataque de ${an} desfere ${dmg} em ${tn}. ${tn} ${est}.`]);
+    return rnd([`${an} conecta em ${tn}: ${dmg} de dano. ${tn} ${est}. HP: ${th}/${tm}.`,`O golpe de ${an} abre brecha em ${tn} — ${dmg} de dano. ${tn} ${est}.`,`${an} acerta ${tn} com força! ${dmg} de dano. ${tn} ${est}.`]);
   }
-  if(!succ&&target) return rnd([
-    `${tn} desvia no último segundo. O golpe de ${an} corta o ar sem efeito.`,
-    `${an} tenta uma abertura mas ${tn} bloqueia e recua fora do alcance.`,
-    `O ataque de ${an} passa por centímetros de ${tn}, que esquiva com agilidade.`,
-    `${tn} lê o movimento de ${an} e se defende. O ataque não passa.`,
-  ]);
-  return `${an} age com determinação, mas o momento passa sem efeito concreto.`;
-}
-
-function buildSkillNarration(actor,target,sk,succ,crit,fail,dmg) {
-  const an=actor.name,tn=target?.name;
-  if(fail) return `${an} tenta ${sk.name} mas perde a concentração no momento crítico!`;
-  if(crit&&target) return `${an} canaliza ${sk.icon} ${sk.name} com maestria — crítico! ${tn} recebe ${dmg} de dano!`;
-  if(succ&&target) return `${an} usa ${sk.icon} ${sk.name}! O poder atinge ${tn} causando ${dmg} de dano.`;
-  if(!succ&&target) return `${an} tenta ${sk.name} mas ${tn} resiste ao efeito!`;
-  return `${an} usa ${sk.icon} ${sk.name}!`;
-}
-
-function buildHealNarration(actor,target,sk,succ,crit,healed) {
-  const an=actor.name,tn=target.name;
-  if(!succ) return `${an} tenta ${sk.name} em ${tn} mas a energia se dissipa sem efeito.`;
-  if(crit)  return `Cura CRÍTICA! ${an} canaliza ${sk.icon} em ${tn} — ${healed} HP restaurados! ${tn} brilha com energia divina.`;
-  return `${an} usa ${sk.icon} ${sk.name} em ${tn}. ${healed} pontos de vida restaurados — ${tn} respira aliviado.`;
+  if(!succ&&target)return rnd([`${tn} desvia no último segundo. O golpe de ${an} corta o ar.`,`${an} tenta mas ${tn} bloqueia e recua.`,`O ataque passa por centímetros — ${tn} esquiva com agilidade.`,`${tn} lê o movimento de ${an} e se defende.`]);
+  return `${an} age com determinação, mas o momento passa sem efeito.`;
 }
 
 // ═══════════════════════════════════════════════════════
-//  TTS — returns Promise resolving when audio ends
+//  TTS
 // ═══════════════════════════════════════════════════════
-function narrar(texto) {
+function narrar(texto){
   const limpo=texto.replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim().substring(0,600);
-  if(!limpo) return Promise.resolve();
+  if(!limpo)return Promise.resolve();
   return new Promise(async resolve=>{
+    if(_currentAudio){_currentAudio.pause();_currentAudio=null;}
+    if(window.speechSynthesis)speechSynthesis.cancel();
     const apiKey=localStorage.getItem('rpg_groq_key')||'';
     if(apiKey){
       try{
         const res=await fetch('https://api.groq.com/openai/v1/audio/speech',{
           method:'POST',
           headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`},
-          body:JSON.stringify({model:'playai-tts',input:limpo,voice:'Fritz-PlayAI',response_format:'mp3',speed:1.2})
+          body:JSON.stringify({model:'playai-tts',input:limpo,voice:'Fritz-PlayAI',response_format:'mp3',speed:_ttsSpeed})
         });
         if(res.ok){
           const blob=await res.blob();
           const url=URL.createObjectURL(blob);
           const audio=new Audio(url);
-          audio._url=url;
-          _currentAudio=audio;
+          audio._url=url;_currentAudio=audio;
           audio.onended=()=>{URL.revokeObjectURL(url);_currentAudio=null;resolve();};
           audio.onerror=()=>{URL.revokeObjectURL(url);_currentAudio=null;resolve();};
           audio.play().catch(()=>_webSpeech(limpo,resolve));
@@ -1130,31 +1156,67 @@ function narrar(texto) {
     _webSpeech(limpo,resolve);
   });
 }
-
-function _webSpeech(texto,onEnd) {
+function _webSpeech(texto,onEnd){
   if(!window.speechSynthesis){if(onEnd)onEnd();return;}
   const utt=new SpeechSynthesisUtterance(texto);
   const voices=speechSynthesis.getVoices();
   const voz=voices.find(v=>v.lang.startsWith('pt'))||voices.find(v=>v.lang.startsWith('es'))||null;
-  if(voz) utt.voice=voz;
-  utt.rate=0.9; utt.pitch=0.78;
-  utt.onend=onEnd||null; utt.onerror=onEnd||null;
+  if(voz)utt.voice=voz;
+  utt.rate=Math.min(_ttsSpeed,1.5);utt.pitch=0.78;
+  utt.onend=onEnd||null;utt.onerror=onEnd||null;
   speechSynthesis.speak(utt);
-  if(onEnd) setTimeout(onEnd, Math.max(2500,texto.length*65));
+  if(onEnd)setTimeout(onEnd,Math.max(2500,texto.length*60));
 }
+
+// ═══════════════════════════════════════════════════════
+//  FICHA / HELP
+// ═══════════════════════════════════════════════════════
+function openFicha(){
+  const cu=curUnit();if(!cu||cu.team!=='player')return;
+  const cfg=CLASS_CFG[cu.classe]||{},skills=SKILLS[cu.classe]||[],equip=EQUIP[cu.classe]||[];
+  document.getElementById('ficha-content').innerHTML=`
+    <div class="ficha-header">
+      <span class="fh-icon">${cfg.icon||'⚔️'}</span>
+      <div><div class="fh-name">${cu.name}</div><div class="fh-classe">${cu.classe.toUpperCase()} · VEL ${cu.spd} · ALV ${cu.mv}</div></div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-label">HP</div><div class="stat-val hp-val">${cu.hp}/${cu.maxHp}</div></div>
+      <div class="stat-box"><div class="stat-label">SP</div><div class="stat-val sp-val">${cu.sp}/${cu.maxSp}</div></div>
+      <div class="stat-box"><div class="stat-label">DANO BASE</div><div class="stat-val">${cu.dmg}</div></div>
+      <div class="stat-box"><div class="stat-label">ALCANCE ATK</div><div class="stat-val">${cu.atkRange}</div></div>
+    </div>
+    <div class="section-title">HABILIDADES</div>
+    <div class="skill-list">${skills.map(sk=>`<div class="skill-row"><span class="sk-icon2">${sk.icon}</span><div class="sk-info"><div class="sk-nm">${sk.name}</div><div class="sk-dsc">${sk.desc}</div></div><span class="sk-spcost">${sk.sp}SP</span></div>`).join('')}</div>
+    <div class="section-title">EQUIPAMENTOS</div>
+    <div class="equip-list">${equip.map(([s,i])=>`<div class="equip-row"><span class="equip-slot">${s}</span><span>${i}</span></div>`).join('')}</div>`;
+  document.getElementById('modal-ficha').classList.add('open');
+}
+function closeFicha(){document.getElementById('modal-ficha').classList.remove('open');}
+function openHelp(){document.getElementById('modal-help').classList.add('open');}
+function closeHelp(){document.getElementById('modal-help').classList.remove('open');}
+
+// Enter key sends action
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('act-txt').addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&e.ctrlKey){e.preventDefault();rollAction();}
+  });
+  document.getElementById('chat-input').addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();sendChat();}
+  });
+});
 
 // ═══════════════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════════════
-function init() {
+function init(){
   renderMap();
   buildUnits();
   units.forEach(u=>createUnitEl(u));
   buildQueue();
   renderTurnBar();
+  renderEnemyList();
   startUnitTurn();
 }
-
 init();
 </script>
 </body>
