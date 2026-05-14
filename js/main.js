@@ -431,7 +431,7 @@ function toast(msg, dur=3500) {
 //  VOZ — GROQ TTS
 // ═══════════════════════════════════════════════════════════════
 function updateVoiceBtn() {
-  const btn = document.getElementById('btn-voice');
+  const btn = document.getElementById('voice-btn');
   if (!btn) return;
   const icon = btn.querySelector('.vb-icon');
   if (icon) icon.textContent = voiceEnabled ? '🔊' : '🔇';
@@ -787,7 +787,7 @@ window.resetarCampanha = async function() {
   await update(ref(db), ups);
 
   renderedHistKeys = new Set();
-  const historiaEl = document.getElementById('historia');
+  const historiaEl = document.getElementById('narrative-panel');
   Array.from(historiaEl.children).forEach(c => { if(c.id !== 'historia-empty') c.remove(); });
   document.getElementById('historia-empty').style.display = '';
   document.getElementById('modal-morto').classList.remove('open');
@@ -807,21 +807,24 @@ let _meuEuCache = null;
 function atualizarTopbar(eu) {
   _meuEuCache = eu;
   const cls = CLASSES[eu.classe] || {};
-  const av = document.getElementById('top-avatar');
-  if (av) av.src = spriteUrl(eu.classe, eu.sexo || 'm');
-  document.getElementById('top-nome').textContent = eu.nome;
   const nivel = Math.floor((eu.exp||0)/100)+1;
-  const lbl = document.getElementById('my-class-lbl');
-  if (lbl) lbl.textContent = `${cls.nome||''} · Nv${nivel}`;
   const hp = Math.max(0,eu.hp), mhp = eu.maxHp;
   const sp = Math.max(0,eu.sp), msp = eu.maxSp;
-  const exp = eu.exp || 0;
-  document.getElementById('top-hp').textContent  = `${hp}/${mhp}`;
-  document.getElementById('top-sp').textContent  = `${sp}/${msp}`;
-  document.getElementById('top-exp').textContent = exp;
-  document.getElementById('bfhp').style.width  = `${mhp>0?(hp/mhp)*100:0}%`;
-  document.getElementById('bfsp').style.width  = `${msp>0?(sp/msp)*100:0}%`;
-  document.getElementById('bfexp').style.width = `${Math.min(exp%100,100)}%`;
+
+  const portrait = document.getElementById('my-portrait');
+  if (portrait) portrait.innerHTML = `<img src="${spriteUrl(eu.classe, eu.sexo || 'm')}" alt="">`;
+  const nameEl = document.getElementById('my-name');
+  if (nameEl) nameEl.textContent = eu.nome;
+  const classEl = document.getElementById('my-class');
+  if (classEl) classEl.textContent = `${cls.nome||''} · Nível ${nivel}`;
+  const hpVal = document.getElementById('hp-val');
+  const spVal = document.getElementById('sp-val');
+  if (hpVal) hpVal.textContent = `${hp}/${mhp}`;
+  if (spVal) spVal.textContent = `${sp}/${msp}`;
+  const hpBar = document.getElementById('hp-bar');
+  const spBar = document.getElementById('sp-bar');
+  if (hpBar) hpBar.style.width = `${mhp>0?(hp/mhp)*100:0}%`;
+  if (spBar) spBar.style.width = `${msp>0?(sp/msp)*100:0}%`;
 
   const condsEl = document.getElementById('my-conditions');
   if (condsEl) {
@@ -850,8 +853,8 @@ function atualizarPortraitCards(eu) {
   const hp = Math.max(0, eu.hp), mhp = eu.maxHp;
   const sp = Math.max(0, eu.sp), msp = eu.maxSp;
 
-  const imgEl = document.getElementById('pc-avatar-img');
-  if (imgEl) imgEl.src = spriteUrl(eu.classe, eu.sexo || 'm');
+  const avatarEl = document.getElementById('pc-avatar');
+  if (avatarEl) avatarEl.innerHTML = `<img src="${spriteUrl(eu.classe, eu.sexo || 'm')}" alt="">`;
 
   const pcName = document.getElementById('pc-name');
   if (pcName) pcName.textContent = `${eu.nome} · Nv${nivel}`;
@@ -1175,7 +1178,8 @@ function atualizarStatusBar(jogadores, rodada, estado) {
   const roundEl = document.getElementById('chapter-round');
   if (roundEl) roundEl.textContent = `Rodada ${rodada || '—'}`;
 
-  const bar = document.getElementById('status-bar');
+  const bar = document.getElementById('player-portraits');
+  if (!bar) return;
   bar.innerHTML = '';
   Object.entries(jogadores).forEach(([uid, j]) => {
     const online  = j.ativo !== false;
@@ -1189,8 +1193,8 @@ function atualizarStatusBar(jogadores, rodada, estado) {
         <img src="${spriteUrl(j.classe||'guerreiro', j.sexo||'m')}" onerror="this.style.display='none'" alt="">
         <span class="pc-status ${statusCls}"></span>
       </div>
-      <div class="pc-chip-name">${j.nome.split(' ')[0]}</div>
-      <div class="pc-chip-state">${done?'✓ pronto':'aguardando'}</div>`;
+      <div class="pc-name">${j.nome.split(' ')[0]}</div>
+      <div class="pc-state">${done?'✓ pronto':'aguardando'}</div>`;
     bar.appendChild(chip);
   });
 }
@@ -1204,7 +1208,7 @@ function renderizarHistoria(historia) {
 
   if(entries.length === 0) return;
   document.getElementById('historia-empty').style.display = 'none';
-  const el = document.getElementById('historia');
+  const el = document.getElementById('narrative-panel');
   const testCards = document.getElementById('test-cards');
 
   entries.forEach(entry => {
@@ -1321,13 +1325,29 @@ window.toggleTestPanel = function() {
   panel.classList.toggle('open');
 };
 
+window.toggleCharSheet = function() {
+  document.getElementById('right-col').classList.toggle('sheet-open');
+  document.getElementById('sheet-backdrop').classList.toggle('open');
+};
+
+window.sendChat = function() {
+  const inp = document.getElementById('chat-input');
+  if (!inp || !inp.value.trim()) return;
+  inp.value = '';
+};
+
+window.toggleHistory = function() {
+  const panel = document.getElementById('history-panel');
+  if (panel) panel.classList.toggle('open');
+};
+
 // ─── Input area ────────────────────────────────────────────────
 function atualizarInputArea(eu, estado, jogadores) {
-  const btn   = document.getElementById('btn-enviar');
+  const btn   = document.getElementById('btn-encerrar');
   const mn    = document.getElementById('msg-narrando');
   const me    = document.getElementById('msg-enviado');
   const mi    = document.getElementById('msg-inconsciente');
-  const btns  = document.getElementById('acao-btns');
+  const btns  = document.getElementById('action-left');
   const slots = document.getElementById('acao-slots');
 
   const jaMorto  = !eu.vivo || !eu.consciente;

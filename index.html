@@ -216,17 +216,20 @@
 <!-- ═══════════════════ TELA: JOGO ═══════════════════ -->
 <div id="screen-game" class="screen">
 
-  <!-- STATUS BAR (topo — estilo narrativa.html) -->
-  <div id="game-topbar">
+  <!-- STATUS BAR -->
+  <div id="status-bar">
     <div id="session-info">
       <div id="chapter-label">SALA</div>
       <div id="chapter-title"><span id="top-sala" onclick="copiarCodigo()">----</span></div>
-      <div id="location-row"><span id="chapter-round">Rodada —</span></div>
+      <div id="location-row">
+        <span id="location-label">📍 —</span>
+        <span id="time-label">⏱ <span id="chapter-round">Rodada —</span></span>
+      </div>
     </div>
-    <div id="status-bar"></div>
+    <div id="player-portraits"></div>
     <div id="status-right">
       <div id="voice-indicator"></div>
-      <button id="btn-voice" class="vb-btn" onclick="toggleVoz()" title="Narração por voz">
+      <button id="voice-btn" onclick="toggleVoz()" title="Narração por voz">
         <span class="vb-icon">🔇</span>
         <span>VOZ</span>
       </button>
@@ -235,29 +238,34 @@
     </div>
   </div>
 
-  <!-- CONTEÚDO PRINCIPAL -->
-  <div id="game-main">
-    <div id="game-left-col">
+  <!-- MAIN CONTENT -->
+  <div id="main-content">
 
-      <!-- PORTRAIT CARDS — celular vertical apenas -->
+    <!-- LEFT COLUMN -->
+    <div id="left-col">
+
+      <!-- Scene -->
+      <div id="scene-area">
+        <div id="scene-bg"></div>
+        <div id="scene-trees"></div>
+        <div id="scene-ground"></div>
+        <div id="scene-overlay">
+          <div id="scene-loc-badge">—</div>
+          <div id="scene-time-badge">—</div>
+        </div>
+        <div id="scene-sprites"></div>
+        <div id="scene-particles"></div>
+      </div>
+
+      <!-- Portrait Cards (mobile only) -->
       <div id="portrait-cards">
-        <div class="pc-card" id="pc-ficha" onclick="abrirFicha()">
+        <div class="pc-card" id="pc-ficha">
           <div class="pc-char-row">
-            <div id="pc-avatar">
-              <img id="pc-avatar-img" src="sprites/guerreiro_m.png" alt="">
-            </div>
+            <div id="pc-avatar"></div>
             <div class="pc-char-stats">
-              <div id="pc-name">Guerreiro · Nv1</div>
-              <div class="pc-bar">
-                <span class="pc-lbl">HP</span>
-                <div class="pc-track"><div id="pc-hp-fill"></div></div>
-                <span id="pc-hp-val">—</span>
-              </div>
-              <div class="pc-bar">
-                <span class="pc-lbl">SP</span>
-                <div class="pc-track"><div id="pc-sp-fill"></div></div>
-                <span id="pc-sp-val">—</span>
-              </div>
+              <div id="pc-name">— · Nv1</div>
+              <div class="pc-bar"><span class="pc-lbl">HP</span><div class="pc-track"><div id="pc-hp-fill"></div></div><span id="pc-hp-val">—</span></div>
+              <div class="pc-bar"><span class="pc-lbl">SP</span><div class="pc-track"><div id="pc-sp-fill"></div></div><span id="pc-sp-val">—</span></div>
             </div>
           </div>
           <div id="pc-conds"></div>
@@ -266,75 +274,104 @@
         <div class="pc-card" id="pc-actions">
           <div class="pc-action-grid">
             <button class="pc-act-btn" onclick="abrirArvoreSkills()">⚔️<span>Habilidades</span></button>
-            <button class="pc-act-btn" onclick="abrirFicha()">🎒<span>Inventário</span></button>
+            <button class="pc-act-btn" onclick="toggleCharSheet()">🎒<span>Inventário</span></button>
             <button class="pc-act-btn" onclick="focarInputAcao()">💬<span>Falar</span></button>
-            <button class="pc-act-btn" onclick="abrirFicha()">📋<span>Status</span></button>
+            <button class="pc-act-btn" onclick="toggleCharSheet()">📋<span>Status</span></button>
           </div>
         </div>
       </div>
 
-      <!-- PAINEL NARRATIVO -->
-      <div id="historia">
+      <!-- PC Modal (portrait actions) -->
+      <div id="pc-modal">
+        <div id="pc-modal-inner">
+          <div id="pc-modal-head"></div>
+          <div id="pc-modal-body"></div>
+        </div>
+      </div>
+
+      <!-- Narrative Panel -->
+      <div id="narrative-panel">
         <div class="msg-empty" id="historia-empty">
           <span class="emj">📜</span>
-          <span id="empty-txt">A aventura está prestes a começar...</span>
+          <span>A aventura está prestes a começar...</span>
           <div class="retry-info" id="retry-info" style="display:none">
             <span id="retry-txt">Conectando...</span>
             <div class="retry-bar"><div class="retry-fill" id="retry-fill" style="width:0%"></div></div>
           </div>
-          <button id="btn-iniciar-narrar" onclick="hostIniciarOuRetentar()">🎲 Iniciar Aventura</button>
+          <button id="btn-iniciar-narrar" onclick="hostIniciarOuRetentar()" style="display:none">🎲 Iniciar Aventura</button>
         </div>
       </div>
 
-      <!-- RESULTADOS DE TESTES (colapsível) -->
+      <!-- Test Panel -->
       <div id="test-panel-header" onclick="toggleTestPanel()">
         🎲 RESULTADOS DE TESTES
+        <span id="test-count" style="color:var(--test-color);margin-left:4px"></span>
         <span id="test-panel-toggle">▲</span>
       </div>
       <div id="test-panel"><div id="test-cards"></div></div>
-
     </div>
 
-    <!-- COLUNA DIREITA — desktop apenas -->
-    <div id="game-right-col">
+    <!-- RIGHT COLUMN -->
+    <div id="right-col">
+
+      <!-- My Character Panel -->
       <div id="my-char-panel">
         <div id="my-char-header">
           MEU PERSONAGEM
-          <span onclick="abrirFicha()">📋 Ficha</span>
+          <button id="close-sheet-btn" onclick="toggleCharSheet()">✕ fechar</button>
         </div>
         <div id="my-char-body">
-          <div id="my-portrait">
-            <img id="top-avatar" src="sprites/guerreiro_m.png" alt="">
-          </div>
+          <div id="my-portrait"></div>
           <div id="my-stats">
-            <div id="top-nome">—</div>
-            <div id="my-class-lbl">—</div>
+            <div id="my-name">—</div>
+            <div id="my-class">—</div>
             <div class="my-bar-row">
               <span class="my-bar-label">HP</span>
-              <div class="my-bar"><div class="my-bar-fill" id="bfhp" style="width:100%;background:#cc4444"></div></div>
-              <span class="my-bar-val" id="top-hp">—</span>
+              <div class="my-bar"><div class="my-bar-fill" id="hp-bar" style="width:100%;background:#cc4444"></div></div>
+              <span class="my-bar-val" id="hp-val">—</span>
             </div>
             <div class="my-bar-row">
               <span class="my-bar-label">SP</span>
-              <div class="my-bar"><div class="my-bar-fill" id="bfsp" style="width:100%;background:var(--blue)"></div></div>
-              <span class="my-bar-val" id="top-sp">—</span>
-            </div>
-            <div class="my-bar-row">
-              <span class="my-bar-label">EXP</span>
-              <div class="my-bar"><div class="my-bar-fill" id="bfexp" style="width:0%;background:var(--exp)"></div></div>
-              <span class="my-bar-val" id="top-exp">0</span>
+              <div class="my-bar"><div class="my-bar-fill" id="sp-bar" style="width:100%;background:var(--blue)"></div></div>
+              <span class="my-bar-val" id="sp-val">—</span>
             </div>
           </div>
         </div>
         <div id="my-conditions"></div>
         <div id="my-equip"></div>
       </div>
+
+      <!-- RP Chat -->
+      <div id="rp-chat">
+        <div id="rp-chat-header">
+          CHAT ROLEPLAY <div class="live-dot"></div>
+        </div>
+        <div id="rp-chat-msgs"></div>
+        <div id="chat-input-wrap">
+          <input type="text" id="chat-input" placeholder="Fale com o grupo...">
+          <button id="btn-chat" onclick="sendChat()">↵</button>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div id="history-header" onclick="toggleHistory()">
+        📜 HISTÓRICO <span id="hist-toggle">▼</span>
+      </div>
+      <div id="history-panel"><div id="hist-list"></div></div>
+
+      <!-- Inventory -->
+      <div id="inventory-bar">
+        <div id="inv-label">Inventário Rápido</div>
+        <div id="inv-items"></div>
+      </div>
     </div>
   </div>
 
-  <!-- BARRA DE AÇÃO -->
-  <div id="area-acao">
-    <!-- Slots de ação selecionada -->
+  <!-- Sheet Backdrop -->
+  <div id="sheet-backdrop" onclick="toggleCharSheet()"></div>
+
+  <!-- Action Bar -->
+  <div id="action-bar">
     <div id="acao-slots" style="display:none">
       <div class="acao-slot" id="slot1">
         <span class="acao-slot-num">①</span>
@@ -345,11 +382,10 @@
         <span class="acao-slot-vazia">Segunda ação (opcional)...</span>
       </div>
     </div>
-    <!-- Entrada de ação (textarea + chips) -->
-    <div id="acao-btns">
+    <div id="action-left">
       <div id="action-wrap">
         <textarea id="action-input" placeholder="O que seu personagem faz? Descreva livremente..."></textarea>
-        <button id="btn-add-acao" onclick="confirmarAcaoTexto()">
+        <button id="btn-enviar" onclick="confirmarAcaoTexto()">
           <span class="benv-icon">✦</span>
           <span class="benv-lbl">ENVIAR AÇÃO</span>
         </button>
@@ -364,7 +400,6 @@
         <button class="qs" onclick="qs('uso minha skill especial contra o inimigo')">✨ Skill</button>
       </div>
     </div>
-    <!-- Footer com status e botão encerrar -->
     <div class="acao-footer">
       <div id="msg-narrando">
         <div class="dots-wrap"><div class="dot-a"></div><div class="dot-a"></div><div class="dot-a"></div></div>
@@ -373,9 +408,22 @@
       <div id="msg-enviado">✅ Ações enviadas! Aguardando todos...</div>
       <div id="msg-inconsciente">💀 Você está inconsciente ou morto.</div>
       <div style="flex:1"></div>
-      <button class="btn btn-primary" id="btn-enviar" onclick="enviarAcoes()" style="display:none">⚔️ Encerrar Turno</button>
+      <button class="btn btn-primary" id="btn-encerrar" onclick="enviarAcoes()" style="display:none">⚔️ Encerrar Turno</button>
     </div>
   </div>
+
+  <!-- Combat Overlay -->
+  <div id="combat-overlay">
+    <div id="combat-content">
+      <div id="cbt-icon">⚔️</div>
+      <div id="cbt-title">⚠ EMBOSCADA!</div>
+      <div id="cbt-sub">Prepare-se para o combate!</div>
+      <div id="cbt-bar"><div id="cbt-bar-fill"></div></div>
+      <button id="btn-combat" onclick="enterCombat()">⚔ ENTRAR NO COMBATE ▶</button>
+    </div>
+  </div>
+
+  <div id="voice-toast"></div>
 </div>
 
 <!-- ═══════ PAINEL FLUTUANTE: INIMIGOS ═══════ -->
