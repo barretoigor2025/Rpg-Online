@@ -215,49 +215,102 @@
 
 <!-- ═══════════════════ TELA: JOGO ═══════════════════ -->
 <div id="screen-game" class="screen">
-  <div id="topbar">
-    <div class="top-avatar" id="top-avatar" onclick="abrirFicha()">⚔️</div>
-    <div class="ficha-mini" onclick="abrirFicha()" style="cursor:pointer">
-      <div class="ficha-nome" id="top-nome">Herói</div>
-      <div class="bars">
-        <div class="bar-w bar-hp">
-          <div class="bar-lbl"><span>HP</span><span id="top-hp">—</span></div>
-          <div class="bar-track"><div class="bar-fill" id="bfhp" style="width:100%"></div></div>
-        </div>
-        <div class="bar-w bar-sp">
-          <div class="bar-lbl"><span>SP</span><span id="top-sp">—</span></div>
-          <div class="bar-track"><div class="bar-fill" id="bfsp" style="width:100%"></div></div>
-        </div>
-        <div class="bar-w bar-exp">
-          <div class="bar-lbl"><span>EXP</span><span id="top-exp">0</span></div>
-          <div class="bar-track"><div class="bar-fill" id="bfexp" style="width:0%"></div></div>
-        </div>
-      </div>
-    </div>
-    <div class="sala-chip" id="top-sala" onclick="copiarCodigo()">----</div>
-    <button id="btn-reset-campanha" onclick="resetarCampanha()" title="Reiniciar Campanha" style="display:none;background:transparent;border:none;font-size:20px;cursor:pointer;padding:4px;flex-shrink:0">☢️</button>
-    <button id="btn-voice" onclick="toggleVoz()" title="Ativar narração" style="background:transparent;border:none;font-size:18px;cursor:pointer;padding:4px;flex-shrink:0">🔇</button>
-    <button onclick="sairDaSala()" title="Sair da sala" style="background:transparent;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px;flex-shrink:0">⬅️</button>
-  </div>
 
-  <div id="historia">
-    <div class="msg-empty" id="historia-empty">
-      <span class="emj">📜</span>
-      <span id="empty-txt">A aventura está prestes a começar...</span>
-      <div class="retry-info" id="retry-info" style="display:none">
-        <span id="retry-txt">Conectando...</span>
-        <div class="retry-bar"><div class="retry-fill" id="retry-fill" style="width:0%"></div></div>
-      </div>
-      <button id="btn-iniciar-narrar" onclick="hostIniciarOuRetentar()">🎲 Iniciar Aventura</button>
+  <!-- Topbar slim -->
+  <div id="game-topbar">
+    <div id="game-session-info">
+      <div class="sala-chip" id="top-sala" onclick="copiarCodigo()">----</div>
+    </div>
+    <div id="status-bar">
+      <span class="status-rodada-lbl">RODADA —</span>
+    </div>
+    <div id="game-controls">
+      <span id="voice-indicator"></span>
+      <button id="btn-voice" onclick="toggleVoz()" title="Ativar narração" style="background:transparent;border:none;font-size:18px;cursor:pointer;padding:4px;flex-shrink:0">🔇</button>
+      <button id="btn-reset-campanha" onclick="resetarCampanha()" title="Reiniciar Campanha" style="display:none;background:transparent;border:none;font-size:20px;cursor:pointer;padding:4px;flex-shrink:0">☢️</button>
+      <button onclick="sairDaSala()" title="Sair da sala" style="background:transparent;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px;flex-shrink:0">⬅️</button>
     </div>
   </div>
 
-  <div id="status-bar">
-    <span class="status-rodada-lbl">RODADA —</span>
+  <!-- Main content -->
+  <div id="game-main">
+
+    <!-- Left: narrative feed -->
+    <div id="game-left-col">
+
+      <!-- Portrait cards — mobile only -->
+      <div id="portrait-cards">
+        <div class="pc-card" id="pc-ficha" onclick="abrirFicha()">
+          <div class="pc-char-row">
+            <div class="pc-avatar-wrap" id="pc-avatar">⚔️</div>
+            <div class="pc-char-stats">
+              <div class="pc-name" id="pc-name">Herói</div>
+              <div class="pc-bar-row">
+                <span class="pc-lbl">HP</span>
+                <div class="pc-bar-track"><div class="pc-bar-fill pc-hp-fill" id="pc-hp-fill" style="width:100%"></div></div>
+              </div>
+              <div class="pc-bar-row">
+                <span class="pc-lbl">SP</span>
+                <div class="pc-bar-track"><div class="pc-bar-fill pc-sp-fill" id="pc-sp-fill" style="width:100%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="pc-card" id="pc-actions-card">
+          <div class="pc-action-grid">
+            <button class="pc-act-btn" onclick="abrirArvoreSkills()"><span class="pc-act-icon">✨</span><span>Habilidades</span></button>
+            <button class="pc-act-btn" onclick="abrirFicha()"><span class="pc-act-icon">🎒</span><span>Inventário</span></button>
+            <button class="pc-act-btn" onclick="abrirModalAcao('falar')"><span class="pc-act-icon">💬</span><span>Falar</span></button>
+            <button class="pc-act-btn" onclick="abrirFicha()"><span class="pc-act-icon">📋</span><span>Status</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Historia narrative feed -->
+      <div id="historia">
+        <div class="msg-empty" id="historia-empty">
+          <span class="emj">📜</span>
+          <span id="empty-txt">A aventura está prestes a começar...</span>
+          <div class="retry-info" id="retry-info" style="display:none">
+            <span id="retry-txt">Conectando...</span>
+            <div class="retry-bar"><div class="retry-fill" id="retry-fill" style="width:0%"></div></div>
+          </div>
+          <button id="btn-iniciar-narrar" onclick="hostIniciarOuRetentar()">🎲 Iniciar Aventura</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: character panel — desktop only -->
+    <div id="game-right-col">
+      <div id="my-char-panel" onclick="abrirFicha()">
+        <div id="my-char-header">
+          <div class="top-avatar" id="top-avatar">⚔️</div>
+          <div>
+            <div class="ficha-nome" id="top-nome">Herói</div>
+            <div id="my-class-lbl" style="font-size:10px;color:var(--text2);letter-spacing:1px;margin-top:2px">—</div>
+          </div>
+        </div>
+        <div class="bars">
+          <div class="bar-w bar-hp">
+            <div class="bar-lbl"><span>HP</span><span id="top-hp">—</span></div>
+            <div class="bar-track"><div class="bar-fill" id="bfhp" style="width:100%"></div></div>
+          </div>
+          <div class="bar-w bar-sp">
+            <div class="bar-lbl"><span>SP</span><span id="top-sp">—</span></div>
+            <div class="bar-track"><div class="bar-fill" id="bfsp" style="width:100%"></div></div>
+          </div>
+          <div class="bar-w bar-exp">
+            <div class="bar-lbl"><span>EXP</span><span id="top-exp">0</span></div>
+            <div class="bar-track"><div class="bar-fill" id="bfexp" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:10px;letter-spacing:1px">toque para ver ficha</div>
+      </div>
+    </div>
   </div>
 
+  <!-- Action area -->
   <div id="area-acao">
-    <!-- Slots de ação confirmada -->
     <div class="acao-slots" id="acao-slots" style="display:none">
       <div class="acao-slot" id="slot1">
         <span class="acao-slot-num">①</span>
@@ -268,7 +321,6 @@
         <span class="acao-slot-vazia">Segunda ação (opcional)...</span>
       </div>
     </div>
-    <!-- Botões de ação -->
     <div class="acao-btns" id="acao-btns" style="display:none">
       <button class="acao-btn" onclick="abrirModalAcao('falar')"><span class="ab-icon">💬</span><span class="ab-lbl">FALAR</span></button>
       <button class="acao-btn" onclick="abrirModalAcao('atacar')"><span class="ab-icon">⚔️</span><span class="ab-lbl">ATAQUE</span></button>
@@ -277,7 +329,6 @@
       <button class="acao-btn" onclick="abrirModalAcao('mover')"><span class="ab-icon">🏃</span><span class="ab-lbl">MOVER</span></button>
       <button class="acao-btn" onclick="abrirModalAcao('livre')"><span class="ab-icon">🎯</span><span class="ab-lbl">LIVRE</span></button>
     </div>
-    <!-- Footer -->
     <div class="acao-footer">
       <div id="msg-narrando">
         <div class="dots-wrap">

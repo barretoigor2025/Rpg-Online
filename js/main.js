@@ -440,59 +440,74 @@ window.toggleVoz = function() {
   localStorage.setItem('rpg_voice', voiceEnabled ? '1' : '0');
   updateVoiceBtn();
   if (!voiceEnabled) {
-    if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
+    voiceQueue = [];
+    voiceBusy = false;
+    setVoiceIndicator(false);
+    if (_currentAudio) { _currentAudio.pause(); URL.revokeObjectURL(_currentAudio._url||''); _currentAudio = null; }
     if (window.speechSynthesis) speechSynthesis.cancel();
   }
   toast(voiceEnabled ? '🔊 Narração ativada' : '🔇 Narração desativada', 2000);
 };
 
-function _narrarWebSpeech(limpo) {
-  if (!window.speechSynthesis) return;
+let voiceQueue = [];
+let voiceBusy = false;
+
+function setVoiceIndicator(on) {
+  const el = document.getElementById('voice-indicator');
+  if (el) el.className = on ? 'vi-on' : '';
+}
+
+function _narrarWebSpeechQueued(limpo) {
+  if (!window.speechSynthesis) { voiceBusy = false; setVoiceIndicator(false); _nextUtterance(); return; }
   speechSynthesis.cancel();
   const utt = new SpeechSynthesisUtterance(limpo);
   const voices = speechSynthesis.getVoices();
   const voz = voices.find(v => v.lang.startsWith('pt')) || voices.find(v => v.lang.startsWith('es')) || null;
   if (voz) utt.voice = voz;
-  utt.rate = 0.88; utt.pitch = 0.75;
+  utt.rate = 1.2; utt.pitch = 0.82;
+  utt.onend = () => _nextUtterance();
+  utt.onerror = () => _nextUtterance();
   speechSynthesis.speak(utt);
 }
 
-async function narrarTexto(texto) {
-  if (!voiceEnabled) return;
+function _nextUtterance() {
+  if (voiceQueue.length === 0) { voiceBusy = false; setVoiceIndicator(false); return; }
+  voiceBusy = true;
+  setVoiceIndicator(true);
+  const texto = voiceQueue.shift();
   const limpo = texto.replace(/<[^>]+>/g,'').replace(/[*#_`~]/g,'').replace(/\s+/g,' ').trim().substring(0, 800);
-  if (!limpo) return;
-
-  // Cancel previous
-  if (_currentAudio) { _currentAudio.pause(); URL.revokeObjectURL(_currentAudio._url||''); _currentAudio = null; }
-  if (window.speechSynthesis) speechSynthesis.cancel();
+  if (!limpo) { _nextUtterance(); return; }
 
   const apiKey = getApiKey();
-  if (!apiKey) { _narrarWebSpeech(limpo); return; }
+  if (!apiKey) { _narrarWebSpeechQueued(limpo); return; }
 
-  try {
-    const res = await fetch('https://api.groq.com/openai/v1/audio/speech', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
-      body: JSON.stringify({ model:'playai-tts', input: limpo, voice:'Fritz-PlayAI', response_format:'mp3', speed: 1.3 })
-    });
-    if (!res.ok) {
-      const errBody = await res.text().catch(()=>'');
-      console.warn('Groq TTS erro', res.status, errBody);
-      _narrarWebSpeech(limpo);
-      return;
-    }
+  fetch('https://api.groq.com/openai/v1/audio/speech', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
+    body: JSON.stringify({ model:'playai-tts', input: limpo, voice:'Fritz-PlayAI', response_format:'mp3', speed: 1.3 })
+  }).then(async res => {
+    if (!res.ok) { _narrarWebSpeechQueued(limpo); return; }
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
     audio._url = url;
     _currentAudio = audio;
-    audio.onended = () => { URL.revokeObjectURL(url); _currentAudio = null; };
+    audio.onended = () => { URL.revokeObjectURL(url); _currentAudio = null; _nextUtterance(); };
+    audio.onerror = () => { _nextUtterance(); };
     const p = audio.play();
-    if (p) p.catch(e => { console.warn('Audio play bloqueado:', e); _narrarWebSpeech(limpo); });
-  } catch(e) {
-    console.warn('TTS exception:', e);
-    _narrarWebSpeech(limpo);
-  }
+    if (p) p.catch(() => { _narrarWebSpeechQueued(limpo); });
+  }).catch(() => { _narrarWebSpeechQueued(limpo); });
+}
+
+function narrarTexto(texto) {
+  if (!voiceEnabled) return;
+  // Clear queue and cancel current
+  voiceQueue = [];
+  if (_currentAudio) { _currentAudio.pause(); URL.revokeObjectURL(_currentAudio._url||''); _currentAudio = null; }
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  voiceBusy = false;
+  voiceQueue.push(texto);
+  _nextUtterance();
 }
 
 function getApiKey() { return localStorage.getItem('rpg_groq_key') || ''; }
@@ -792,6 +807,9 @@ function atualizarTopbar(eu) {
   av.textContent = cls.avatar || cls.icon || '⚔️';
   av.style.background = cls.cor || 'var(--surface2)';
   document.getElementById('top-nome').textContent = eu.nome;
+  const nivel = Math.floor((eu.exp||0)/100)+1;
+  const lbl = document.getElementById('my-class-lbl');
+  if (lbl) lbl.textContent = `${cls.icon||''} ${cls.nome||''} · Nv${nivel}`;
   const hp = Math.max(0,eu.hp), mhp = eu.maxHp;
   const sp = Math.max(0,eu.sp), msp = eu.maxSp;
   const exp = eu.exp || 0;
@@ -801,6 +819,26 @@ function atualizarTopbar(eu) {
   document.getElementById('bfhp').style.width  = `${(hp/mhp)*100}%`;
   document.getElementById('bfsp').style.width  = `${(sp/msp)*100}%`;
   document.getElementById('bfexp').style.width = `${Math.min(exp%100,100)}%`;
+  atualizarPortraitCards(eu);
+}
+
+function atualizarPortraitCards(eu) {
+  const cls = CLASSES[eu.classe] || {};
+  const nivel = Math.floor((eu.exp||0)/100)+1;
+  const pcAv = document.getElementById('pc-avatar');
+  if (pcAv) {
+    pcAv.textContent = cls.avatar || cls.icon || '⚔️';
+    pcAv.style.background = cls.cor || 'var(--surface2)';
+    pcAv.style.borderColor = cls.cor || 'var(--border)';
+  }
+  const pcName = document.getElementById('pc-name');
+  if (pcName) pcName.textContent = `${eu.nome} · Nv${nivel}`;
+  const hp = Math.max(0,eu.hp), mhp = eu.maxHp;
+  const sp = Math.max(0,eu.sp), msp = eu.maxSp;
+  const hpFill = document.getElementById('pc-hp-fill');
+  const spFill = document.getElementById('pc-sp-fill');
+  if (hpFill) hpFill.style.width = `${mhp>0?(hp/mhp)*100:0}%`;
+  if (spFill) spFill.style.width = `${msp>0?(sp/msp)*100:0}%`;
 }
 
 window.abrirFicha = function() {
