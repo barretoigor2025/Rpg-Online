@@ -491,16 +491,26 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
   pointer-events:none;white-space:nowrap;
 }
 
-/* ══ MOBILE ══ */
+/* elementos só de portrait — ocultos no desktop */
+#close-sheet-btn{display:none}
+#char-mini-bar{display:none}
+#sheet-backdrop{display:none;position:fixed;inset:0;z-index:299;background:rgba(0,0,0,.65)}
+#sheet-backdrop.open{display:block}
+
+/* ══ TABLET / LANDSCAPE PEQUENO ══ */
 @media(max-width:680px){
   #right-col{display:none}
   #action-input{height:46px;font-size:12px}
   #scene-area{height:100px}
 }
+
 /* ══ PORTRAIT PHONE ══ */
 @media(max-width:520px){
+  /* Scene compacto */
   #scene-area{height:64px}
   #scene-sprites{display:none}
+
+  /* Status bar compacta */
   #status-bar{height:40px}
   #player-portraits{display:none}
   #session-info{border-right:none;padding-right:6px}
@@ -510,15 +520,75 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
   .sb-action{display:none}
   #voice-btn span:last-child{display:none}
   #voice-btn{padding:4px 6px}
-  #action-bar{padding:5px 8px;gap:5px}
+
+  /* Action bar */
+  #action-bar{padding:4px 8px 4px;gap:5px;
+    padding-bottom:calc(4px + env(safe-area-inset-bottom,0px))}
   #action-input{height:38px;font-size:12px}
   .benv-lbl{display:none}
   .benv-icon{font-size:20px}
-  #btn-enviar{padding:0 12px}
-  #quick-sug{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  #btn-enviar{padding:0 11px}
+
+  /* Quick-sug rola horizontal */
+  #quick-sug{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;
+    padding:2px 0 calc(2px + env(safe-area-inset-bottom,0px))}
   #quick-sug::-webkit-scrollbar{display:none}
   .qs{flex-shrink:0;white-space:nowrap}
+
+  /* Testes */
   #test-panel-header{font-size:7px;padding:4px 10px}
+
+  /* Mini barra de personagem */
+  #char-mini-bar{
+    display:flex;align-items:center;gap:8px;
+    padding:5px 10px;
+    background:var(--surface2);
+    border-top:1px solid rgba(88,104,160,.22);
+    flex-shrink:0;
+  }
+  #cmi-avatar{
+    width:30px;height:30px;border-radius:var(--r);flex-shrink:0;
+    background:var(--surface3);border:1px solid rgba(88,104,160,.3);
+    overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:16px;
+  }
+  #cmi-avatar img{width:100%;height:100%;object-fit:cover;object-position:center top;image-rendering:pixelated}
+  #cmi-info{flex:1;min-width:0}
+  #cmi-name-lv{font-size:8px;color:var(--silver2);font-weight:bold;margin-bottom:2px;letter-spacing:.3px}
+  .cmi-row{display:flex;align-items:center;gap:4px;margin-bottom:1px}
+  .cmi-lbl{font-size:6.5px;color:var(--text3);width:14px;flex-shrink:0;letter-spacing:.5px}
+  .cmi-track{flex:1;height:4px;background:rgba(0,0,0,.4);border-radius:2px;overflow:hidden}
+  .cmi-track>div{height:100%;border-radius:2px;transition:width .4s}
+  #cmi-hp-fill{background:#cc4444;width:100%}
+  #cmi-sp-fill{background:var(--blue);width:75%}
+  #cmi-hp-v,#cmi-sp-v{font-size:6px;color:var(--text2);min-width:30px;text-align:right}
+  #char-sheet-btn{
+    padding:5px 9px;background:rgba(88,104,160,.15);flex-shrink:0;
+    border:1px solid rgba(88,104,160,.3);border-radius:var(--r);
+    color:var(--silver);font-family:inherit;font-size:7.5px;
+    cursor:pointer;letter-spacing:.5px;white-space:nowrap;
+  }
+
+  /* Ficha desliza de baixo para cima */
+  #right-col{
+    display:flex !important;
+    position:fixed;bottom:0;left:0;right:0;
+    width:100%;max-height:82vh;
+    flex-direction:column;z-index:300;
+    background:var(--surface);
+    border-radius:16px 16px 0 0;
+    border-top:2px solid rgba(88,104,160,.4);
+    transform:translateY(100%);
+    transition:transform .32s cubic-bezier(.4,0,.2,1);
+    overflow-y:auto;overflow-x:hidden;
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  #right-col.sheet-open{transform:translateY(0)}
+  #close-sheet-btn{
+    display:flex;align-items:center;gap:3px;
+    padding:3px 8px;background:rgba(204,68,68,.12);
+    border:1px solid rgba(204,68,68,.3);border-radius:var(--r);
+    color:#d07070;font-family:inherit;font-size:7.5px;cursor:pointer;
+  }
 }
 </style>
 </head>
@@ -583,7 +653,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
     <div id="my-char-panel">
       <div id="my-char-header">
         MEU PERSONAGEM
-        <span style="font-size:8px;cursor:pointer;color:var(--text3)" onclick="openFicha()">📋 Ficha</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:8px;cursor:pointer;color:var(--text3)" onclick="openFicha()">📋 Ficha</span>
+          <button id="close-sheet-btn" onclick="toggleCharSheet()">✕ fechar</button>
+        </div>
       </div>
       <div id="my-char-body">
         <div id="my-portrait"></div>
@@ -638,6 +711,20 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
     </div>
 
   </div>
+</div>
+
+<!-- SHEET BACKDROP (portrait) -->
+<div id="sheet-backdrop" onclick="toggleCharSheet()"></div>
+
+<!-- MINI CHAR BAR (portrait only) -->
+<div id="char-mini-bar">
+  <div id="cmi-avatar"></div>
+  <div id="cmi-info">
+    <div id="cmi-name-lv">Guerreiro · Nv3</div>
+    <div class="cmi-row"><span class="cmi-lbl">HP</span><div class="cmi-track"><div id="cmi-hp-fill"></div></div><span id="cmi-hp-v">120/120</span></div>
+    <div class="cmi-row"><span class="cmi-lbl">SP</span><div class="cmi-track"><div id="cmi-sp-fill"></div></div><span id="cmi-sp-v">45/60</span></div>
+  </div>
+  <button id="char-sheet-btn" onclick="toggleCharSheet()">📋 FICHA</button>
 </div>
 
 <!-- ACTION BAR -->
@@ -823,15 +910,30 @@ let testCount = 0;
 function init(){
   renderPortraits();
   renderMyChar();
+  renderCharMini();
   renderHistory();
   renderInventory();
   spawnParticles();
   renderInitialNarrative();
-  // Reflete voiceOn=true no botão desde o início
   const vb = document.getElementById('voice-btn');
   vb.querySelector('.vb-icon').textContent = '🔊';
   vb.classList.add('active');
   startStory();
+}
+
+function renderCharMini(){
+  const av = document.getElementById('cmi-avatar');
+  if(!av) return;
+  av.innerHTML=`<img src="../sprites/${ME.classe}_${ME.sexo}.png"
+    onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span>${ME.icon}</span>')">`;
+}
+
+function toggleCharSheet(){
+  const col = document.getElementById('right-col');
+  const bd  = document.getElementById('sheet-backdrop');
+  const open = col.classList.toggle('sheet-open');
+  bd.classList.toggle('open', open);
+  if(open) col.scrollTop = 0;
 }
 
 // ════════════════════════════════
