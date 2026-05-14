@@ -660,13 +660,45 @@ const synth = window.speechSynthesis;
 let voiceOn = false;
 let currentUtt = null;
 let voices = [];
-let ptVoice = null;
+let voiceMap = { male:null, female:null, all:[] };
+
+// Perfis de voz por NPC — gerados a partir do nome para serem consistentes
+const NPC_PROFILES = {
+  default:          { pitchMod:0,    rateMod:0,    gender:'male'   },
+  'Voz nas Sombras':{ pitchMod:-0.2, rateMod:-0.1, gender:'male'   },
+  'Goblin':         { pitchMod:+0.5, rateMod:+0.2, gender:'female' },
+  'Ancião':         { pitchMod:-0.3, rateMod:-0.18,gender:'male'   },
+  'Bruxa':          { pitchMod:+0.3, rateMod:-0.05,gender:'female' },
+  'Guarda':         { pitchMod:-0.1, rateMod:+0.05,gender:'male'   },
+  'Mercador':       { pitchMod:+0.1, rateMod:+0.1, gender:'male'   },
+};
+
+function npcProfile(name){
+  if(NPC_PROFILES[name]) return NPC_PROFILES[name];
+  // Derivar perfil a partir do hash do nome para NPC sem perfil definido
+  let h=0; for(let i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))&0xffff;
+  return {
+    pitchMod: ((h%7)-3)*0.12,
+    rateMod:  ((h%5)-2)*0.06,
+    gender:   h%2===0?'male':'female',
+  };
+}
 
 function loadVoices(){
   voices = synth.getVoices();
-  ptVoice = voices.find(v=>v.lang.startsWith('pt')&&v.lang.includes('BR'))
-          || voices.find(v=>v.lang.startsWith('pt'))
-          || null;
+  voiceMap.all = voices.filter(v=>v.lang.startsWith('pt'));
+  if(!voiceMap.all.length) voiceMap.all = voices; // fallback para qualquer idioma
+
+  const nameLower = v => v.name.toLowerCase();
+  voiceMap.male   = voiceMap.all.find(v=>nameLower(v).includes('male')&&!nameLower(v).includes('female'))
+                 || voiceMap.all.find(v=>['daniel','carlos','reed','thomas','sergio','jorge'].some(n=>nameLower(v).includes(n)))
+                 || voiceMap.all[0]
+                 || null;
+  voiceMap.female = voiceMap.all.find(v=>nameLower(v).includes('female'))
+                 || voiceMap.all.find(v=>['ana','luciana','victoria','alice','karen','moira'].some(n=>nameLower(v).includes(n)))
+                 || voiceMap.all[1]
+                 || voiceMap.all[0]
+                 || null;
 }
 if(synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
 loadVoices();
@@ -680,18 +712,36 @@ function toggleVoice(){
   showToast(voiceOn ? '🔊 Narração por voz ATIVADA' : '🔇 Narração por voz DESATIVADA');
 }
 
-function speak(text, type='gm', entryEl=null){
+// type = 'gm' | 'npc' | 'player'   npcName = nome do NPC (opcional)
+function speak(text, type='gm', entryEl=null, npcName=''){
   if(!voiceOn) return;
   synth.cancel();
-  const utter = new SpeechSynthesisUtterance(text.replace(/<[^>]+>/g,''));
+  const clean = text.replace(/<[^>]+>/g,'');
+  const utter = new SpeechSynthesisUtterance(clean);
   utter.lang = 'pt-BR';
-  utter.rate = type==='gm' ? 0.85 : type==='npc' ? 0.9 : 1.0;
-  utter.pitch = type==='npc' ? 1.15 : type==='gm' ? 0.82 : 1.0;
-  utter.volume = 0.9;
-  if(ptVoice) utter.voice = ptVoice;
+
+  if(type==='gm'){
+    // Mestre: voz masculina grave, ritmo lento e dramático
+    utter.voice  = voiceMap.male;
+    utter.pitch  = 0.65;
+    utter.rate   = 0.80;
+    utter.volume = 1.0;
+  } else if(type==='npc'){
+    const prof = npcProfile(npcName);
+    utter.voice  = prof.gender==='female' ? voiceMap.female : voiceMap.male;
+    utter.pitch  = 1.0 + prof.pitchMod;
+    utter.rate   = 0.92 + prof.rateMod;
+    utter.volume = 0.95;
+  } else {
+    utter.voice  = voiceMap.all[0] || null;
+    utter.pitch  = 1.0;
+    utter.rate   = 1.0;
+    utter.volume = 0.88;
+  }
+
   if(entryEl) entryEl.classList.add('reading');
   utter.onstart = ()=> setIndicator(true);
-  utter.onend = ()=>{ setIndicator(false); if(entryEl) entryEl.classList.remove('reading'); };
+  utter.onend   = ()=>{ setIndicator(false); if(entryEl) entryEl.classList.remove('reading'); };
   utter.onerror = ()=>{ setIndicator(false); if(entryEl) entryEl.classList.remove('reading'); };
   currentUtt = utter;
   synth.speak(utter);
@@ -884,11 +934,11 @@ function addNarr(e, autoSpeak=true){
         <div class="narr-npc-header">
           <div class="narr-npc-portrait">${e.icon}</div>
           <span style="font-weight:bold;color:var(--npc-color)">${e.name}</span>
-          <button class="speak-btn" onclick="speak('${npcText.replace(/'/g,"\\'")}','npc',this.closest('.narr-entry'))" title="Ouvir">🔊</button>
+          <button class="speak-btn" onclick="speak('${npcText.replace(/'/g,"\\'")}','npc',this.closest('.narr-entry'),'${e.name.replace(/'/g,"\\'")}')" title="Ouvir">🔊</button>
         </div>
         <div class="narr-npc-text">"${npcText}"</div>
       </div>`;
-    if(autoSpeak) setTimeout(()=>speak(npcText,'npc',el), 300);
+    if(autoSpeak) setTimeout(()=>speak(npcText,'npc',el,e.name), 300);
 
   } else if(e.type==='test'){
     const p = PLAYERS.find(pl=>pl.id===e.pid)||{name:'?'};
