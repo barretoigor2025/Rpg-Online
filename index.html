@@ -216,57 +216,64 @@
 <!-- ═══════════════════ TELA: JOGO ═══════════════════ -->
 <div id="screen-game" class="screen">
 
-  <!-- Topbar slim -->
+  <!-- STATUS BAR (topo — estilo narrativa.html) -->
   <div id="game-topbar">
-    <div id="game-session-info">
-      <div class="sala-chip" id="top-sala" onclick="copiarCodigo()">----</div>
+    <div id="session-info">
+      <div id="chapter-label">SALA</div>
+      <div id="chapter-title"><span id="top-sala" onclick="copiarCodigo()">----</span></div>
+      <div id="location-row"><span id="chapter-round">Rodada —</span></div>
     </div>
-    <div id="status-bar">
-      <span class="status-rodada-lbl">RODADA —</span>
-    </div>
-    <div id="game-controls">
-      <span id="voice-indicator"></span>
-      <button id="btn-voice" onclick="toggleVoz()" title="Ativar narração" style="background:transparent;border:none;font-size:18px;cursor:pointer;padding:4px;flex-shrink:0">🔇</button>
-      <button id="btn-reset-campanha" onclick="resetarCampanha()" title="Reiniciar Campanha" style="display:none;background:transparent;border:none;font-size:20px;cursor:pointer;padding:4px;flex-shrink:0">☢️</button>
-      <button onclick="sairDaSala()" title="Sair da sala" style="background:transparent;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px;flex-shrink:0">⬅️</button>
+    <div id="status-bar"></div>
+    <div id="status-right">
+      <div id="voice-indicator"></div>
+      <button id="btn-voice" class="vb-btn" onclick="toggleVoz()" title="Narração por voz">
+        <span class="vb-icon">🔇</span>
+        <span>VOZ</span>
+      </button>
+      <button id="btn-reset-campanha" class="sb-action danger" onclick="resetarCampanha()" style="display:none">☢️ Reset</button>
+      <button class="sb-action" onclick="sairDaSala()">← Sair</button>
     </div>
   </div>
 
-  <!-- Main content -->
+  <!-- CONTEÚDO PRINCIPAL -->
   <div id="game-main">
-
-    <!-- Left: narrative feed -->
     <div id="game-left-col">
 
-      <!-- Portrait cards — mobile only -->
+      <!-- PORTRAIT CARDS — celular vertical apenas -->
       <div id="portrait-cards">
         <div class="pc-card" id="pc-ficha" onclick="abrirFicha()">
           <div class="pc-char-row">
-            <div class="pc-avatar-wrap" id="pc-avatar">⚔️</div>
+            <div id="pc-avatar">
+              <img id="pc-avatar-img" src="sprites/guerreiro_m.png" alt="">
+            </div>
             <div class="pc-char-stats">
-              <div class="pc-name" id="pc-name">Herói</div>
-              <div class="pc-bar-row">
+              <div id="pc-name">Guerreiro · Nv1</div>
+              <div class="pc-bar">
                 <span class="pc-lbl">HP</span>
-                <div class="pc-bar-track"><div class="pc-bar-fill pc-hp-fill" id="pc-hp-fill" style="width:100%"></div></div>
+                <div class="pc-track"><div id="pc-hp-fill"></div></div>
+                <span id="pc-hp-val">—</span>
               </div>
-              <div class="pc-bar-row">
+              <div class="pc-bar">
                 <span class="pc-lbl">SP</span>
-                <div class="pc-bar-track"><div class="pc-bar-fill pc-sp-fill" id="pc-sp-fill" style="width:100%"></div></div>
+                <div class="pc-track"><div id="pc-sp-fill"></div></div>
+                <span id="pc-sp-val">—</span>
               </div>
             </div>
           </div>
+          <div id="pc-conds"></div>
+          <div id="pc-equips"></div>
         </div>
-        <div class="pc-card" id="pc-actions-card">
+        <div class="pc-card" id="pc-actions">
           <div class="pc-action-grid">
-            <button class="pc-act-btn" onclick="abrirArvoreSkills()"><span class="pc-act-icon">✨</span><span>Habilidades</span></button>
-            <button class="pc-act-btn" onclick="abrirFicha()"><span class="pc-act-icon">🎒</span><span>Inventário</span></button>
-            <button class="pc-act-btn" onclick="abrirModalAcao('falar')"><span class="pc-act-icon">💬</span><span>Falar</span></button>
-            <button class="pc-act-btn" onclick="abrirFicha()"><span class="pc-act-icon">📋</span><span>Status</span></button>
+            <button class="pc-act-btn" onclick="abrirArvoreSkills()">⚔️<span>Habilidades</span></button>
+            <button class="pc-act-btn" onclick="abrirFicha()">🎒<span>Inventário</span></button>
+            <button class="pc-act-btn" onclick="focarInputAcao()">💬<span>Falar</span></button>
+            <button class="pc-act-btn" onclick="abrirFicha()">📋<span>Status</span></button>
           </div>
         </div>
       </div>
 
-      <!-- Historia narrative feed -->
+      <!-- PAINEL NARRATIVO -->
       <div id="historia">
         <div class="msg-empty" id="historia-empty">
           <span class="emj">📜</span>
@@ -278,40 +285,57 @@
           <button id="btn-iniciar-narrar" onclick="hostIniciarOuRetentar()">🎲 Iniciar Aventura</button>
         </div>
       </div>
+
+      <!-- RESULTADOS DE TESTES (colapsível) -->
+      <div id="test-panel-header" onclick="toggleTestPanel()">
+        🎲 RESULTADOS DE TESTES
+        <span id="test-panel-toggle">▲</span>
+      </div>
+      <div id="test-panel"><div id="test-cards"></div></div>
+
     </div>
 
-    <!-- Right: character panel — desktop only -->
+    <!-- COLUNA DIREITA — desktop apenas -->
     <div id="game-right-col">
-      <div id="my-char-panel" onclick="abrirFicha()">
+      <div id="my-char-panel">
         <div id="my-char-header">
-          <div class="top-avatar" id="top-avatar">⚔️</div>
-          <div>
-            <div class="ficha-nome" id="top-nome">Herói</div>
-            <div id="my-class-lbl" style="font-size:10px;color:var(--text2);letter-spacing:1px;margin-top:2px">—</div>
+          MEU PERSONAGEM
+          <span onclick="abrirFicha()">📋 Ficha</span>
+        </div>
+        <div id="my-char-body">
+          <div id="my-portrait">
+            <img id="top-avatar" src="sprites/guerreiro_m.png" alt="">
+          </div>
+          <div id="my-stats">
+            <div id="top-nome">—</div>
+            <div id="my-class-lbl">—</div>
+            <div class="my-bar-row">
+              <span class="my-bar-label">HP</span>
+              <div class="my-bar"><div class="my-bar-fill" id="bfhp" style="width:100%;background:#cc4444"></div></div>
+              <span class="my-bar-val" id="top-hp">—</span>
+            </div>
+            <div class="my-bar-row">
+              <span class="my-bar-label">SP</span>
+              <div class="my-bar"><div class="my-bar-fill" id="bfsp" style="width:100%;background:var(--blue)"></div></div>
+              <span class="my-bar-val" id="top-sp">—</span>
+            </div>
+            <div class="my-bar-row">
+              <span class="my-bar-label">EXP</span>
+              <div class="my-bar"><div class="my-bar-fill" id="bfexp" style="width:0%;background:var(--exp)"></div></div>
+              <span class="my-bar-val" id="top-exp">0</span>
+            </div>
           </div>
         </div>
-        <div class="bars">
-          <div class="bar-w bar-hp">
-            <div class="bar-lbl"><span>HP</span><span id="top-hp">—</span></div>
-            <div class="bar-track"><div class="bar-fill" id="bfhp" style="width:100%"></div></div>
-          </div>
-          <div class="bar-w bar-sp">
-            <div class="bar-lbl"><span>SP</span><span id="top-sp">—</span></div>
-            <div class="bar-track"><div class="bar-fill" id="bfsp" style="width:100%"></div></div>
-          </div>
-          <div class="bar-w bar-exp">
-            <div class="bar-lbl"><span>EXP</span><span id="top-exp">0</span></div>
-            <div class="bar-track"><div class="bar-fill" id="bfexp" style="width:0%"></div></div>
-          </div>
-        </div>
-        <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:10px;letter-spacing:1px">toque para ver ficha</div>
+        <div id="my-conditions"></div>
+        <div id="my-equip"></div>
       </div>
     </div>
   </div>
 
-  <!-- Action area -->
+  <!-- BARRA DE AÇÃO -->
   <div id="area-acao">
-    <div class="acao-slots" id="acao-slots" style="display:none">
+    <!-- Slots de ação selecionada -->
+    <div id="acao-slots" style="display:none">
       <div class="acao-slot" id="slot1">
         <span class="acao-slot-num">①</span>
         <span class="acao-slot-vazia">Escolha uma ação abaixo...</span>
@@ -321,19 +345,29 @@
         <span class="acao-slot-vazia">Segunda ação (opcional)...</span>
       </div>
     </div>
-    <div class="acao-btns" id="acao-btns" style="display:none">
-      <button class="acao-btn" onclick="abrirModalAcao('falar')"><span class="ab-icon">💬</span><span class="ab-lbl">FALAR</span></button>
-      <button class="acao-btn" onclick="abrirModalAcao('atacar')"><span class="ab-icon">⚔️</span><span class="ab-lbl">ATAQUE</span></button>
-      <button class="acao-btn" onclick="abrirArvoreSkills()"><span class="ab-icon">✨</span><span class="ab-lbl">SKILL</span></button>
-      <button class="acao-btn" onclick="abrirModalAcao('defender')"><span class="ab-icon">🛡️</span><span class="ab-lbl">DEFENDER</span></button>
-      <button class="acao-btn" onclick="abrirModalAcao('mover')"><span class="ab-icon">🏃</span><span class="ab-lbl">MOVER</span></button>
-      <button class="acao-btn" onclick="abrirModalAcao('livre')"><span class="ab-icon">🎯</span><span class="ab-lbl">LIVRE</span></button>
+    <!-- Entrada de ação (textarea + chips) -->
+    <div id="acao-btns">
+      <div id="action-wrap">
+        <textarea id="action-input" placeholder="O que seu personagem faz? Descreva livremente..."></textarea>
+        <button id="btn-add-acao" onclick="confirmarAcaoTexto()">
+          <span class="benv-icon">✦</span>
+          <span class="benv-lbl">ENVIAR AÇÃO</span>
+        </button>
+      </div>
+      <div id="quick-sug">
+        <button class="qs" onclick="qs('examino o ambiente ao redor com atenção')">👁 Examinar</button>
+        <button class="qs" onclick="qs('fico alerta e escuto qualquer barulho')">👂 Escutar</button>
+        <button class="qs" onclick="qs('me escondo nas sombras e aguardo')">🌑 Esconder</button>
+        <button class="qs" onclick="qs('ataco o inimigo mais próximo com força total')">⚔️ Atacar</button>
+        <button class="qs" onclick="qs('me defendo e aguardo a próxima abertura')">🛡️ Defender</button>
+        <button class="qs" onclick="qs('curo um aliado que está ferido')">💚 Curar</button>
+        <button class="qs" onclick="qs('uso minha skill especial contra o inimigo')">✨ Skill</button>
+      </div>
     </div>
+    <!-- Footer com status e botão encerrar -->
     <div class="acao-footer">
       <div id="msg-narrando">
-        <div class="dots-wrap">
-          <div class="dot-a"></div><div class="dot-a"></div><div class="dot-a"></div>
-        </div>
+        <div class="dots-wrap"><div class="dot-a"></div><div class="dot-a"></div><div class="dot-a"></div></div>
         O Mestre narra...
       </div>
       <div id="msg-enviado">✅ Ações enviadas! Aguardando todos...</div>

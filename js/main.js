@@ -432,7 +432,11 @@ function toast(msg, dur=3500) {
 // ═══════════════════════════════════════════════════════════════
 function updateVoiceBtn() {
   const btn = document.getElementById('btn-voice');
-  if (btn) { btn.textContent = voiceEnabled ? '🔊' : '🔇'; btn.title = voiceEnabled ? 'Desativar narração' : 'Ativar narração'; }
+  if (!btn) return;
+  const icon = btn.querySelector('.vb-icon');
+  if (icon) icon.textContent = voiceEnabled ? '🔊' : '🔇';
+  btn.classList.toggle('active', voiceEnabled);
+  btn.title = voiceEnabled ? 'Desativar narração' : 'Ativar narração';
 }
 
 window.toggleVoz = function() {
@@ -454,7 +458,7 @@ let voiceBusy = false;
 
 function setVoiceIndicator(on) {
   const el = document.getElementById('voice-indicator');
-  if (el) el.className = on ? 'vi-on' : '';
+  if (el) el.className = on ? 'speaking' : '';
 }
 
 function _narrarWebSpeechQueued(limpo) {
@@ -804,41 +808,82 @@ function atualizarTopbar(eu) {
   _meuEuCache = eu;
   const cls = CLASSES[eu.classe] || {};
   const av = document.getElementById('top-avatar');
-  av.textContent = cls.avatar || cls.icon || '⚔️';
-  av.style.background = cls.cor || 'var(--surface2)';
+  if (av) av.src = spriteUrl(eu.classe, eu.sexo || 'm');
   document.getElementById('top-nome').textContent = eu.nome;
   const nivel = Math.floor((eu.exp||0)/100)+1;
   const lbl = document.getElementById('my-class-lbl');
-  if (lbl) lbl.textContent = `${cls.icon||''} ${cls.nome||''} · Nv${nivel}`;
+  if (lbl) lbl.textContent = `${cls.nome||''} · Nv${nivel}`;
   const hp = Math.max(0,eu.hp), mhp = eu.maxHp;
   const sp = Math.max(0,eu.sp), msp = eu.maxSp;
   const exp = eu.exp || 0;
   document.getElementById('top-hp').textContent  = `${hp}/${mhp}`;
   document.getElementById('top-sp').textContent  = `${sp}/${msp}`;
   document.getElementById('top-exp').textContent = exp;
-  document.getElementById('bfhp').style.width  = `${(hp/mhp)*100}%`;
-  document.getElementById('bfsp').style.width  = `${(sp/msp)*100}%`;
+  document.getElementById('bfhp').style.width  = `${mhp>0?(hp/mhp)*100:0}%`;
+  document.getElementById('bfsp').style.width  = `${msp>0?(sp/msp)*100:0}%`;
   document.getElementById('bfexp').style.width = `${Math.min(exp%100,100)}%`;
+
+  const condsEl = document.getElementById('my-conditions');
+  if (condsEl) {
+    const hpPct = mhp > 0 ? hp / mhp : 1;
+    const tags = [];
+    if (eu.vivo === false)        tags.push('<span class="condition-tag debuff">☠️ Morto</span>');
+    else if (eu.consciente===false) tags.push('<span class="condition-tag debuff">💫 Inconsciente</span>');
+    else if (hpPct < 0.25)        tags.push('<span class="condition-tag debuff">💀 Crítico</span>');
+    else if (hpPct < 0.5)         tags.push('<span class="condition-tag debuff">🩸 Ferido</span>');
+    else                           tags.push('<span class="condition-tag buff">⚡ Alerta</span>');
+    condsEl.innerHTML = tags.join('');
+  }
+
+  const equipEl = document.getElementById('my-equip');
+  if (equipEl) {
+    const inv = eu.inventario || {};
+    const equipped = Object.values(inv).filter(i => i.equipado);
+    equipEl.innerHTML = equipped.map(i => `<span class="equip-tag"><span>${i.icon||'📦'}</span>${i.nome}</span>`).join('');
+  }
+
   atualizarPortraitCards(eu);
 }
 
 function atualizarPortraitCards(eu) {
-  const cls = CLASSES[eu.classe] || {};
   const nivel = Math.floor((eu.exp||0)/100)+1;
-  const pcAv = document.getElementById('pc-avatar');
-  if (pcAv) {
-    pcAv.textContent = cls.avatar || cls.icon || '⚔️';
-    pcAv.style.background = cls.cor || 'var(--surface2)';
-    pcAv.style.borderColor = cls.cor || 'var(--border)';
-  }
+  const hp = Math.max(0, eu.hp), mhp = eu.maxHp;
+  const sp = Math.max(0, eu.sp), msp = eu.maxSp;
+
+  const imgEl = document.getElementById('pc-avatar-img');
+  if (imgEl) imgEl.src = spriteUrl(eu.classe, eu.sexo || 'm');
+
   const pcName = document.getElementById('pc-name');
   if (pcName) pcName.textContent = `${eu.nome} · Nv${nivel}`;
-  const hp = Math.max(0,eu.hp), mhp = eu.maxHp;
-  const sp = Math.max(0,eu.sp), msp = eu.maxSp;
+
   const hpFill = document.getElementById('pc-hp-fill');
   const spFill = document.getElementById('pc-sp-fill');
+  const hpVal  = document.getElementById('pc-hp-val');
+  const spVal  = document.getElementById('pc-sp-val');
   if (hpFill) hpFill.style.width = `${mhp>0?(hp/mhp)*100:0}%`;
   if (spFill) spFill.style.width = `${msp>0?(sp/msp)*100:0}%`;
+  if (hpVal)  hpVal.textContent  = `${hp}/${mhp}`;
+  if (spVal)  spVal.textContent  = `${sp}/${msp}`;
+
+  const condsEl = document.getElementById('pc-conds');
+  if (condsEl) {
+    const hpPct = mhp > 0 ? hp / mhp : 1;
+    let tag = '';
+    if (eu.vivo === false)          tag = '<span class="condition-tag debuff">☠️ Morto</span>';
+    else if (eu.consciente===false) tag = '<span class="condition-tag debuff">💫 Inconsciente</span>';
+    else if (hpPct < 0.25)         tag = '<span class="condition-tag debuff">💀 Crítico</span>';
+    else if (hpPct < 0.5)          tag = '<span class="condition-tag debuff">🩸 Ferido</span>';
+    else if (hpPct < 0.75)         tag = '<span class="condition-tag">🛡 Guarda</span>';
+    else                            tag = '<span class="condition-tag buff">⚡ Alerta</span>';
+    condsEl.innerHTML = tag;
+  }
+
+  const equipsEl = document.getElementById('pc-equips');
+  if (equipsEl) {
+    const inv = eu.inventario || {};
+    const equipped = Object.values(inv).filter(i => i.equipado).slice(0, 3);
+    equipsEl.innerHTML = equipped.map(i => `<span class="equip-tag"><span>${i.icon||''}</span>${i.nome}</span>`).join('');
+  }
 }
 
 window.abrirFicha = function() {
@@ -1127,23 +1172,27 @@ document.getElementById('modal-acao').addEventListener('click', e => {
 
 // ─── Status bar ────────────────────────────────────────────────
 function atualizarStatusBar(jogadores, rodada, estado) {
+  const roundEl = document.getElementById('chapter-round');
+  if (roundEl) roundEl.textContent = `Rodada ${rodada || '—'}`;
+
   const bar = document.getElementById('status-bar');
-  bar.innerHTML = `<span class="status-rodada-lbl">RODADA ${rodada||'—'}</span>`;
+  bar.innerHTML = '';
   Object.entries(jogadores).forEach(([uid, j]) => {
     const online  = j.ativo !== false;
     const done    = (j.acao1 != null && j.acao2 != null) || !j.vivo || !j.consciente;
-    const atrasado = online && !done && estado === 'aguardando';
-    const dotCls  = !online ? 'r' : atrasado ? 'y' : 'g';
-    const cls = CLASSES[j.classe] || {};
+    const waiting = online && !done && estado === 'aguardando';
+    const statusCls = !online ? 'away' : waiting ? 'typing' : 'online';
     const chip = document.createElement('div');
-    chip.className = `sj ${done?'done':''} ${!online?'offline':''}`;
+    chip.className = 'player-chip';
     chip.innerHTML = `
-      <div class="sj-av" style="background:${cls.cor||'#333'}">${cls.avatar||cls.icon||'?'}</div>
-      <span class="sj-nome">${j.nome}${done?' ✓':''}</span>
-      <span class="sj-dot ${dotCls}"></span>`;
+      <div class="pc-portrait">
+        <img src="${spriteUrl(j.classe||'guerreiro', j.sexo||'m')}" onerror="this.style.display='none'" alt="">
+        <span class="pc-status ${statusCls}"></span>
+      </div>
+      <div class="pc-chip-name">${j.nome.split(' ')[0]}</div>
+      <div class="pc-chip-state">${done?'✓ pronto':'aguardando'}</div>`;
     bar.appendChild(chip);
   });
-
 }
 
 // ─── Historia ──────────────────────────────────────────────────
@@ -1156,42 +1205,75 @@ function renderizarHistoria(historia) {
   if(entries.length === 0) return;
   document.getElementById('historia-empty').style.display = 'none';
   const el = document.getElementById('historia');
+  const testCards = document.getElementById('test-cards');
 
   entries.forEach(entry => {
     if(renderedHistKeys.has(entry.k)) return;
     renderedHistKeys.add(entry.k);
 
+    if(entry.role === 'dados') {
+      // Render into test-cards panel
+      if(!testCards) return;
+      const linhas = (entry.content || '').split('\n').filter(l => l.trim());
+      linhas.forEach(linha => {
+        const [nome, acao, roll, result, cls] = linha.split('|');
+        const card = document.createElement('div');
+        card.className = 'test-card';
+        const verdictCls = cls === 'crit' ? 'crit' : cls === 'fail' ? 'fail' : 'succ';
+        const verdictTxt = cls === 'crit' ? 'CRÍTICO!' : cls === 'fail' ? 'FALHOU' : 'SUCESSO';
+        const diceParts = (roll||'').match(/=\s*(\d+)\s*(?:[+-]\d+)?\s*=\s*(\d+)/);
+        const total = diceParts ? diceParts[2] : '—';
+        card.innerHTML = `
+          <div class="tc-label">TESTE</div>
+          <div class="tc-actor">${nome||''}</div>
+          <div class="tc-desc">${(acao||'').substring(0,40)}</div>
+          <div class="tc-roll">
+            <span class="tc-dice-ico">🎲</span>
+            <span class="tc-formula">${roll||''}</span>
+          </div>
+          <div class="tc-total ${verdictCls}">${total}</div>
+          <div class="tc-verdict ${verdictCls}">${verdictTxt}</div>`;
+        testCards.appendChild(card);
+      });
+      return;
+    }
+
     const div = document.createElement('div');
     if(entry.role === 'rodada') {
-      div.className = 'rodada-sep';
+      div.className = 'narr-divider';
       div.textContent = `RODADA ${entry.content}`;
     } else if(entry.role === 'model') {
-      div.className = 'msg-mestre';
-      div.innerHTML = `<div class="msg-mestre-lbl">⚔️ MESTRE</div>${formatarTexto(entry.content)}`;
+      div.className = 'narr-entry';
+      div.innerHTML = `<div class="narr-gm">
+        <div class="narr-gm-header">✦ MESTRE</div>
+        ${formatarTexto(entry.content)}
+      </div>`;
       if (_histInitialized) narrarTexto(entry.content);
-    } else if(entry.role === 'dados') {
-      div.className = 'msg-dados';
-      const linhas = (entry.content || '').split('\n').filter(l => l.trim());
-      div.innerHTML = `<div class="msg-dados-lbl">🎲 RESULTADO DOS DADOS</div>` +
-        linhas.map(linha => {
-          const [nome, acao, roll, result, cls, tipo] = linha.split('|');
-          const isIni = tipo === 'inimigo';
-          return `<div class="dado-row${isIni?' inimigo-row':''}">
-            <span class="dado-nome${isIni?' inimigo-nome':''}">${nome||''}</span>
-            <span class="dado-acao">${acao||''}</span>
-            <span class="dado-roll">${roll||''}</span>
-            <span class="dado-result ${cls||'ok'}">${result||''}</span>
-          </div>`;
-        }).join('');
     } else if(entry.role === 'status') {
-      return; // status shown in retractable panel, not in chat
+      return;
     } else {
-      div.className = 'msg-acoes';
-      div.innerHTML = `<div class="msg-acoes-lbl">AÇÕES DOS AVENTUREIROS</div>` +
-        entry.content.split('\n').filter(l=>l.trim()).map(l => {
-          const [nome, ...rest] = l.split(':');
-          return `<div class="msg-acao-item"><strong>${nome}:</strong>${rest.join(':')}</div>`;
-        }).join('');
+      // user role — player actions block
+      const linhas = (entry.content||'').split('\n').filter(l=>l.trim());
+      const acoesDivs = linhas.map(l => {
+        const colonIdx = l.indexOf(':');
+        if(colonIdx === -1) return `<div class="narr-action"><div class="narr-action-body"><div class="narr-action-text">${l}</div></div></div>`;
+        const nome = l.substring(0, colonIdx).trim();
+        const texto = l.substring(colonIdx+1).trim();
+        const isMe = nome.toLowerCase() === myNome.toLowerCase();
+        const cls  = isMe ? (_meuEuCache?.classe || 'guerreiro') : 'guerreiro';
+        const sexo = isMe ? (_meuEuCache?.sexo   || 'm')         : 'm';
+        return `<div class="narr-action${isMe?' mine':''}">
+          <div class="narr-action-avatar">
+            <img src="${spriteUrl(cls, sexo)}" onerror="this.style.display='none'" alt="">
+          </div>
+          <div class="narr-action-body">
+            <div class="narr-action-name ${isMe?'mine-label':'other-label'}">${nome.toUpperCase()}</div>
+            <div class="narr-action-text">${texto}</div>
+          </div>
+        </div>`;
+      }).join('');
+      div.className = 'narr-entry';
+      div.innerHTML = acoesDivs;
     }
     el.appendChild(div);
   });
@@ -1205,6 +1287,39 @@ function formatarTexto(t) {
     .replace(/\*(.*?)\*/g,'<em>$1</em>')
     .split('\n').join('<br>');
 }
+
+// ─── Nova entrada de ação por textarea ─────────────────────────
+window.confirmarAcaoTexto = function() {
+  const inp = document.getElementById('action-input');
+  const txt = inp.value.trim();
+  if(!txt) { toast('Descreva a ação antes de confirmar!'); return; }
+  if(_slots[0] === null)      { _slots[0] = txt; }
+  else if(_slots[1] === null) { _slots[1] = txt; }
+  else { _slots[0] = _slots[1]; _slots[1] = txt; }
+  inp.value = '';
+  renderizarSlots();
+  const slots = document.getElementById('acao-slots');
+  if(slots) slots.style.display = 'flex';
+  toast(_slots[1] ? '✅ Segunda ação definida!' : '✅ Primeira ação definida!', 1800);
+};
+
+window.focarInputAcao = function() {
+  const inp = document.getElementById('action-input');
+  if(inp) { inp.focus(); inp.scrollIntoView({ behavior:'smooth', block:'nearest' }); }
+};
+
+window.qs = function(texto) {
+  const inp = document.getElementById('action-input');
+  if(inp) { inp.value = texto; inp.focus(); }
+};
+
+window.toggleTestPanel = function() {
+  const header = document.getElementById('test-panel-header');
+  const panel  = document.getElementById('test-panel');
+  if(!header || !panel) return;
+  header.classList.toggle('open');
+  panel.classList.toggle('open');
+};
 
 // ─── Input area ────────────────────────────────────────────────
 function atualizarInputArea(eu, estado, jogadores) {
@@ -1223,16 +1338,16 @@ function atualizarInputArea(eu, estado, jogadores) {
   me.style.display  = jaEnviou ? 'block' : 'none';
   mi.style.display  = jaMorto  ? 'block' : 'none';
 
-  // Botões sempre visíveis — só some quando morto/inconsciente
   btns.style.display  = jaMorto ? 'none' : 'flex';
-  slots.style.display = jaMorto ? 'none' : 'flex';
-  // Enviar some apenas quando já enviou ou morto
+  slots.style.display = (jaMorto || (_slots[0]===null && _slots[1]===null)) ? 'none' : 'flex';
   btn.style.display   = (jaMorto || jaEnviou) ? 'none' : 'block';
 
-  // Reset slots somente quando a rodada terminar (acao1 voltou a null)
   if(_prevJaEnviou && !jaEnviou && !jaMorto) {
     _slots = [null, null];
     renderizarSlots();
+    if(slots) slots.style.display = 'none';
+    const inp = document.getElementById('action-input');
+    if(inp) inp.value = '';
   }
   _prevJaEnviou = jaEnviou;
 
