@@ -113,7 +113,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
 
 /* ── Scene ── */
 #scene-area{
-  height:160px;flex-shrink:0;position:relative;overflow:hidden;
+  height:100px;flex-shrink:0;position:relative;overflow:hidden;
   background:linear-gradient(180deg,#10141e 0%,#0c1018 50%,#080c10 100%);
   border-bottom:2px solid rgba(88,104,160,.4);
 }
@@ -495,8 +495,30 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
 @media(max-width:680px){
   #right-col{display:none}
   #action-input{height:46px;font-size:12px}
-  #quick-sug{display:none}
-  #scene-area{height:130px}
+  #scene-area{height:100px}
+}
+/* ══ PORTRAIT PHONE ══ */
+@media(max-width:520px){
+  #scene-area{height:64px}
+  #scene-sprites{display:none}
+  #status-bar{height:40px}
+  #player-portraits{display:none}
+  #session-info{border-right:none;padding-right:6px}
+  #chapter-label{display:none}
+  #location-row{margin-top:0}
+  #status-right{border-left:none;padding-left:4px;gap:4px}
+  .sb-action{display:none}
+  #voice-btn span:last-child{display:none}
+  #voice-btn{padding:4px 6px}
+  #action-bar{padding:5px 8px;gap:5px}
+  #action-input{height:38px;font-size:12px}
+  .benv-lbl{display:none}
+  .benv-icon{font-size:20px}
+  #btn-enviar{padding:0 12px}
+  #quick-sug{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  #quick-sug::-webkit-scrollbar{display:none}
+  .qs{flex-shrink:0;white-space:nowrap}
+  #test-panel-header{font-size:7px;padding:4px 10px}
 }
 </style>
 </head>
@@ -801,59 +823,149 @@ let testCount = 0;
 function init(){
   renderPortraits();
   renderMyChar();
-  renderScene();
   renderHistory();
   renderInventory();
   spawnParticles();
   renderInitialNarrative();
-  startSimulation();
+  startStory();
 }
 
 // ════════════════════════════════
-//  SIMULAÇÃO DE CAMPANHA
+//  MOTOR DE HISTÓRIA INTERATIVO
 // ════════════════════════════════
-function startSimulation(){
-  const at = (ms, fn) => setTimeout(fn, ms);
+let storyPhase = 0;
+let storyBusy  = false;
 
-  // ── ACT 1: A floresta desperta ──
-  at(1200,  ()=> addNarr({type:'gm', text:'A Estrada Sombria serpenteia entre carvalhos centenários cujos galhos retorcidos formam um teto de sombras sobre o grupo. O vento carrega o cheiro de terra molhada e cinzas frias — algo que não deveria estar ali. Nem os grilos cantam esta noite.'}));
-  at(6000,  ()=> addNarr({type:'action', pid:'p1', text:'ergue o escudo lentamente e desembainha a espada, olhos varrendo cada sombra entre as árvores antigas.'}));
-  at(9000,  ()=> addChat('Mago','Há magia aqui... antiga. Sintam o ar.','p2'));
-  at(11500, ()=> addChat('Arqueira','Concordo. Nem um grilo. Isso é sinal ruim.','p3'));
-  at(13500, ()=> addNarr({type:'action', pid:'p2', text:'murmura palavras arcanas enquanto caminha, os olhos brilhando com luz azulada ao ativar o feitiço de Detectar Magia.'}));
+function advancePhase(){ storyPhase++; }
 
-  // ── ACT 2: O Ancião ──
-  at(18000, ()=> addNarr({type:'npc', name:'Ancião', icon:'🧙‍♂️', text:'Parem! Pelo amor dos deuses, não avancem por aqui esta noite!'}));
-  at(24000, ()=> addNarr({type:'gm', text:'Das sombras emerge um ancião cambaleante, manto rasgado e olhos arregalados de terror. Seus dedos trêmulos apontam para o caminho à frente, onde as árvores parecem se fechar como portões de pedra.'}));
-  at(31000, ()=> addNarr({type:'action', pid:'p1', text:'apoia a mão no ombro do ancião com firmeza. — Calma. Estamos aqui. O que aconteceu?'}));
-  at(34000, ()=> triggerRoll('Guerreiro','PERSUASÃO','acalmar o ancião aterrorizado', 16, 12, true, false));
-  at(37000, ()=> addNarr({type:'npc', name:'Ancião', icon:'🧙‍♂️', text:'Três noites já se passaram. Meu neto foi buscar ervas e não voltou. Os aldeões falam do Senhor das Sombras — uma entidade que desperta quando a lua sangra. Mas eu vi com meus olhos: marcas estranhas nas árvores e olhos... olhos que brilham no escuro.'}));
-  at(46000, ()=> addChat('Clérigo','Ancião, vá para a vila. Estará seguro lá. Cuidaremos disso.','p4'));
-  at(48500, ()=> addChat('Mago','Se há uma entidade envolvida, precisamos agir rápido.','p2'));
-  at(51000, ()=> addNarr({type:'action', pid:'p4', text:'pousa a mão sobre o peito do ancião e canaliza uma bênção calmante antes de indicar o caminho de volta à vila.'}));
+function setQuickSug(labels){
+  const wrap = document.getElementById('quick-sug');
+  wrap.innerHTML = labels.map(l=>`<button class="qs" onclick="qs('${l.replace(/['"]/g,'')}')">${l}</button>`).join('');
+}
 
-  // ── ACT 3: A Voz nas Sombras ──
-  at(56000, ()=> addNarr({type:'gm', text:'O ancião recua para as sombras. E nesse instante — CRACK. Um galho parte-se ao norte. O silêncio que se segue é mais assustador que qualquer barulho. Algo está observando o grupo. E sabe que vocês sabem.'}));
-  at(63000, ()=> addNarr({type:'action', pid:'p3', text:'agacha num único movimento fluido e tensiona o arco, mirando os arbustos ao norte com olhos cerrados.'}));
-  at(65500, ()=> addChat('Arqueira','Tenho algo na mira. Digam a palavra.','p3'));
-  at(68000, ()=> addNarr({type:'npc', name:'Voz nas Sombras', icon:'🎭', text:'Que curioso... heróis que vagam na escuridão procurando luz. Vocês chegaram tarde demais para salvar o menino. Mas bem a tempo para se juntar a ele.'}));
-  at(76000, ()=> addNarr({type:'gm', text:'Uma figura encapuzada emerge lentamente das sombras — alta, rosto coberto por uma máscara de prata sem expressão. Atrás dela, os arbustos tremem. Não é o vento.'}));
-  at(83000, ()=> addNarr({type:'action', pid:'p2', text:'ergue o cajado com ambas as mãos, aura violeta pulsando ao redor dos dedos. — Há pelo menos uma dúzia deles nos arbustos!'}));
+function gmDelay(fn, ms){ setTimeout(fn, ms); }
 
-  // ── ACT 4: Os Goblins ──
-  at(88000, ()=> addNarr({type:'npc', name:'Goblin', icon:'👺', text:'Ahahaha! Humanos estúpidos! O mestre quer vocês vivos... mas não disse nada sobre inteiros!'}));
-  at(93000, ()=> triggerRoll('Mago','DETECTAR ILUSÃO','varreu a área com magia arcana', 19, 14, true, true));
-  at(96500, ()=> addChat('Mago','Cuidado! São doze! As ilusões mascaravam metade deles!','p2'));
-  at(99000, ()=> addChat('Clérigo','Canal divino pronto. Protegerei o grupo!','p4'));
-  at(101500,()=> addChat('Arqueira','Solto quando o Guerreiro avançar.','p3'));
-  at(104000,()=> addNarr({type:'gm', text:'A máscara de prata vira lentamente na direção do Guerreiro — como se o reconhecesse. A floresta prende a respiração. Os goblins avançam pelos flancos. A figura levanta uma mão. Seja ordem para atacar ou um último aviso — o momento passou.'}));
+/* ── Fases da aventura ── */
+const PHASES = [
 
-  // ── ACT 5: O Combate se aproxima ──
-  at(112000,()=> addNarr({type:'action', pid:'p1', text:'assume postura de combate, escudo à frente, espada apontada para a figura encapuzada. — Esta noite ninguém cai.'}));
-  at(116000,()=> addNarr({type:'npc', name:'Guarda', icon:'🛡️', text:'Aguardem! Guarda de Pedramar — seis cavaleiros a duzentos metros! Resistam mais um momento!'}));
-  at(122000,()=> triggerRoll('Guerreiro','INICIATIVA','veterano pronto para o combate', 18, 10, true, false));
-  at(126000,()=> addNarr({type:'gm', text:'Os dados foram lançados. O Guerreiro age primeiro — a vantagem de quem reconhece o instante antes de tudo começar. Em algum lugar nas profundezas da floresta, uma criança chora. O campo de batalha se forma. Que os deuses os protejam.'}));
-  at(135000,()=> triggerCombat());
+  /* 0 — A floresta sombria */
+  {
+    reply(action){
+      const a = action.toLowerCase();
+      if(a.match(/escut|ouv|silên|som/))
+        addNarr({type:'gm', text:'Você para e aguça os sentidos. Silêncio absoluto — nem vento entre as folhas. E então, muito longe: um farfalhar rítmico que não é natural. Pés cautelosos sobre folha seca. Vários deles.'});
+      else if(a.match(/examin|olh|inspecion|observ/))
+        addNarr({type:'gm', text:'Você vasculha a beira da estrada. Marcas de garras nas cascas das árvores — frescas, ainda com seiva escorrendo. E pegadas no barro. Pequenas demais para humanos. Muitas.'});
+      else if(a.match(/espada|arma|desenh|embaín/))
+        addNarr({type:'gm', text:'O metal canta ao sair da bainha. O brilho frio da lâmina ilumina as sombras ao redor. Certo — algo vai acontecer aqui esta noite.'});
+      else
+        addNarr({type:'gm', text:'Você avança com passos calculados, cada sentido alerta. A floresta respira ao redor — mas não como deveria. Há algo neste silêncio que pesa.'});
+      gmDelay(()=>{
+        addNarr({type:'npc', name:'Ancião', icon:'🧙‍♂️', text:'Parem! Pelo amor dos deuses... não avancem!'});
+        gmDelay(()=>{
+          addNarr({type:'gm', text:'Das sombras tropeça um ancião, manto rasgado, olhos arregalados de terror. Seus dedos tremem apontando para os arbustos ao norte.'});
+          setQuickSug(['💬 "Ancião, o que aconteceu?"','✋ "Calma. Estou aqui."','🛡 Protejo o ancião','🔍 Olho para onde ele aponta']);
+          advancePhase();
+        }, 4000);
+      }, 2200);
+    }
+  },
+
+  /* 1 — O ancião */
+  {
+    reply(action){
+      const a = action.toLowerCase();
+      const total = Math.floor(Math.random()*8)+10;
+      triggerRoll('Guerreiro','PERSUASÃO','acalmar o ancião aterrorizado', total, 12, total>=12, total>=18);
+      gmDelay(()=>{
+        if(a.match(/neto|menin|criança|filh/))
+          addNarr({type:'npc', name:'Ancião', icon:'🧙‍♂️', text:'Sim... meu neto. Foi buscar ervas medicinais e não voltou. Encontrei apenas o cesto dele na beira da estrada e marcas de garras nas árvores ao redor — frescas ainda.'});
+        else if(a.match(/entidad|sombra|senhor|monstro/))
+          addNarr({type:'npc', name:'Ancião', icon:'🧙‍♂️', text:'Os aldeões chamam de Senhor das Sombras. Uma entidade antiga que dorme quando a lua é cheia e desperta quando ela sangra. Vi os olhos dela esta noite — brilhando no escuro sem ter corpo.'});
+        else
+          addNarr({type:'npc', name:'Ancião', icon:'🧙‍♂️', text:'Três noites já se passaram. Meu neto foi buscar ervas e não voltou. Há algo nesta floresta que não é natural, aventureiro. Olhos que brilham no escuro. Marcas nas árvores. Pegadas de coisas pequenas — muitas.'});
+        gmDelay(()=>{
+          addNarr({type:'gm', text:'O ancião recua cambaleando. E nesse instante — CRACK. Um galho seco parte-se ao norte. O silêncio que se segue é mais pesado do que qualquer barulho. Algo estava ouvindo tudo isso.'});
+          setQuickSug(['⚔ Encaro a direção do barulho','💬 "Quem está aí? Mostre-se!"','🛡 Postura de defesa','🔍 Investigo os arbustos devagar']);
+          advancePhase();
+        }, 5000);
+      }, 1800);
+    }
+  },
+
+  /* 2 — Voz nas Sombras */
+  {
+    reply(action){
+      const a = action.toLowerCase();
+      gmDelay(()=>{
+        if(a.match(/mostr|quem|fal|grit/))
+          addNarr({type:'npc', name:'Voz nas Sombras', icon:'🎭', text:'Você quer me ver? Que decepção... os bravos raramente estão prontos para o que encontram.'});
+        else
+          addNarr({type:'npc', name:'Voz nas Sombras', icon:'🎭', text:'Que curioso... um herói que vaga na escuridão procurando luz. Você chegou tarde demais para salvar o menino. Mas bem a tempo para se juntar a ele.'});
+        gmDelay(()=>{
+          addNarr({type:'gm', text:'Uma figura encapuzada emerge lentamente das sombras. Alta. Rosto coberto por uma máscara de prata sem expressão alguma. Os arbustos ao redor tremem — mas não é o vento. São muitos. E estão cercando você.'});
+          setQuickSug(['⚔ "Lute, covarde!"','💬 "Onde está o menino?"','🧠 Analiso a situação sem agir','🏃 Recuo estratégico']);
+          advancePhase();
+        }, 4500);
+      }, 1800);
+    }
+  },
+
+  /* 3 — Confronto / Goblins */
+  {
+    reply(action){
+      const a = action.toLowerCase();
+      gmDelay(()=>{
+        if(a.match(/menin|garot|onde|criança/))
+          addNarr({type:'npc', name:'Voz nas Sombras', icon:'🎭', text:'O menino está... além do seu alcance. Como tudo o que você ama estará em breve.'});
+        else if(a.match(/atac|golp|avança|lut/))
+          addNarr({type:'gm', text:'Você avança — e é exatamente o sinal que os goblins esperavam. Os arbustos explodem em movimento.'});
+        else
+          addNarr({type:'gm', text:'A figura de prata inclina a cabeça levemente. Avalia você. Atrás dela, os arbustos finalmente revelam o que escondem.'});
+        gmDelay(()=>{
+          addNarr({type:'npc', name:'Goblin', icon:'👺', text:'Ahahaha! Humano estúpido! O mestre quer você vivo... mas não disse nada sobre inteiro!'});
+          gmDelay(()=>{
+            const total = Math.floor(Math.random()*6)+13;
+            triggerRoll('Guerreiro','PERCEPÇÃO','contar inimigos ao redor', total, 12, true, false);
+            gmDelay(()=>{
+              addNarr({type:'gm', text:'Você conta rápido — doze goblins saindo dos arbustos pelos dois flancos. A figura de prata levanta uma mão devagar. Seja ordem para atacar ou um último aviso — o momento passou.'});
+              setQuickSug(['⚔ Parto para o ataque','📣 Grito por reforços','🛡 Postura de combate, aguardo','💨 Corro pelo flanco mais fraco']);
+              advancePhase();
+            }, 2500);
+          }, 3500);
+        }, 2200);
+      }, 1500);
+    }
+  },
+
+  /* 4 — Combate inevitável */
+  {
+    reply(action){
+      const a = action.toLowerCase();
+      gmDelay(()=>{
+        if(a.match(/recu|fug|corro|saí/))
+          addNarr({type:'gm', text:'Você recua — e os goblins avançam como uma maré. A figura de prata não se move. Observa. Aguarda.'});
+        else
+          addNarr({type:'gm', text:'Você toma posição. Escudo à frente, espada pronta. O instinto de veterano toma conta — este é o instante antes de tudo começar.'});
+        gmDelay(()=>{
+          addNarr({type:'npc', name:'Guarda', icon:'🛡️', text:'Aguardem! Guarda de Pedramar — seis cavaleiros a duzentos metros! Resistam mais um momento!'});
+          gmDelay(()=>{
+            const init = Math.floor(Math.random()*8)+12;
+            triggerRoll('Guerreiro','INICIATIVA','pronto para o combate', init, 10, true, init>=18);
+            gmDelay(()=>{
+              addNarr({type:'gm', text:'Os dados foram lançados. Você age primeiro — vantagem de quem reconhece o instante antes de tudo começar. Em algum lugar nesta floresta, uma criança chora. O campo de batalha se forma. Que os deuses os protejam.'});
+              gmDelay(()=> triggerCombat(), 4000);
+            }, 2200);
+          }, 4000);
+        }, 2500);
+      }, 1600);
+    }
+  },
+];
+
+function startStory(){
+  gmDelay(()=> addNarr({type:'gm', text:'A Estrada Sombria serpenteia entre carvalhos centenários cujos galhos retorcidos formam um teto de sombras. O vento carrega cheiro de terra molhada e cinzas frias — algo que não deveria estar aqui. Nem os grilos cantam esta noite. Você avança sozinho neste trecho escuro, espada na bainha, escudo nas costas.'}), 800);
+  setQuickSug(['👁 Examino o ambiente ao redor','👂 Paro e escuto a floresta','🗡 Desenho a espada','🚶 Avanço com cautela']);
 }
 
 // ════════════════════════════════
@@ -919,7 +1031,7 @@ function spawnParticles(){
 //  NARRATIVE
 // ════════════════════════════════
 function renderInitialNarrative(){
-  addNarr({type:'system', text:'— Sessão Iniciada · A Estrada Sombria —'}, false);
+  addNarr({type:'system', text:'— Sessão Solo · A Estrada Sombria —'}, false);
 }
 
 function addNarr(e, autoSpeak=true){
@@ -1060,20 +1172,16 @@ function sendChat(){
 function qs(text){ const ta=document.getElementById('action-input'); ta.value=text; ta.focus(); }
 
 function sendAction(){
-  const ta=document.getElementById('action-input');
-  const text=ta.value.trim(); if(!text) return;
+  const ta = document.getElementById('action-input');
+  const text = ta.value.trim(); if(!text) return;
+  if(storyBusy) return;
   ta.value='';
-  addNarr({type:'action',pid:ME.id,text});
-  addChat(ME.name,text,ME.id);
-  setTimeout(()=>{
-    const responses=[
-      'O grupo avança com cautela. A floresta parece observar cada movimento.',
-      'Sua ação chama atenção de algo nos arbustos. Uma sombra recua lentamente.',
-      'O ambiente responde à sua presença. Algo importante espera ser descoberto.',
-      'Uma voz distante ecoa. As palavras se perdem no vento antes de chegar.',
-    ];
-    addNarr({type:'gm',text:responses[Math.floor(Math.random()*responses.length)]});
-  }, 1600);
+  storyBusy = true;
+  addNarr({type:'action', pid:ME.id, text});
+  const phase = PHASES[storyPhase];
+  if(phase) phase.reply(text);
+  // destrava após tempo suficiente para o mestre responder
+  setTimeout(()=>{ storyBusy=false; }, 12000);
 }
 
 // ════════════════════════════════
