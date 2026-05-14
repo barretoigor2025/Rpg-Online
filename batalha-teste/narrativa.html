@@ -679,7 +679,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
 //  VOICE (TTS)
 // ════════════════════════════════
 const synth = window.speechSynthesis;
-let voiceOn = false;
+let voiceOn = true;
 let voiceQueue = [];
 let voiceBusy  = false;
 let voices = [];
@@ -827,6 +827,10 @@ function init(){
   renderInventory();
   spawnParticles();
   renderInitialNarrative();
+  // Reflete voiceOn=true no botão desde o início
+  const vb = document.getElementById('voice-btn');
+  vb.querySelector('.vb-icon').textContent = '🔊';
+  vb.classList.add('active');
   startStory();
 }
 
