@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>⚔️ RPG Narrativo</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0a0806;
+  --surface:#15110d;
+  --surface2:#1c160e;
+  --surface3:#221a10;
+  --border:#7a5500;
+  --gold:#d4a843;
+  --gold2:#f0c866;
+  --gold3:#b8902e;
+  --text:#f0e4c8;
+  --text2:#a89060;
+  --text3:#6a5830;
+  --narrative:#e8dcc0;
+  --player-color:#7ab8f5;
+  --npc-color:#f0b844;
+  --gm-color:#d4a843;
+  --test-color:#9b8fd4;
+  --green:#27ae60;
+  --green2:#2ecc71;
+  --red:#e74c3c;
+  --blue:#3a80cc;
+  --r:4px;
+  --scene-h:180px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia,'Times New Roman',serif;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+
+/* ══════════════════════════════════════
+   STATUS BAR
+══════════════════════════════════════ */
+#status-bar{
+  flex-shrink:0;height:52px;
+  background:var(--surface);
+  border-bottom:1px solid rgba(122,85,0,.4);
+  display:flex;align-items:center;gap:0;
+  padding:0 10px;
+  position:relative;
+  z-index:10;
+}
+#session-info{
+  display:flex;flex-direction:column;gap:1px;
+  padding-right:10px;
+  border-right:1px solid rgba(122,85,0,.25);
+  flex-shrink:0;
+}
+#chapter-label{
+  font-size:8px;color:var(--text3);letter-spacing:2.5px;text-transform:uppercase;
+}
+#chapter-title{
+  font-size:11px;color:var(--gold2);font-weight:bold;letter-spacing:.4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;
+}
+#location-row{
+  display:flex;align-items:center;gap:6px;margin-top:1px;
+}
+#location-label{font-size:8px;color:var(--text3);white-space:nowrap;}
+#time-label{font-size:8px;color:var(--text2);border-left:1px solid rgba(122,85,0,.2);padding-left:6px;white-space:nowrap;}
+
+#player-portraits{
+  display:flex;align-items:center;gap:5px;
+  padding:0 10px;flex:1;overflow-x:auto;scrollbar-width:none;
+}
+#player-portraits::-webkit-scrollbar{display:none}
+.player-chip{
+  display:flex;flex-direction:column;align-items:center;gap:1px;
+  flex-shrink:0;
+  cursor:pointer;
+  transition:transform .15s;
+}
+.player-chip:hover{transform:scale(1.08)}
+.pc-portrait{
+  width:32px;height:32px;
+  border-radius:50%;overflow:hidden;
+  border:2px solid rgba(122,85,0,.35);
+  background:var(--surface2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;position:relative;
+}
+.pc-portrait img{width:100%;height:100%;object-fit:cover;object-position:center top}
+.pc-status{
+  position:absolute;bottom:-1px;right:-1px;
+  width:9px;height:9px;border-radius:50%;border:1.5px solid var(--surface);
+}
+.pc-status.online{background:#27ae60}
+.pc-status.typing{background:#f0c866;animation:pulse-typing .8s ease-in-out infinite}
+.pc-status.away{background:#555}
+@keyframes pulse-typing{0%,100%{opacity:1}50%{opacity:.4}}
+.pc-name{font-size:6.5px;color:var(--text3);letter-spacing:.5px;white-space:nowrap;}
+.pc-class{font-size:6px;color:var(--text3);opacity:.7;}
+
+#status-bar-right{
+  display:flex;align-items:center;gap:8px;
+  flex-shrink:0;border-left:1px solid rgba(122,85,0,.25);padding-left:10px;
+}
+.sb-btn-sm{
+  padding:4px 9px;background:transparent;
+  border:1px solid rgba(122,85,0,.3);border-radius:var(--r);
+  color:var(--text2);font-family:inherit;font-size:8px;
+  cursor:pointer;letter-spacing:.5px;transition:all .12s;white-space:nowrap;
+}
+.sb-btn-sm:hover{border-color:var(--gold);color:var(--gold);background:rgba(212,168,67,.07)}
+.sb-btn-sm.combat{border-color:rgba(200,50,50,.4);color:#e07070}
+.sb-btn-sm.combat:hover{border-color:var(--red);color:var(--red);background:rgba(200,50,50,.08)}
+
+/* ══════════════════════════════════════
+   MAIN CONTENT
+══════════════════════════════════════ */
+#main-content{
+  flex:1;display:flex;min-height:0;overflow:hidden;
+}
+
+/* ══════════════════════════════════════
+   LEFT COLUMN
+══════════════════════════════════════ */
+#left-col{
+  flex:1;min-width:0;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+
+/* ── Scene ── */
+#scene-area{
+  height:var(--scene-h);flex-shrink:0;
+  position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#1a0e06 0%,#0d1a0a 40%,#0a140d 70%,#060b09 100%);
+  border-bottom:2px solid var(--border);
+}
+#scene-bg-layer{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse at 30% 60%,rgba(20,60,20,.6) 0%,transparent 55%),
+    radial-gradient(ellipse at 70% 40%,rgba(10,30,40,.5) 0%,transparent 50%),
+    radial-gradient(ellipse at 50% 80%,rgba(40,20,5,.4) 0%,transparent 40%);
+}
+/* Tree silhouettes (CSS-only decoration) */
+#scene-trees{
+  position:absolute;bottom:0;left:0;right:0;height:100%;
+  background:
+    /* left tree */
+    radial-gradient(ellipse 18px 55px at 8% 35%,rgba(8,18,8,.9) 100%,transparent 100%),
+    radial-gradient(ellipse 12px 40px at 5% 45%,rgba(8,18,8,.8) 100%,transparent 100%),
+    /* right trees */
+    radial-gradient(ellipse 22px 60px at 92% 30%,rgba(8,18,8,.9) 100%,transparent 100%),
+    radial-gradient(ellipse 15px 45px at 96% 40%,rgba(8,18,8,.8) 100%,transparent 100%),
+    radial-gradient(ellipse 18px 50px at 88% 38%,rgba(8,18,8,.7) 100%,transparent 100%);
+}
+#scene-ground{
+  position:absolute;bottom:0;left:0;right:0;height:35px;
+  background:linear-gradient(180deg,transparent 0%,rgba(10,20,8,.8) 100%);
+}
+#scene-sprites{
+  position:absolute;bottom:20px;left:0;right:0;
+  display:flex;align-items:flex-end;justify-content:center;gap:20px;
+}
+.scene-char{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  animation:scene-float 3s ease-in-out infinite;
+}
+.scene-char:nth-child(2){animation-delay:.6s}
+.scene-char:nth-child(3){animation-delay:1.2s}
+.scene-char:nth-child(4){animation-delay:1.8s}
+@keyframes scene-float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-3px)}
+}
+.scene-char img{
+  width:48px;height:64px;
+  object-fit:cover;object-position:center top;
+  image-rendering:pixelated;
+  filter:drop-shadow(0 4px 12px rgba(0,0,0,.95));
+}
+.scene-char-icon{font-size:32px;line-height:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.95))}
+.scene-char-name{font-size:7px;color:var(--gold2);letter-spacing:.5px;white-space:nowrap}
+#scene-overlay-top{
+  position:absolute;top:0;left:0;right:0;height:60px;
+  background:linear-gradient(180deg,rgba(10,8,6,.8) 0%,transparent 100%);
+  display:flex;align-items:flex-start;padding:8px 12px;gap:8px;
+  pointer-events:none;
+}
+#scene-location-badge{
+  font-size:9px;color:var(--gold2);letter-spacing:2px;text-transform:uppercase;
+  background:rgba(0,0,0,.55);border:1px solid rgba(212,168,67,.3);
+  padding:3px 10px;border-radius:3px;
+  text-shadow:0 0 12px rgba(212,168,67,.4);
+}
+#scene-time-badge{
+  font-size:8px;color:var(--text3);letter-spacing:1px;
+  background:rgba(0,0,0,.45);border:1px solid rgba(122,85,0,.2);
+  padding:3px 8px;border-radius:3px;
+}
+/* Ambient particles */
+#scene-particles{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.particle{
+  position:absolute;width:2px;height:2px;border-radius:50%;
+  background:rgba(212,168,67,.6);
+  animation:particle-drift linear infinite;
+}
+@keyframes particle-drift{
+  0%{transform:translateY(100px) translateX(0);opacity:0}
+  10%{opacity:.8}
+  90%{opacity:.4}
+  100%{transform:translateY(-20px) translateX(20px);opacity:0}
+}
+
+/* ── Narrative Panel ── */
+#narrative-panel{
+  flex:1;min-height:0;overflow-y:auto;
+  padding:14px 16px;
+  scrollbar-width:thin;scrollbar-color:var(--border) transparent;
+  scroll-behavior:smooth;
+  position:relative;
+  background:
+    radial-gradient(circle at 5px 5px,rgba(212,168,67,.12) 2px,transparent 2px),
+    radial-gradient(circle at calc(100% - 5px) 5px,rgba(212,168,67,.12) 2px,transparent 2px),
+    radial-gradient(circle at 5px calc(100% - 5px),rgba(212,168,67,.12) 2px,transparent 2px),
+    radial-gradient(circle at calc(100% - 5px) calc(100% - 5px),rgba(212,168,67,.12) 2px,transparent 2px),
+    var(--surface);
+  border-right:1px solid rgba(122,85,0,.15);
+}
+.narr-entry{margin-bottom:12px;animation:narr-appear .4s ease-out}
+@keyframes narr-appear{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.narr-divider{
+  display:flex;align-items:center;gap:8px;
+  margin:16px 0;font-size:7px;color:var(--text3);letter-spacing:3px;text-transform:uppercase;
+}
+.narr-divider::before,.narr-divider::after{
+  content:'';flex:1;height:1px;background:linear-gradient(to right,transparent,rgba(122,85,0,.35),transparent);
+}
+/* GM / IA text */
+.narr-gm{
+  border-left:2px solid var(--gold3);
+  padding:8px 12px;
+  background:rgba(212,168,67,.04);
+  border-radius:0 var(--r) var(--r) 0;
+  font-size:13px;color:var(--narrative);line-height:1.75;
+  font-style:italic;
+}
+.narr-gm-header{
+  font-size:8px;color:var(--gold3);letter-spacing:2px;text-transform:uppercase;
+  margin-bottom:5px;font-style:normal;display:flex;align-items:center;gap:6px;
+}
+.narr-gm-header::after{content:'';flex:1;height:1px;background:rgba(212,168,67,.2)}
+/* Player action narrated */
+.narr-action{
+  display:flex;gap:9px;align-items:flex-start;
+  font-size:12px;color:var(--text2);line-height:1.65;
+}
+.narr-action-icon{
+  width:26px;height:26px;flex-shrink:0;
+  border-radius:50%;overflow:hidden;
+  border:1.5px solid rgba(122,85,0,.3);
+  background:var(--surface2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;margin-top:1px;
+}
+.narr-action-body{flex:1;min-width:0}
+.narr-action-name{font-size:8px;font-weight:bold;letter-spacing:.5px;margin-bottom:3px;font-style:normal}
+.narr-action-name.player{color:var(--player-color)}
+.narr-action-name.npc{color:var(--npc-color)}
+.narr-action-text{font-style:italic;}
+/* NPC speech */
+.narr-npc{
+  background:rgba(240,184,68,.05);
+  border:1px solid rgba(240,184,68,.18);
+  border-radius:var(--r);padding:8px 12px;
+  font-size:12.5px;color:var(--text);line-height:1.7;
+}
+.narr-npc-header{
+  font-size:8px;color:var(--npc-color);letter-spacing:1.5px;margin-bottom:4px;
+  display:flex;align-items:center;gap:8px;
+}
+.narr-npc-portrait{
+  width:22px;height:22px;border-radius:3px;overflow:hidden;
+  background:var(--surface2);display:inline-flex;align-items:center;justify-content:center;
+  font-size:12px;flex-shrink:0;border:1px solid rgba(240,184,68,.25);
+}
+.narr-npc-name{font-weight:bold}
+.narr-npc-text{font-style:italic;color:var(--narrative)}
+/* System message */
+.narr-system{
+  text-align:center;
+  font-size:9px;color:var(--text3);letter-spacing:1.5px;
+  padding:3px 0;
+}
+/* Test result inline */
+.narr-test-inline{
+  display:flex;align-items:center;gap:10px;
+  background:rgba(155,143,212,.07);
+  border:1px solid rgba(155,143,212,.22);
+  border-radius:var(--r);padding:6px 11px;
+  font-size:10px;
+}
+.nti-dice{font-size:18px;flex-shrink:0}
+.nti-info{flex:1;min-width:0}
+.nti-label{font-size:8px;color:var(--test-color);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px}
+.nti-detail{font-size:11px;color:var(--text)}
+.nti-result{font-weight:bold;white-space:nowrap;font-size:11px;flex-shrink:0}
+.nti-result.succ{color:var(--green2)}
+.nti-result.fail{color:var(--red)}
+.nti-result.crit{color:#f39c12}
+
+/* ── Test Results Panel ── */
+#test-panel{
+  flex-shrink:0;overflow:hidden;
+  border-top:1px solid rgba(122,85,0,.2);
+  background:var(--bg);
+  transition:height .3s ease;
+  max-height:0;
+}
+#test-panel.open{max-height:160px;overflow-y:auto}
+#test-panel-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:5px 12px;cursor:pointer;
+  border-top:1px solid rgba(122,85,0,.2);
+  font-size:8px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;
+  background:var(--surface);
+  user-select:none;
+}
+#test-panel-header:hover{color:var(--gold);background:rgba(212,168,67,.04)}
+#test-panel-toggle{font-size:10px;transition:transform .3s}
+#test-panel.open #test-panel-toggle{transform:rotate(180deg)}
+#test-cards{display:flex;gap:8px;padding:8px 10px;overflow-x:auto;scrollbar-width:thin;align-items:flex-start}
+.test-card{
+  flex-shrink:0;min-width:140px;max-width:180px;
+  background:var(--surface2);
+  border:1px solid rgba(155,143,212,.25);
+  border-radius:var(--r);padding:8px 10px;
+  animation:card-appear .3s ease-out;
+}
+@keyframes card-appear{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+.tc-test-label{font-size:7px;color:var(--test-color);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
+.tc-actor{font-size:9px;color:var(--gold2);margin-bottom:2px;font-weight:bold}
+.tc-desc{font-size:8.5px;color:var(--text2);margin-bottom:6px;line-height:1.4}
+.tc-roll-row{display:flex;align-items:baseline;gap:5px;margin-bottom:3px}
+.tc-dice{font-size:16px;line-height:1}
+.tc-formula{font-size:9px;color:var(--text3);flex:1}
+.tc-total{font-size:18px;font-weight:bold;line-height:1}
+.tc-total.succ{color:var(--green2)}
+.tc-total.fail{color:var(--red)}
+.tc-total.crit{color:#f39c12;text-shadow:0 0 8px rgba(243,156,18,.4)}
+.tc-result-label{font-size:8px;letter-spacing:1px;font-weight:bold;text-transform:uppercase}
+.tc-result-label.succ{color:var(--green2)}
+.tc-result-label.fail{color:var(--red)}
+.tc-result-label.crit{color:#f39c12}
+
+/* ══════════════════════════════════════
+   RIGHT COLUMN
+══════════════════════════════════════ */
+#right-col{
+  width:240px;flex-shrink:0;
+  display:flex;flex-direction:column;
+  border-left:1px solid rgba(122,85,0,.2);
+  background:var(--surface);
+  overflow:hidden;
+}
+
+/* ── RP Chat ── */
+#rp-chat{
+  flex:1;min-height:0;display:flex;flex-direction:column;
+  overflow:hidden;
+}
+#rp-chat-header{
+  flex-shrink:0;padding:6px 10px 5px;
+  border-bottom:1px solid rgba(122,85,0,.2);
+  font-size:7.5px;color:var(--text3);letter-spacing:2.5px;text-transform:uppercase;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.chat-live-dot{
+  width:5px;height:5px;border-radius:50%;background:var(--green);
+  animation:pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}
+#rp-chat-messages{
+  flex:1;overflow-y:auto;padding:6px 8px;
+  scrollbar-width:thin;scrollbar-color:var(--border) transparent;
+  display:flex;flex-direction:column;gap:4px;
+  scroll-behavior:smooth;
+}
+.chat-msg{animation:chat-appear .25s ease-out}
+@keyframes chat-appear{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.chat-msg-header{
+  display:flex;align-items:center;gap:5px;margin-bottom:2px;
+}
+.chat-author-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.chat-author{font-size:8px;font-weight:bold;letter-spacing:.3px}
+.chat-time{font-size:7px;color:var(--text3);margin-left:auto}
+.chat-text{
+  font-size:10.5px;color:var(--text2);line-height:1.55;
+  padding-left:11px;font-style:italic;
+}
+.chat-text.action{color:var(--text);font-style:normal}
+.chat-msg.gm .chat-author{color:var(--gm-color)}
+.chat-msg.gm .chat-text{color:var(--narrative)}
+
+/* NPC interaction panel */
+#npc-panel{
+  flex-shrink:0;
+  border-top:1px solid rgba(240,184,68,.15);
+  background:rgba(240,184,68,.04);
+  overflow:hidden;max-height:0;
+  transition:max-height .35s ease;
+}
+#npc-panel.open{max-height:140px}
+#npc-panel-inner{padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+#npc-portrait-row{display:flex;align-items:center;gap:8px}
+#npc-portrait-box{
+  width:40px;height:40px;flex-shrink:0;
+  border:1.5px solid rgba(240,184,68,.4);border-radius:var(--r);
+  background:var(--surface2);overflow:hidden;
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+}
+#npc-portrait-box img{width:100%;height:100%;object-fit:cover;object-position:center top;image-rendering:pixelated}
+#npc-info{flex:1;min-width:0}
+#npc-name{font-size:10px;color:var(--npc-color);font-weight:bold;margin-bottom:2px}
+#npc-role{font-size:8px;color:var(--text3);font-style:italic}
+#npc-speech{
+  font-size:10px;color:var(--narrative);line-height:1.55;font-style:italic;
+  border-left:2px solid rgba(240,184,68,.3);padding-left:7px;
+}
+
+/* ── Group Decision ── */
+#decision-panel{
+  flex-shrink:0;overflow:hidden;
+  border-top:1px solid rgba(200,50,50,.2);
+  background:rgba(200,50,50,.04);
+  max-height:0;transition:max-height .35s ease;
+}
+#decision-panel.open{max-height:180px}
+#decision-inner{padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+#decision-title{font-size:8px;color:#e07070;letter-spacing:2px;text-transform:uppercase;margin-bottom:2px}
+#decision-question{font-size:11px;color:var(--text);line-height:1.5;font-style:italic}
+#decision-options{display:flex;flex-direction:column;gap:4px}
+.decision-opt{
+  padding:5px 10px;background:transparent;
+  border:1px solid rgba(122,85,0,.3);border-radius:var(--r);
+  color:var(--text2);font-family:inherit;font-size:9px;
+  cursor:pointer;text-align:left;transition:all .12s;
+}
+.decision-opt:hover{border-color:var(--gold);color:var(--gold);background:rgba(212,168,67,.07)}
+.decision-vote{font-size:7px;color:var(--text3);margin-left:4px}
+
+/* ── History Panel ── */
+#history-panel{
+  flex-shrink:0;overflow:hidden;
+  border-top:1px solid rgba(122,85,0,.18);
+  max-height:0;transition:max-height .35s ease;
+}
+#history-panel.open{max-height:200px;overflow-y:auto}
+#history-header{
+  padding:5px 10px;cursor:pointer;
+  font-size:7.5px;color:var(--text3);letter-spacing:2.5px;text-transform:uppercase;
+  background:var(--surface);
+  border-top:1px solid rgba(122,85,0,.18);
+  display:flex;align-items:center;justify-content:space-between;
+  user-select:none;
+}
+#history-header:hover{color:var(--gold);background:rgba(212,168,67,.04)}
+#history-toggle{font-size:10px;transition:transform .3s}
+#history-panel.open #history-toggle{transform:rotate(180deg)}
+#history-list{padding:6px 10px 8px;display:flex;flex-direction:column;gap:4px}
+.hist-entry{
+  display:flex;align-items:flex-start;gap:6px;
+  font-size:9px;color:var(--text2);line-height:1.45;padding:2px 0;
+  border-bottom:1px solid rgba(122,85,0,.07);
+}
+.hist-dot{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--gold3);flex-shrink:0;margin-top:4px;
+}
+.hist-dot.important{background:var(--red)}
+.hist-dot.discover{background:var(--test-color)}
+
+/* ── Inventory Bar ── */
+#inventory-bar{
+  flex-shrink:0;
+  padding:6px 8px;
+  border-top:1px solid rgba(122,85,0,.18);
+  display:flex;flex-direction:column;gap:4px;
+  background:var(--surface2);
+}
+#inventory-label{font-size:7px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:2px}
+#inventory-items{display:flex;gap:5px;flex-wrap:wrap}
+.inv-item{
+  display:flex;flex-direction:column;align-items:center;gap:1px;
+  cursor:pointer;padding:4px 6px;
+  background:var(--surface);border:1px solid rgba(122,85,0,.22);border-radius:var(--r);
+  transition:all .12s;
+}
+.inv-item:hover{border-color:var(--gold);background:rgba(212,168,67,.07)}
+.inv-item-icon{font-size:15px;line-height:1}
+.inv-item-name{font-size:6px;color:var(--text3);white-space:nowrap}
+.inv-item-qty{font-size:6px;color:var(--gold3)}
+
+/* ══════════════════════════════════════
+   ACTION BAR
+══════════════════════════════════════ */
+#action-bar{
+  flex-shrink:0;
+  border-top:2px solid var(--border);
+  background:var(--bg);
+  padding:8px 10px;
+  display:flex;gap:8px;align-items:stretch;
+}
+#action-left{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+#action-input-wrap{
+  display:flex;gap:6px;align-items:stretch;
+}
+#action-input{
+  flex:1;min-width:0;resize:none;
+  background:rgba(0,0,0,.5);
+  border:1px solid rgba(122,85,0,.35);
+  color:var(--text);font-family:Georgia,serif;font-size:13px;
+  padding:8px 11px;border-radius:var(--r);outline:none;
+  height:58px;line-height:1.55;
+  transition:border-color .15s;
+}
+#action-input:focus{border-color:var(--gold)}
+#action-input::placeholder{color:var(--text3);font-style:italic}
+#btn-send-action{
+  padding:0 14px;
+  background:var(--gold);color:#1a0d00;font-weight:bold;
+  border:none;border-radius:var(--r);
+  font-family:inherit;font-size:10px;cursor:pointer;
+  letter-spacing:.5px;white-space:nowrap;
+  transition:background .15s,opacity .15s;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+}
+#btn-send-action:hover{background:var(--gold2)}
+#btn-send-action:active{opacity:.8}
+.bsa-icon{font-size:18px;line-height:1}
+.bsa-label{font-size:8px;letter-spacing:.5px}
+/* Quick suggestions */
+#quick-suggestions{display:flex;gap:5px;flex-wrap:wrap}
+.qs-btn{
+  padding:3px 9px;background:transparent;
+  border:1px solid rgba(122,85,0,.25);border-radius:12px;
+  color:var(--text3);font-family:inherit;font-size:8.5px;
+  cursor:pointer;transition:all .12s;white-space:nowrap;
+}
+.qs-btn:hover{border-color:var(--gold);color:var(--gold2);background:rgba(212,168,67,.07)}
+
+/* ══════════════════════════════════════
+   COMBAT TRANSITION OVERLAY
+══════════════════════════════════════ */
+#combat-overlay{
+  position:fixed;inset:0;z-index:1000;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(10,8,6,.0);
+  pointer-events:none;
+  transition:background .5s ease;
+}
+#combat-overlay.visible{
+  background:rgba(10,8,6,.97);
+  pointer-events:all;
+}
+#combat-overlay-content{
+  display:flex;flex-direction:column;align-items:center;gap:16px;
+  opacity:0;transform:scale(.85);
+  transition:opacity .4s ease .3s, transform .4s ease .3s;
+}
+#combat-overlay.visible #combat-overlay-content{
+  opacity:1;transform:scale(1);
+}
+#combat-alert-icon{font-size:64px;line-height:1;animation:alert-pulse 1s ease-in-out infinite}
+@keyframes alert-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+#combat-alert-title{
+  font-size:28px;color:var(--red);font-weight:bold;letter-spacing:3px;
+  text-transform:uppercase;text-shadow:0 0 24px rgba(231,76,60,.6);
+}
+#combat-alert-sub{font-size:15px;color:var(--text2);font-style:italic;text-align:center;max-width:300px;line-height:1.6}
+#combat-alert-btn{
+  margin-top:8px;
+  padding:12px 28px;background:var(--red);color:#fff;font-weight:bold;
+  border:none;border-radius:var(--r);font-family:inherit;font-size:12px;
+  cursor:pointer;letter-spacing:1px;text-transform:uppercase;
+  transition:background .15s,transform .1s;
+}
+#combat-alert-btn:hover{background:#c0392b;transform:scale(1.04)}
+#combat-progress{
+  width:200px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;
+}
+#combat-progress-bar{
+  height:100%;background:var(--red);width:0;
+  transition:width 2s linear;border-radius:2px;
+}
+
+/* ══════════════════════════════════════
+   MOBILE
+══════════════════════════════════════ */
+@media(max-width:700px){
+  :root{--scene-h:140px}
+  #right-col{display:none}
+  #left-col{flex:1}
+  #action-bar{padding:6px 8px}
+  #action-input{height:48px;font-size:12px}
+  #quick-suggestions{display:none}
+  /* Mobile tab bar for chat/history */
+  #mobile-tabs{
+    display:flex!important;
+  }
+}
+#mobile-tabs{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:var(--surface);
+  border-top:1px solid rgba(122,85,0,.3);
+  height:48px;
+}
+.mob-tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;cursor:pointer;font-size:7px;color:var(--text3);letter-spacing:1px;
+  transition:color .12s;
+}
+.mob-tab.active,.mob-tab:hover{color:var(--gold)}
+.mob-tab-icon{font-size:18px;line-height:1}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ═══ STATUS BAR ═══ -->
+<div id="status-bar">
+  <div id="session-info">
+    <div id="chapter-label">Capítulo 1</div>
+    <div id="chapter-title">A Estrada Sombria</div>
+    <div id="location-row">
+      <span id="location-label">📍 Floresta Negra</span>
+      <span id="time-label">🌙 Anoitecer</span>
+    </div>
+  </div>
+
+  <div id="player-portraits">
+    <!-- Populated by JS -->
+  </div>
+
+  <div id="status-bar-right">
+    <button class="sb-btn-sm" onclick="toggleHistory()">📜 Histórico</button>
+    <button class="sb-btn-sm combat" onclick="triggerCombat()">⚔ COMBATE</button>
+  </div>
+</div>
+
+<!-- ═══ MAIN CONTENT ═══ -->
+<div id="main-content">
+
+  <!-- ── Left Column ── -->
+  <div id="left-col">
+
+    <!-- Scene Visual -->
+    <div id="scene-area">
+      <div id="scene-bg-layer"></div>
+      <div id="scene-trees"></div>
+      <div id="scene-ground"></div>
+      <div id="scene-particles"></div>
+      <div id="scene-overlay-top">
+        <div id="scene-location-badge">Floresta Negra</div>
+        <div id="scene-time-badge">🌙 Anoitecer — Rodada 1</div>
+      </div>
+      <div id="scene-sprites">
+        <!-- Characters in scene, populated by JS -->
+      </div>
+    </div>
+
+    <!-- Narrative Panel -->
+    <div id="narrative-panel" id="narrative-panel">
+      <!-- Populated by JS with initial content -->
+    </div>
+
+    <!-- Test Panel (collapsible) -->
+    <div id="test-panel-header" onclick="toggleTestPanel()">
+      🎲 RESULTADOS DE TESTES <span id="test-count" style="color:var(--test-color);margin-left:4px"></span>
+      <span id="test-panel-toggle">▲</span>
+    </div>
+    <div id="test-panel">
+      <div id="test-cards"></div>
+    </div>
+
+  </div>
+
+  <!-- ── Right Column ── -->
+  <div id="right-col">
+
+    <!-- RP Chat -->
+    <div id="rp-chat">
+      <div id="rp-chat-header">
+        CHAT ROLEPLAY
+        <div class="chat-live-dot"></div>
+      </div>
+      <div id="rp-chat-messages">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- NPC Interaction Panel -->
+    <div id="npc-panel">
+      <div id="npc-panel-inner">
+        <div id="npc-portrait-row">
+          <div id="npc-portrait-box"><span id="npc-portrait-icon">🧙</span></div>
+          <div id="npc-info">
+            <div id="npc-name">Velho Mercador</div>
+            <div id="npc-role">Comerciante ambulante</div>
+          </div>
+        </div>
+        <div id="npc-speech">"Vocês parecem cansados, aventureiros... posso oferecer suprimentos por um preço justo."</div>
+      </div>
+    </div>
+
+    <!-- Group Decision -->
+    <div id="decision-panel">
+      <div id="decision-inner">
+        <div id="decision-title">⚠ Decisão do Grupo</div>
+        <div id="decision-question">O grupo deve:</div>
+        <div id="decision-options">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- History Panel -->
+    <div id="history-header" onclick="toggleHistory()">
+      📜 HISTÓRICO DA AVENTURA <span id="history-toggle">▼</span>
+    </div>
+    <div id="history-panel">
+      <div id="history-list">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- Inventory -->
+    <div id="inventory-bar">
+      <div id="inventory-label">Inventário Rápido</div>
+      <div id="inventory-items">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+  </div><!-- /right-col -->
+
+</div><!-- /main-content -->
+
+<!-- ═══ ACTION BAR ═══ -->
+<div id="action-bar">
+  <div id="action-left">
+    <div id="action-input-wrap">
+      <textarea id="action-input" placeholder="O que seu personagem faz? (ex: examino a porta com cuidado...)"></textarea>
+      <button id="btn-send-action" onclick="sendAction()">
+        <span class="bsa-icon">✦</span>
+        <span class="bsa-label">ENVIAR AÇÃO</span>
+      </button>
+    </div>
+    <div id="quick-suggestions">
+      <button class="qs-btn" onclick="qs('examino o ambiente com atenção')">👁 Examinar</button>
+      <button class="qs-btn" onclick="qs('fico alerta e escuto qualquer barulho')">👂 Escutar</button>
+      <button class="qs-btn" onclick="qs('falo com o grupo sobre a situação')">💬 Falar</button>
+      <button class="qs-btn" onclick="qs('procuro por armadilhas ou perigos')">🔍 Procurar</button>
+      <button class="qs-btn" onclick="qs('me escondo nas sombras e espero')">🌑 Esconder</button>
+      <button class="qs-btn" onclick="qs('tento intimidar com minha presença')">😤 Intimidar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ COMBAT TRANSITION OVERLAY ═══ -->
+<div id="combat-overlay">
+  <div id="combat-overlay-content">
+    <div id="combat-alert-icon">⚔️</div>
+    <div id="combat-alert-title">⚠ EMBOSCADA!</div>
+    <div id="combat-alert-sub">Goblins saltam da mata! O grupo deve se preparar para o combate!</div>
+    <div id="combat-progress"><div id="combat-progress-bar"></div></div>
+    <button id="combat-alert-btn" onclick="enterCombat()">⚔ ENTRAR NO COMBATE ▶</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════
+const PLAYERS = [
+  {id:'p1', name:'Guerreiro', classe:'guerreiro', sexo:'m', color:'#7ab8f5', status:'online', icon:'⚔️'},
+  {id:'p2', name:'Mago',      classe:'mago',      sexo:'m', color:'#b388ff', status:'typing', icon:'🔮'},
+  {id:'p3', name:'Arqueira',  classe:'arqueiro',  sexo:'f', color:'#80cbc4', status:'online', icon:'🏹'},
+  {id:'p4', name:'Clérigo',   classe:'clerigo',   sexo:'f', color:'#ffcc80', status:'away',   icon:'✨'},
+];
+
+const HISTORY_ENTRIES = [
+  {text:'Partiram da cidade de Pedramar ao amanhecer', type:'normal'},
+  {text:'Encontraram rastros de goblins na estrada', type:'discover'},
+  {text:'Guerreiro afastou batedores inimigos', type:'normal'},
+  {text:'Mago detectou magia de ilusão na floresta', type:'discover'},
+  {text:'Grupo decidiu acampar antes do anoitecer', type:'normal'},
+  {text:'Ouviram barulhos suspeitos ao norte', type:'important'},
+];
+
+const INVENTORY = [
+  {icon:'🗡️', name:'Espada', qty:''},
+  {icon:'🧪', name:'Poção', qty:'×3'},
+  {icon:'📜', name:'Mapa', qty:''},
+  {icon:'🗝️', name:'Chave', qty:''},
+  {icon:'💰', name:'Ouro', qty:'45'},
+  {icon:'🏹', name:'Flechas', qty:'×12'},
+];
+
+// ═══════════════════════════════════
+//  INIT
+// ═══════════════════════════════════
+let testCount = 0;
+let chatLog = [];
+
+function init(){
+  renderPlayerPortraits();
+  renderSceneChars();
+  renderHistory();
+  renderInventory();
+  renderInitialNarrative();
+  renderInitialChat();
+  spawnParticles();
+  // Simulate live activity
+  setTimeout(()=>addChatMsg('Mago','divisa árvores se movendo...','p2'), 3500);
+  setTimeout(()=>addChatMsg('Arqueira','Preparo meu arco silenciosamente','p3'), 7000);
+  setTimeout(()=>rollTest('Guerreiro','PERCEPÇÃO','investigou o ambiente',18,14,true,false), 10000);
+}
+
+// ═══════════════════════════════════
+//  PLAYER PORTRAITS
+// ═══════════════════════════════════
+function renderPlayerPortraits(){
+  const wrap = document.getElementById('player-portraits');
+  wrap.innerHTML = '';
+  PLAYERS.forEach(p=>{
+    const chip = document.createElement('div');
+    chip.className = 'player-chip';
+    chip.title = `${p.name} — ${p.status}`;
+    chip.innerHTML = `
+      <div class="pc-portrait">
+        <img src="../sprites/${p.classe}_${p.sexo}.png"
+          onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('afterbegin','<span>${p.icon}</span>')">
+        <div class="pc-status ${p.status}"></div>
+      </div>
+      <div class="pc-name">${p.name}</div>
+      <div class="pc-class">${p.status==='typing'?'✏ digitando...':(p.status==='away'?'ausente':'online')}</div>`;
+    wrap.appendChild(chip);
+  });
+}
+
+// ═══════════════════════════════════
+//  SCENE CHARACTERS
+// ═══════════════════════════════════
+function renderSceneChars(){
+  const wrap = document.getElementById('scene-sprites');
+  wrap.innerHTML = '';
+  PLAYERS.forEach(p=>{
+    const ch = document.createElement('div');
+    ch.className = 'scene-char';
+    ch.innerHTML = `
+      <img src="../sprites/${p.classe}_${p.sexo}.png"
+        onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span class=\\'scene-char-icon\\'>${p.icon}</span>')">
+      <div class="scene-char-name" style="color:${p.color}">${p.name}</div>`;
+    wrap.appendChild(ch);
+  });
+}
+
+// ═══════════════════════════════════
+//  PARTICLES
+// ═══════════════════════════════════
+function spawnParticles(){
+  const wrap = document.getElementById('scene-particles');
+  for(let i=0;i<12;i++){
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.cssText = `
+      left:${Math.random()*100}%;
+      bottom:${Math.random()*60}px;
+      animation-duration:${4+Math.random()*6}s;
+      animation-delay:${Math.random()*5}s;
+      opacity:${0.3+Math.random()*0.5};
+    `;
+    wrap.appendChild(p);
+  }
+}
+
+// ═══════════════════════════════════
+//  NARRATIVE
+// ═══════════════════════════════════
+function renderInitialNarrative(){
+  const panel = document.getElementById('narrative-panel');
+  const entries = [
+    {type:'gm', text:'A floresta permanece em silêncio opressor. O vento sopra entre os galhos retorcidos das árvores, carregando o cheiro de terra úmida e algo mais... algo que não deveria estar ali. As sombras dançam com vida própria entre os troncos escuros.'},
+    {type:'system', text:'— Grupo entra na Floresta Negra —'},
+    {type:'action', player:'Guerreiro', color:'#7ab8f5', icon:'⚔️', text:'fica de guarda enquanto o grupo avança, mão na empunhadura da espada.'},
+    {type:'action', player:'Mago', color:'#b388ff', icon:'🔮', text:'conjura um feitiço sutil de Detectar Magia e varre o ambiente com os olhos brilhando em roxo tênue.'},
+    {type:'gm', text:'O feitiço do Mago revela auras fracas de ilusão espalhadas pelos arbustos à esquerda. Algo — ou alguém — está se escondendo, e não quer ser visto. O Guerreiro pressente movimentos entre as árvores ao norte.'},
+    {type:'test', actor:'Mago', label:'DETECTAR MAGIA', desc:'varreu a área com magia arcana', dice:'1d20', mod:'+5', total:19, dc:14, succ:true, crit:false},
+    {type:'npc', name:'Voz nas Sombras', icon:'👤', text:'"Aventureiros... vocês escolheram mal o caminho esta noite."'},
+    {type:'gm', text:'Uma risada baixa ecoa pela floresta. Os pássaros param de cantar de uma vez. O grupo tem alguns momentos antes de qualquer coisa acontecer — o que farão?'},
+  ];
+  entries.forEach(e=>addNarrEntry(e, panel));
+  panel.scrollTop = panel.scrollHeight;
+}
+
+function addNarrEntry(e, container){
+  const el = document.createElement('div');
+  el.className = 'narr-entry';
+  container = container || document.getElementById('narrative-panel');
+
+  if(e.type==='gm'){
+    el.innerHTML=`
+      <div class="narr-gm">
+        <div class="narr-gm-header">✦ MESTRE</div>
+        ${e.text}
+      </div>`;
+  } else if(e.type==='action'){
+    el.innerHTML=`
+      <div class="narr-action">
+        <div class="narr-action-icon">${e.icon}</div>
+        <div class="narr-action-body">
+          <div class="narr-action-name player" style="color:${e.color}">${e.player}</div>
+          <div class="narr-action-text">${e.text}</div>
+        </div>
+      </div>`;
+  } else if(e.type==='npc'){
+    el.innerHTML=`
+      <div class="narr-npc">
+        <div class="narr-npc-header">
+          <div class="narr-npc-portrait">${e.icon}</div>
+          <span class="narr-npc-name">${e.name}</span>
+        </div>
+        <div class="narr-npc-text">"${e.text}"</div>
+      </div>`;
+  } else if(e.type==='system'){
+    el.innerHTML=`<div class="narr-divider">${e.text}</div>`;
+  } else if(e.type==='test'){
+    const cls=e.crit?'crit':e.succ?'succ':'fail';
+    const lbl=e.crit?'⚡ CRÍTICO!':e.succ?'✅ SUCESSO':'❌ FALHOU';
+    el.innerHTML=`
+      <div class="narr-test-inline">
+        <div class="nti-dice">🎲</div>
+        <div class="nti-info">
+          <div class="nti-label">${e.label}</div>
+          <div class="nti-detail">${e.actor} — ${e.desc}</div>
+        </div>
+        <div class="nti-result ${cls}">${e.total} — ${lbl}</div>
+      </div>`;
+    // Also add test card
+    addTestCard(e);
+  }
+  container.appendChild(el);
+}
+
+// ═══════════════════════════════════
+//  TEST CARDS
+// ═══════════════════════════════════
+function addTestCard(t){
+  const cards = document.getElementById('test-cards');
+  const cls=t.crit?'crit':t.succ?'succ':'fail';
+  const lbl=t.crit?'⚡ CRÍTICO!':t.succ?'✅ SUCESSO':'❌ FALHOU';
+  const card = document.createElement('div');
+  card.className = 'test-card';
+  card.innerHTML=`
+    <div class="tc-test-label">🎲 ${t.label}</div>
+    <div class="tc-actor">${t.actor}</div>
+    <div class="tc-desc">${t.desc}</div>
+    <div class="tc-roll-row">
+      <div class="tc-dice">🎲</div>
+      <div class="tc-formula">${t.dice}${t.mod} (DC ${t.dc})</div>
+      <div class="tc-total ${cls}">${t.total}</div>
+    </div>
+    <div class="tc-result-label ${cls}">${lbl}</div>`;
+  cards.insertBefore(card, cards.firstChild);
+  testCount++;
+  document.getElementById('test-count').textContent = `(${testCount})`;
+  if(!document.getElementById('test-panel').classList.contains('open')){
+    document.getElementById('test-panel').classList.add('open');
+  }
+}
+
+function rollTest(actor, label, desc, total, dc, succ, crit){
+  const dice = Math.floor(Math.random()*20)+1;
+  const t = {actor, label, desc, dice:'1d20', mod:'+'+Math.max(0,total-dice), total, dc, succ, crit};
+  addNarrEntry({type:'test', ...t});
+  addTestCard(t);
+  const panel = document.getElementById('narrative-panel');
+  panel.scrollTop = panel.scrollHeight;
+}
+
+// ═══════════════════════════════════
+//  RP CHAT
+// ═══════════════════════════════════
+const CHAT_COLORS = {p1:'#7ab8f5',p2:'#b388ff',p3:'#80cbc4',p4:'#ffcc80'};
+
+function renderInitialChat(){
+  const msgs=[
+    {pid:'p1', text:'Mão na empunhadura. Algo não tá certo aqui.', ts:'21:42'},
+    {pid:'p3', text:'Concordo. Muito silencioso. Nem um grilo.', ts:'21:42'},
+    {pid:'p2', text:'Minha magia detectou auras de ilusão. Tem alguém nos observando.', ts:'21:43'},
+    {pid:'p4', text:'Fico próxima ao Guerreiro. Pronta para curar se necessário.', ts:'21:43'},
+  ];
+  msgs.forEach(m=>{
+    const p = PLAYERS.find(pl=>pl.id===m.pid);
+    addChatMsg(p.name, m.text, m.pid, m.ts);
+  });
+}
+
+function addChatMsg(name, text, pid, ts){
+  const wrap = document.getElementById('rp-chat-messages');
+  const color = CHAT_COLORS[pid]||'#a89060';
+  const now = ts || new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const d = document.createElement('div');
+  d.className = 'chat-msg';
+  d.innerHTML = `
+    <div class="chat-msg-header">
+      <div class="chat-author-dot" style="background:${color}"></div>
+      <div class="chat-author" style="color:${color}">${name}</div>
+      <div class="chat-time">${now}</div>
+    </div>
+    <div class="chat-text action">${text}</div>`;
+  wrap.appendChild(d);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+// ═══════════════════════════════════
+//  HISTORY
+// ═══════════════════════════════════
+function renderHistory(){
+  const list = document.getElementById('history-list');
+  list.innerHTML = '';
+  HISTORY_ENTRIES.forEach(e=>{
+    const d = document.createElement('div');
+    d.className = 'hist-entry';
+    d.innerHTML = `<div class="hist-dot ${e.type}"></div><span>${e.text}</span>`;
+    list.appendChild(d);
+  });
+}
+
+// ═══════════════════════════════════
+//  INVENTORY
+// ═══════════════════════════════════
+function renderInventory(){
+  const wrap = document.getElementById('inventory-items');
+  wrap.innerHTML = '';
+  INVENTORY.forEach(item=>{
+    const d = document.createElement('div');
+    d.className = 'inv-item';
+    d.title = item.name;
+    d.innerHTML = `
+      <div class="inv-item-icon">${item.icon}</div>
+      <div class="inv-item-name">${item.name}</div>
+      ${item.qty?`<div class="inv-item-qty">${item.qty}</div>`:''}`;
+    wrap.appendChild(d);
+  });
+}
+
+// ═══════════════════════════════════
+//  ACTION INPUT
+// ═══════════════════════════════════
+function qs(text){
+  const ta = document.getElementById('action-input');
+  ta.value = text;
+  ta.focus();
+}
+
+function sendAction(){
+  const ta = document.getElementById('action-input');
+  const text = ta.value.trim();
+  if(!text) return;
+  ta.value = '';
+
+  // Add to narrative as player action
+  const p = PLAYERS[0]; // current player (Guerreiro by default)
+  addNarrEntry({type:'action', player:p.name, color:p.color, icon:p.icon, text});
+  addChatMsg(p.name, text, p.id);
+
+  // Scroll narrative
+  const panel = document.getElementById('narrative-panel');
+  setTimeout(()=>panel.scrollTop=panel.scrollHeight, 50);
+
+  // Simulate GM response after delay
+  setTimeout(()=>{
+    simulateGMResponse(text);
+  }, 1500);
+}
+
+function simulateGMResponse(action){
+  const responses = [
+    'O grupo avança com cautela. A floresta parece observar cada passo. De repente, um galho estala ao norte.',
+    'Sua ação chama a atenção de uma sombra nos arbustos. Ela recua, mas não desaparece completamente.',
+    'O ambiente responde à sua presença. O ar parece mais pesado aqui, carregado de tensão mágica.',
+    'Uma voz distante ecoa pela floresta, mas as palavras se perdem no vento antes de chegar aos seus ouvidos.',
+    'Você percebe detalhes que antes passaram despercebidos. Algo importante espera ser descoberto aqui.',
+  ];
+  const text = responses[Math.floor(Math.random()*responses.length)];
+  addNarrEntry({type:'gm', text});
+  const panel = document.getElementById('narrative-panel');
+  setTimeout(()=>panel.scrollTop=panel.scrollHeight, 50);
+}
+
+// ═══════════════════════════════════
+//  UI TOGGLES
+// ═══════════════════════════════════
+function toggleTestPanel(){
+  document.getElementById('test-panel').classList.toggle('open');
+}
+function toggleHistory(){
+  document.getElementById('history-panel').classList.toggle('open');
+  document.getElementById('history-header').style.borderTopWidth = '0';
+}
+
+// ═══════════════════════════════════
+//  COMBAT TRANSITION
+// ═══════════════════════════════════
+function triggerCombat(){
+  const overlay = document.getElementById('combat-overlay');
+  overlay.classList.add('visible');
+  // Progress bar auto-advance
+  setTimeout(()=>{
+    document.getElementById('combat-progress-bar').style.width='100%';
+  }, 100);
+}
+
+function enterCombat(){
+  // Transition to battle screen
+  document.getElementById('combat-overlay').style.opacity='0';
+  document.getElementById('combat-overlay').style.transition='opacity .5s';
+  setTimeout(()=>{ window.location.href='batalha.html'; }, 500);
+}
+
+// Keyboard: Ctrl+Enter to send
+document.getElementById('action-input').addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();sendAction();}
+});
+
+init();
+</script>
+</body>
+</html>
