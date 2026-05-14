@@ -493,6 +493,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
 
 /* portrait-cards: hidden on desktop */
 #portrait-cards{display:none}
+#pc-modal{display:none}
 #close-sheet-btn{display:none}
 #sheet-backdrop{display:none;position:fixed;inset:0;z-index:299;background:rgba(0,0,0,.65)}
 #sheet-backdrop.open{display:block}
@@ -581,10 +582,85 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
   .pc-act-btn.danger span{color:#a05050}
   .pc-act-btn.danger:active{background:rgba(204,68,68,.15)}
 
-  /* Painel dinâmico direito */
-  #pc-panel-card{overflow:hidden}
-  #pc-panel-body{overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:2px;max-height:110px}
-  /* Status */
+  /* ── Modal de ações (portrait) ── */
+  #pc-modal{
+    position:fixed;inset:0;z-index:200;
+    background:rgba(0,0,0,.82);
+    flex-direction:column;align-items:stretch;
+  }
+  #pc-modal.open{display:flex}
+  #pc-modal-inner{
+    background:var(--surface2);
+    border-radius:12px 12px 0 0;
+    border-top:2px solid rgba(88,104,160,.4);
+    margin-top:auto;max-height:72vh;
+    display:flex;flex-direction:column;overflow:hidden;
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  #pc-modal-head{
+    flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
+    padding:8px 12px 7px;border-bottom:1px solid rgba(88,104,160,.18);
+    font-size:8px;color:var(--silver2);letter-spacing:2px;text-transform:uppercase;font-weight:bold;
+  }
+  .pcm-close,.pcm-back{
+    background:rgba(88,104,160,.12);border:1px solid rgba(88,104,160,.25);
+    border-radius:3px;color:var(--text2);font-family:inherit;
+    font-size:9px;padding:3px 8px;cursor:pointer;
+  }
+  #pc-modal-body{
+    overflow-y:auto;padding:8px 10px;flex:1;
+    display:flex;flex-direction:column;gap:2px;
+    scrollbar-width:thin;scrollbar-color:var(--border) transparent;
+  }
+  .pcm-skill-row{
+    display:flex;align-items:center;gap:5px;
+    padding:5px 4px;border-bottom:1px solid rgba(88,104,160,.1);
+    cursor:pointer;border-radius:4px;transition:background .1s;
+  }
+  .pcm-skill-row:last-child{border-bottom:none}
+  .pcm-skill-row:active{background:rgba(88,104,160,.15)}
+  .pcm-inv-row{
+    display:flex;align-items:center;gap:5px;
+    padding:4px 2px;border-bottom:1px solid rgba(88,104,160,.08);
+  }
+  .pcm-inv-row:last-child{border-bottom:none}
+  .pcm-confirm{display:flex;flex-direction:column;gap:8px;padding:4px 2px}
+  .pcm-confirm-skill{font-size:15px;color:var(--silver2);font-weight:bold}
+  .pcm-confirm-desc{font-size:10px;color:var(--text2);line-height:1.5}
+  .pcm-confirm-cost{font-size:10px;color:var(--blue)}
+  .pcm-confirm-btns{display:flex;gap:6px;margin-top:4px}
+  .pcm-cancel-btn{
+    flex:1;padding:8px;background:rgba(88,104,160,.08);
+    border:1px solid rgba(88,104,160,.2);border-radius:4px;
+    color:var(--text2);font-family:inherit;font-size:10px;cursor:pointer;
+  }
+  .pcm-use-btn{
+    flex:2;padding:8px;background:var(--blue);
+    border:none;border-radius:4px;
+    color:#fff;font-family:inherit;font-size:10px;font-weight:bold;cursor:pointer;
+  }
+  .pcm-falar-lbl{font-size:7px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin:4px 0 3px}
+  .pcm-falar-ta{
+    width:100%;background:rgba(0,0,0,.4);border:1px solid rgba(88,104,160,.3);
+    color:var(--text);font-family:Georgia,serif;font-size:12px;
+    padding:7px 9px;border-radius:4px;outline:none;resize:none;height:60px;margin-bottom:2px;
+  }
+  .pcm-falar-ta:focus{border-color:var(--silver)}
+  .pcm-targets{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+  .pcm-target-btn{
+    padding:4px 9px;background:rgba(88,104,160,.08);
+    border:1px solid rgba(88,104,160,.22);border-radius:12px;
+    color:var(--text2);font-family:inherit;font-size:9px;cursor:pointer;transition:all .1s;
+  }
+  .pcm-target-btn.npc{border-color:rgba(108,196,160,.25);color:var(--npc-color);background:rgba(108,196,160,.06)}
+  .pcm-target-btn.all{border-color:rgba(88,104,160,.3);color:var(--silver)}
+  .pcm-target-btn.active{background:rgba(88,104,160,.3);border-color:var(--silver);color:var(--silver2)}
+  .pcm-send-btn{
+    width:100%;padding:9px;background:var(--blue);
+    border:none;border-radius:4px;
+    color:#fff;font-family:inherit;font-size:10px;font-weight:bold;cursor:pointer;
+  }
+  /* Status section labels (shared) */
   .pc-section-lbl{font-size:6px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin:3px 0 2px}
   .pc-conds-wrap,.pc-equips-wrap{display:flex;flex-wrap:wrap;gap:2px;margin-bottom:4px}
   .pc-conds-wrap .condition-tag,.pc-equips-wrap .equip-tag{padding:1px 5px;font-size:6px}
@@ -689,7 +765,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
 
     <!-- PORTRAIT CARDS (substitui cena no celular vertical) -->
     <div id="portrait-cards">
-      <!-- Card esquerdo: personagem + botões -->
+      <!-- Card esquerdo: info do personagem -->
       <div class="pc-card" id="pc-ficha">
         <div class="pc-char-row">
           <div id="pc-avatar"></div>
@@ -699,12 +775,30 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
             <div class="pc-bar"><span class="pc-lbl">SP</span><div class="pc-track"><div id="pc-sp-fill"></div></div><span id="pc-sp-val">45</span></div>
           </div>
         </div>
-        <div class="pc-action-grid">
-          <button class="pc-act-btn active" data-panel="status" onclick="showPanel('status')">📋<span>Status</span></button>
-          <button class="pc-act-btn" data-panel="skills" onclick="showPanel('skills')">⚔️<span>Habilidades</span></button>
-          <button class="pc-act-btn" data-panel="inventory" onclick="showPanel('inventory')">🎒<span>Inventário</span></button>
-          <button class="pc-act-btn danger" onclick="triggerCombat()">☠<span>Combate</span></button>
+        <div id="pc-conds">
+          <span class="condition-tag buff">⚡ Alerta</span>
+          <span class="condition-tag buff">🛡 Guarda</span>
         </div>
+        <div id="pc-equips">
+          <span class="equip-tag"><span>🗡️</span>Espada</span>
+          <span class="equip-tag"><span>🛡️</span>Escudo</span>
+        </div>
+      </div>
+      <!-- Card direito: botões de ação -->
+      <div class="pc-card" id="pc-actions">
+        <div class="pc-action-grid">
+          <button class="pc-act-btn" onclick="openModal('skills')">⚔️<span>Habilidades</span></button>
+          <button class="pc-act-btn" onclick="openModal('inventory')">🎒<span>Inventário</span></button>
+          <button class="pc-act-btn" onclick="openModal('falar')">💬<span>Falar</span></button>
+          <button class="pc-act-btn" onclick="openModal('status')">📋<span>Status</span></button>
+        </div>
+      </div>
+    </div>
+    <!-- Modal de ações (portrait) -->
+    <div id="pc-modal" onclick="closeModalOutside(event)">
+      <div id="pc-modal-inner">
+        <div id="pc-modal-head"></div>
+        <div id="pc-modal-body"></div>
       </div>
       <!-- Card direito: painel dinâmico -->
       <div class="pc-card" id="pc-panel-card">
@@ -996,21 +1090,26 @@ const SKILLS = [
   {ico:'✨', name:'Segundo Fôlego',    sp:12, desc:'Recupera 30 HP imediatamente'},
 ];
 
-let activePanel = 'status';
+function renderPortraitCards(){
+  const av = document.getElementById('pc-avatar');
+  if(!av) return;
+  av.innerHTML=`<img src="../sprites/${ME.classe}_${ME.sexo}.png"
+    onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span>${ME.icon}</span>')">`;
+  document.getElementById('pc-name').textContent = ME.name + ' · Nv3';
+}
 
-function showPanel(type){
-  activePanel = type;
-  document.querySelectorAll('.pc-act-btn[data-panel]').forEach(b=>{
-    b.classList.toggle('active', b.dataset.panel===type);
-  });
-  const head = document.getElementById('pc-panel-head');
-  const body = document.getElementById('pc-panel-body');
-  if(!head||!body) return;
+// ── Modal de ações ──
+let _falarTarget = '';
+
+function openModal(type){
+  const modal = document.getElementById('pc-modal');
+  const head  = document.getElementById('pc-modal-head');
+  const body  = document.getElementById('pc-modal-body');
 
   if(type==='skills'){
-    head.textContent = '⚔️ HABILIDADES';
-    body.innerHTML = SKILLS.map(s=>`
-      <div class="pc-skill-row">
+    head.innerHTML = `<span>⚔️ HABILIDADES</span><button class="pcm-close" onclick="closeModal()">✕</button>`;
+    body.innerHTML = SKILLS.map((s,i)=>`
+      <div class="pcm-skill-row" onclick="showSkillConfirm(${i})">
         <span class="pc-skill-ico">${s.ico}</span>
         <div class="pc-skill-info">
           <div class="pc-skill-name">${s.name}</div>
@@ -1018,16 +1117,36 @@ function showPanel(type){
         </div>
         <div class="pc-skill-cost">${s.sp}<span>SP</span></div>
       </div>`).join('');
+
   } else if(type==='inventory'){
-    head.textContent = '🎒 INVENTÁRIO';
+    head.innerHTML = `<span>🎒 INVENTÁRIO</span><button class="pcm-close" onclick="closeModal()">✕</button>`;
     body.innerHTML = INVENTORY.map(i=>`
-      <div class="pc-inv-row">
+      <div class="pcm-inv-row">
         <span class="pc-inv-ico">${i.icon}</span>
         <span class="pc-inv-name">${i.name}</span>
         ${i.qty?`<span class="pc-inv-qty">${i.qty}</span>`:''}
       </div>`).join('');
-  } else {
-    head.textContent = 'STATUS';
+
+  } else if(type==='falar'){
+    head.innerHTML = `<span>💬 FALAR</span><button class="pcm-close" onclick="closeModal()">✕</button>`;
+    const sceneNpcs = getSceneTargets();
+    const partyBtns = PLAYERS.filter(p=>p.id!==ME.id)
+      .map(p=>`<button class="pcm-target-btn" onclick="selectTarget(this,'${p.name}')">${p.icon} ${p.name}</button>`).join('');
+    const npcBtns = sceneNpcs
+      .map(t=>`<button class="pcm-target-btn npc" onclick="selectTarget(this,'${t.name}')">${t.icon} ${t.name}</button>`).join('');
+    body.innerHTML = `
+      <div class="pcm-falar-lbl">O que você diz?</div>
+      <textarea id="pcm-falar-text" class="pcm-falar-ta" placeholder="Digite sua fala..."></textarea>
+      <div class="pcm-falar-lbl">Para quem?</div>
+      <div class="pcm-targets">
+        ${partyBtns}${npcBtns}
+        <button class="pcm-target-btn all" onclick="selectTarget(this,'todos')">📢 Todos</button>
+      </div>
+      <button class="pcm-send-btn" onclick="sendFalar()">💬 Enviar Fala</button>`;
+    _falarTarget = '';
+
+  } else { // status
+    head.innerHTML = `<span>📋 STATUS</span><button class="pcm-close" onclick="closeModal()">✕</button>`;
     body.innerHTML = `
       <div class="pc-section-lbl">CONDIÇÕES</div>
       <div class="pc-conds-wrap">
@@ -1041,15 +1160,66 @@ function showPanel(type){
         <span class="equip-tag"><span>⛓️</span>Cota de Malha</span>
       </div>`;
   }
+  modal.classList.add('open');
 }
 
-function renderPortraitCards(){
-  const av = document.getElementById('pc-avatar');
-  if(!av) return;
-  av.innerHTML=`<img src="../sprites/${ME.classe}_${ME.sexo}.png"
-    onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span>${ME.icon}</span>')">`;
-  document.getElementById('pc-name').textContent = ME.name + ' · Nv3';
-  showPanel('status');
+function closeModal(){
+  document.getElementById('pc-modal').classList.remove('open');
+}
+
+function closeModalOutside(e){
+  if(e.target===document.getElementById('pc-modal')) closeModal();
+}
+
+function showSkillConfirm(idx){
+  const s = SKILLS[idx];
+  document.getElementById('pc-modal-head').innerHTML =
+    `<button class="pcm-back" onclick="openModal('skills')">← Voltar</button><button class="pcm-close" onclick="closeModal()">✕</button>`;
+  document.getElementById('pc-modal-body').innerHTML = `
+    <div class="pcm-confirm">
+      <div class="pcm-confirm-skill">${s.ico} ${s.name}</div>
+      <div class="pcm-confirm-desc">${s.desc}</div>
+      <div class="pcm-confirm-cost">Custo: <strong>${s.sp} SP</strong></div>
+      <div class="pcm-confirm-btns">
+        <button class="pcm-cancel-btn" onclick="openModal('skills')">Cancelar</button>
+        <button class="pcm-use-btn" onclick="useSkill(${idx})">✔ Usar Habilidade</button>
+      </div>
+    </div>`;
+}
+
+function useSkill(idx){
+  const s = SKILLS[idx];
+  closeModal();
+  const ta = document.getElementById('action-input');
+  ta.value = `usa ${s.name} — `;
+  ta.focus();
+}
+
+function selectTarget(btn, name){
+  _falarTarget = name;
+  document.querySelectorAll('.pcm-target-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function sendFalar(){
+  const ta = document.getElementById('pcm-falar-text');
+  const text = ta.value.trim();
+  if(!text) return;
+  const target = _falarTarget || 'todos';
+  closeModal();
+  const fullText = target==='todos' ? text : `[Para ${target}] ${text}`;
+  document.getElementById('action-input').value = fullText;
+  sendAction();
+  _falarTarget = '';
+}
+
+function getSceneTargets(){
+  const t = [];
+  if(storyPhase>=1) t.push({name:'Ancião',         icon:'🧙‍♂️'});
+  if(storyPhase>=2) t.push({name:'Voz nas Sombras', icon:'🎭'});
+  if(storyPhase>=3) t.push({name:'Goblin',          icon:'👺'});
+  if(storyPhase>=4) t.push({name:'Guarda',          icon:'🛡️'});
+  return t;
 }
 
 function toggleCharSheet(){
