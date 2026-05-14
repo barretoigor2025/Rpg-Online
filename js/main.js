@@ -1358,9 +1358,9 @@ function atualizarInputArea(eu, estado, jogadores) {
   me.style.display  = jaEnviou ? 'block' : 'none';
   mi.style.display  = jaMorto  ? 'block' : 'none';
 
-  btns.style.display  = jaMorto ? 'none' : 'flex';
-  slots.style.display = (jaMorto || (_slots[0]===null && _slots[1]===null)) ? 'none' : 'flex';
-  btn.style.display   = (jaMorto || jaEnviou) ? 'none' : 'block';
+  btns.style.display  = (jaMorto || narrando) ? 'none' : 'flex';
+  slots.style.display = (jaMorto || narrando || (_slots[0]===null && _slots[1]===null)) ? 'none' : 'flex';
+  btn.style.display   = (jaMorto || jaEnviou || narrando) ? 'none' : 'block';
 
   if(_prevJaEnviou && !jaEnviou && !jaMorto) {
     _slots = [null, null];

@@ -265,7 +265,8 @@
     #chapter-label{font-size:7.5px;color:var(--text3);letter-spacing:2.5px;text-transform:uppercase}
     #chapter-title{font-size:11px;color:var(--silver2);font-weight:bold;letter-spacing:.4px;white-space:nowrap;max-width:190px;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
     #location-row{display:flex;align-items:center;gap:6px;margin-top:1px}
-    #chapter-round{font-size:8px;color:var(--text2);white-space:nowrap}
+    #location-label{font-size:8px;color:var(--text2);white-space:nowrap}
+    #time-label{font-size:8px;color:var(--text3);border-left:1px solid rgba(88,104,160,.18);padding-left:6px;white-space:nowrap}
 
     #player-portraits{
       display:flex;align-items:center;gap:5px;
@@ -636,7 +637,7 @@
       background:var(--bg);padding:7px 10px;
       display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;
     }
-    #acao-slots{display:none;flex-direction:column;gap:5px;width:100%;order:-1}
+    #acao-slots{display:flex;flex-direction:column;gap:5px;width:100%;order:-1}
     .acao-slot{
       display:flex;align-items:center;gap:8px;
       background:rgba(56,64,96,.08);border:1px dashed rgba(56,64,96,.3);
@@ -737,7 +738,7 @@
     @media(max-width:680px){
       #right-col{display:none}
       #action-input{height:46px;font-size:12px}
-      #scene-area{height:80px}
+      #scene-area{height:100px}
     }
     @media(max-width:520px){
       #scene-area{display:none}
