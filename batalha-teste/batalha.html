@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>⚔️ Batalha Tática v5</title>
+<title>⚔️ Batalha Tática v6</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -83,34 +83,45 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
 .tc-bar-fill{height:100%;background:var(--green);border-radius:1px;transition:width .4s}
 
 /* ══════════════════════════════════════
-   TURNO HEADER ROW
+   SIDEBAR RIGHT — TURN HEADER (top section)
 ══════════════════════════════════════ */
-#turn-header-row{
+#sr-turn-header{
+  padding:8px 10px 7px;
+  border-bottom:1px solid rgba(122,85,0,.22);
+  background:rgba(212,168,67,.04);
   flex-shrink:0;
-  background:var(--surface2);
-  border-bottom:2px solid var(--border);
-  padding:5px 12px;
-  display:flex;align-items:center;justify-content:space-between;
-  gap:8px;min-height:38px;
 }
-#turn-title-wrap{display:flex;align-items:baseline;gap:10px;flex:1;min-width:0;overflow:hidden}
-#turn-name{
-  font-size:13px;color:var(--gold2);font-weight:bold;
-  letter-spacing:.8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-#turn-sub{
-  font-size:9px;color:var(--text3);letter-spacing:1.5px;
+#sr-turn-name{
+  font-size:10px;color:var(--gold2);font-weight:bold;
+  letter-spacing:.4px;line-height:1.3;margin-bottom:2px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-#turn-header-btns{display:flex;gap:5px;flex-shrink:0}
-.th-btn{
-  padding:4px 10px;background:transparent;
-  border:1px solid rgba(122,85,0,.38);border-radius:var(--r);
-  color:var(--text2);font-family:inherit;font-size:9px;
-  cursor:pointer;letter-spacing:.5px;text-transform:uppercase;
-  transition:all .12s;
+#sr-turn-sub{
+  font-size:7.5px;color:var(--text3);line-height:1.4;font-style:italic;
+  margin-bottom:5px;
 }
-.th-btn:hover{border-color:var(--gold);color:var(--gold);background:rgba(212,168,67,.08)}
+#sr-terrain-box{
+  padding:4px 7px;
+  background:rgba(0,0,0,.28);border:1px solid rgba(122,85,0,.18);
+  border-radius:3px;font-size:7.5px;color:var(--text2);line-height:1.5;
+}
+#sr-help-btn{
+  margin-top:6px;width:100%;
+  padding:4px;background:transparent;
+  border:1px solid rgba(122,85,0,.25);border-radius:3px;
+  color:var(--text3);font-family:inherit;font-size:8px;
+  cursor:pointer;transition:all .12s;letter-spacing:.5px;
+}
+#sr-help-btn:hover{border-color:var(--gold);color:var(--gold)}
+#sr-ficha-wrap{padding:8px;flex-shrink:0;margin-top:auto;border-top:1px solid rgba(122,85,0,.15)}
+#sr-ficha-btn{
+  width:100%;padding:7px 4px;
+  background:rgba(58,128,204,.1);
+  border:1px solid rgba(58,128,204,.3);border-radius:var(--r);
+  color:#7ab8f5;font-family:inherit;font-size:8px;
+  cursor:pointer;letter-spacing:.5px;transition:all .12s;
+}
+#sr-ficha-btn:hover{background:rgba(58,128,204,.18);border-color:rgba(58,128,204,.5)}
 
 /* ══════════════════════════════════════
    MIDDLE ROW
@@ -138,40 +149,32 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
   .tc-icon{font-size:14px}
   .tc-name,.tc-hp{font-size:6px}
 
-  /* Turn header compact */
-  #turn-header-row{padding:3px 8px;min-height:30px}
-  #turn-name{font-size:12px}
-  #turn-sub{display:none}
-  .th-btn{padding:3px 7px;font-size:8px}
+  /* Sidebars hidden on mobile */
+  #sidebar-left,#sidebar-right{display:none!important}
+
+  /* Mobile action area (shown only on mobile) */
+  #mobile-action-row{display:flex!important}
 
   /* Map fills full width */
-  #grid-wrap{align-items:flex-start;justify-content:flex-start}
+  #grid-scroll{align-items:flex-start;justify-content:flex-start}
 
-  /* Bottom area: stack vertically */
-  #combat-controls-row{flex-direction:column;min-height:auto}
+  /* Combat panel */
+  #combat-panel{flex-direction:column;min-height:auto}
   #combat-box{
-    border-right:none;
-    border-bottom:1px solid rgba(122,85,0,.18);
+    border-right:none;border-bottom:1px solid rgba(122,85,0,.18);
     padding:5px 10px 6px;
   }
   #combat-portrait{width:36px;height:42px;flex-shrink:0}
   #combat-text{font-size:10px;line-height:1.5}
   #combat-roll-line{font-size:7px}
-
   #controls-area{
     width:100%;padding:5px 10px;
     flex-direction:row;align-items:center;gap:8px;
-    border-top:none;
   }
   .speed-lbl{font-size:6px}
   #speed-row{flex:1;gap:5px}
   #speed-val{font-size:13px;min-width:26px}
   #btn-rolar{padding:8px 14px;font-size:10px;flex-shrink:0}
-
-  /* Action input */
-  #action-input-row{padding:4px 8px;gap:5px}
-  #act-txt{height:40px;font-size:12px;padding:6px 8px}
-  #btn-esperar,#btn-cancelar,#btn-esperar2{padding:4px 8px;font-size:8px}
 
   /* Log compact */
   #log-chat-row{height:36px}
@@ -185,6 +188,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
 
   /* Hide legends */
   #legendas-bar{display:none!important}
+}
+/* Mobile action row (hidden on desktop, visible on mobile) */
+#mobile-action-row{
+  display:none;
+  align-items:stretch;gap:5px;
+  padding:5px 8px;
+  border-bottom:1px solid rgba(122,85,0,.18);
+  background:var(--bg);
+  flex-shrink:0;
 }
 
 .sb-header{
@@ -207,13 +219,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
 .qa-hint{font-size:8px;color:var(--text3);line-height:1.4;margin-top:1px;font-style:italic}
 .qa-sp{font-size:7px;color:#7ab8f5;margin-top:2px}
 
-/* ── Map ── */
+/* ── Map (flex-column: scroll area on top, combat panel below) ── */
 #grid-wrap{
+  flex:1;display:flex;flex-direction:column;
+  min-width:0;position:relative;overflow:hidden;
+}
+#grid-scroll{
   flex:1;overflow:auto;
   display:flex;align-items:center;justify-content:center;
   background:#bfb8ac;
   background-image:radial-gradient(ellipse at 35% 30%,#ccc5b8 0%,#b0aa9e 100%);
-  min-width:0;position:relative;
+  position:relative;
 }
 #terrain-badge{
   position:absolute;bottom:7px;right:10px;
@@ -222,6 +238,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
   pointer-events:none;font-style:italic;
 }
 #grid-container{position:relative;flex-shrink:0}
+
+/* ── Combat Panel (inline inside center) ── */
+#combat-panel{
+  flex-shrink:0;display:flex;
+  border-top:2px solid var(--border);
+  background:var(--bg);
+  min-height:78px;
+}
 
 /* ── Sidebar Right ── */
 #sidebar-right{
@@ -345,42 +369,55 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
 #btn-rolar:hover{background:var(--green2)}
 #btn-rolar:disabled{opacity:.28;cursor:not-allowed;background:var(--green);box-shadow:none}
 
-/* ── Action Input Row ── */
-#action-input-row{
-  display:flex;align-items:stretch;gap:6px;
-  padding:6px 10px;
-  border-bottom:1px solid rgba(122,85,0,.18);
+/* ── Sidebar Left: COMANDOS DETALHADOS (bottom section) ── */
+#cmd-detalhados{
+  border-top:1px solid rgba(122,85,0,.2);
+  flex-shrink:0;
+  display:flex;flex-direction:column;
+}
+#cmd-det-body{
+  padding:6px 8px;display:flex;flex-direction:column;gap:5px;
 }
 #act-txt{
-  flex:1;min-width:0;
-  background:rgba(0,0,0,.55);
-  border:1px solid rgba(122,85,0,.32);
-  color:var(--text);font-family:Georgia,serif;font-size:12px;
-  padding:7px 10px;border-radius:var(--r);outline:none;resize:none;
-  height:50px;line-height:1.55;
+  width:100%;resize:none;
+  background:rgba(0,0,0,.45);
+  border:1px solid rgba(122,85,0,.3);
+  color:var(--text);font-family:Georgia,serif;font-size:10px;
+  padding:5px 7px;border-radius:var(--r);outline:none;
+  height:60px;line-height:1.5;
   transition:border-color .15s;
 }
 #act-txt:focus{border-color:var(--gold)}
-#act-txt::placeholder{color:var(--text3);font-style:italic;font-size:11px}
-#act-txt:disabled{opacity:.38;cursor:not-allowed}
-#action-side-btns{display:flex;flex-direction:column;gap:4px;flex-shrink:0;justify-content:center}
+#act-txt::placeholder{color:var(--text3);font-style:italic;font-size:9px}
+#act-txt:disabled{opacity:.35;cursor:not-allowed}
+#cmd-det-btns{display:flex;gap:4px}
 #btn-esperar{
-  padding:5px 10px;background:transparent;
+  flex:1;padding:5px 6px;background:transparent;
   border:1px solid rgba(122,85,0,.38);border-radius:var(--r);
-  color:var(--text2);font-family:inherit;font-size:9px;
+  color:var(--text2);font-family:inherit;font-size:8px;
   cursor:pointer;white-space:nowrap;transition:all .12s;
 }
 #btn-esperar:hover{border-color:var(--gold);color:var(--gold)}
 #btn-esperar:disabled{opacity:.26;cursor:not-allowed}
 #btn-esperar2{display:none}
 #btn-cancelar{
-  padding:5px 10px;background:transparent;
+  padding:5px 7px;background:transparent;
   border:1px solid rgba(200,50,50,.35);border-radius:var(--r);
-  color:#e07070;font-family:inherit;font-size:9px;
+  color:#e07070;font-family:inherit;font-size:8px;
   cursor:pointer;white-space:nowrap;transition:all .12s;
   display:none;
 }
 #btn-cancelar:hover{border-color:var(--red);color:var(--red);background:rgba(200,50,50,.06)}
+/* btn-enviar-acao in sidebar */
+#btn-enviar-acao{
+  flex:1;padding:5px 6px;
+  background:var(--green);color:#fff;font-weight:bold;
+  border:none;border-radius:var(--r);
+  font-family:inherit;font-size:8px;cursor:pointer;
+  letter-spacing:.3px;transition:background .15s,opacity .15s;
+}
+#btn-enviar-acao:hover{background:var(--green2)}
+#btn-enviar-acao:disabled{opacity:.28;cursor:not-allowed;background:var(--green)}
 
 /* ── Log + Chat Row ── */
 #log-chat-row{
@@ -580,42 +617,73 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
   <!-- ═══ TURN BAR ═══ -->
   <div id="turn-bar">
     <span class="tb-lbl">TURNOS</span>
-    <span style="font-size:7px;color:#3a3;background:rgba(0,80,0,.35);border:1px solid #3a3;border-radius:3px;padding:1px 5px;flex-shrink:0;margin-right:4px">v5</span>
+    <span style="font-size:7px;color:#3a3;background:rgba(0,80,0,.35);border:1px solid #3a3;border-radius:3px;padding:1px 5px;flex-shrink:0;margin-right:4px">v6</span>
     <div id="turn-chips"></div>
-  </div>
-
-  <!-- ═══ TURN HEADER ROW ═══ -->
-  <div id="turn-header-row">
-    <div id="turn-title-wrap">
-      <span id="turn-name">CARREGANDO...</span>
-      <span id="turn-sub">aguarde</span>
-    </div>
-    <div id="turn-header-btns">
-      <button class="th-btn" onclick="openHelp()">❓ AJUDA</button>
-      <button class="th-btn" onclick="openFicha()">📋 CONTROLE</button>
-    </div>
   </div>
 
   <!-- ═══ MIDDLE ROW ═══ -->
   <div id="mid-row">
 
-    <!-- Left sidebar: AÇÕES RÁPIDAS -->
+    <!-- Left sidebar: AÇÕES RÁPIDAS + COMANDOS DETALHADOS -->
     <div id="sidebar-left">
       <div class="sb-header">AÇÕES RÁPIDAS</div>
       <div id="qa-list"></div>
+      <!-- COMANDOS DETALHADOS at bottom -->
+      <div id="cmd-detalhados">
+        <div class="sb-header">COMANDOS DETALHADOS</div>
+        <div id="cmd-det-body">
+          <textarea id="act-txt" rows="3" disabled
+            placeholder="Clique no personagem e descreva sua ação..."></textarea>
+          <div id="cmd-det-btns">
+            <button id="btn-esperar" onclick="playerEndTurn()" disabled>⏭ ESPERAR</button>
+            <button id="btn-enviar-acao" onclick="rollAction()" disabled>✦ ENVIAR</button>
+            <button id="btn-cancelar" onclick="cancelSelect()" style="display:none">✕</button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Isometric map -->
+    <!-- Isometric map + inline combat panel -->
     <div id="grid-wrap">
-      <div id="grid-container"></div>
-      <div id="terrain-badge">Campo: Piso Plano</div>
+      <div id="grid-scroll">
+        <div id="grid-container"></div>
+        <div id="terrain-badge">Campo: Piso Plano</div>
+      </div>
+
+      <!-- Combat panel (below the grid) -->
+      <div id="combat-panel">
+        <div id="combat-box">
+          <div class="cb-header"><i class="cb-icon">⚔</i> COMBATE</div>
+          <div id="combat-inner">
+            <div id="combat-portrait"><span class="cp-icon">⚔️</span></div>
+            <div id="combat-info">
+              <div id="combat-roll-line">—</div>
+              <div id="combat-text" style="color:var(--text3);font-style:italic">Nenhuma ação ainda.</div>
+            </div>
+          </div>
+        </div>
+        <div id="controls-area">
+          <div>
+            <div class="speed-lbl">VELOCIDADE</div>
+            <div id="speed-row">
+              <span id="speed-val">1.2×</span>
+              <input type="range" id="speed-slider" min="0.8" max="2.0" step="0.1" value="1.2"
+                oninput="onSpeedChange(this.value)">
+            </div>
+          </div>
+          <button id="btn-rolar" disabled onclick="rollAction()">🎲 ROLAR LIVE ▼</button>
+        </div>
+      </div>
     </div>
 
-    <!-- Right sidebar: conditions + enemies -->
+    <!-- Right sidebar: turn info + conditions + enemies + ficha -->
     <div id="sidebar-right">
-      <div class="sb-btn-row">
-        <button class="sb-btn" onclick="openHelp()">❓ Ajuda</button>
-        <button class="sb-btn" onclick="openFicha()">📋 Ficha</button>
+      <!-- Turn header (replaces the old standalone strip) -->
+      <div id="sr-turn-header">
+        <div id="sr-turn-name">⚔ TURNO DE MAGO</div>
+        <div id="sr-turn-sub">Escolha uma ação digitando o comando</div>
+        <div id="sr-terrain-box">Campo: Piso Plano<br>Modificador: nenhum</div>
+        <button id="sr-help-btn" onclick="openHelp()">❓ AJUDA</button>
       </div>
       <div class="sb-section">
         <div class="sb-sec-title">Condições de Vitória</div>
@@ -639,6 +707,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
         <div class="sb-sec-title">INIMIGOS VIVOS</div>
         <div class="sb-sec-body" id="sr-enemies"></div>
       </div>
+      <!-- FICHA at bottom -->
+      <div id="sr-ficha-wrap">
+        <button id="sr-ficha-btn" onclick="openFicha()">📋 FICHA DO PERSONAGEM</button>
+      </div>
     </div>
 
   </div><!-- /mid-row -->
@@ -646,46 +718,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
   <!-- ═══ BOTTOM AREA ═══ -->
   <div id="bottom-area">
 
-    <!-- Combat + Controls -->
-    <div id="combat-controls-row">
-
-      <div id="combat-box">
-        <div class="cb-header">
-          <i class="cb-icon">⚔</i> COMBATE
-        </div>
-        <div id="combat-inner">
-          <div id="combat-portrait">
-            <span class="cp-icon">⚔️</span>
-          </div>
-          <div id="combat-info">
-            <div id="combat-roll-line">—</div>
-            <div id="combat-text" style="color:var(--text3);font-style:italic">Nenhuma ação ainda.</div>
-          </div>
-        </div>
-      </div>
-
-      <div id="controls-area">
-        <div>
-          <div class="speed-lbl">VELOCIDADE</div>
-          <div id="speed-row">
-            <span id="speed-val">1.2×</span>
-            <input type="range" id="speed-slider" min="0.8" max="2.0" step="0.1" value="1.2"
-              oninput="onSpeedChange(this.value)">
-          </div>
-        </div>
-        <button id="btn-rolar" disabled onclick="rollAction()">🎲 ROLAR LIVE ▼</button>
-      </div>
-
-    </div><!-- /combat-controls-row -->
-
-    <!-- Action Input -->
-    <div id="action-input-row">
-      <textarea id="act-txt" rows="2" disabled
-        placeholder="Clique no seu personagem no mapa e descreva sua ação... (Ctrl+Enter para confirmar)"></textarea>
-      <div id="action-side-btns">
-        <button id="btn-esperar" onclick="playerEndTurn()" disabled>⏭ ESPERAR</button>
-        <button id="btn-cancelar" onclick="cancelSelect()">✕ CANCELAR</button>
-        <button id="btn-esperar2" onclick="playerEndTurn()" disabled>⏭ Encerrar</button>
+    <!-- Mobile-only action row (hidden on desktop) -->
+    <div id="mobile-action-row">
+      <textarea id="act-txt-mobile" rows="2" disabled
+        placeholder="Descreva sua ação..."></textarea>
+      <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0">
+        <button onclick="playerEndTurn()" disabled style="padding:4px 8px;font-size:8px;background:transparent;border:1px solid rgba(122,85,0,.4);border-radius:3px;color:var(--text2);font-family:inherit;cursor:pointer">⏭</button>
+        <button onclick="rollAction()" disabled style="padding:4px 8px;font-size:8px;background:var(--green);border:none;border-radius:3px;color:#fff;font-family:inherit;cursor:pointer;font-weight:bold">▶</button>
       </div>
     </div>
 
@@ -701,11 +740,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
       </div>
     </div>
 
-    <!-- CMD Bar -->
+    <!-- CMD Bar (chat only) -->
     <div id="cmd-bar">
       <input type="text" id="chat-input" placeholder="Bate-papo multiplayer... (Enter para enviar)">
       <button class="btn btn-primary" onclick="sendChat()">ENVIAR</button>
-      <button class="btn btn-info" onclick="openFicha()">📋 FICHA DO PERSONAGEM</button>
     </div>
 
     <!-- Legendas -->
@@ -1017,7 +1055,7 @@ function startUnitTurn(){
   const cu=curUnit();
   if(cu.team==='player'){
     phase='select';
-    setTurnHeader(`✦ TURNO DE ${cu.name.toUpperCase()} ✦`,`Selecione seu personagem e descreva sua ação`);
+    setTurnHeader(`⚔ TURNO DE ${cu.name.toUpperCase()}`,`Selecione seu personagem e descreva sua ação`);
     setInputEnabled(false);
     renderQuickActions(cu);
   }else{
@@ -1175,8 +1213,8 @@ function onUnitClick(u){
     units.forEach(u=>refreshUnitEl(u));
     phase='move';
     setTurnHeader(
-      `✦ TURNO DE ${cu.name.toUpperCase()} ✦`,
-      hasMoved?'Descreva sua ação abaixo':'AZUL = mover  ·  VERMELHO = alcance de ataque'
+      `⚔ TURNO DE ${cu.name.toUpperCase()}`,
+      hasMoved?'Descreva sua ação abaixo':'AZUL = mover  ·  VERMELHO = alcance'
     );
     setInputEnabled(!hasActed,`Descreva a ação de ${cu.name}...`);
     setBtns(true,false,true);
@@ -1197,8 +1235,8 @@ function onTileClick(col,row){
     units.forEach(u=>refreshUnitEl(u));
     phase='action';
     setTurnHeader(
-      `✦ TURNO DE ${cu.name.toUpperCase()} ✦`,
-      'Personagem moveu — descreva sua ação ou encerre o turno'
+      `⚔ TURNO DE ${cu.name.toUpperCase()}`,
+      'Moveu — descreva sua ação ou encerre o turno'
     );
     setInputEnabled(!hasActed,`Descreva a ação de ${cu.name}...`);
     setBtns(!hasActed,false,true);
@@ -1209,26 +1247,34 @@ function onTileClick(col,row){
 //  UI HELPERS
 // ═══════════════════════════════════════════════
 function setTurnHeader(name,sub){
-  document.getElementById('turn-name').textContent=name;
-  document.getElementById('turn-sub').textContent=sub;
+  const nm=document.getElementById('sr-turn-name');
+  const sb=document.getElementById('sr-turn-sub');
+  if(nm)nm.textContent=name;
+  if(sb)sb.textContent=sub;
 }
 function setInputEnabled(enabled,placeholder=''){
   const ta=document.getElementById('act-txt');
-  ta.disabled=!enabled;
-  if(placeholder)ta.placeholder=placeholder;
-  document.getElementById('btn-rolar').disabled=!enabled;
+  if(ta){ta.disabled=!enabled;if(placeholder)ta.placeholder=placeholder;}
+  const br=document.getElementById('btn-rolar');
+  const be=document.getElementById('btn-enviar-acao');
+  if(br)br.disabled=!enabled;
+  if(be)be.disabled=!enabled;
 }
 function setBtns(rolar,esperar1,esperar2){
-  document.getElementById('btn-rolar').disabled=!rolar;
-  document.getElementById('btn-esperar').disabled=!esperar1;
-  document.getElementById('btn-esperar2').disabled=!esperar2;
-  document.getElementById('btn-cancelar').style.display=rolar?'block':'none';
+  const br=document.getElementById('btn-rolar');
+  const be=document.getElementById('btn-enviar-acao');
+  const bw=document.getElementById('btn-esperar');
+  const bc=document.getElementById('btn-cancelar');
+  if(br)br.disabled=!rolar;
+  if(be)be.disabled=!rolar;
+  if(bw)bw.disabled=!esperar1;
+  if(bc)bc.style.display=rolar?'inline-block':'none';
 }
 function cancelSelect(){
   selUnit=null;_activeSkill=null;clearHL();units.forEach(u=>refreshUnitEl(u));
   phase='select';
   setTurnHeader(
-    `✦ TURNO DE ${curUnit()?.name?.toUpperCase()||'?'} ✦`,
+    `⚔ TURNO DE ${curUnit()?.name?.toUpperCase()||'?'}`,
     'Selecione seu personagem e descreva sua ação'
   );
   setInputEnabled(false);
