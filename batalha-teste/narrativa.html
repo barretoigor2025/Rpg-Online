@@ -575,9 +575,34 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
   }
   .pc-act-btn span{font-size:6px;letter-spacing:.3px;color:var(--text3);text-transform:uppercase}
   .pc-act-btn:active{background:rgba(88,104,160,.22);border-color:var(--silver)}
+  .pc-act-btn.active{background:rgba(88,104,160,.28);border-color:var(--silver3);color:var(--silver2)}
+  .pc-act-btn.active span{color:var(--text2)}
   .pc-act-btn.danger{border-color:rgba(204,68,68,.28);background:rgba(204,68,68,.06)}
   .pc-act-btn.danger span{color:#a05050}
   .pc-act-btn.danger:active{background:rgba(204,68,68,.15)}
+
+  /* Painel dinâmico direito */
+  #pc-panel-card{overflow:hidden}
+  #pc-panel-body{overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:2px;max-height:110px}
+  /* Status */
+  .pc-section-lbl{font-size:6px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin:3px 0 2px}
+  .pc-conds-wrap,.pc-equips-wrap{display:flex;flex-wrap:wrap;gap:2px;margin-bottom:4px}
+  .pc-conds-wrap .condition-tag,.pc-equips-wrap .equip-tag{padding:1px 5px;font-size:6px}
+  /* Habilidades */
+  .pc-skill-row{display:flex;align-items:center;gap:5px;padding:3px 0;border-bottom:1px solid rgba(88,104,160,.1)}
+  .pc-skill-row:last-child{border-bottom:none}
+  .pc-skill-ico{font-size:12px;flex-shrink:0;line-height:1}
+  .pc-skill-info{flex:1;min-width:0}
+  .pc-skill-name{font-size:7px;color:var(--silver2);font-weight:bold;line-height:1.2}
+  .pc-skill-desc{font-size:5.5px;color:var(--text3);margin-top:1px}
+  .pc-skill-cost{font-size:8px;color:var(--blue);font-weight:bold;flex-shrink:0;text-align:right;line-height:1}
+  .pc-skill-cost span{font-size:5px;color:var(--text3);display:block;text-align:right}
+  /* Inventário */
+  .pc-inv-row{display:flex;align-items:center;gap:5px;padding:2px 0;border-bottom:1px solid rgba(88,104,160,.08)}
+  .pc-inv-row:last-child{border-bottom:none}
+  .pc-inv-ico{font-size:12px;flex-shrink:0}
+  .pc-inv-name{flex:1;font-size:7px;color:var(--text2)}
+  .pc-inv-qty{font-size:7px;color:var(--silver3);flex-shrink:0}
 
   /* Action bar */
   #action-bar{padding:4px 8px;gap:5px;
@@ -664,9 +689,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
 
     <!-- PORTRAIT CARDS (substitui cena no celular vertical) -->
     <div id="portrait-cards">
-      <!-- Card: Ficha compacta -->
+      <!-- Card esquerdo: personagem + botões -->
       <div class="pc-card" id="pc-ficha">
-        <div class="pc-card-head">⚔ Meu Personagem</div>
         <div class="pc-char-row">
           <div id="pc-avatar"></div>
           <div class="pc-char-stats">
@@ -675,18 +699,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
             <div class="pc-bar"><span class="pc-lbl">SP</span><div class="pc-track"><div id="pc-sp-fill"></div></div><span id="pc-sp-val">45</span></div>
           </div>
         </div>
-        <div id="pc-conds"></div>
-        <div id="pc-equips"></div>
-      </div>
-      <!-- Card: Ações rápidas -->
-      <div class="pc-card" id="pc-actions">
-        <div class="pc-card-head">🎮 Ações</div>
         <div class="pc-action-grid">
-          <button class="pc-act-btn" onclick="showToast('⚔️ Habilidades — em breve')">⚔️<span>Habilidades</span></button>
-          <button class="pc-act-btn" onclick="toggleCharSheet()">🎒<span>Inventário</span></button>
-          <button class="pc-act-btn" onclick="toggleCharSheet()">📋<span>Ficha</span></button>
-          <button class="pc-act-btn danger" onclick="triggerCombat()">⚔<span>Combate</span></button>
+          <button class="pc-act-btn active" data-panel="status" onclick="showPanel('status')">📋<span>Status</span></button>
+          <button class="pc-act-btn" data-panel="skills" onclick="showPanel('skills')">⚔️<span>Habilidades</span></button>
+          <button class="pc-act-btn" data-panel="inventory" onclick="showPanel('inventory')">🎒<span>Inventário</span></button>
+          <button class="pc-act-btn danger" onclick="triggerCombat()">☠<span>Combate</span></button>
         </div>
+      </div>
+      <!-- Card direito: painel dinâmico -->
+      <div class="pc-card" id="pc-panel-card">
+        <div id="pc-panel-head" class="pc-card-head">STATUS</div>
+        <div id="pc-panel-body"></div>
       </div>
     </div>
 
@@ -882,14 +905,14 @@ function _nextUtterance(){
 
   if(type==='gm'){
     utter.voice  = voiceMap.male;
-    utter.pitch  = 0.65;
-    utter.rate   = 0.80;
+    utter.pitch  = 0.78;   // masculino sem ser extremo
+    utter.rate   = 0.95;   // cadência natural, sem arrastar
     utter.volume = 1.0;
   } else if(type==='npc'){
     const prof = npcProfile(npcName);
     utter.voice  = prof.gender==='female' ? voiceMap.female : voiceMap.male;
     utter.pitch  = 1.0 + prof.pitchMod;
-    utter.rate   = 0.92 + prof.rateMod;
+    utter.rate   = 1.0 + prof.rateMod;  // NPCs um pouco mais rápidos
     utter.volume = 0.95;
   } else {
     utter.voice  = voiceMap.all[0] || null;
@@ -964,19 +987,69 @@ function init(){
   startStory();
 }
 
+const SKILLS = [
+  {ico:'⚔️', name:'Golpe Poderoso',    sp:8,  desc:'+50% de dano no próximo ataque'},
+  {ico:'🛡️', name:'Escudo Total',      sp:5,  desc:'+30% defesa por 2 turnos'},
+  {ico:'💨', name:'Investida',         sp:10, desc:'Avança e empurra o inimigo'},
+  {ico:'😤', name:'Provocar',          sp:4,  desc:'Força todos os inimigos a atacarem você'},
+  {ico:'🔥', name:'Fúria de Batalha',  sp:15, desc:'Todos atributos +30% por 3 turnos'},
+  {ico:'✨', name:'Segundo Fôlego',    sp:12, desc:'Recupera 30 HP imediatamente'},
+];
+
+let activePanel = 'status';
+
+function showPanel(type){
+  activePanel = type;
+  document.querySelectorAll('.pc-act-btn[data-panel]').forEach(b=>{
+    b.classList.toggle('active', b.dataset.panel===type);
+  });
+  const head = document.getElementById('pc-panel-head');
+  const body = document.getElementById('pc-panel-body');
+  if(!head||!body) return;
+
+  if(type==='skills'){
+    head.textContent = '⚔️ HABILIDADES';
+    body.innerHTML = SKILLS.map(s=>`
+      <div class="pc-skill-row">
+        <span class="pc-skill-ico">${s.ico}</span>
+        <div class="pc-skill-info">
+          <div class="pc-skill-name">${s.name}</div>
+          <div class="pc-skill-desc">${s.desc}</div>
+        </div>
+        <div class="pc-skill-cost">${s.sp}<span>SP</span></div>
+      </div>`).join('');
+  } else if(type==='inventory'){
+    head.textContent = '🎒 INVENTÁRIO';
+    body.innerHTML = INVENTORY.map(i=>`
+      <div class="pc-inv-row">
+        <span class="pc-inv-ico">${i.icon}</span>
+        <span class="pc-inv-name">${i.name}</span>
+        ${i.qty?`<span class="pc-inv-qty">${i.qty}</span>`:''}
+      </div>`).join('');
+  } else {
+    head.textContent = 'STATUS';
+    body.innerHTML = `
+      <div class="pc-section-lbl">CONDIÇÕES</div>
+      <div class="pc-conds-wrap">
+        <span class="condition-tag buff">⚡ Alerta</span>
+        <span class="condition-tag buff">🛡 Guarda</span>
+      </div>
+      <div class="pc-section-lbl">EQUIPAMENTOS</div>
+      <div class="pc-equips-wrap">
+        <span class="equip-tag"><span>🗡️</span>Espada Longa</span>
+        <span class="equip-tag"><span>🛡️</span>Escudo</span>
+        <span class="equip-tag"><span>⛓️</span>Cota de Malha</span>
+      </div>`;
+  }
+}
+
 function renderPortraitCards(){
   const av = document.getElementById('pc-avatar');
   if(!av) return;
   av.innerHTML=`<img src="../sprites/${ME.classe}_${ME.sexo}.png"
     onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span>${ME.icon}</span>')">`;
   document.getElementById('pc-name').textContent = ME.name + ' · Nv3';
-  document.getElementById('pc-conds').innerHTML=`
-    <span class="condition-tag buff">⚡ Alerta</span>
-    <span class="condition-tag buff">🛡 Guarda</span>`;
-  document.getElementById('pc-equips').innerHTML=`
-    <span class="equip-tag">🗡️ Espada</span>
-    <span class="equip-tag">🛡️ Escudo</span>
-    <span class="equip-tag">⛓️ Malha</span>`;
+  showPanel('status');
 }
 
 function toggleCharSheet(){
