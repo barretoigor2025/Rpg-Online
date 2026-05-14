@@ -754,7 +754,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
     </div>
   </div>
 </div>
-
 <div id="toast"></div>
 
 <script>
@@ -1239,6 +1238,8 @@ function onSpeedChange(v){
   _ttsSpeed=parseFloat(v);
   document.getElementById('speed-val').textContent=parseFloat(v).toFixed(1)+'×';
 }
+function playerEndTurn(){clearHL();advanceTurn();}
+function onSpeedChange(v){_ttsSpeed=parseFloat(v);document.getElementById('speed-val').textContent=parseFloat(v).toFixed(1)+'×';}
 
 // ═══════════════════════════════════════════════
 //  COMBAT DISPLAY
