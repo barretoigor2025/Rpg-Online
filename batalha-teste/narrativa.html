@@ -658,19 +658,20 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
 // ════════════════════════════════
 const synth = window.speechSynthesis;
 let voiceOn = false;
-let currentUtt = null;
+let voiceQueue = [];
+let voiceBusy  = false;
 let voices = [];
 let voiceMap = { male:null, female:null, all:[] };
 
-// Perfis de voz por NPC — gerados a partir do nome para serem consistentes
 const NPC_PROFILES = {
-  default:          { pitchMod:0,    rateMod:0,    gender:'male'   },
-  'Voz nas Sombras':{ pitchMod:-0.2, rateMod:-0.1, gender:'male'   },
-  'Goblin':         { pitchMod:+0.5, rateMod:+0.2, gender:'female' },
-  'Ancião':         { pitchMod:-0.3, rateMod:-0.18,gender:'male'   },
-  'Bruxa':          { pitchMod:+0.3, rateMod:-0.05,gender:'female' },
-  'Guarda':         { pitchMod:-0.1, rateMod:+0.05,gender:'male'   },
-  'Mercador':       { pitchMod:+0.1, rateMod:+0.1, gender:'male'   },
+  default:             { pitchMod:0,    rateMod:0,    gender:'male'   },
+  'Ancião':            { pitchMod:-0.3, rateMod:-0.18,gender:'male'   },
+  'Voz nas Sombras':   { pitchMod:-0.25,rateMod:-0.12,gender:'male'   },
+  'Figura de Prata':   { pitchMod:-0.2, rateMod:-0.15,gender:'female' },
+  'Goblin':            { pitchMod:+0.5, rateMod:+0.22,gender:'female' },
+  'Guarda':            { pitchMod:-0.1, rateMod:+0.05,gender:'male'   },
+  'Bruxa':             { pitchMod:+0.3, rateMod:-0.05,gender:'female' },
+  'Mercador':          { pitchMod:+0.1, rateMod:+0.1, gender:'male'   },
 };
 
 function npcProfile(name){
@@ -708,20 +709,26 @@ function toggleVoice(){
   const btn = document.getElementById('voice-btn');
   btn.querySelector('.vb-icon').textContent = voiceOn ? '🔊' : '🔇';
   btn.classList.toggle('active', voiceOn);
-  if(!voiceOn){ synth.cancel(); setIndicator(false); }
+  if(!voiceOn){ synth.cancel(); voiceQueue=[]; voiceBusy=false; setIndicator(false); }
   showToast(voiceOn ? '🔊 Narração por voz ATIVADA' : '🔇 Narração por voz DESATIVADA');
 }
 
-// type = 'gm' | 'npc' | 'player'   npcName = nome do NPC (opcional)
+// Enfileira falas para não cortar a narração anterior
 function speak(text, type='gm', entryEl=null, npcName=''){
   if(!voiceOn) return;
-  synth.cancel();
+  voiceQueue.push({text, type, entryEl, npcName});
+  if(!voiceBusy) _nextUtterance();
+}
+
+function _nextUtterance(){
+  if(!voiceQueue.length){ voiceBusy=false; return; }
+  voiceBusy = true;
+  const {text, type, entryEl, npcName} = voiceQueue.shift();
   const clean = text.replace(/<[^>]+>/g,'');
   const utter = new SpeechSynthesisUtterance(clean);
   utter.lang = 'pt-BR';
 
   if(type==='gm'){
-    // Mestre: voz masculina grave, ritmo lento e dramático
     utter.voice  = voiceMap.male;
     utter.pitch  = 0.65;
     utter.rate   = 0.80;
@@ -741,9 +748,8 @@ function speak(text, type='gm', entryEl=null, npcName=''){
 
   if(entryEl) entryEl.classList.add('reading');
   utter.onstart = ()=> setIndicator(true);
-  utter.onend   = ()=>{ setIndicator(false); if(entryEl) entryEl.classList.remove('reading'); };
-  utter.onerror = ()=>{ setIndicator(false); if(entryEl) entryEl.classList.remove('reading'); };
-  currentUtt = utter;
+  utter.onend   = ()=>{ setIndicator(false); if(entryEl) entryEl.classList.remove('reading'); _nextUtterance(); };
+  utter.onerror = ()=>{ setIndicator(false); if(entryEl) entryEl.classList.remove('reading'); _nextUtterance(); };
   synth.speak(utter);
 }
 
@@ -800,18 +806,54 @@ function init(){
   renderInventory();
   spawnParticles();
   renderInitialNarrative();
-  renderInitialChat();
-  // Simulated live activity
-  setTimeout(()=>addChat('Mago','Diviso árvores se movendo ao norte...','p2'), 4000);
-  setTimeout(()=>addChat('Arqueira','Preparo meu arco em silêncio.','p3'), 8000);
-  setTimeout(()=>{
-    addNarr({type:'action',pid:'p3',text:'aponta seu arco para os arbustos ao norte, dedos prontos na corda.'});
-    addChat('Arqueira','Tenho algo na mira.','p3');
-  }, 11000);
-  setTimeout(()=>triggerRoll('Mago','DETECTAR MAGIA','varreu a área com magia arcana',19,14,true,false), 15000);
-  setTimeout(()=>{
-    addNarr({type:'gm',text:'A detecção do Mago revela auras fracas de ilusão espalhadas nos arbustos. Algo se move. A Arqueira percebe uma sombra que recua ao ver o arco apontado. O grupo tem instantes antes de qualquer coisa acontecer.'});
-  }, 17000);
+  startSimulation();
+}
+
+// ════════════════════════════════
+//  SIMULAÇÃO DE CAMPANHA
+// ════════════════════════════════
+function startSimulation(){
+  const at = (ms, fn) => setTimeout(fn, ms);
+
+  // ── ACT 1: A floresta desperta ──
+  at(1200,  ()=> addNarr({type:'gm', text:'A Estrada Sombria serpenteia entre carvalhos centenários cujos galhos retorcidos formam um teto de sombras sobre o grupo. O vento carrega o cheiro de terra molhada e cinzas frias — algo que não deveria estar ali. Nem os grilos cantam esta noite.'}));
+  at(6000,  ()=> addNarr({type:'action', pid:'p1', text:'ergue o escudo lentamente e desembainha a espada, olhos varrendo cada sombra entre as árvores antigas.'}));
+  at(9000,  ()=> addChat('Mago','Há magia aqui... antiga. Sintam o ar.','p2'));
+  at(11500, ()=> addChat('Arqueira','Concordo. Nem um grilo. Isso é sinal ruim.','p3'));
+  at(13500, ()=> addNarr({type:'action', pid:'p2', text:'murmura palavras arcanas enquanto caminha, os olhos brilhando com luz azulada ao ativar o feitiço de Detectar Magia.'}));
+
+  // ── ACT 2: O Ancião ──
+  at(18000, ()=> addNarr({type:'npc', name:'Ancião', icon:'🧙‍♂️', text:'Parem! Pelo amor dos deuses, não avancem por aqui esta noite!'}));
+  at(24000, ()=> addNarr({type:'gm', text:'Das sombras emerge um ancião cambaleante, manto rasgado e olhos arregalados de terror. Seus dedos trêmulos apontam para o caminho à frente, onde as árvores parecem se fechar como portões de pedra.'}));
+  at(31000, ()=> addNarr({type:'action', pid:'p1', text:'apoia a mão no ombro do ancião com firmeza. — Calma. Estamos aqui. O que aconteceu?'}));
+  at(34000, ()=> triggerRoll('Guerreiro','PERSUASÃO','acalmar o ancião aterrorizado', 16, 12, true, false));
+  at(37000, ()=> addNarr({type:'npc', name:'Ancião', icon:'🧙‍♂️', text:'Três noites já se passaram. Meu neto foi buscar ervas e não voltou. Os aldeões falam do Senhor das Sombras — uma entidade que desperta quando a lua sangra. Mas eu vi com meus olhos: marcas estranhas nas árvores e olhos... olhos que brilham no escuro.'}));
+  at(46000, ()=> addChat('Clérigo','Ancião, vá para a vila. Estará seguro lá. Cuidaremos disso.','p4'));
+  at(48500, ()=> addChat('Mago','Se há uma entidade envolvida, precisamos agir rápido.','p2'));
+  at(51000, ()=> addNarr({type:'action', pid:'p4', text:'pousa a mão sobre o peito do ancião e canaliza uma bênção calmante antes de indicar o caminho de volta à vila.'}));
+
+  // ── ACT 3: A Voz nas Sombras ──
+  at(56000, ()=> addNarr({type:'gm', text:'O ancião recua para as sombras. E nesse instante — CRACK. Um galho parte-se ao norte. O silêncio que se segue é mais assustador que qualquer barulho. Algo está observando o grupo. E sabe que vocês sabem.'}));
+  at(63000, ()=> addNarr({type:'action', pid:'p3', text:'agacha num único movimento fluido e tensiona o arco, mirando os arbustos ao norte com olhos cerrados.'}));
+  at(65500, ()=> addChat('Arqueira','Tenho algo na mira. Digam a palavra.','p3'));
+  at(68000, ()=> addNarr({type:'npc', name:'Voz nas Sombras', icon:'🎭', text:'Que curioso... heróis que vagam na escuridão procurando luz. Vocês chegaram tarde demais para salvar o menino. Mas bem a tempo para se juntar a ele.'}));
+  at(76000, ()=> addNarr({type:'gm', text:'Uma figura encapuzada emerge lentamente das sombras — alta, rosto coberto por uma máscara de prata sem expressão. Atrás dela, os arbustos tremem. Não é o vento.'}));
+  at(83000, ()=> addNarr({type:'action', pid:'p2', text:'ergue o cajado com ambas as mãos, aura violeta pulsando ao redor dos dedos. — Há pelo menos uma dúzia deles nos arbustos!'}));
+
+  // ── ACT 4: Os Goblins ──
+  at(88000, ()=> addNarr({type:'npc', name:'Goblin', icon:'👺', text:'Ahahaha! Humanos estúpidos! O mestre quer vocês vivos... mas não disse nada sobre inteiros!'}));
+  at(93000, ()=> triggerRoll('Mago','DETECTAR ILUSÃO','varreu a área com magia arcana', 19, 14, true, true));
+  at(96500, ()=> addChat('Mago','Cuidado! São doze! As ilusões mascaravam metade deles!','p2'));
+  at(99000, ()=> addChat('Clérigo','Canal divino pronto. Protegerei o grupo!','p4'));
+  at(101500,()=> addChat('Arqueira','Solto quando o Guerreiro avançar.','p3'));
+  at(104000,()=> addNarr({type:'gm', text:'A máscara de prata vira lentamente na direção do Guerreiro — como se o reconhecesse. A floresta prende a respiração. Os goblins avançam pelos flancos. A figura levanta uma mão. Seja ordem para atacar ou um último aviso — o momento passou.'}));
+
+  // ── ACT 5: O Combate se aproxima ──
+  at(112000,()=> addNarr({type:'action', pid:'p1', text:'assume postura de combate, escudo à frente, espada apontada para a figura encapuzada. — Esta noite ninguém cai.'}));
+  at(116000,()=> addNarr({type:'npc', name:'Guarda', icon:'🛡️', text:'Aguardem! Guarda de Pedramar — seis cavaleiros a duzentos metros! Resistam mais um momento!'}));
+  at(122000,()=> triggerRoll('Guerreiro','INICIATIVA','veterano pronto para o combate', 18, 10, true, false));
+  at(126000,()=> addNarr({type:'gm', text:'Os dados foram lançados. O Guerreiro age primeiro — a vantagem de quem reconhece o instante antes de tudo começar. Em algum lugar nas profundezas da floresta, uma criança chora. O campo de batalha se forma. Que os deuses os protejam.'}));
+  at(135000,()=> triggerCombat());
 }
 
 // ════════════════════════════════
@@ -877,19 +919,7 @@ function spawnParticles(){
 //  NARRATIVE
 // ════════════════════════════════
 function renderInitialNarrative(){
-  const entries = [
-    {type:'system', text:'— Sessão iniciada: Floresta Negra —'},
-    {type:'gm', text:'A floresta permanece em silêncio opressor. O vento sopra entre os galhos retorcidos das árvores antigas, carregando o cheiro de terra úmida e algo mais — algo que não deveria estar ali. As sombras dançam com vida própria entre os troncos escuros enquanto o grupo avança com cautela.'},
-    {type:'action', pid:'p1', text:'fica de guarda na vanguarda, mão posicionada na empunhadura da espada, olhos varrendo a penumbra.'},
-    {type:'action', pid:'p2', text:'murmura palavras arcanas em voz baixa, preparando um feitiço de Detectar Magia enquanto caminha.'},
-    {type:'gm', text:'O feitiço revela auras fracas de ilusão espalhadas pelos arbustos à esquerda. Algo — ou alguém — está se escondendo, e não quer ser visto.'},
-    {type:'test',pid:'p2',label:'DETECTAR MAGIA',desc:'varreu a área com magia arcana',dice:'1d20',mod:'+5',total:19,dc:14,succ:true,crit:false},
-    {type:'npc',name:'Voz nas Sombras',icon:'👤',text:'Aventureiros... vocês escolheram mal o caminho esta noite.'},
-    {type:'gm', text:'Uma risada baixa ecoa pela floresta. Os pássaros param de cantar. Vocês têm instantes para agir — o que farão?'},
-  ];
-  entries.forEach(e=>addNarr(e, false));
-  const panel = document.getElementById('narrative-panel');
-  setTimeout(()=>panel.scrollTop=panel.scrollHeight,50);
+  addNarr({type:'system', text:'— Sessão Iniciada · A Estrada Sombria —'}, false);
 }
 
 function addNarr(e, autoSpeak=true){
@@ -997,17 +1027,7 @@ function triggerRoll(playerName, label, desc, total, dc, succ, crit){
 // ════════════════════════════════
 const COLORS = {p1:'#7ab8f5',p2:'#b388ff',p3:'#80cbc4',p4:'#ffcc80'};
 
-function renderInitialChat(){
-  [
-    {pid:'p1',text:'Mão na empunhadura. Algo não está certo aqui.',ts:'21:42'},
-    {pid:'p3',text:'Concordo. Nem um grilo está cantando.',ts:'21:42'},
-    {pid:'p2',text:'Minha magia detectou auras de ilusão nos arbustos.',ts:'21:43'},
-    {pid:'p4',text:'Fico próxima ao Guerreiro. Pronta para curar.',ts:'21:43'},
-  ].forEach(m=>{
-    const p=PLAYERS.find(pl=>pl.id===m.pid);
-    addChat(p.name,m.text,m.pid,m.ts);
-  });
-}
+function renderInitialChat(){ /* populado pela simulação */ }
 
 function addChat(name, text, pid, ts){
   const wrap = document.getElementById('rp-chat-msgs');
