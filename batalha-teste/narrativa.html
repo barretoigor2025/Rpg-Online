@@ -999,14 +999,14 @@ function _nextUtterance(){
 
   if(type==='gm'){
     utter.voice  = voiceMap.male;
-    utter.pitch  = 0.78;   // masculino sem ser extremo
-    utter.rate   = 0.95;   // cadência natural, sem arrastar
+    utter.pitch  = 0.82;
+    utter.rate   = 1.2;
     utter.volume = 1.0;
   } else if(type==='npc'){
     const prof = npcProfile(npcName);
     utter.voice  = prof.gender==='female' ? voiceMap.female : voiceMap.male;
     utter.pitch  = 1.0 + prof.pitchMod;
-    utter.rate   = 1.0 + prof.rateMod;  // NPCs um pouco mais rápidos
+    utter.rate   = 1.1 + prof.rateMod;
     utter.volume = 0.95;
   } else {
     utter.voice  = voiceMap.all[0] || null;
