@@ -245,31 +245,94 @@
     /* ── TELA JOGO ── */
     #screen-game{height:100vh;height:100dvh;overflow:hidden}
 
-    /* Topbar */
-    #topbar{
+    /* Slim topbar */
+    #game-topbar{
       background:rgba(11,12,16,.97);border-bottom:1px solid var(--border);
-      padding:8px 12px;display:flex;align-items:center;gap:10px;flex-shrink:0;
+      padding:5px 10px;display:flex;align-items:center;gap:8px;flex-shrink:0;min-height:44px;
     }
+    #game-session-info{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    #game-controls{display:flex;align-items:center;gap:4px;flex-shrink:0}
+    .sala-chip{
+      font-size:11px;color:var(--text2);background:rgba(56,64,96,.2);
+      padding:4px 9px;border-radius:12px;border:1px solid var(--border);
+      white-space:nowrap;flex-shrink:0;cursor:pointer;
+    }
+    #voice-indicator{
+      width:8px;height:8px;border-radius:50%;flex-shrink:0;
+      transition:background .3s,box-shadow .3s;
+    }
+    #voice-indicator.vi-on{background:#4878b8;box-shadow:0 0 6px rgba(72,120,184,.8)}
+
+    /* Main layout */
+    #game-main{flex:1;display:flex;flex-direction:row;overflow:hidden}
+    #game-left-col{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+    #game-right-col{
+      width:210px;flex-shrink:0;
+      background:rgba(11,12,16,.5);border-left:1px solid var(--border);
+      overflow-y:auto;
+    }
+    @media(max-width:640px){#game-right-col{display:none}}
+
+    /* Character panel (right col desktop) */
+    #my-char-panel{
+      padding:16px 14px;cursor:pointer;
+      transition:background .15s;border-bottom:1px solid rgba(56,64,96,.2);
+    }
+    #my-char-panel:hover{background:rgba(255,255,255,.02)}
+    #my-char-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+    .top-avatar{
+      width:44px;height:44px;border-radius:50%;display:flex;align-items:center;
+      justify-content:center;font-size:22px;flex-shrink:0;cursor:pointer;
+      border:2px solid var(--border);
+    }
+    .top-avatar:active{opacity:.7}
     .ficha-mini{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
     .ficha-nome{font-size:13px;font-weight:bold;color:var(--gold2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .bars{display:flex;gap:6px}
-    .bar-w{flex:1;display:flex;flex-direction:column;gap:2px}
+    .bars{display:flex;flex-direction:column;gap:6px}
+    .bar-w{display:flex;flex-direction:column;gap:2px}
     .bar-lbl{font-size:9px;color:var(--text2);letter-spacing:.5px;display:flex;justify-content:space-between}
     .bar-track{height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
     .bar-fill{height:100%;border-radius:3px;transition:width .5s}
     .bar-hp .bar-fill{background:var(--hp)}
     .bar-sp .bar-fill{background:var(--sp)}
     .bar-exp .bar-fill{background:var(--exp)}
-    .sala-chip{
-      font-size:11px;color:var(--text2);background:rgba(56,64,96,.2);
-      padding:4px 9px;border-radius:12px;border:1px solid var(--border);
-      white-space:nowrap;flex-shrink:0;cursor:pointer;
-    }
 
-    /* Historia */
+    /* Portrait cards — mobile only */
+    #portrait-cards{display:none;flex-shrink:0;flex-direction:row;gap:8px;padding:8px 10px 4px}
+    @media(max-width:640px){#portrait-cards{display:flex}}
+    .pc-card{
+      flex:1;background:rgba(19,22,32,.95);border:1px solid var(--border);
+      border-radius:10px;padding:10px;cursor:pointer;transition:border-color .15s;min-width:0;
+    }
+    .pc-card:active{opacity:.85}
+    .pc-char-row{display:flex;align-items:center;gap:8px}
+    .pc-avatar-wrap{
+      width:34px;height:34px;border-radius:50%;display:flex;align-items:center;
+      justify-content:center;font-size:17px;flex-shrink:0;border:2px solid var(--border);
+    }
+    .pc-char-stats{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+    .pc-name{font-size:11px;font-weight:bold;color:var(--gold2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .pc-bar-row{display:flex;align-items:center;gap:4px}
+    .pc-lbl{font-size:8px;color:var(--text3);letter-spacing:.5px;flex-shrink:0;width:14px}
+    .pc-bar-track{flex:1;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+    .pc-bar-fill{height:100%;border-radius:2px;transition:width .4s}
+    .pc-hp-fill{background:var(--hp)}
+    .pc-sp-fill{background:var(--sp)}
+    .pc-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+    .pc-act-btn{
+      padding:7px 4px;border-radius:8px;cursor:pointer;
+      background:rgba(255,255,255,.04);border:1px solid rgba(56,64,96,.25);
+      font-family:inherit;font-size:8px;color:var(--text3);letter-spacing:.5px;
+      display:flex;flex-direction:column;align-items:center;gap:3px;
+      transition:background .15s;
+    }
+    .pc-act-btn:active{background:rgba(138,172,204,.2)}
+    .pc-act-icon{font-size:16px;line-height:1;display:block}
+
+    /* Historia narrative feed */
     #historia{
       flex:1;overflow-y:auto;padding:12px;
-      display:flex;flex-direction:column;gap:10px;
+      display:flex;flex-direction:column;gap:12px;
       scroll-behavior:smooth;
     }
     #historia::-webkit-scrollbar{width:3px}
@@ -284,61 +347,59 @@
       font-size:13px;color:var(--gold);font-style:normal;
       display:flex;flex-direction:column;align-items:center;gap:8px;width:200px;
     }
-    .msg-empty .retry-bar{
-      height:5px;width:100%;background:rgba(56,64,96,.25);border-radius:2px;overflow:hidden;
-    }
-    .msg-empty .retry-fill{
-      height:100%;background:var(--gold);border-radius:2px;
-      transition:width .3s;
-    }
+    .msg-empty .retry-bar{height:5px;width:100%;background:rgba(56,64,96,.25);border-radius:2px;overflow:hidden}
+    .msg-empty .retry-fill{height:100%;background:var(--gold);border-radius:2px;transition:width .3s}
     #btn-iniciar-narrar{
       display:none;padding:12px 28px;background:var(--blue);color:#fff;
       border:none;border-radius:var(--r);font-family:inherit;font-size:15px;
       font-weight:bold;cursor:pointer;letter-spacing:.5px;
     }
     #btn-iniciar-narrar:active{opacity:.8}
+
+    /* GM narration — dark serif italic, left accent border */
     .msg-mestre{
-      background:var(--surface);border:1px solid var(--border);
-      border-left:2px solid rgba(138,172,204,.5);
-      border-radius:var(--r);padding:12px 14px;font-size:14px;line-height:1.75;
+      background:rgba(10,12,20,.85);
+      border-left:3px solid rgba(72,120,184,.7);
+      border-radius:0 var(--r) var(--r) 0;
+      padding:14px 16px;
+      font-family:Georgia,serif;font-style:italic;
+      font-size:14.5px;line-height:1.85;color:#c4d4e8;
     }
-    .msg-mestre-lbl{font-size:10px;color:var(--gold);letter-spacing:2px;margin-bottom:7px;display:flex;align-items:center;gap:6px}
+    .msg-mestre-lbl{
+      font-size:10px;font-style:normal;
+      color:var(--gold);letter-spacing:2px;margin-bottom:8px;
+      display:flex;align-items:center;gap:6px;
+    }
+    /* Player actions block */
     .msg-acoes{
-      background:rgba(56,64,96,.08);border:1px solid rgba(56,64,96,.25);
+      background:rgba(56,64,96,.08);border:1px solid rgba(56,64,96,.2);
       border-radius:var(--r);padding:10px 14px;
     }
     .msg-acoes-lbl{font-size:10px;color:var(--text3);letter-spacing:1px;margin-bottom:6px}
     .msg-acao-item{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:2px}
     .msg-acao-item strong{color:var(--text)}
+    /* Round separator */
     .rodada-sep{
       display:flex;align-items:center;gap:10px;
-      font-size:10px;color:var(--text3);letter-spacing:2px;
-      padding:4px 0;
+      font-size:10px;color:var(--text3);letter-spacing:2px;padding:4px 0;
     }
-    .rodada-sep::before,.rodada-sep::after{content:'';flex:1;height:1px;background:rgba(56,64,96,.25)}
+    .rodada-sep::before,.rodada-sep::after{content:'';flex:1;height:1px;background:rgba(56,64,96,.2)}
 
-    /* Status rodada — jogadores verticais */
-    #status-bar{
-      background:rgba(11,12,16,.95);border-top:1px solid rgba(56,64,96,.2);
-      padding:6px 10px;display:flex;align-items:center;gap:8px;
-      flex-shrink:0;overflow-x:auto;scrollbar-width:none;
-    }
+    /* Player status chips — inside topbar */
+    #status-bar{flex:1;display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none;min-width:0}
     #status-bar::-webkit-scrollbar{display:none}
     .status-rodada-lbl{font-size:10px;color:var(--text3);letter-spacing:1px;white-space:nowrap;flex-shrink:0}
     .sj{
-      display:flex;align-items:center;gap:5px;flex-shrink:0;
+      display:flex;align-items:center;gap:4px;flex-shrink:0;
       background:rgba(19,22,32,.8);border:1px solid rgba(56,64,96,.25);
-      border-radius:10px;padding:3px 8px 3px 4px;
+      border-radius:10px;padding:2px 7px 2px 3px;
     }
     .sj.done{border-color:var(--green)}
     .sj.offline{opacity:.5}
-    .sj-av{
-      width:22px;height:22px;border-radius:50%;display:flex;align-items:center;
-      justify-content:center;font-size:13px;flex-shrink:0;
-    }
-    .sj-nome{font-size:11px;color:var(--text);white-space:nowrap}
+    .sj-av{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+    .sj-nome{font-size:10px;color:var(--text);white-space:nowrap}
     .sj.done .sj-nome{color:var(--green)}
-    .sj-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .sj-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
     .sj-dot.g{background:var(--green);box-shadow:0 0 4px var(--green)}
     .sj-dot.y{background:#f39c12;box-shadow:0 0 4px #f39c12}
     .sj-dot.r{background:var(--red)}
@@ -649,7 +710,7 @@
 
     /* Painel flutuante de inimigos */
     #float-ini-btn{
-      position:fixed;right:0;top:62px;
+      position:fixed;right:0;top:48px;
       z-index:92;background:rgba(150,25,25,.92);border:none;border-radius:8px 0 0 8px;
       padding:10px 7px;cursor:pointer;display:none;flex-direction:column;
       align-items:center;gap:3px;box-shadow:-2px 0 12px rgba(0,0,0,.5);
