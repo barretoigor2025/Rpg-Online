@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>⚔️ Batalha Tática v6</title>
+<title>⚔️ Batalha Tática v7</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -519,25 +519,27 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
   pointer-events:none;user-select:none;line-height:1.4;
 }
 .u-label .u-hpsp{color:var(--text2);font-size:6px;display:block}
-.unit .u-sprite{
-  width:42px;height:54px;
-  object-fit:contain;object-position:bottom center;
+/* ── SPRITES: unified size — proportional to 64×32 tile ── */
+/* Both players and enemies use same wrapper + cover approach */
+.u-sprite-wrap{
+  width:56px;height:72px;
+  overflow:hidden;flex-shrink:0;background:transparent;
+}
+.u-sprite-wrap img{
+  width:100%;height:100%;
+  object-fit:cover;
+  object-position:center 12%;
   image-rendering:pixelated;
-  filter:drop-shadow(0 3px 8px rgba(0,0,0,.95));
+  filter:drop-shadow(0 4px 10px rgba(0,0,0,.95));
 }
-.u-goblin{
-  width:42px;height:54px;
-  overflow:hidden;background:transparent;flex-shrink:0;
+/* enemy sprites: boost vibrancy */
+.u-sprite-wrap.enemy-sprite img{
+  filter:brightness(1.55) contrast(1.2) saturate(1.35) drop-shadow(0 4px 10px rgba(0,0,0,.9));
 }
-.u-goblin img{
-  width:100%;height:100%;object-fit:cover;
-  object-position:center 15%;
-  filter:brightness(1.6) contrast(1.25) saturate(1.4) drop-shadow(0 3px 8px rgba(0,0,0,.9));
-}
-.unit .u-icon{font-size:24px;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,.9))}
-.unit .u-bar{width:42px;height:3px;background:rgba(0,0,0,.6);border-radius:2px;margin-top:2px;overflow:hidden}
+.unit .u-icon{font-size:26px;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,.9))}
+.unit .u-bar{width:56px;height:3px;background:rgba(0,0,0,.6);border-radius:2px;margin-top:2px;overflow:hidden}
 .unit .u-fill{height:100%;border-radius:2px;transition:width .4s}
-.unit .u-sp-bar{width:42px;height:2px;background:rgba(0,0,0,.5);border-radius:2px;margin-top:1px;overflow:hidden}
+.unit .u-sp-bar{width:56px;height:2px;background:rgba(0,0,0,.5);border-radius:2px;margin-top:1px;overflow:hidden}
 .unit .u-sp-fill{height:100%;border-radius:2px;background:var(--blue);transition:width .4s}
 .unit.u-active{filter:drop-shadow(0 0 10px rgba(240,200,102,.75))}
 .unit.u-selected{filter:drop-shadow(0 0 14px rgba(255,224,102,.85)) brightness(1.12)}
@@ -617,7 +619,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
   <!-- ═══ TURN BAR ═══ -->
   <div id="turn-bar">
     <span class="tb-lbl">TURNOS</span>
-    <span style="font-size:7px;color:#3a3;background:rgba(0,80,0,.35);border:1px solid #3a3;border-radius:3px;padding:1px 5px;flex-shrink:0;margin-right:4px">v6</span>
+    <span style="font-size:7px;color:#3a3;background:rgba(0,80,0,.35);border:1px solid #3a3;border-radius:3px;padding:1px 5px;flex-shrink:0;margin-right:4px">v7</span>
     <div id="turn-chips"></div>
   </div>
 
@@ -710,6 +712,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
       <!-- FICHA at bottom -->
       <div id="sr-ficha-wrap">
         <button id="sr-ficha-btn" onclick="openFicha()">📋 FICHA DO PERSONAGEM</button>
+        <a href="narrativa.html" style="display:block;margin-top:5px;width:100%;padding:6px 4px;text-align:center;background:rgba(212,168,67,.08);border:1px solid rgba(212,168,67,.25);border-radius:4px;color:var(--gold2);font-size:8px;letter-spacing:.5px;text-decoration:none;transition:all .12s" onmouseover="this.style.background='rgba(212,168,67,.15)'" onmouseout="this.style.background='rgba(212,168,67,.08)'">📖 MODO NARRATIVO</a>
       </div>
     </div>
 
@@ -903,7 +906,9 @@ function gridToScreen(col,row){
 }
 function unitScreenPos(col,row){
   const{x,y}=gridToScreen(col,row);
-  return{left:x+HW-21, top:y-52};
+  // 56px wide: center at tile HW (32) → offset 28
+  // 72px tall: same vertical anchor y-52 → bottom at y+20 (on tile surface)
+  return{left:x+HW-28, top:y-52};
 }
 function dist(a,b){return Math.abs(a.col-b.col)+Math.abs(a.row-b.row)}
 function unitAt(col,row){return units.find(u=>u.alive&&u.col===col&&u.row===row)||null}
@@ -978,27 +983,21 @@ function createUnitEl(u){
     <span class="u-name-tag">${u.name}</span>
     <span class="u-hpsp">${u.hp}/${u.maxHp}HP${spLabel}</span>
   </div>`;
-  if(u.team==='player'){
-    div.innerHTML=`${label}
-      <img class="u-sprite" src="../sprites/${u.classe}_${u.sexo}.png"
-        onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-      <span class="u-icon" style="display:none">${CLASS_CFG[u.classe]?.icon||'⚔️'}</span>
-      <div class="u-bar"><div class="u-fill" style="width:100%;background:var(--green2)"></div></div>
-      ${spBar}`;
-  }else{
-    div.innerHTML=`${label}
-      <div class="u-goblin"><img id="gimg_${u.id}" src="../sprites/${u.sprite}.png"></div>
-      <div class="u-bar"><div class="u-fill" style="width:100%;background:var(--green2)"></div></div>`;
-  }
+  // Unified sprite structure for players and enemies
+  const spriteClass=u.team==='enemy'?'u-sprite-wrap enemy-sprite':'u-sprite-wrap';
+  const spriteIcon=u.team==='player'?(CLASS_CFG[u.classe]?.icon||'⚔️'):(u.icon||'👹');
+  const spriteSrc=u.team==='player'
+    ?`../sprites/${u.classe}_${u.sexo}.png`
+    :`../sprites/${u.sprite}.png`;
+  div.innerHTML=`${label}
+    <div class="${spriteClass}">
+      <img src="${spriteSrc}"
+        onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span class=\\'u-icon\\'>${spriteIcon}</span>')">
+    </div>
+    <div class="u-bar"><div class="u-fill" style="width:100%;background:var(--green2)"></div></div>
+    ${spBar}`;
   div.addEventListener('click',e=>{e.stopPropagation();onUnitClick(u);});
   cont.appendChild(div);
-  if(u.team==='enemy'){
-    const gimg=div.querySelector(`#gimg_${u.id}`);
-    if(gimg) gimg.addEventListener('error',()=>{
-      const gd=gimg.parentElement;
-      if(gd) gd.innerHTML=`<span class="u-icon">${u.icon}</span>`;
-    });
-  }
 }
 
 function moveUnitEl(u,col,row){
