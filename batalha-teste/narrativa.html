@@ -491,13 +491,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
   pointer-events:none;white-space:nowrap;
 }
 
-/* elementos só de portrait — ocultos no desktop */
+/* portrait-cards: hidden on desktop */
+#portrait-cards{display:none}
 #close-sheet-btn{display:none}
-#char-mini-bar{display:none}
 #sheet-backdrop{display:none;position:fixed;inset:0;z-index:299;background:rgba(0,0,0,.65)}
 #sheet-backdrop.open{display:block}
 
-/* ══ TABLET / LANDSCAPE PEQUENO ══ */
+/* ══ TABLET / LANDSCAPE ══ */
 @media(max-width:680px){
   #right-col{display:none}
   #action-input{height:46px;font-size:12px}
@@ -506,9 +506,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
 
 /* ══ PORTRAIT PHONE ══ */
 @media(max-width:520px){
-  /* Scene compacto */
-  #scene-area{height:64px}
-  #scene-sprites{display:none}
+  /* Esconde cena atmosférica — substituída pelos cards */
+  #scene-area{display:none}
 
   /* Status bar compacta */
   #status-bar{height:40px}
@@ -521,13 +520,73 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
   #voice-btn span:last-child{display:none}
   #voice-btn{padding:4px 6px}
 
+  /* ── Dois cards lado a lado ── */
+  #portrait-cards{
+    display:flex;gap:6px;padding:6px 8px;
+    flex-shrink:0;
+    background:var(--bg);
+    border-bottom:1px solid rgba(88,104,160,.18);
+  }
+  .pc-card{
+    flex:1;min-width:0;
+    background:var(--surface2);
+    border:1px solid rgba(88,104,160,.2);
+    border-radius:6px;padding:6px 8px;
+    display:flex;flex-direction:column;gap:3px;
+  }
+  .pc-card-head{
+    font-size:6px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;
+    border-bottom:1px solid rgba(88,104,160,.14);padding-bottom:3px;margin-bottom:1px;
+  }
+  /* Ficha card */
+  .pc-char-row{display:flex;gap:6px;align-items:flex-start}
+  #pc-avatar{
+    width:36px;height:42px;flex-shrink:0;
+    border:1.5px solid rgba(88,104,160,.3);border-radius:3px;
+    background:var(--surface3);overflow:hidden;
+    display:flex;align-items:center;justify-content:center;font-size:18px;
+  }
+  #pc-avatar img{width:100%;height:100%;object-fit:cover;object-position:center top;image-rendering:pixelated}
+  .pc-char-stats{flex:1;min-width:0}
+  #pc-name{font-size:8px;color:var(--silver2);font-weight:bold;margin-bottom:3px;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pc-bar{display:flex;align-items:center;gap:3px;margin-bottom:2px}
+  .pc-lbl{font-size:6px;color:var(--text3);width:12px;flex-shrink:0;letter-spacing:.5px}
+  .pc-track{flex:1;height:4px;background:rgba(0,0,0,.4);border-radius:2px;overflow:hidden}
+  .pc-track>div{height:100%;border-radius:2px;transition:width .4s}
+  #pc-hp-fill{background:#cc4444;width:100%}
+  #pc-sp-fill{background:var(--blue);width:75%}
+  #pc-hp-val,#pc-sp-val{font-size:6px;color:var(--text2);min-width:22px;text-align:right}
+  #pc-conds{display:flex;flex-wrap:wrap;gap:2px}
+  #pc-conds .condition-tag{padding:1px 5px;font-size:6px;border-radius:8px}
+  #pc-equips{display:flex;flex-wrap:wrap;gap:2px}
+  #pc-equips .equip-tag{font-size:6px;padding:1px 5px}
+  /* Ações card */
+  .pc-action-grid{
+    display:grid;grid-template-columns:1fr 1fr;
+    gap:3px;flex:1;
+  }
+  .pc-act-btn{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    padding:6px 2px;
+    background:rgba(88,104,160,.08);
+    border:1px solid rgba(88,104,160,.2);
+    border-radius:4px;cursor:pointer;
+    font-size:14px;transition:all .12s;color:var(--text);
+  }
+  .pc-act-btn span{font-size:6px;letter-spacing:.3px;color:var(--text3);text-transform:uppercase}
+  .pc-act-btn:active{background:rgba(88,104,160,.22);border-color:var(--silver)}
+  .pc-act-btn.danger{border-color:rgba(204,68,68,.28);background:rgba(204,68,68,.06)}
+  .pc-act-btn.danger span{color:#a05050}
+  .pc-act-btn.danger:active{background:rgba(204,68,68,.15)}
+
   /* Action bar */
-  #action-bar{padding:4px 8px 4px;gap:5px;
+  #action-bar{padding:4px 8px;gap:5px;
     padding-bottom:calc(4px + env(safe-area-inset-bottom,0px))}
   #action-input{height:38px;font-size:12px}
   .benv-lbl{display:none}
   .benv-icon{font-size:20px}
   #btn-enviar{padding:0 11px}
+  #test-panel-header{font-size:7px;padding:4px 10px}
 
   /* Quick-sug rola horizontal */
   #quick-sug{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;
@@ -535,40 +594,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
   #quick-sug::-webkit-scrollbar{display:none}
   .qs{flex-shrink:0;white-space:nowrap}
 
-  /* Testes */
-  #test-panel-header{font-size:7px;padding:4px 10px}
-
-  /* Mini barra de personagem */
-  #char-mini-bar{
-    display:flex;align-items:center;gap:8px;
-    padding:5px 10px;
-    background:var(--surface2);
-    border-top:1px solid rgba(88,104,160,.22);
-    flex-shrink:0;
-  }
-  #cmi-avatar{
-    width:30px;height:30px;border-radius:var(--r);flex-shrink:0;
-    background:var(--surface3);border:1px solid rgba(88,104,160,.3);
-    overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:16px;
-  }
-  #cmi-avatar img{width:100%;height:100%;object-fit:cover;object-position:center top;image-rendering:pixelated}
-  #cmi-info{flex:1;min-width:0}
-  #cmi-name-lv{font-size:8px;color:var(--silver2);font-weight:bold;margin-bottom:2px;letter-spacing:.3px}
-  .cmi-row{display:flex;align-items:center;gap:4px;margin-bottom:1px}
-  .cmi-lbl{font-size:6.5px;color:var(--text3);width:14px;flex-shrink:0;letter-spacing:.5px}
-  .cmi-track{flex:1;height:4px;background:rgba(0,0,0,.4);border-radius:2px;overflow:hidden}
-  .cmi-track>div{height:100%;border-radius:2px;transition:width .4s}
-  #cmi-hp-fill{background:#cc4444;width:100%}
-  #cmi-sp-fill{background:var(--blue);width:75%}
-  #cmi-hp-v,#cmi-sp-v{font-size:6px;color:var(--text2);min-width:30px;text-align:right}
-  #char-sheet-btn{
-    padding:5px 9px;background:rgba(88,104,160,.15);flex-shrink:0;
-    border:1px solid rgba(88,104,160,.3);border-radius:var(--r);
-    color:var(--silver);font-family:inherit;font-size:7.5px;
-    cursor:pointer;letter-spacing:.5px;white-space:nowrap;
-  }
-
-  /* Ficha desliza de baixo para cima */
+  /* Ficha drawer (abre pelo botão Inventário) */
   #right-col{
     display:flex !important;
     position:fixed;bottom:0;left:0;right:0;
@@ -634,6 +660,34 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
         <div id="scene-time-badge">🌙 Anoitecer · Rodada 1</div>
       </div>
       <div id="scene-sprites"></div>
+    </div>
+
+    <!-- PORTRAIT CARDS (substitui cena no celular vertical) -->
+    <div id="portrait-cards">
+      <!-- Card: Ficha compacta -->
+      <div class="pc-card" id="pc-ficha">
+        <div class="pc-card-head">⚔ Meu Personagem</div>
+        <div class="pc-char-row">
+          <div id="pc-avatar"></div>
+          <div class="pc-char-stats">
+            <div id="pc-name">Guerreiro · Nv3</div>
+            <div class="pc-bar"><span class="pc-lbl">HP</span><div class="pc-track"><div id="pc-hp-fill"></div></div><span id="pc-hp-val">120</span></div>
+            <div class="pc-bar"><span class="pc-lbl">SP</span><div class="pc-track"><div id="pc-sp-fill"></div></div><span id="pc-sp-val">45</span></div>
+          </div>
+        </div>
+        <div id="pc-conds"></div>
+        <div id="pc-equips"></div>
+      </div>
+      <!-- Card: Ações rápidas -->
+      <div class="pc-card" id="pc-actions">
+        <div class="pc-card-head">🎮 Ações</div>
+        <div class="pc-action-grid">
+          <button class="pc-act-btn" onclick="showToast('⚔️ Habilidades — em breve')">⚔️<span>Habilidades</span></button>
+          <button class="pc-act-btn" onclick="toggleCharSheet()">🎒<span>Inventário</span></button>
+          <button class="pc-act-btn" onclick="toggleCharSheet()">📋<span>Ficha</span></button>
+          <button class="pc-act-btn danger" onclick="triggerCombat()">⚔<span>Combate</span></button>
+        </div>
+      </div>
     </div>
 
     <div id="narrative-panel"></div>
@@ -715,17 +769,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia
 
 <!-- SHEET BACKDROP (portrait) -->
 <div id="sheet-backdrop" onclick="toggleCharSheet()"></div>
-
-<!-- MINI CHAR BAR (portrait only) -->
-<div id="char-mini-bar">
-  <div id="cmi-avatar"></div>
-  <div id="cmi-info">
-    <div id="cmi-name-lv">Guerreiro · Nv3</div>
-    <div class="cmi-row"><span class="cmi-lbl">HP</span><div class="cmi-track"><div id="cmi-hp-fill"></div></div><span id="cmi-hp-v">120/120</span></div>
-    <div class="cmi-row"><span class="cmi-lbl">SP</span><div class="cmi-track"><div id="cmi-sp-fill"></div></div><span id="cmi-sp-v">45/60</span></div>
-  </div>
-  <button id="char-sheet-btn" onclick="toggleCharSheet()">📋 FICHA</button>
-</div>
 
 <!-- ACTION BAR -->
 <div id="action-bar">
@@ -910,7 +953,7 @@ let testCount = 0;
 function init(){
   renderPortraits();
   renderMyChar();
-  renderCharMini();
+  renderPortraitCards();
   renderHistory();
   renderInventory();
   spawnParticles();
@@ -921,11 +964,19 @@ function init(){
   startStory();
 }
 
-function renderCharMini(){
-  const av = document.getElementById('cmi-avatar');
+function renderPortraitCards(){
+  const av = document.getElementById('pc-avatar');
   if(!av) return;
   av.innerHTML=`<img src="../sprites/${ME.classe}_${ME.sexo}.png"
     onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span>${ME.icon}</span>')">`;
+  document.getElementById('pc-name').textContent = ME.name + ' · Nv3';
+  document.getElementById('pc-conds').innerHTML=`
+    <span class="condition-tag buff">⚡ Alerta</span>
+    <span class="condition-tag buff">🛡 Guarda</span>`;
+  document.getElementById('pc-equips').innerHTML=`
+    <span class="equip-tag">🗡️ Espada</span>
+    <span class="equip-tag">🛡️ Escudo</span>
+    <span class="equip-tag">⛓️ Malha</span>`;
 }
 
 function toggleCharSheet(){
