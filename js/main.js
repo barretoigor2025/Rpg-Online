@@ -184,7 +184,7 @@ function atualizarTileSize() {
   // Fit active zone (cols 0-19, rows 0-14) into canvas width
   // Isometric width = (MAP_COLS + MAP_ROWS) * TILE_W/2
   // Target: 90% of canvas width
-  TILE_W = Math.max(16, Math.min(48, Math.floor(W * 0.9 * 2 / (MAP_COLS + MAP_ROWS))));
+  TILE_W = Math.max(16, Math.min(60, Math.floor(W * 0.95 * 2 / (MAP_COLS + MAP_ROWS))));
   TILE_H = Math.floor(TILE_W / 2);
 }
 const _mapPos  = {};  // 'p_{uid}' | 'e_{nomeKey}' → {col,row}
@@ -238,77 +238,117 @@ function _desenharTile(ctx, col, row, h) {
   const isEnemy = col >= Math.floor(MAP_COLS * 0.6);
   const {x, y}  = isoToScreen(col, row, h);
   const hw = TILE_W / 2, hh = TILE_H / 2;
+  const sh = h * TILE_H * 2.5; // taller sides for dramatic block look
 
-  // Top face — gradient for 3D stone look
+  // Top face — dark stone
   ctx.beginPath();
   ctx.moveTo(x,      y);
   ctx.lineTo(x + hw, y + hh);
   ctx.lineTo(x,      y + TILE_H);
   ctx.lineTo(x - hw, y + hh);
   ctx.closePath();
-
-  const gTop = ctx.createLinearGradient(x - hw, y, x + hw, y + TILE_H);
+  const gTop = ctx.createLinearGradient(x, y, x, y + TILE_H);
   if(isEnemy) {
-    gTop.addColorStop(0, h > 0 ? '#3a1a1a' : '#2e1010');
-    gTop.addColorStop(1, h > 0 ? '#2a0e0e' : '#1e0808');
+    gTop.addColorStop(0, h > 0 ? '#3e1c1c' : '#2e1212');
+    gTop.addColorStop(1, h > 0 ? '#2c1010' : '#1e0c0c');
   } else {
-    gTop.addColorStop(0, h > 1 ? '#c8c8d4' : h > 0 ? '#bcbcc8' : '#b8b8c0');
-    gTop.addColorStop(1, h > 1 ? '#a8a8b8' : h > 0 ? '#9c9cac' : '#9898a4');
+    gTop.addColorStop(0, h > 1 ? '#3a3c44' : h > 0 ? '#30323c' : '#2c2e36');
+    gTop.addColorStop(1, h > 1 ? '#282a32' : h > 0 ? '#22242c' : '#1e2028');
   }
   ctx.fillStyle = gTop;
   ctx.fill();
 
-  // Bright top-left edge highlight (simulates light source)
+  // Stone grain: tiny color variation over the face
+  if(TILE_W >= 20) {
+    ctx.save();
+    ctx.clip();
+    ctx.globalAlpha = 0.07;
+    for(let i = 0; i < 4; i++) {
+      const gx = x - hw + (i * hw * 0.6);
+      const gy = y + hh * (i % 2 === 0 ? 0.3 : 0.7);
+      ctx.fillStyle = i % 2 === 0 ? '#ffffff' : '#000000';
+      ctx.fillRect(gx, gy, TILE_W * 0.12, TILE_H * 0.18);
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  // Light edge (top-left — simulates light from upper-left)
   ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.lineTo(x + hw, y + hh);
-  ctx.strokeStyle = isEnemy ? 'rgba(255,80,80,.3)' : 'rgba(255,255,255,.6)';
-  ctx.lineWidth = 0.8;
+  ctx.moveTo(x,      y);
+  ctx.lineTo(x - hw, y + hh);
+  ctx.strokeStyle = isEnemy ? 'rgba(220,100,100,.22)' : 'rgba(200,210,240,.28)';
+  ctx.lineWidth = 0.9;
   ctx.stroke();
 
-  // Grid line outline (rest of diamond)
+  // Grid mortar line (full diamond border)
   ctx.beginPath();
-  ctx.moveTo(x + hw, y + hh);
-  ctx.lineTo(x, y + TILE_H);
+  ctx.moveTo(x,      y);
+  ctx.lineTo(x + hw, y + hh);
+  ctx.lineTo(x,      y + TILE_H);
   ctx.lineTo(x - hw, y + hh);
-  ctx.lineTo(x, y);
-  ctx.strokeStyle = isEnemy ? 'rgba(80,20,20,.6)' : 'rgba(60,60,80,.35)';
-  ctx.lineWidth = 0.5;
+  ctx.closePath();
+  ctx.strokeStyle = isEnemy ? 'rgba(110,35,35,.65)' : 'rgba(80,90,120,.55)';
+  ctx.lineWidth = 0.7;
   ctx.stroke();
 
   if(h > 0) {
-    const sh = h * TILE_H;
-    // Left face (shadow side)
+    // Left face — darkest (shadow)
     ctx.beginPath();
     ctx.moveTo(x - hw, y + hh);
     ctx.lineTo(x,      y + TILE_H);
     ctx.lineTo(x,      y + TILE_H + sh);
     ctx.lineTo(x - hw, y + hh + sh);
     ctx.closePath();
-    const gL = ctx.createLinearGradient(x - hw, y + hh, x - hw, y + hh + sh);
-    gL.addColorStop(0, isEnemy ? '#1a0808' : '#707078');
-    gL.addColorStop(1, isEnemy ? '#0e0404' : '#505058');
+    const gL = ctx.createLinearGradient(0, y + hh, 0, y + hh + sh);
+    gL.addColorStop(0, isEnemy ? '#1c0808' : '#16161c');
+    gL.addColorStop(1, isEnemy ? '#0e0404' : '#0c0c10');
     ctx.fillStyle = gL;
     ctx.fill();
-    ctx.strokeStyle = isEnemy ? 'rgba(80,20,20,.4)' : 'rgba(40,40,60,.4)';
-    ctx.lineWidth = 0.4;
+    ctx.strokeStyle = isEnemy ? 'rgba(90,25,25,.6)' : 'rgba(60,65,90,.6)';
+    ctx.lineWidth = 0.5;
     ctx.stroke();
-    // Right face (medium tone)
+
+    // Right face — medium shadow
     ctx.beginPath();
     ctx.moveTo(x,      y + TILE_H);
     ctx.lineTo(x + hw, y + hh);
     ctx.lineTo(x + hw, y + hh + sh);
     ctx.lineTo(x,      y + TILE_H + sh);
     ctx.closePath();
-    const gR = ctx.createLinearGradient(x, y + TILE_H, x, y + TILE_H + sh);
-    gR.addColorStop(0, isEnemy ? '#220e0e' : '#888890');
-    gR.addColorStop(1, isEnemy ? '#140606' : '#686870');
+    const gR = ctx.createLinearGradient(0, y + hh, 0, y + hh + sh);
+    gR.addColorStop(0, isEnemy ? '#2a0e0e' : '#22242c');
+    gR.addColorStop(1, isEnemy ? '#180808' : '#161820');
     ctx.fillStyle = gR;
     ctx.fill();
-    ctx.strokeStyle = isEnemy ? 'rgba(80,20,20,.4)' : 'rgba(40,40,60,.4)';
-    ctx.lineWidth = 0.4;
+    ctx.strokeStyle = isEnemy ? 'rgba(90,25,25,.6)' : 'rgba(60,65,90,.6)';
+    ctx.lineWidth = 0.5;
     ctx.stroke();
   }
+}
+
+function _desenharHighlights(ctx) {
+  Object.entries(_mapPos).forEach(([key, pos]) => {
+    const isP = key.startsWith('p_');
+    const h   = (_terrain[`${pos.col},${pos.row}`] || {}).height || 0;
+    const {x, y} = isoToScreen(pos.col, pos.row, h);
+    const hw = TILE_W / 2 + 1;
+    const hh = TILE_H / 2 + 0.5;
+
+    ctx.save();
+    ctx.shadowBlur  = TILE_W > 22 ? 12 : 6;
+    ctx.shadowColor = isP ? 'rgba(70,230,100,.95)' : 'rgba(230,60,60,.95)';
+    ctx.beginPath();
+    ctx.moveTo(x,      y - 1);
+    ctx.lineTo(x + hw, y + hh);
+    ctx.lineTo(x,      y + TILE_H + 1);
+    ctx.lineTo(x - hw, y + hh);
+    ctx.closePath();
+    ctx.strokeStyle = isP ? 'rgba(90,255,120,.85)' : 'rgba(255,75,75,.85)';
+    ctx.lineWidth   = TILE_W > 26 ? 2.2 : 1.4;
+    ctx.stroke();
+    ctx.restore();
+  });
 }
 
 function desenharCanvas() {
@@ -333,6 +373,8 @@ function desenharCanvas() {
       _desenharTile(ctx, col, row, t.height);
     }
   }
+  // Unit position highlights (drawn over tiles, under fog)
+  _desenharHighlights(ctx);
   // Atmospheric edge fog — darkens edges to focus attention on center
   const fog = ctx.createRadialGradient(W * 0.5, H * 0.42, H * 0.12, W * 0.5, H * 0.42, H * 0.72);
   fog.addColorStop(0, 'rgba(4,6,18,0)');
@@ -374,13 +416,8 @@ function renderizarMapaSprites() {
   const cont = document.getElementById('map-container');
   if(!spEl || !cont) return;
 
-  // Sync canvas if needed
-  const canvas = document.getElementById('map-canvas');
-  if(canvas && (canvas.width !== cont.clientWidth || canvas.height !== cont.clientHeight)) {
-    desenharCanvas(); // also calls atualizarTileSize
-  } else {
-    atualizarTileSize();
-  }
+  // Redraw canvas on every sprite update to keep unit highlights in sync
+  desenharCanvas();
 
   const seen = new Set();
   Object.entries(_mapPos).forEach(([key, pos]) => {
