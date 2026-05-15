@@ -176,35 +176,52 @@ function rolarRodada(jogadores) {
 //  MAPA TÁTICO
 // ═══════════════════════════════════════════════════════════════
 const MAP_COLS = 20, MAP_ROWS = 15;
-// Tile size is computed dynamically from canvas width so the map always fits
+// Tile size: fixed by screen width — tiles are always large, map extends beyond canvas edges
 let TILE_W = 32, TILE_H = 16;
 function atualizarTileSize() {
   const canvas = document.getElementById('map-canvas');
   const W = canvas ? (canvas.width || 400) : 400;
-  // Fit active zone (cols 0-19, rows 0-14) into canvas width
-  // Isometric width = (MAP_COLS + MAP_ROWS) * TILE_W/2
-  // Target: 90% of canvas width
-  TILE_W = Math.max(16, Math.min(60, Math.floor(W * 0.95 * 2 / (MAP_COLS + MAP_ROWS))));
+  TILE_W = W >= 700 ? 56 : W >= 520 ? 44 : 32;
   TILE_H = Math.floor(TILE_W / 2);
 }
 const _mapPos  = {};  // 'p_{uid}' | 'e_{nomeKey}' → {col,row}
 let _curJogs   = {};
 let _curInis   = {};
 let _terrain   = {}; // key="col,row" → {height:0-3}
+let _camDiag   = 0;  // camera offset in isometric diagonal axis (screen-x)
+let _camDepth  = 0;  // camera offset in isometric depth axis (screen-y)
 
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 function mapKeyJog(uid)  { return `p_${uid}`; }
 function mapKeyIni(nome) { return `e_${nome.replace(/\W/g,'_')}`; }
 
+// Centers camera on the average position of all units on the map
+function atualizarCamera() {
+  const positions = Object.values(_mapPos);
+  if(positions.length === 0) {
+    const mc = (MAP_COLS - 1) / 2, mr = (MAP_ROWS - 1) / 2;
+    _camDiag  = (mc - mr) * TILE_W / 2;
+    _camDepth = (mc + mr) * TILE_H / 2;
+    return;
+  }
+  let sd = 0, sp = 0;
+  positions.forEach(p => {
+    const h = (_terrain[`${p.col},${p.row}`] || {}).height || 0;
+    sd += (p.col - p.row) * TILE_W / 2;
+    sp += (p.col + p.row) * TILE_H / 2 - h * TILE_H;
+  });
+  _camDiag  = sd / positions.length;
+  _camDepth = sp / positions.length;
+}
+
+// Converts grid position to canvas pixel coords — camera-aware, tiles fill screen
 function isoToScreen(col, row, h) {
   const canvas = document.getElementById('map-canvas');
   const W = canvas ? (canvas.width  || 400) : 400;
   const H = canvas ? (canvas.height || 300) : 300;
-  const cx = W / 2;
-  const ty = H * 0.06;
   return {
-    x: cx + (col - row) * TILE_W / 2,
-    y: ty + (col + row) * TILE_H / 2 - (h || 0) * TILE_H
+    x: W / 2 + (col - row) * TILE_W / 2 - _camDiag,
+    y: H / 2 + (col + row) * TILE_H / 2 - (h || 0) * TILE_H - _camDepth
   };
 }
 
@@ -362,6 +379,7 @@ function desenharCanvas() {
     canvas.height = H;
   }
   atualizarTileSize();
+  atualizarCamera();
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, W, H);
   // Painter's algorithm — draw col+row ascending for correct depth overlap
@@ -369,17 +387,21 @@ function desenharCanvas() {
     for(let col = 0; col < MAP_COLS; col++) {
       const row = sum - col;
       if(row < 0 || row >= MAP_ROWS) continue;
+      // Cull tiles fully outside canvas
+      const scx = W/2 + (col - row) * TILE_W/2 - _camDiag;
+      const scy = H/2 + (col + row) * TILE_H/2 - _camDepth;
+      if(scx < -TILE_W*2 || scx > W + TILE_W*2 || scy < -TILE_H*6 || scy > H + TILE_H*6) continue;
       const t = _terrain[`${col},${row}`] || { height: 0 };
       _desenharTile(ctx, col, row, t.height);
     }
   }
   // Unit position highlights (drawn over tiles, under fog)
   _desenharHighlights(ctx);
-  // Atmospheric edge fog — darkens edges to focus attention on center
-  const fog = ctx.createRadialGradient(W * 0.5, H * 0.42, H * 0.12, W * 0.5, H * 0.42, H * 0.72);
+  // Atmospheric vignette — darkens edges to focus on center
+  const fog = ctx.createRadialGradient(W * 0.5, H * 0.5, H * 0.15, W * 0.5, H * 0.5, H * 0.75);
   fog.addColorStop(0, 'rgba(4,6,18,0)');
-  fog.addColorStop(0.6, 'rgba(4,6,18,.1)');
-  fog.addColorStop(1, 'rgba(4,6,18,.82)');
+  fog.addColorStop(0.65, 'rgba(4,6,18,.08)');
+  fog.addColorStop(1, 'rgba(4,6,18,.88)');
   ctx.fillStyle = fog;
   ctx.fillRect(0, 0, W, H);
 }
