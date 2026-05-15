@@ -1,4 +1,4 @@
-import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+import { initializeApp }  from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import { getDatabase, ref, set, get, push, update, onValue, onDisconnect, serverTimestamp, remove }
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js';
 
@@ -20,2017 +20,529 @@ const db = getDatabase(app);
 //  CLASSES
 // ═══════════════════════════════════════════════════════════════
 const CLASSES = {
-  guerreiro: { nome:'Guerreiro', icon:'⚔️', avatar:'🤺', cor:'#8b4513', hp:120, sp:60,  atk:8,  def:5, desc:'Mestre do combate corpo a corpo',   stats:'HP Alto / SP Médio' },
-  mago:      { nome:'Mago',      icon:'🔮', avatar:'🧙', cor:'#4a235a', hp:60,  sp:120, atk:3,  def:1, desc:'Conjurador de magias arcanas',       stats:'HP Baixo / SP Alto' },
-  ladino:    { nome:'Ladino',    icon:'🗡️', avatar:'🥷', cor:'#1a2a1a', hp:80,  sp:80,  atk:6,  def:3, desc:'Especialista em furtividade',        stats:'HP Médio / SP Médio' },
-  clerigo:   { nome:'Clérigo',   icon:'✨', avatar:'😇', cor:'#1a3a4a', hp:90,  sp:100, atk:4,  def:4, desc:'Curandeiro e protetor divino',       stats:'HP Médio / SP Alto' },
-  barbaro:   { nome:'Bárbaro',   icon:'🪓', avatar:'😤', cor:'#5a1a1a', hp:150, sp:40,  atk:10, def:2, desc:'Guerreiro da fúria selvagem',        stats:'HP Muito Alto / SP Baixo' },
-  arqueiro:  { nome:'Arqueiro',  icon:'🏹', avatar:'🧝', cor:'#1a3a1a', hp:85,  sp:70,  atk:7,  def:3, desc:'Atirador preciso à distância',       stats:'HP Médio / SP Médio' },
+  guerreiro: { nome:'Guerreiro', icon:'⚔️', hp:120, sp:60,  atk:8, def:5  },
+  mago:      { nome:'Mago',      icon:'🔮', hp:60,  sp:120, atk:3, def:1  },
+  ladino:    { nome:'Ladino',    icon:'🗡️', hp:80,  sp:80,  atk:6, def:3  },
+  clerigo:   { nome:'Clérigo',   icon:'✨', hp:90,  sp:100, atk:4, def:4  },
+  barbaro:   { nome:'Bárbaro',   icon:'🪓', hp:150, sp:40,  atk:10, def:2 },
+  arqueiro:  { nome:'Arqueiro',  icon:'🏹', hp:85,  sp:70,  atk:7, def:3  },
 };
 
 // ═══════════════════════════════════════════════════════════════
-//  EQUIPAMENTOS INICIAIS POR CLASSE
+//  ESTADO
 // ═══════════════════════════════════════════════════════════════
-const EQUIP_INICIAL = {
-  guerreiro: [
-    { id:'espada_longa',    nome:'Espada Longa',       slot:'arma',     icon:'🗡️', atk:5, def:0, hp:0,  sp:0,  desc:'Lâmina longa e bem balanceada',     equipado:true  },
-    { id:'escudo_aco',      nome:'Escudo de Aço',      slot:'offhand',  icon:'🛡️', atk:0, def:4, hp:0,  sp:0,  desc:'Escudo robusto de aço temperado',   equipado:true  },
-    { id:'armad_placas',    nome:'Armadura de Placas', slot:'armadura', icon:'🔰', atk:0, def:6, hp:0,  sp:0,  desc:'Proteção máxima em batalha',         equipado:true  },
-    { id:'elmo_ferro',      nome:'Elmo de Ferro',      slot:'elmo',     icon:'⛑️', atk:0, def:2, hp:5,  sp:0,  desc:'Elmo resistente que protege a cabeça',equipado:true  },
-  ],
-  mago: [
-    { id:'cajado_arcano',   nome:'Cajado Arcano',      slot:'arma',     icon:'🪄', atk:2, def:0, hp:0,  sp:15, desc:'Amplifica o poder mágico',           equipado:true  },
-    { id:'grimorio',        nome:'Grimório Ancestral', slot:'offhand',  icon:'📖', atk:0, def:0, hp:0,  sp:25, desc:'Livro de feitiços de gerações',      equipado:true  },
-    { id:'robe_magico',     nome:'Robe Mágico',        slot:'armadura', icon:'🥋', atk:0, def:1, hp:0,  sp:10, desc:'Robe imbuído de proteção arcana',    equipado:true  },
-    { id:'anel_poder',      nome:'Anel do Poder',      slot:'anel',     icon:'💍', atk:1, def:0, hp:0,  sp:10, desc:'Amplifica a magia do usuário',       equipado:true  },
-  ],
-  ladino: [
-    { id:'adaga_principal', nome:'Adaga Afiada',       slot:'arma',     icon:'🗡️', atk:4, def:0, hp:0,  sp:0,  desc:'Lâmina rápida e precisamente afiada',equipado:true  },
-    { id:'adaga_second',    nome:'Adaga Secundária',   slot:'offhand',  icon:'🔪', atk:2, def:0, hp:0,  sp:0,  desc:'Segunda lâmina para ataques duplos', equipado:true  },
-    { id:'armad_couro',     nome:'Armadura de Couro',  slot:'armadura', icon:'🥋', atk:0, def:3, hp:0,  sp:0,  desc:'Proteção leve para máxima mobilidade',equipado:true  },
-    { id:'botas_furtivas',  nome:'Botas Furtivas',     slot:'bota',     icon:'👢', atk:0, def:1, hp:0,  sp:5,  desc:'Botas silenciosas para furtividade', equipado:true  },
-  ],
-  clerigo: [
-    { id:'maca_sagrada',    nome:'Maça Sagrada',       slot:'arma',     icon:'🔨', atk:3, def:0, hp:0,  sp:0,  desc:'Arma abençoada pelos deuses',        equipado:true  },
-    { id:'simbolo_sagrado', nome:'Símbolo Sagrado',    slot:'offhand',  icon:'✝️', atk:0, def:2, hp:0,  sp:20, desc:'Foco divino para canalizações',      equipado:true  },
-    { id:'cota_malha',      nome:'Cota de Malha',      slot:'armadura', icon:'🔰', atk:0, def:5, hp:0,  sp:0,  desc:'Armadura equilibrada e confortável', equipado:true  },
-    { id:'capuz_sagrado',   nome:'Capuz Sagrado',      slot:'elmo',     icon:'👑', atk:0, def:1, hp:5,  sp:5,  desc:'Capuz bento pelos deuses',           equipado:true  },
-  ],
-  barbaro: [
-    { id:'machado_guerra',  nome:'Machado de Guerra',  slot:'arma',     icon:'🪓', atk:7, def:0, hp:0,  sp:0,  desc:'Machado pesado e devastador',        equipado:true  },
-    { id:'pele_animal',     nome:'Pele de Animal',     slot:'armadura', icon:'🥋', atk:0, def:2, hp:10, sp:0,  desc:'Armadura primitiva mas eficaz',      equipado:true  },
-    { id:'colar_dentes',    nome:'Colar de Dentes',    slot:'anel',     icon:'🦷', atk:1, def:0, hp:5,  sp:0,  desc:'Troféu de batalhas passadas',        equipado:true  },
-    { id:'manoplas_ferro',  nome:'Manoplas de Ferro',  slot:'offhand',  icon:'🤜', atk:2, def:1, hp:0,  sp:0,  desc:'Reforça os golpes corpo a corpo',    equipado:true  },
-  ],
-  arqueiro: [
-    { id:'arco_longo',      nome:'Arco Longo',         slot:'arma',     icon:'🏹', atk:5, def:0, hp:0,  sp:0,  desc:'Arco preciso de longo alcance',      equipado:true  },
-    { id:'aljava_ref',      nome:'Aljava Reforçada',   slot:'offhand',  icon:'🪃', atk:1, def:0, hp:0,  sp:0,  desc:'Aljava com flechas especiais',       equipado:true  },
-    { id:'armad_couro_arq', nome:'Armadura de Couro',  slot:'armadura', icon:'🥋', atk:0, def:3, hp:0,  sp:0,  desc:'Proteção leve para máxima mobilidade',equipado:true  },
-    { id:'botas_velozes',   nome:'Botas Velozes',      slot:'bota',     icon:'👟', atk:0, def:1, hp:0,  sp:5,  desc:'Botas que aumentam agilidade',       equipado:true  },
-  ],
-};
+let myUid       = localStorage.getItem('rpg_uid') || (() => {
+  const id = Math.random().toString(36).slice(2,10);
+  localStorage.setItem('rpg_uid', id);
+  return id;
+})();
+let mySala      = null;
+let myNome      = null;
+let myClasse    = 'guerreiro';
+let amIHost     = false;
+let chamandoIA  = false;
+let unsubSala   = null;
+let _apiKeyPendingCb = null;
+let voiceEnabled = localStorage.getItem('rpg_voice') !== '0';
+let voiceQueue  = [];
+let voiceBusy   = false;
+let _currentAudio = null;
+let _selectedClass = 'guerreiro';
 
-const SLOTS_INFO = [
-  { key:'arma',     label:'ARMA',      icon:'⚔️' },
-  { key:'offhand',  label:'MÃO LIVRE', icon:'🛡️' },
-  { key:'armadura', label:'ARMADURA',  icon:'🔰' },
-  { key:'elmo',     label:'ELMO',      icon:'⛑️' },
-  { key:'anel',     label:'ANEL',      icon:'💍' },
-  { key:'bota',     label:'BOTAS',     icon:'👢' },
-];
+// ═══════════════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════════════
+function getApiKey() { return localStorage.getItem('rpg_groq_key') || ''; }
 
-function buildInventarioInicial(classe) {
-  const items = EQUIP_INICIAL[classe] || [];
-  const inv = {};
-  items.forEach(item => {
-    inv[item.id] = { nome:item.nome, slot:item.slot, icon:item.icon, atk:item.atk, def:item.def, hp:item.hp, sp:item.sp, desc:item.desc, equipado:item.equipado };
-  });
-  return inv;
+function toast(msg, ms = 3000) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), ms);
 }
 
-function calcularCombate(eu) {
-  const cls = CLASSES[eu.classe] || {};
-  let atk = cls.atk || 0;
-  let def = cls.def || 0;
-  const inv = eu.inventario || {};
-  Object.values(inv).forEach(item => {
-    if(item.equipado) { atk += (item.atk||0); def += (item.def||0); }
-  });
-  return { atk, def };
+function codigoAleatorio() {
+  return Array.from({length:5}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.random()*32|0]).join('');
+}
+
+function scrollDown() {
+  const b = document.getElementById('story-bottom');
+  if (b) b.scrollIntoView({ behavior:'smooth' });
+}
+
+function setActionStatus(msg) {
+  const el = document.getElementById('action-status');
+  if (el) el.textContent = msg;
+}
+
+function limparTags(txt) {
+  return txt
+    .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV)[^\]]*\]\s*)+/gi, '')
+    .replace(/\[MOV:[^\]]+\]/gi, '')
+    .trim();
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  DADOS — MODIFICADORES POR CLASSE E TIPO DE AÇÃO
+//  LOBBY — CLASSE SELEÇÃO
 // ═══════════════════════════════════════════════════════════════
-const MODS = {
-  guerreiro: { atacar:5, defender:3, falar:0,  mover:1, skill:4, livre:2 },
-  mago:      { atacar:2, defender:0, falar:1,  mover:0, skill:6, livre:3 },
-  ladino:    { atacar:4, defender:2, falar:2,  mover:4, skill:5, livre:3 },
-  clerigo:   { atacar:2, defender:3, falar:2,  mover:1, skill:5, livre:2 },
-  barbaro:   { atacar:6, defender:2, falar:-1, mover:2, skill:3, livre:3 },
-  arqueiro:  { atacar:5, defender:2, falar:1,  mover:3, skill:4, livre:3 },
-};
-const DC = { atacar:12, skill:13, defender:10, falar:11, mover:10, livre:11 };
-const LABEL_TIPO = { atacar:'Ataque', skill:'Habilidade', defender:'Defesa', falar:'Persuasão', mover:'Agilidade', livre:'Teste' };
-
-function rolarInimigos(inimigos, jogadores) {
-  const jogVivos = Object.values(jogadores).filter(j => j.vivo && j.consciente);
-  if(jogVivos.length === 0) return [];
-  return Object.values(inimigos)
-    .filter(i => i.visivel !== false && i.hp > 0)
-    .map(ini => {
-      const alvo = jogVivos[Math.floor(Math.random() * jogVivos.length)];
-      const mod  = Math.max(1, Math.floor((ini.maxHp||20) / 15));
-      const dado = Math.floor(Math.random() * 20) + 1;
-      const total = dado + mod;
-      const dc    = 12;
-      const critico = dado === 20;
-      const falha   = dado === 1;
-      const sucesso = critico || (!falha && total >= dc);
-      return { nome: ini.nome, icon: ini.icon||'👿', alvo: alvo.nome, dado, mod, total, dc, sucesso, critico, falha };
-    });
-}
-
-function detectarTipoAcao(acao) {
-  if(!acao) return 'livre';
-  const a = acao.toLowerCase();
-  if(a.includes('falar')   || a.includes('💬')) return 'falar';
-  if(a.includes('atacar')  || a.includes('⚔'))  return 'atacar';
-  if(a.includes('skill')   || a.includes('✨'))  return 'skill';
-  if(a.includes('defender')|| a.includes('🛡'))  return 'defender';
-  if(a.includes('mover')   || a.includes('🏃'))  return 'mover';
-  return 'livre';
-}
-
-function rolarAcao(nome, classe, acao, bonus) {
-  const tipo  = detectarTipoAcao(acao);
-  const mod   = (MODS[classe] || {})[tipo] ?? 0;
-  const dc    = DC[tipo] || 11;
-  const dado  = Math.floor(Math.random() * 20) + 1;
-  const total = dado + mod;
-  const critico = dado === 20;
-  const falha   = dado === 1;
-  const sucesso = critico || (!falha && total >= dc);
-  return { nome, classe, acao, tipo, dado, mod, total, dc, sucesso, critico, falha, bonus: !!bonus };
-}
-
-function detectarEtapas(acao) {
-  const partes = acao.split(/,\s*(?=[a-záéíóúâêîôûãõç])/i);
-  if(partes.length <= 1) return [acao];
-  return partes.filter(p => p.trim().length > 4).slice(0, 3);
-}
-
-function rolarRodada(jogadores) {
-  const rolls = [];
-  Object.values(jogadores).forEach(j => {
-    if(!j.vivo || !j.consciente) return;
-    if(j.acao1 && j.acao1 !== '(nenhuma)') {
-      detectarEtapas(j.acao1).forEach((etapa, i) =>
-        rolls.push(rolarAcao(j.nome, j.classe, etapa.trim(), i > 0)));
-    }
+document.querySelectorAll('.class-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.class-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    _selectedClass = btn.dataset.class;
   });
-  return rolls;
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  MAPA TÁTICO
-// ═══════════════════════════════════════════════════════════════
-const MAP_COLS = 20, MAP_ROWS = 15;
-let TILE_W = 28, TILE_H = 14;
-function atualizarTileSize() {
-  const canvas = document.getElementById('map-canvas');
-  const W = canvas ? (canvas.width  || 300) : 300;
-  const H = canvas ? (canvas.height || 400) : 400;
-  const positions = Object.values(_mapPos);
-  if(positions.length >= 2) {
-    // Fit all units in view with padding
-    const diags  = positions.map(p => p.col - p.row);
-    const depths = positions.map(p => p.col + p.row);
-    const dSpan  = Math.max(1, Math.max(...diags)  - Math.min(...diags)  + 8);
-    const pSpan  = Math.max(1, Math.max(...depths) - Math.min(...depths) + 8);
-    const twW = Math.floor(W * 2 / dSpan);
-    const twH = Math.floor(H * 2 / pSpan);
-    TILE_W = Math.max(18, Math.min(56, Math.min(twW, twH)));
-  } else {
-    TILE_W = W >= 500 ? 44 : 28;
-  }
-  TILE_H = Math.floor(TILE_W / 2);
-}
-const _mapPos  = {};  // 'p_{uid}' | 'e_{nomeKey}' → {col,row}
-let _curJogs   = {};
-let _curInis   = {};
-let _terrain   = {}; // key="col,row" → {height:0-3}
-let _camDiag   = 0;  // camera offset in isometric diagonal axis (screen-x)
-let _camDepth  = 0;  // camera offset in isometric depth axis (screen-y)
-
-function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
-function mapKeyJog(uid)  { return `p_${uid}`; }
-function mapKeyIni(nome) { return `e_${nome.replace(/\W/g,'_')}`; }
-
-// Centers camera on the bounding box of all units so everyone is always in view
-function atualizarCamera() {
-  const positions = Object.values(_mapPos);
-  if(positions.length === 0) {
-    const mc = (MAP_COLS - 1) / 2, mr = (MAP_ROWS - 1) / 2;
-    _camDiag  = (mc - mr) * TILE_W / 2;
-    _camDepth = (mc + mr) * TILE_H / 2;
-    return;
-  }
-  const diags  = positions.map(p => (p.col - p.row) * TILE_W / 2);
-  const depths = positions.map(p => {
-    const h = (_terrain[`${p.col},${p.row}`] || {}).height || 0;
-    return (p.col + p.row) * TILE_H / 2 - h * TILE_H;
-  });
-  _camDiag  = (Math.min(...diags)  + Math.max(...diags))  / 2;
-  _camDepth = (Math.min(...depths) + Math.max(...depths)) / 2;
-}
-
-// Converts grid position to canvas pixel coords — camera-aware, tiles fill screen
-function isoToScreen(col, row, h) {
-  const canvas = document.getElementById('map-canvas');
-  const W = canvas ? (canvas.width  || 400) : 400;
-  const H = canvas ? (canvas.height || 300) : 300;
-  return {
-    x: W / 2 + (col - row) * TILE_W / 2 - _camDiag,
-    y: H / 2 + (col + row) * TILE_H / 2 - (h || 0) * TILE_H - _camDepth
-  };
-}
-
-function estimarTamanho(nome) {
-  if(/(balrog|dragon|ancient troll|ent coloss|colossal)/i.test(nome)) return 4;
-  if(/(troll|giant spider|fell beast|spider matriarch|dire bear|ent)/i.test(nome)) return 3;
-  if(/(cave|great bear|dire warg|grande|large)/i.test(nome)) return 2;
-  return 1;
-}
-
-function gerarTerrain() {
-  _terrain = {};
-  // Central ruins cluster (cols 8-10, rows 5-9)
-  [[8,5],[8,6],[9,5],[9,6],[9,7],[10,6],[10,7]].forEach(([c,r]) => {
-    _terrain[`${c},${r}`] = { height: 1 };
-  });
-  // Elevated rock in center (height 2)
-  _terrain['9,7']  = { height: 2 };
-  _terrain['10,7'] = { height: 2 };
-  // Enemy zone platforms (cols 14-16, rows 6-8)
-  [[14,6],[14,7],[15,6],[15,7],[15,8],[16,7]].forEach(([c,r]) => {
-    _terrain[`${c},${r}`] = { height: 1 };
-  });
-  // Random scattered stones
-  [[5,4],[6,10],[12,4],[12,10],[7,8]].forEach(([c,r]) => {
-    if(Math.random() < 0.7) _terrain[`${c},${r}`] = { height: 1 };
-  });
-}
-
-function _desenharTile(ctx, col, row, h) {
-  const isEnemy = col >= Math.floor(MAP_COLS * 0.6);
-  const {x, y}  = isoToScreen(col, row, h);
-  const hw = TILE_W / 2, hh = TILE_H / 2;
-  const sh = h * TILE_H * 1.8;
-
-  // Top face — dark stone
-  ctx.beginPath();
-  ctx.moveTo(x,      y);
-  ctx.lineTo(x + hw, y + hh);
-  ctx.lineTo(x,      y + TILE_H);
-  ctx.lineTo(x - hw, y + hh);
-  ctx.closePath();
-  const gTop = ctx.createLinearGradient(x, y, x, y + TILE_H);
-  if(isEnemy) {
-    gTop.addColorStop(0, h > 0 ? '#3e1c1c' : '#2e1212');
-    gTop.addColorStop(1, h > 0 ? '#2c1010' : '#1e0c0c');
-  } else {
-    gTop.addColorStop(0, h > 1 ? '#3a3c44' : h > 0 ? '#30323c' : '#2c2e36');
-    gTop.addColorStop(1, h > 1 ? '#282a32' : h > 0 ? '#22242c' : '#1e2028');
-  }
-  ctx.fillStyle = gTop;
-  ctx.fill();
-
-  // Stone grain: tiny color variation over the face
-  if(TILE_W >= 20) {
-    ctx.save();
-    ctx.clip();
-    ctx.globalAlpha = 0.07;
-    for(let i = 0; i < 4; i++) {
-      const gx = x - hw + (i * hw * 0.6);
-      const gy = y + hh * (i % 2 === 0 ? 0.3 : 0.7);
-      ctx.fillStyle = i % 2 === 0 ? '#ffffff' : '#000000';
-      ctx.fillRect(gx, gy, TILE_W * 0.12, TILE_H * 0.18);
-    }
-    ctx.restore();
-    ctx.globalAlpha = 1;
-  }
-
-  // Light edge (top-left — simulates light from upper-left)
-  ctx.beginPath();
-  ctx.moveTo(x,      y);
-  ctx.lineTo(x - hw, y + hh);
-  ctx.strokeStyle = isEnemy ? 'rgba(220,100,100,.22)' : 'rgba(200,210,240,.28)';
-  ctx.lineWidth = 0.9;
-  ctx.stroke();
-
-  // Grid mortar line (full diamond border)
-  ctx.beginPath();
-  ctx.moveTo(x,      y);
-  ctx.lineTo(x + hw, y + hh);
-  ctx.lineTo(x,      y + TILE_H);
-  ctx.lineTo(x - hw, y + hh);
-  ctx.closePath();
-  ctx.strokeStyle = isEnemy ? 'rgba(110,35,35,.65)' : 'rgba(80,90,120,.55)';
-  ctx.lineWidth = 0.7;
-  ctx.stroke();
-
-  if(h > 0) {
-    // Left face — darkest (shadow)
-    ctx.beginPath();
-    ctx.moveTo(x - hw, y + hh);
-    ctx.lineTo(x,      y + TILE_H);
-    ctx.lineTo(x,      y + TILE_H + sh);
-    ctx.lineTo(x - hw, y + hh + sh);
-    ctx.closePath();
-    const gL = ctx.createLinearGradient(0, y + hh, 0, y + hh + sh);
-    gL.addColorStop(0, isEnemy ? '#1c0808' : '#16161c');
-    gL.addColorStop(1, isEnemy ? '#0e0404' : '#0c0c10');
-    ctx.fillStyle = gL;
-    ctx.fill();
-    ctx.strokeStyle = isEnemy ? 'rgba(90,25,25,.6)' : 'rgba(60,65,90,.6)';
-    ctx.lineWidth = 0.5;
-    ctx.stroke();
-
-    // Right face — medium shadow
-    ctx.beginPath();
-    ctx.moveTo(x,      y + TILE_H);
-    ctx.lineTo(x + hw, y + hh);
-    ctx.lineTo(x + hw, y + hh + sh);
-    ctx.lineTo(x,      y + TILE_H + sh);
-    ctx.closePath();
-    const gR = ctx.createLinearGradient(0, y + hh, 0, y + hh + sh);
-    gR.addColorStop(0, isEnemy ? '#2a0e0e' : '#22242c');
-    gR.addColorStop(1, isEnemy ? '#180808' : '#161820');
-    ctx.fillStyle = gR;
-    ctx.fill();
-    ctx.strokeStyle = isEnemy ? 'rgba(90,25,25,.6)' : 'rgba(60,65,90,.6)';
-    ctx.lineWidth = 0.5;
-    ctx.stroke();
-  }
-}
-
-function _desenharHighlights(ctx) {
-  Object.entries(_mapPos).forEach(([key, pos]) => {
-    const isP = key.startsWith('p_');
-    const h   = (_terrain[`${pos.col},${pos.row}`] || {}).height || 0;
-    const {x, y} = isoToScreen(pos.col, pos.row, h);
-    const hw = TILE_W / 2 + 1;
-    const hh = TILE_H / 2 + 0.5;
-
-    ctx.save();
-    ctx.shadowBlur  = TILE_W > 22 ? 12 : 6;
-    ctx.shadowColor = isP ? 'rgba(70,230,100,.95)' : 'rgba(230,60,60,.95)';
-    ctx.beginPath();
-    ctx.moveTo(x,      y - 1);
-    ctx.lineTo(x + hw, y + hh);
-    ctx.lineTo(x,      y + TILE_H + 1);
-    ctx.lineTo(x - hw, y + hh);
-    ctx.closePath();
-    ctx.strokeStyle = isP ? 'rgba(90,255,120,.85)' : 'rgba(255,75,75,.85)';
-    ctx.lineWidth   = TILE_W > 26 ? 2.2 : 1.4;
-    ctx.stroke();
-    ctx.restore();
-  });
-}
-
-function desenharCanvas() {
-  const canvas = document.getElementById('map-canvas');
-  const cont   = document.getElementById('map-container');
-  if(!canvas || !cont) return;
-  const W = cont.clientWidth  || 400;
-  const H = cont.clientHeight || 300;
-  if(canvas.width !== W || canvas.height !== H) {
-    canvas.width  = W;
-    canvas.height = H;
-  }
-  atualizarTileSize();
-  atualizarCamera();
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, W, H);
-  // Painter's algorithm — draw col+row ascending for correct depth overlap
-  for(let sum = 0; sum <= (MAP_COLS - 1) + (MAP_ROWS - 1); sum++) {
-    for(let col = 0; col < MAP_COLS; col++) {
-      const row = sum - col;
-      if(row < 0 || row >= MAP_ROWS) continue;
-      // Cull tiles fully outside canvas
-      const scx = W/2 + (col - row) * TILE_W/2 - _camDiag;
-      const scy = H/2 + (col + row) * TILE_H/2 - _camDepth;
-      if(scx < -TILE_W*2 || scx > W + TILE_W*2 || scy < -TILE_H*6 || scy > H + TILE_H*6) continue;
-      const t = _terrain[`${col},${row}`] || { height: 0 };
-      _desenharTile(ctx, col, row, t.height);
-    }
-  }
-  // Unit position highlights (drawn over tiles, under fog)
-  _desenharHighlights(ctx);
-  // Atmospheric vignette — darkens edges to focus on center
-  const fog = ctx.createRadialGradient(W * 0.5, H * 0.5, H * 0.15, W * 0.5, H * 0.5, H * 0.75);
-  fog.addColorStop(0, 'rgba(4,6,18,0)');
-  fog.addColorStop(0.65, 'rgba(4,6,18,.08)');
-  fog.addColorStop(1, 'rgba(4,6,18,.88)');
-  ctx.fillStyle = fog;
-  ctx.fillRect(0, 0, W, H);
-}
-
-function initMapPositions(jogadores, inimigos) {
-  const jArr = Object.entries(jogadores).filter(([,j]) => j.vivo && j.consciente);
-  const iArr = Object.entries(inimigos||{}).filter(([,i]) => i.visivel!==false && i.hp>0);
-  const midR = Math.floor((MAP_ROWS - 1) / 2);
-  jArr.forEach(([uid,], i) => {
-    const k = mapKeyJog(uid);
-    if(!_mapPos[k]) _mapPos[k] = {
-      col: 2 + (i % 2),
-      row: clamp(midR - Math.floor(jArr.length / 2) + i, 2, MAP_ROWS - 3)
-    };
-  });
-  iArr.forEach(([,ini], i) => {
-    const k = mapKeyIni(ini.nome);
-    if(!_mapPos[k]) _mapPos[k] = {
-      col: MAP_COLS - 5 + (i % 2),
-      row: clamp(midR - Math.floor(iArr.length / 2) + i, 2, MAP_ROWS - 3)
-    };
-  });
-  const valid = new Set([
-    ...jArr.map(([uid]) => mapKeyJog(uid)),
-    ...iArr.map(([,i]) => mapKeyIni(i.nome))
-  ]);
-  Object.keys(_mapPos).forEach(k => { if(!valid.has(k)) delete _mapPos[k]; });
-}
-
-function renderizarMapaGrid() { desenharCanvas(); }
-
-function renderizarMapaSprites() {
-  const spEl = document.getElementById('map-sprites');
-  const cont = document.getElementById('map-container');
-  if(!spEl || !cont) return;
-
-  // Redraw canvas on every sprite update to keep unit highlights in sync
-  desenharCanvas();
-
-  const seen = new Set();
-  Object.entries(_mapPos).forEach(([key, pos]) => {
-    seen.add(key);
-    const isP = key.startsWith('p_');
-    const uid = isP ? key.slice(2) : null;
-    const h   = (_terrain[`${pos.col},${pos.row}`] || {}).height || 0;
-    const scr = isoToScreen(pos.col, pos.row, h);
-    // Anchor sprite bottom at bottom vertex of tile diamond — character stands on tile
-    const left = scr.x;
-    const top  = scr.y + TILE_H;
-
-    let sprEl = spEl.querySelector(`[data-key="${key}"]`);
-    if(!sprEl) {
-      const j   = isP ? _curJogs[uid] : null;
-      const ini = isP ? null : Object.values(_curInis).find(i => mapKeyIni(i.nome) === key);
-      if(!j && !ini) return;
-      const sz     = isP ? 1 : estimarTamanho(ini.nome);
-      const imgSrc = isP ? `sprites/${j.classe}_${j.sexo||'m'}.png` : inimigosSprite(ini.nome);
-      const nome   = isP ? j.nome : ini.nome;
-      const hpPct  = isP ? Math.round((j.hp/j.maxHp)*100) : Math.round((ini.hp/ini.maxHp)*100);
-      sprEl = document.createElement('div');
-      sprEl.className   = `map-sprite sz${sz} ${isP ? 'map-player' : 'map-enemy'}`;
-      sprEl.dataset.key = key;
-      sprEl.innerHTML   = `
-        <div class="map-sprite-name">${nome}</div>
-        <div class="map-sprite-bar"><div class="map-sprite-bar-fill" style="width:${hpPct}%"></div></div>
-        <img src="${imgSrc}" onerror="this.style.display='none'" alt="">`;
-      spEl.appendChild(sprEl);
-    } else {
-      const entity = isP ? _curJogs[uid] : Object.values(_curInis).find(i => mapKeyIni(i.nome) === key);
-      if(entity) {
-        const pct  = Math.round((entity.hp / entity.maxHp) * 100);
-        const fill = sprEl.querySelector('.map-sprite-bar-fill');
-        if(fill) fill.style.width = `${pct}%`;
-      }
-    }
-    sprEl.style.left = `${left}px`;
-    sprEl.style.top  = `${top}px`;
-  });
-  spEl.querySelectorAll('[data-key]').forEach(el => { if(!seen.has(el.dataset.key)) el.remove(); });
-}
-
-function renderizarIniBar(jogadores, inimigos) {
-  const items = [
-    ...Object.entries(jogadores).filter(([,j]) => j.vivo && j.consciente)
-      .map(([,j]) => ({ type:'player', nome:j.nome, src:`sprites/${j.classe}_${j.sexo||'m'}.png`, hp:j.hp, max:j.maxHp })),
-    ...Object.values(inimigos||{}).filter(i => i.hp>0)
-      .map(i => ({ type:'enemy', nome:i.nome, src:inimigosSprite(i.nome), hp:i.hp, max:i.maxHp }))
-  ];
-  const chipHtml = items.map(it => `
-    <div class="ini-chip ${it.type}">
-      <img src="${it.src}" onerror="this.style.display='none'" alt="">
-      <div>
-        <div class="ini-chip-name">${it.nome}</div>
-        <div class="ini-chip-hp">${it.hp}/${it.max}</div>
-      </div>
-    </div>`).join('');
-  const list = document.getElementById('ini-list');
-  if(list) list.innerHTML = chipHtml;
-
-  // Mini list in left sidebar
-  const mini = document.getElementById('ini-list-mini');
-  if(mini) {
-    mini.innerHTML = items.map(it => `
-      <div class="ini-mini-row ${it.type}">
-        <img src="${it.src}" onerror="this.style.display='none'" alt="">
-        <span class="ini-mini-name">${it.nome.split(' ')[0]}</span>
-      </div>`).join('');
-  }
-
-  // Populate selected unit panel with first player by default
-  const first = items.find(i => i.type === 'player') || items[0];
-  if(first) atualizarUnidadePanel(first);
-}
-
-function atualizarUnidadePanel(unit) {
-  const pct = Math.round((unit.hp / unit.max) * 100);
-  const nameEl = document.getElementById('bui-name');
-  const typeEl = document.getElementById('bui-type');
-  const fillEl = document.getElementById('bui-hp-fill');
-  const valEl  = document.getElementById('bui-hp-val');
-  if(nameEl) nameEl.textContent = unit.nome;
-  if(typeEl) typeEl.textContent = unit.type === 'player' ? 'Herói' : 'Inimigo';
-  if(fillEl) { fillEl.style.width = `${pct}%`; fillEl.className = `bui-bar-fill ${unit.type}`; }
-  if(valEl)  valEl.textContent  = `HP ${unit.hp}/${unit.max}`;
-}
-
-function resolverMovimentoEntry(nome, acao, roll) {
-  const uid = Object.keys(_curJogs).find(k => _curJogs[k]?.nome === nome);
-  if(!uid) return;
-  const key = mapKeyJog(uid);
-  const pos = _mapPos[key];
-  if(!pos) return;
-
-  const tipo = detectarTipoAcao(acao||'');
-  const a    = (acao||'').toLowerCase();
-  const emMov = tipo==='mover' || a.includes('aproxim') || a.includes('corro') ||
-                a.includes('avanç') || a.includes('pulo') || a.includes('furtiv') ||
-                a.includes('escal') || a.includes('caminh') || a.includes('carre');
-
-  const iniEntries = Object.entries(_mapPos).filter(([k]) => k.startsWith('e_'));
-  if(iniEntries.length === 0) return;
-  const nearest = iniEntries.reduce((best, [k,p]) => {
-    const d = Math.abs(p.col-pos.col)+Math.abs(p.row-pos.row);
-    return d < best.d ? {k,p,d} : best;
-  }, {k:'',p:{col:5,row:2},d:999});
-
-  const dc = nearest.p.col - pos.col;
-  const dr = nearest.p.row - pos.row;
-  const sprEl = document.getElementById('map-sprites')?.querySelector(`[data-key="${key}"]`);
-
-  if(roll.critico && emMov) {
-    _mapPos[key] = { col:clamp(nearest.p.col+(dc>0?-1:1),0,MAP_COLS-1), row:clamp(nearest.p.row,0,MAP_ROWS-1) };
-    sprEl?.classList.add('bounce'); setTimeout(()=>sprEl?.classList.remove('bounce'),500);
-  } else if(roll.sucesso && emMov) {
-    const stepC = dc!==0 ? Math.sign(dc)*Math.min(2,Math.abs(dc)) : 0;
-    const stepR = Math.abs(dc)<1 && dr!==0 ? Math.sign(dr) : 0;
-    _mapPos[key] = { col:clamp(pos.col+stepC,0,MAP_COLS-1), row:clamp(pos.row+stepR,0,MAP_ROWS-1) };
-    sprEl?.classList.add('bounce'); setTimeout(()=>sprEl?.classList.remove('bounce'),500);
-  } else if(roll.sucesso && tipo==='atacar') {
-    _mapPos[key] = { col:clamp(pos.col+Math.sign(dc),0,MAP_COLS-1), row:pos.row };
-  } else if(!roll.sucesso) {
-    sprEl?.classList.add('fail-shake'); setTimeout(()=>sprEl?.classList.remove('fail-shake'),400);
-  }
-}
-
-window.addEventListener('resize', () => {
-  if(Object.keys(_mapPos).length > 0) {
-    desenharCanvas();
-    renderizarMapaSprites();
-  }
 });
 
 // ═══════════════════════════════════════════════════════════════
-//  ESTADO LOCAL
+//  API KEY
 // ═══════════════════════════════════════════════════════════════
-let myUid    = localStorage.getItem('rpg_uid')    || crypto.randomUUID();
-let mySala   = localStorage.getItem('rpg_sala')   || null;
-let myNome   = localStorage.getItem('rpg_nome')   || '';
-let myClasse = localStorage.getItem('rpg_classe') || 'guerreiro';
-let mySexo   = localStorage.getItem('rpg_sexo')   || 'm';
-let amIHost  = false;
-let chamandoIA = false;
-let renderedHistKeys = new Set();
-let unsubSala = null;
+window.salvarApiKey = function() {
+  const val = document.getElementById('api-input')?.value?.trim();
+  if (!val) return;
+  localStorage.setItem('rpg_groq_key', val);
+  const st = document.getElementById('api-status');
+  if (st) { st.textContent = '✓ Salva'; setTimeout(() => st.textContent = '', 2000); }
+};
 
-localStorage.setItem('rpg_uid', myUid);
-
-// ═══════════════════════════════════════════════════════════════
-//  UTILS
-// ═══════════════════════════════════════════════════════════════
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  if (id === 'screen-char-creation') { ccBuildGrid(); ccGoStep(1); }
-  if (id === 'screen-sala') { updateEntryCharCard(); verificarUltimaSala(); }
-}
-window.showScreen = showScreen;
-
-function spriteUrl(classe, sexo) {
-  return `sprites/${classe}_${sexo || 'm'}.png`;
+function pedirApiKey(cb) {
+  _apiKeyPendingCb = cb;
+  document.getElementById('modal-apikey').style.display = 'flex';
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  CRIAÇÃO DE PERSONAGEM — WIZARD
-// ═══════════════════════════════════════════════════════════════
-let ccClasse = myClasse;
-let ccSexo   = mySexo;
+window.confirmarApiKeyModal = function() {
+  const val = document.getElementById('modal-api-input')?.value?.trim();
+  if (!val) return;
+  localStorage.setItem('rpg_groq_key', val);
+  document.getElementById('modal-apikey').style.display = 'none';
+  if (_apiKeyPendingCb) { _apiKeyPendingCb(); _apiKeyPendingCb = null; }
+};
 
-function ccBuildGrid() {
-  const grid = document.getElementById('cc-class-grid');
-  if (!grid) return;
-  grid.innerHTML = '';
-  Object.entries(CLASSES).forEach(([key, cls]) => {
-    const card = document.createElement('div');
-    card.className = 'cc-class-card' + (key === ccClasse ? ' selected' : '');
-    card.innerHTML = `
-      <img src="${spriteUrl(key,'m')}" alt="${cls.nome}">
-      <div class="cn">${cls.nome.toUpperCase()}</div>
-      <div class="cs">HP ${cls.hp} / SP ${cls.sp}</div>`;
-    card.onclick = () => {
-      document.querySelectorAll('.cc-class-card').forEach(c => c.classList.remove('selected'));
-      card.classList.add('selected');
-      ccClasse = key;
-    };
-    grid.appendChild(card);
+// Preenche input se já tiver chave
+window.addEventListener('DOMContentLoaded', () => {
+  const k = getApiKey();
+  const el = document.getElementById('api-input');
+  if (el && k) { el.value = k; }
+  const st = document.getElementById('api-status');
+  if (st && k) st.textContent = '✓ Chave salva';
+
+  document.getElementById('action-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarAcao(); }
   });
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  SALA — CRIAR / ENTRAR
+// ═══════════════════════════════════════════════════════════════
+function getDadosPersonagem() {
+  const nome  = document.getElementById('char-nome')?.value?.trim();
+  const cl    = _selectedClass || 'guerreiro';
+  const stats = CLASSES[cl];
+  if (!nome) { document.getElementById('lobby-error').textContent = 'Digite o nome do personagem.'; return null; }
+  return { nome, classe: cl, hp: stats.hp, maxHp: stats.hp, sp: stats.sp, maxSp: stats.sp, atk: stats.atk, def: stats.def, vivo: true, consciente: true };
 }
 
-function ccUpdateProgress(step) {
-  for (let i = 1; i <= 4; i++) {
-    const dot = document.getElementById('cc-dot-' + i);
-    dot.classList.toggle('done', i < step);
-    dot.classList.toggle('active', i === step);
-    if (i < 4) {
-      const line = document.getElementById('cc-line-' + i);
-      line.classList.toggle('done', i < step);
+window.criarSala = async function() {
+  const p = getDadosPersonagem();
+  if (!p) return;
+  const codigo = codigoAleatorio();
+  myNome  = p.nome;
+  myClasse = p.classe;
+  mySala  = codigo;
+  amIHost = true;
+
+  await set(ref(db, `salas/${codigo}`), {
+    config: { host: myUid, estado: 'lobby', rodada: 0, criadoEm: serverTimestamp() },
+    jogadores: { [myUid]: { ...p, uid: myUid, ativo: true } }
+  });
+  onDisconnect(ref(db, `salas/${codigo}/jogadores/${myUid}/ativo`)).set(false);
+  irParaJogo(codigo);
+};
+
+window.entrarSala = async function() {
+  const p    = getDadosPersonagem();
+  if (!p) return;
+  const code = document.getElementById('code-input')?.value?.trim().toUpperCase();
+  if (!code) { document.getElementById('lobby-error').textContent = 'Digite o código da sala.'; return; }
+
+  const snap = await get(ref(db, `salas/${code}`));
+  if (!snap.exists()) { document.getElementById('lobby-error').textContent = 'Sala não encontrada.'; return; }
+
+  const data = snap.val();
+  myNome  = p.nome;
+  myClasse = p.classe;
+  mySala  = code;
+  amIHost = data.config?.host === myUid;
+
+  const existing = data.jogadores?.[myUid];
+  if (existing) {
+    await update(ref(db, `salas/${code}/jogadores/${myUid}`), { ativo: true, nome: p.nome, classe: p.classe });
+  } else {
+    await set(ref(db, `salas/${code}/jogadores/${myUid}`), { ...p, uid: myUid, ativo: true });
+  }
+  onDisconnect(ref(db, `salas/${code}/jogadores/${myUid}/ativo`)).set(false);
+  irParaJogo(code);
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  IR PARA JOGO
+// ═══════════════════════════════════════════════════════════════
+function irParaJogo(codigo) {
+  document.getElementById('screen-lobby').style.display = 'none';
+  document.getElementById('screen-game').style.display  = 'flex';
+  document.getElementById('room-code').textContent = codigo;
+
+  if (unsubSala) unsubSala();
+  unsubSala = onValue(ref(db, `salas/${codigo}`), snap => {
+    if (!snap.exists()) return;
+    const data = snap.val();
+    const jogadores = data.jogadores || {};
+    const config    = data.config    || {};
+    const historia  = data.historia  || {};
+    const inimigos  = data.inimigos  || {};
+
+    amIHost = config.host === myUid;
+
+    // Turno
+    const rodEl = document.getElementById('round-display');
+    if (rodEl) rodEl.textContent = config.rodada ? `Rodada ${config.rodada}` : '';
+
+    renderizarJogadores(jogadores, config);
+    renderizarInimigos(inimigos);
+    renderizarHistoria(historia, jogadores);
+    atualizarInputArea(jogadores[myUid], config);
+
+    // Host inicia narração automaticamente se lobby com jogadores prontos
+    if (amIHost && config.estado === 'lobby' && Object.keys(jogadores).length > 0) {
+      const iniciarWrap = document.getElementById('btn-iniciar-wrap');
+      if (iniciarWrap) iniciarWrap.style.display = 'block';
     }
-  }
-}
 
-function ccGoStep(step) {
-  document.querySelectorAll('.cc-step').forEach(s => s.classList.remove('active'));
-  document.getElementById('cc-step' + step).classList.add('active');
-  ccUpdateProgress(step);
-  const sp = spriteUrl(ccClasse, ccSexo);
-  ['2','3','4'].forEach(n => {
-    const img = document.getElementById('cc-sprite' + n);
-    if (img) img.src = sp;
+    // Host narra quando estado = 'aguardando' e todos enviaram ação
+    if (amIHost && config.estado === 'aguardando') {
+      const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && j.ativo);
+      const todosEnviaram = ativos.length > 0 && ativos.every(j => j.acao1 != null);
+      if (todosEnviaram && !chamandoIA) chamarIA(jogadores, data);
+    }
   });
 }
 
-window.ccSetSexo = function(sexo) {
-  ccSexo = sexo;
-  document.getElementById('cc-btn-m').classList.toggle('active', sexo === 'm');
-  document.getElementById('cc-btn-f').classList.toggle('active', sexo === 'f');
-  document.getElementById('cc-sprite2').src = spriteUrl(ccClasse, sexo);
-};
-
-window.ccNext = function(fromStep) {
-  if (fromStep === 3) {
-    const nome = document.getElementById('cc-nome').value.trim();
-    if (!nome) { toast('Digite o nome do seu herói!'); return; }
-    // Update confirm panel
-    const cls = CLASSES[ccClasse] || {};
-    document.getElementById('cc-sprite4').src = spriteUrl(ccClasse, ccSexo);
-    document.getElementById('cc-conf-nome').textContent = nome;
-    document.getElementById('cc-conf-classe').textContent = cls.nome?.toUpperCase() + ' ' + (cls.icon || '');
-    document.getElementById('cc-conf-sexo').textContent = ccSexo === 'm' ? '♂ MASCULINO' : '♀ FEMININO';
-    document.getElementById('cc-conf-stats').textContent = `ATK ${cls.atk}  DEF ${cls.def}  HP ${cls.hp}  SP ${cls.sp}`;
-  }
-  ccGoStep(fromStep + 1);
-};
-
-window.ccBack = function(fromStep) {
-  ccGoStep(fromStep - 1);
-};
-
-window.ccConfirmar = async function() {
-  const nome = document.getElementById('cc-nome').value.trim();
-  if (!nome) { toast('Nome inválido!'); return; }
-  myNome   = nome;
-  myClasse = ccClasse;
-  mySexo   = ccSexo;
-  const cls = CLASSES[myClasse] || {};
-  localStorage.setItem('rpg_nome',   myNome);
-  localStorage.setItem('rpg_classe', myClasse);
-  localStorage.setItem('rpg_sexo',   mySexo);
-  localStorage.removeItem('rpg_sala'); // new character = fresh start
-  // Save to Firebase
-  await salvarPersonagemFirebase({
-    nome: myNome, classe: myClasse, sexo: mySexo,
-    nivel: 1, xp: 0,
-    atk: cls.atk||0, def: cls.def||0,
-    hp: cls.hp||100, maxHp: cls.hp||100,
-    sp: cls.sp||60,  maxSp: cls.sp||60,
-    historia: [], fama: 0, criadoEm: Date.now()
-  });
-  updateEntryCharCard();
-  document.getElementById('sala-opt-continuar').style.display = 'none';
-  showScreen('screen-sala');
-};
-
-function updateEntryCharCard() {
-  const el = document.getElementById('entry-char-card');
-  if (!el || !myNome) return;
-  const cls = CLASSES[myClasse] || {};
-  document.getElementById('entry-char-sprite').src = spriteUrl(myClasse, mySexo);
-  document.getElementById('entry-char-nome').textContent = myNome;
-  document.getElementById('entry-char-cls').textContent = (cls.icon || '') + ' ' + (cls.nome || '').toUpperCase();
+// ═══════════════════════════════════════════════════════════════
+//  RENDERIZAR JOGADORES
+// ═══════════════════════════════════════════════════════════════
+function renderizarJogadores(jogadores, config) {
+  const bar = document.getElementById('players-bar');
+  if (!bar) return;
+  bar.innerHTML = Object.values(jogadores).map(j => {
+    const isMe  = j.uid === myUid;
+    const hpPct = Math.round((j.hp / j.maxHp) * 100);
+    const hpCls = hpPct < 30 ? 'low' : 'ok';
+    const cls   = CLASSES[j.classe];
+    return `<div class="player-chip ${isMe ? 'me' : ''} ${j.ativo === false ? 'offline' : ''}">
+      <span>${cls?.icon || '⚔️'}</span>
+      <span class="chip-name">${j.nome}</span>
+      <span class="chip-hp ${hpCls}">${j.hp}/${j.maxHp}</span>
+    </div>`;
+  }).join('');
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  CHARACTER — FIREBASE PERSISTENCE
+//  RENDERIZAR INIMIGOS
 // ═══════════════════════════════════════════════════════════════
-async function carregarPersonagemFirebase() {
-  try {
-    const snap = await get(ref(db, `personagens/${myUid}`));
-    if (snap.exists()) return snap.val();
-  } catch(e) {}
-  return null;
+function renderizarInimigos(inimigos) {
+  const bar = document.getElementById('enemies-bar');
+  if (!bar) return;
+  const vivos = Object.values(inimigos).filter(i => i.hp > 0);
+  bar.style.display = vivos.length ? 'flex' : 'none';
+  bar.innerHTML = vivos.map(ini => {
+    const pct = Math.round((ini.hp / ini.maxHp) * 100);
+    return `<div class="enemy-chip">
+      <span>${ini.icon || '👹'}</span>
+      <span>${ini.nome}</span>
+      <div class="enemy-hp-bar"><div class="enemy-hp-fill" style="width:${pct}%"></div></div>
+      <span style="font-size:9px;color:var(--text3)">${ini.hp}/${ini.maxHp}</span>
+    </div>`;
+  }).join('');
 }
 
-async function salvarPersonagemFirebase(dados) {
-  try {
-    await set(ref(db, `personagens/${myUid}`), { ...dados, uid: myUid, atualizadoEm: Date.now() });
-  } catch(e) {}
-}
+// ═══════════════════════════════════════════════════════════════
+//  RENDERIZAR HISTÓRIA
+// ═══════════════════════════════════════════════════════════════
+let _renderedKeys = new Set();
 
-function populateWelcomeCard(char) {
-  const cls = CLASSES[char.classe] || {};
-  document.getElementById('wlc-sprite').src  = spriteUrl(char.classe, char.sexo);
-  document.getElementById('wlc-nome').textContent    = char.nome;
-  document.getElementById('wlc-btn-nome').textContent = char.nome;
-  document.getElementById('wlc-classe').textContent  = (cls.icon||'') + ' ' + (cls.nome||'').toUpperCase() + (char.sexo==='f'?' · ♀':' · ♂');
-  const nivel = char.nivel || 1;
-  const xp    = char.xp    || 0;
-  document.getElementById('wlc-stats').textContent  = `Nível ${nivel}  ·  ${xp} XP  ·  ATK ${char.atk||cls.atk}  DEF ${char.def||cls.def}`;
-}
+function renderizarHistoria(historia, jogadores) {
+  const el = document.getElementById('story-content');
+  if (!el) return;
+  const entries = Object.entries(historia).sort(([,a],[,b]) => (a.ts||0)-(b.ts||0));
+  let adicionou = false;
 
-window.usarPersonagemSalvo = function() {
-  updateEntryCharCard();
-  verificarUltimaSala();
-  showScreen('screen-sala');
-};
+  entries.forEach(([key, entry]) => {
+    if (_renderedKeys.has(key)) return;
+    _renderedKeys.add(key);
+    adicionou = true;
 
-window.apagarPersonagem = async function() {
-  const nome = myNome || 'este personagem';
-  if (!confirm(`Apagar "${nome}" permanentemente? Esta ação não pode ser desfeita.`)) return;
-  try { await remove(ref(db, `personagens/${myUid}`)); } catch(e) {}
-  myNome = ''; myClasse = 'guerreiro'; mySexo = 'm';
-  ['rpg_nome','rpg_classe','rpg_sexo','rpg_sala','rpg_nivel','rpg_xp'].forEach(k => localStorage.removeItem(k));
-  document.getElementById('wlc-saved').style.display = 'none';
-  document.getElementById('btn-apagar-personagem').style.display = 'none';
-  toast('Personagem apagado.');
-  showScreen('screen-welcome');
-  document.getElementById('wlc-loading').style.display = 'none';
-  document.getElementById('wlc-options').style.display = 'flex';
-};
-
-async function verificarUltimaSala() {
-  const ultimaSala = localStorage.getItem('rpg_sala');
-  const el = document.getElementById('sala-opt-continuar');
-  if (!ultimaSala) { el.style.display='none'; return; }
-  try {
-    const snap = await get(ref(db, `salas/${ultimaSala}/config`));
-    if (snap.exists() && snap.val().estado !== 'encerrada') {
-      document.getElementById('sala-ultima-code').textContent = ultimaSala;
-      el.style.display = 'flex';
+    const div = document.createElement('div');
+    if (entry.role === 'model') {
+      div.className = 'msg msg-gm';
+      div.textContent = entry.content;
+      narrarTexto(entry.content);
+    } else if (entry.role === 'user') {
+      const j = Object.values(jogadores).find(j => j.uid === entry.uid);
+      div.className = 'msg msg-player';
+      div.innerHTML = `<span class="msg-author">${j?.nome || 'Jogador'}</span>${entry.content}`;
+    } else if (entry.role === 'system') {
+      div.className = 'msg msg-system';
+      div.textContent = entry.content;
+    } else if (entry.role === 'dados') {
+      div.className = 'msg msg-dados';
+      div.textContent = entry.content;
+    } else {
       return;
     }
-  } catch(e) {}
-  localStorage.removeItem('rpg_sala');
-  el.style.display = 'none';
+    el.appendChild(div);
+  });
+
+  if (adicionou) scrollDown();
 }
 
-window.continuarPartida = async function() {
-  const codigo = localStorage.getItem('rpg_sala');
-  if (!codigo) return;
-  const snap = await get(ref(db, `salas/${codigo}`));
-  if (!snap.exists()) { toast('Sala não encontrada'); localStorage.removeItem('rpg_sala'); return; }
-  const data = snap.val();
-  mySala = codigo;
-  // Re-register player in case they disconnected
-  const cls = CLASSES[myClasse];
-  const existente = data.jogadores?.[myUid];
-  if (!existente) {
-    await set(ref(db, `salas/${codigo}/jogadores/${myUid}`), {
-      nome: myNome, classe: myClasse, sexo: mySexo,
-      hp: cls.hp, maxHp: cls.hp, sp: cls.sp, maxSp: cls.sp,
-      exp: 0, ativo: true, vivo: true, consciente: true,
-      acao1: null, acao2: null,
-      inventario: buildInventarioInicial(myClasse), joinedAt: Date.now()
-    });
-  } else {
-    await update(ref(db, `salas/${codigo}/jogadores/${myUid}`), { ativo: true });
-  }
-  onDisconnect(ref(db, `salas/${codigo}/jogadores/${myUid}/ativo`)).set(false);
-  if (data.config.estado === 'lobby') irParaLobby(codigo);
-  else irParaJogo(codigo);
+// ═══════════════════════════════════════════════════════════════
+//  INPUT AREA
+// ═══════════════════════════════════════════════════════════════
+function atualizarInputArea(eu, config) {
+  const btn        = document.getElementById('btn-send');
+  const status     = document.getElementById('action-status');
+  const iniciarWrap = document.getElementById('btn-iniciar-wrap');
+
+  if (!eu) return;
+
+  const jaEnviou = eu.acao1 != null;
+  const narrando = config.estado === 'narrando' || config.estado === 'iniciando';
+  const morto    = !eu.vivo || !eu.consciente;
+
+  if (btn) btn.disabled = jaEnviou || narrando || morto;
+
+  if (morto)       setActionStatus('Seu personagem está fora de combate.');
+  else if (narrando) setActionStatus('A IA está narrando...');
+  else if (jaEnviou) setActionStatus('Aguardando outros jogadores...');
+  else               setActionStatus('');
+
+  if (iniciarWrap && config.estado !== 'lobby') iniciarWrap.style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ENVIAR AÇÃO
+// ═══════════════════════════════════════════════════════════════
+window.enviarAcao = async function() {
+  const input = document.getElementById('action-input');
+  const acao  = input?.value?.trim();
+  if (!acao || !mySala) return;
+
+  input.value = '';
+  await push(ref(db, `salas/${mySala}/historia`), { role:'user', content: acao, uid: myUid, ts: Date.now() });
+  await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), { acao1: acao });
 };
 
-// On startup: always show welcome, then check Firebase
-(async function initStartScreen() {
-  showScreen('screen-welcome');
-  const char = await carregarPersonagemFirebase();
-  // Also check localStorage fallback
-  const localChar = (myNome && myClasse) ? { nome:myNome, classe:myClasse, sexo:mySexo,
-    nivel: parseInt(localStorage.getItem('rpg_nivel')||'1'),
-    xp: parseInt(localStorage.getItem('rpg_xp')||'0'),
-    atk: CLASSES[myClasse]?.atk, def: CLASSES[myClasse]?.def } : null;
-  const saved = char || localChar;
-  if (saved) {
-    // Sync to memory
-    myNome   = saved.nome;   myClasse = saved.classe; mySexo = saved.sexo || 'm';
-    localStorage.setItem('rpg_nome', myNome);
-    localStorage.setItem('rpg_classe', myClasse);
-    localStorage.setItem('rpg_sexo', mySexo);
-    populateWelcomeCard(saved);
-    document.getElementById('wlc-saved').style.display = 'flex';
-    document.getElementById('btn-apagar-personagem').style.display = 'block';
-  }
-  document.getElementById('wlc-loading').style.display  = 'none';
-  document.getElementById('wlc-options').style.display  = 'flex';
-  ccBuildGrid();
-})();
-
-function toast(msg, dur=3500) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.style.display = 'block';
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.style.display='none', dur);
-}
+// ═══════════════════════════════════════════════════════════════
+//  RESET
+// ═══════════════════════════════════════════════════════════════
+window.resetarSala = async function() {
+  if (!mySala || !amIHost) { toast('Só o host pode resetar.'); return; }
+  if (!confirm('Resetar a sala?')) return;
+  _renderedKeys = new Set();
+  const jogadores = (await get(ref(db, `salas/${mySala}/jogadores`))).val() || {};
+  const ups = {};
+  ups[`salas/${mySala}/historia`]  = null;
+  ups[`salas/${mySala}/inimigos`]  = null;
+  ups[`salas/${mySala}/config/estado`]  = 'lobby';
+  ups[`salas/${mySala}/config/rodada`]  = 0;
+  Object.keys(jogadores).forEach(uid => {
+    const j = jogadores[uid];
+    const s = CLASSES[j.classe] || CLASSES.guerreiro;
+    ups[`salas/${mySala}/jogadores/${uid}/hp`] = s.hp;
+    ups[`salas/${mySala}/jogadores/${uid}/maxHp`] = s.hp;
+    ups[`salas/${mySala}/jogadores/${uid}/sp`] = s.sp;
+    ups[`salas/${mySala}/jogadores/${uid}/maxSp`] = s.sp;
+    ups[`salas/${mySala}/jogadores/${uid}/acao1`] = null;
+    ups[`salas/${mySala}/jogadores/${uid}/vivo`]  = true;
+    ups[`salas/${mySala}/jogadores/${uid}/consciente`] = true;
+  });
+  await update(ref(db), ups);
+  document.getElementById('story-content').innerHTML = '';
+};
 
 // ═══════════════════════════════════════════════════════════════
 //  VOZ — GROQ TTS
 // ═══════════════════════════════════════════════════════════════
-function updateVoiceBtn() {
-  const btn = document.getElementById('voice-btn');
-  if (!btn) return;
-  const icon = btn.querySelector('.vb-icon');
-  if (icon) icon.textContent = voiceEnabled ? '🔊' : '🔇';
-  btn.classList.toggle('active', voiceEnabled);
-  btn.title = voiceEnabled ? 'Desativar narração' : 'Ativar narração';
-}
-
 window.toggleVoz = function() {
   voiceEnabled = !voiceEnabled;
   localStorage.setItem('rpg_voice', voiceEnabled ? '1' : '0');
-  updateVoiceBtn();
+  const btn = document.getElementById('voice-btn');
+  if (btn) btn.textContent = voiceEnabled ? '🔊' : '🔇';
   if (!voiceEnabled) {
-    voiceQueue = [];
-    voiceBusy = false;
+    voiceQueue = []; voiceBusy = false;
     setVoiceIndicator(false);
-    if (_currentAudio) { _currentAudio.pause(); URL.revokeObjectURL(_currentAudio._url||''); _currentAudio = null; }
+    if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
     if (window.speechSynthesis) speechSynthesis.cancel();
   }
   toast(voiceEnabled ? '🔊 Narração ativada' : '🔇 Narração desativada', 2000);
 };
-
-let voiceQueue = [];
-let voiceBusy = false;
 
 function setVoiceIndicator(on) {
   const el = document.getElementById('voice-indicator');
   if (el) el.className = on ? 'speaking' : '';
 }
 
-function _narrarWebSpeechQueued(limpo) {
-  if (!window.speechSynthesis) { voiceBusy = false; setVoiceIndicator(false); _nextUtterance(); return; }
-  speechSynthesis.cancel();
-  const utt = new SpeechSynthesisUtterance(limpo);
-  const voices = speechSynthesis.getVoices();
-  const voz = voices.find(v => v.lang.startsWith('pt')) || voices.find(v => v.lang.startsWith('es')) || null;
-  if (voz) utt.voice = voz;
-  utt.rate = 1.2; utt.pitch = 0.82;
-  utt.onend = () => _nextUtterance();
-  utt.onerror = () => _nextUtterance();
-  speechSynthesis.speak(utt);
-}
-
-function _nextUtterance() {
-  if (voiceQueue.length === 0) { voiceBusy = false; setVoiceIndicator(false); return; }
-  voiceBusy = true;
-  setVoiceIndicator(true);
-  const texto = voiceQueue.shift();
-  const limpo = texto.replace(/<[^>]+>/g,'').replace(/[*#_`~]/g,'').replace(/\s+/g,' ').trim().substring(0, 800);
-  if (!limpo) { _nextUtterance(); return; }
-
-  const apiKey = getApiKey();
-  if (!apiKey) { _narrarWebSpeechQueued(limpo); return; }
-
-  fetch('https://api.groq.com/openai/v1/audio/speech', {
-    method: 'POST',
-    headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
-    body: JSON.stringify({ model:'playai-tts', input: limpo, voice:'Dorian-PlayAI', response_format:'mp3', speed: 1.1 })
-  }).then(async res => {
-    if (!res.ok) { _narrarWebSpeechQueued(limpo); return; }
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    audio._url = url;
-    _currentAudio = audio;
-    audio.onended = () => { URL.revokeObjectURL(url); _currentAudio = null; _nextUtterance(); };
-    audio.onerror = () => { _nextUtterance(); };
-    const p = audio.play();
-    if (p) p.catch(() => { _narrarWebSpeechQueued(limpo); });
-  }).catch(() => { _narrarWebSpeechQueued(limpo); });
-}
-
 function narrarTexto(texto) {
   if (!voiceEnabled) return;
-  // Clear queue and cancel current
   voiceQueue = [];
-  if (_currentAudio) { _currentAudio.pause(); URL.revokeObjectURL(_currentAudio._url||''); _currentAudio = null; }
+  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
   if (window.speechSynthesis) speechSynthesis.cancel();
   voiceBusy = false;
   voiceQueue.push(texto);
   _nextUtterance();
 }
 
-function getApiKey() { return localStorage.getItem('rpg_groq_key') || ''; }
+function _nextUtterance() {
+  if (!voiceQueue.length) { voiceBusy = false; setVoiceIndicator(false); return; }
+  voiceBusy = true;
+  setVoiceIndicator(true);
+  const texto = voiceQueue.shift();
+  const limpo = texto.replace(/<[^>]+>/g,'').replace(/[*#_`~]/g,'').replace(/\s+/g,' ').trim().substring(0,800);
+  if (!limpo) { _nextUtterance(); return; }
 
-function codigoAleatorio() {
-  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  return Array.from({length:4}, () => c[Math.floor(Math.random()*c.length)]).join('');
+  const apiKey = getApiKey();
+  if (!apiKey) { _narrarWebSpeech(limpo); return; }
+
+  fetch('https://api.groq.com/openai/v1/audio/speech', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
+    body: JSON.stringify({ model:'playai-tts', input: limpo, voice:'Dorian-PlayAI', response_format:'mp3', speed:1.1 })
+  }).then(async res => {
+    if (!res.ok) { _narrarWebSpeech(limpo); return; }
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    _currentAudio = audio;
+    audio.onended = () => { URL.revokeObjectURL(url); _currentAudio = null; _nextUtterance(); };
+    audio.onerror = () => _nextUtterance();
+    audio.play().catch(() => _narrarWebSpeech(limpo));
+  }).catch(() => _narrarWebSpeech(limpo));
 }
 
-window.copiarCodigo = function() {
-  if(!mySala) return;
-  navigator.clipboard?.writeText(mySala).then(() => toast(`Código "${mySala}" copiado!`));
-};
-
-window.sairDaSala = async function() {
-  if(!confirm('Sair da sala e voltar ao início?')) return;
-  if(unsubSala) { unsubSala(); unsubSala = null; }
-  if(mySala && myUid) {
-    try { await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), { ativo: false }); } catch {}
-  }
-  mySala = null;
-  _mortoMostrado = false;
-  document.getElementById('modal-morto').classList.remove('open');
-  localStorage.removeItem('rpg_sala');
-  renderedHistKeys = new Set();
-  updateEntryCharCard();
-  showScreen('screen-sala');
-};
-
-// ═══════════════════════════════════════════════════════════════
-//  ABAS ENTRADA
-// ═══════════════════════════════════════════════════════════════
-window.setTab = function(tab) { /* deprecated — sala screen uses direct buttons */ };
-
-// ═══════════════════════════════════════════════════════════════
-//  BUILD CLASSE GRID
-// ═══════════════════════════════════════════════════════════════
-function buildClasseGrid() {
-  const grid = document.getElementById('classe-grid');
-  if(!grid) return;
-  grid.innerHTML = '';
-  Object.entries(CLASSES).forEach(([key, cls]) => {
-    const div = document.createElement('div');
-    div.className = 'classe-card' + (key === myClasse ? ' selected' : '');
-    div.dataset.classe = key;
-    div.innerHTML = `<span class="ci">${cls.icon}</span><div class="cn">${cls.nome}</div><div class="cd">${cls.desc}</div><div class="cs">${cls.stats}</div>`;
-    div.onclick = () => {
-      document.querySelectorAll('.classe-card').forEach(c => c.classList.remove('selected'));
-      div.classList.add('selected');
-      myClasse = key;
-    };
-    grid.appendChild(div);
-  });
+function _narrarWebSpeech(texto) {
+  if (!window.speechSynthesis) { _nextUtterance(); return; }
+  const utt = new SpeechSynthesisUtterance(texto);
+  const voz = speechSynthesis.getVoices().find(v => v.lang.startsWith('pt')) || null;
+  if (voz) utt.voice = voz;
+  utt.rate = 1.2; utt.pitch = 0.82;
+  utt.onend = utt.onerror = () => _nextUtterance();
+  speechSynthesis.speak(utt);
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  API KEY MODAL
+//  RETRY UI
 // ═══════════════════════════════════════════════════════════════
-let keyCallback = null;
-function pedirApiKey(cb) {
-  keyCallback = cb;
-  document.getElementById('modal-key').classList.add('open');
-}
-window.salvarKey = function() {
-  const v = document.getElementById('inp-key').value.trim();
-  if(!v) { toast('Cole a chave antes de salvar'); return; }
-  localStorage.setItem('rpg_groq_key', v);
-  document.getElementById('modal-key').classList.remove('open');
-  if(keyCallback) { keyCallback(); keyCallback=null; }
-};
-
-// ═══════════════════════════════════════════════════════════════
-//  CRIAR SALA
-// ═══════════════════════════════════════════════════════════════
-window.criarSala = async function() {
-  if(!myNome) { toast('Crie seu personagem primeiro!'); showScreen('screen-char-creation'); return; }
-
-  const codigo = codigoAleatorio();
-  mySala = codigo;
-  localStorage.setItem('rpg_sala', codigo);
-
-  const cls = CLASSES[myClasse];
-  await set(ref(db, `salas/${codigo}`), {
-    config: { host: myUid, estado: 'lobby', rodada: 0, criadoEm: serverTimestamp() },
-    jogadores: {
-      [myUid]: {
-        nome: myNome, classe: myClasse, sexo: mySexo,
-        hp: cls.hp, maxHp: cls.hp,
-        sp: cls.sp, maxSp: cls.sp,
-        exp: 0, ativo: true, vivo: true, consciente: true,
-        acao1: null, acao2: null,
-        inventario: buildInventarioInicial(myClasse),
-        joinedAt: serverTimestamp()
-      }
-    }
-  });
-
-  onDisconnect(ref(db, `salas/${codigo}/jogadores/${myUid}/ativo`)).set(false);
-  irParaLobby(codigo);
-};
-
-// ═══════════════════════════════════════════════════════════════
-//  ENTRAR EM SALA
-// ═══════════════════════════════════════════════════════════════
-window.entrarSala = async function() {
-  if(!myNome) { toast('Crie seu personagem primeiro!'); showScreen('screen-char-creation'); return; }
-  const codigo = document.getElementById('inp-codigo').value.trim().toUpperCase();
-  if(codigo.length !== 4) { toast('O código tem 4 letras'); return; }
-
-  const snap = await get(ref(db, `salas/${codigo}`));
-  if(!snap.exists())       { toast('Sala não encontrada!'); return; }
-
-  const salaData = snap.val();
-  if(salaData.config.estado !== 'lobby') { toast('Esta partida já começou!'); return; }
-
-  mySala = codigo;
-  localStorage.setItem('rpg_sala', codigo);
-
-  const cls = CLASSES[myClasse];
-  await set(ref(db, `salas/${codigo}/jogadores/${myUid}`), {
-    nome: myNome, classe: myClasse, sexo: mySexo,
-    hp: cls.hp, maxHp: cls.hp,
-    sp: cls.sp, maxSp: cls.sp,
-    exp: 0, ativo: true, vivo: true, consciente: true,
-    acao1: null, acao2: null,
-    inventario: buildInventarioInicial(myClasse),
-    joinedAt: serverTimestamp()
-  });
-
-  onDisconnect(ref(db, `salas/${codigo}/jogadores/${myUid}/ativo`)).set(false);
-  irParaLobby(codigo);
-};
-
-// ═══════════════════════════════════════════════════════════════
-//  LOBBY
-// ═══════════════════════════════════════════════════════════════
-function irParaLobby(codigo) {
-  showScreen('screen-lobby');
-  document.getElementById('lobby-code').textContent = codigo;
-
-  if(unsubSala) unsubSala();
-  unsubSala = onValue(ref(db, `salas/${codigo}`), snap => {
-    if(!snap.exists()) return;
-    const data = snap.val();
-    const jogadores = data.jogadores || {};
-    const host = data.config.host;
-    amIHost = (myUid === host);
-
-    // Lista de jogadores
-    const lista = document.getElementById('lista-jogadores');
-    lista.innerHTML = '';
-    Object.entries(jogadores).forEach(([uid, j]) => {
-      const cls = CLASSES[j.classe] || {};
-      const online = j.ativo !== false;
-      const div = document.createElement('div');
-      div.className = 'player-row';
-      div.innerHTML = `
-        <div class="online-dot ${online?'on':''}"></div>
-        <div class="player-avatar" style="overflow:hidden;padding:0">
-          <img src="sprites/${j.classe||'guerreiro'}_${j.sexo||'m'}.png"
-            style="width:100%;height:100%;object-fit:contain;object-position:bottom"
-            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
-          ><span style="display:none;width:100%;height:100%;align-items:center;justify-content:center">${cls.icon||'?'}</span>
-        </div>
-        <div class="player-info">
-          <div class="player-nome">${j.nome}</div>
-          <div class="player-classe">${cls.nome||j.classe} · ${online?'<span style="color:var(--green)">online</span>':'<span style="color:#555">ausente</span>'}</div>
-        </div>
-        ${uid===host ? '<span class="badge badge-host">Anfitrião</span>' : ''}
-        ${uid===myUid ? '<span class="badge badge-you">você</span>' : ''}
-      `;
-      lista.appendChild(div);
-    });
-
-    document.getElementById('btn-iniciar').style.display    = amIHost ? 'block' : 'none';
-    document.getElementById('lobby-status').style.display   = amIHost ? 'none'  : 'block';
-
-    // Jogo iniciou
-    if(data.config.estado !== 'lobby') {
-      unsubSala();
-      irParaJogo(codigo);
-    }
-  });
-}
-
-window.iniciarJogo = async function() {
-  if(!amIHost) return;
-  if(!getApiKey()) { pedirApiKey(() => iniciarJogo()); return; }
-  await update(ref(db, `salas/${mySala}/config`), { estado: 'iniciando' });
-  chamarIAInicio();
-};
-
-// ═══════════════════════════════════════════════════════════════
-//  JOGO PRINCIPAL
-// ═══════════════════════════════════════════════════════════════
-function irParaJogo(codigo) {
-  _mortoMostrado = false;
-  _histInitialized = false;
-  document.getElementById('modal-morto').classList.remove('open');
-  showScreen('screen-game');
-  document.getElementById('top-sala').textContent = codigo;
-  updateVoiceBtn();
-  setTimeout(() => { _histInitialized = true; }, 2500);
-
-  if(unsubSala) unsubSala();
-  unsubSala = onValue(ref(db, `salas/${codigo}`), snap => {
-    if(!snap.exists()) return;
-    const data = snap.val();
-    const jogadores = data.jogadores || {};
-    const eu = jogadores[myUid];
-    if(!eu) return;
-
-    amIHost = (data.config.host === myUid);
-    document.getElementById('btn-reset-campanha').style.display = amIHost ? 'inline-block' : 'none';
-
-    // Sync map positions from Firebase → local _mapPos (all clients)
-    if(data.mapPos) {
-      Object.entries(data.mapPos).forEach(([key, pos]) => { _mapPos[key] = pos; });
-    }
-
-    atualizarTopbar(eu);
-    atualizarStatusBar(jogadores, data.config.rodada, data.config.estado);
-    renderizarHistoria(data.historia);
-    atualizarInputArea(eu, data.config.estado, jogadores);
-    atualizarBotaoIniciar(data);
-    atualizarFloatInimigos(data.inimigos);
-    atualizarCena(jogadores, data.inimigos);
-
-    // Host: verifica se todos enviaram
-    if(amIHost && data.config.estado === 'aguardando' && !chamandoIA) {
-      verificarRodada(jogadores, data);
-    }
-  });
-}
-
-function atualizarBotaoIniciar(data) {
-  const btn = document.getElementById('btn-iniciar-narrar');
-  const semHistoria = !data.historia || Object.keys(data.historia).length === 0;
-  const estado = data.config.estado;
-  // Mostra para o host sempre que não há história e não está chamando a IA agora
-  const mostrar = amIHost && semHistoria && !chamandoIA;
-  btn.style.display = mostrar ? 'block' : 'none';
-  if(mostrar) {
-    const travado = estado === 'iniciando' || estado === 'narrando';
-    btn.textContent = travado ? '🔄 Tentar Novamente' : '🎲 Iniciar Aventura';
-  }
-  if(!semHistoria) document.getElementById('historia-empty').style.display = 'none';
-}
-
-window.resetarCampanha = async function() {
-  if(!amIHost) return;
-  const ok = confirm('☢️ REINICIAR CAMPANHA?\n\nIsso apagará toda a história, os inimigos e resetará todos os personagens ao estado inicial.\n\nEsta ação não pode ser desfeita!');
-  if(!ok) return;
-
-  const snap = await get(ref(db, `salas/${mySala}`));
-  if(!snap.exists()) return;
-  const data = snap.val();
-  const jogadores = data.jogadores || {};
-
-  const ups = {};
-  ups[`salas/${mySala}/historia`] = null;
-  ups[`salas/${mySala}/inimigos`] = null;
-  ups[`salas/${mySala}/mapPos`]   = null;
-  ups[`salas/${mySala}/config/estado`] = 'lobby';
-  ups[`salas/${mySala}/config/rodada`] = 0;
-
-  Object.entries(jogadores).forEach(([uid, j]) => {
-    const cls = CLASSES[j.classe] || {};
-    const base = `salas/${mySala}/jogadores/${uid}`;
-    ups[`${base}/hp`]         = cls.hp || j.maxHp;
-    ups[`${base}/sp`]         = cls.sp || j.maxSp;
-    ups[`${base}/exp`]        = 0;
-    ups[`${base}/vivo`]       = true;
-    ups[`${base}/consciente`] = true;
-    ups[`${base}/acao1`]      = null;
-    ups[`${base}/acao2`]      = null;
-    ups[`${base}/inventario`] = buildInventarioInicial(j.classe);
-  });
-
-  await update(ref(db), ups);
-
-  renderedHistKeys = new Set();
-  const historiaEl = document.getElementById('narrative-panel');
-  Array.from(historiaEl.children).forEach(c => { if(c.id !== 'historia-empty') c.remove(); });
-  document.getElementById('historia-empty').style.display = '';
-  document.getElementById('modal-morto').classList.remove('open');
-  toast('Campanha reiniciada!');
-};
-
-window.hostIniciarOuRetentar = async function() {
-  if(!amIHost || chamandoIA) return;
-  if(!getApiKey()) { pedirApiKey(() => hostIniciarOuRetentar()); return; }
-  await update(ref(db, `salas/${mySala}/config`), { estado: 'iniciando' });
-  chamarIAInicio();
-};
-
-// ─── Topbar ────────────────────────────────────────────────────
-let _meuEuCache = null;
-
-function atualizarTopbar(eu) {
-  _meuEuCache = eu;
-  const cls = CLASSES[eu.classe] || {};
-  const nivel = Math.floor((eu.exp||0)/100)+1;
-  const hp = Math.max(0,eu.hp), mhp = eu.maxHp;
-  const sp = Math.max(0,eu.sp), msp = eu.maxSp;
-
-  const portrait = document.getElementById('my-portrait');
-  if (portrait) portrait.innerHTML = `<img src="${spriteUrl(eu.classe, eu.sexo || 'm')}" alt="">`;
-  const nameEl = document.getElementById('my-name');
-  if (nameEl) nameEl.textContent = eu.nome;
-  const classEl = document.getElementById('my-class');
-  if (classEl) classEl.textContent = `${cls.nome||''} · Nível ${nivel}`;
-  const hpVal = document.getElementById('hp-val');
-  const spVal = document.getElementById('sp-val');
-  if (hpVal) hpVal.textContent = `${hp}/${mhp}`;
-  if (spVal) spVal.textContent = `${sp}/${msp}`;
-  const hpBar = document.getElementById('hp-bar');
-  const spBar = document.getElementById('sp-bar');
-  if (hpBar) hpBar.style.width = `${mhp>0?(hp/mhp)*100:0}%`;
-  if (spBar) spBar.style.width = `${msp>0?(sp/msp)*100:0}%`;
-
-  const condsEl = document.getElementById('my-conditions');
-  if (condsEl) {
-    const hpPct = mhp > 0 ? hp / mhp : 1;
-    const tags = [];
-    if (eu.vivo === false)        tags.push('<span class="condition-tag debuff">☠️ Morto</span>');
-    else if (eu.consciente===false) tags.push('<span class="condition-tag debuff">💫 Inconsciente</span>');
-    else if (hpPct < 0.25)        tags.push('<span class="condition-tag debuff">💀 Crítico</span>');
-    else if (hpPct < 0.5)         tags.push('<span class="condition-tag debuff">🩸 Ferido</span>');
-    else                           tags.push('<span class="condition-tag buff">⚡ Alerta</span>');
-    condsEl.innerHTML = tags.join('');
-  }
-
-  const equipEl = document.getElementById('my-equip');
-  if (equipEl) {
-    const inv = eu.inventario || {};
-    const equipped = Object.values(inv).filter(i => i.equipado);
-    equipEl.innerHTML = equipped.map(i => `<span class="equip-tag"><span>${i.icon||'📦'}</span>${i.nome}</span>`).join('');
-  }
-
-  atualizarPortraitCards(eu);
-}
-
-function atualizarPortraitCards(eu) {
-  const nivel = Math.floor((eu.exp||0)/100)+1;
-  const hp = Math.max(0, eu.hp), mhp = eu.maxHp;
-  const sp = Math.max(0, eu.sp), msp = eu.maxSp;
-
-  const avatarEl = document.getElementById('pc-avatar');
-  if (avatarEl) avatarEl.innerHTML = `<img src="${spriteUrl(eu.classe, eu.sexo || 'm')}" alt="">`;
-
-  const pcName = document.getElementById('pc-name');
-  if (pcName) pcName.textContent = `${eu.nome} · Nv${nivel}`;
-
-  const hpFill = document.getElementById('pc-hp-fill');
-  const spFill = document.getElementById('pc-sp-fill');
-  const hpVal  = document.getElementById('pc-hp-val');
-  const spVal  = document.getElementById('pc-sp-val');
-  if (hpFill) hpFill.style.width = `${mhp>0?(hp/mhp)*100:0}%`;
-  if (spFill) spFill.style.width = `${msp>0?(sp/msp)*100:0}%`;
-  if (hpVal)  hpVal.textContent  = `${hp}/${mhp}`;
-  if (spVal)  spVal.textContent  = `${sp}/${msp}`;
-
-  const condsEl = document.getElementById('pc-conds');
-  if (condsEl) {
-    const hpPct = mhp > 0 ? hp / mhp : 1;
-    let tag = '';
-    if (eu.vivo === false)          tag = '<span class="condition-tag debuff">☠️ Morto</span>';
-    else if (eu.consciente===false) tag = '<span class="condition-tag debuff">💫 Inconsciente</span>';
-    else if (hpPct < 0.25)         tag = '<span class="condition-tag debuff">💀 Crítico</span>';
-    else if (hpPct < 0.5)          tag = '<span class="condition-tag debuff">🩸 Ferido</span>';
-    else if (hpPct < 0.75)         tag = '<span class="condition-tag">🛡 Guarda</span>';
-    else                            tag = '<span class="condition-tag buff">⚡ Alerta</span>';
-    condsEl.innerHTML = tag;
-  }
-
-  const equipsEl = document.getElementById('pc-equips');
-  if (equipsEl) {
-    const inv = eu.inventario || {};
-    const equipped = Object.values(inv).filter(i => i.equipado).slice(0, 3);
-    equipsEl.innerHTML = equipped.map(i => `<span class="equip-tag"><span>${i.icon||''}</span>${i.nome}</span>`).join('');
+function mostrarRetryUI(tentativa, waitMs) {
+  const el = document.getElementById('retry-ui');
+  if (el) {
+    el.style.display = 'block';
+    document.getElementById('retry-msg').textContent = `Tentativa ${tentativa}/10 — aguardando ${waitMs/1000}s...`;
   }
 }
-
-window.abrirFicha = function() {
-  const eu = _meuEuCache; if(!eu) return;
-  const cls  = CLASSES[eu.classe] || {};
-  const nivel = Math.floor((eu.exp||0)/100) + 1;
-  const { atk, def } = calcularCombate(eu);
-  const inv  = eu.inventario || {};
-  const cor  = cls.cor || '#333';
-
-  const hp = Math.max(0, eu.hp), mhp = eu.maxHp;
-  const sp = Math.max(0, eu.sp), msp = eu.maxSp;
-  const exp = eu.exp || 0;
-
-  // Equipment slots
-  const slotsHtml = SLOTS_INFO.map(slot => {
-    const found = Object.entries(inv).find(([,i]) => i.slot === slot.key && i.equipado);
-    if(found) {
-      const [id, item] = found;
-      const bonuses = [];
-      if(item.atk) bonuses.push(`+${item.atk} ATK`);
-      if(item.def) bonuses.push(`+${item.def} DEF`);
-      if(item.hp)  bonuses.push(`+${item.hp} HP`);
-      if(item.sp)  bonuses.push(`+${item.sp} SP`);
-      return `<div class="fc-slot fc-slot-filled" onclick="toggleItem('${id}')">
-        <div class="fc-slot-label">${slot.label}</div>
-        <div class="fc-slot-item">
-          <span class="fc-slot-icon">${item.icon||slot.icon}</span>
-          <div class="fc-slot-info">
-            <div class="fc-slot-nome">${item.nome}</div>
-            <div class="fc-slot-bonus">${bonuses.join(' · ')||'—'}</div>
-          </div>
-          <span class="fc-slot-eq">✓</span>
-        </div>
-      </div>`;
-    }
-    return `<div class="fc-slot fc-slot-empty">
-      <div class="fc-slot-label">${slot.label}</div>
-      <div class="fc-slot-empty-inner">${slot.icon} <span>Vazio</span></div>
-    </div>`;
-  }).join('');
-
-  // Mochila — unequipped items
-  const naoEquip = Object.entries(inv).filter(([,i]) => !i.equipado);
-  const mochilaHtml = naoEquip.length
-    ? naoEquip.map(([id, item]) => {
-        const bonuses = [];
-        if(item.atk) bonuses.push(`+${item.atk} ATK`);
-        if(item.def) bonuses.push(`+${item.def} DEF`);
-        if(item.hp)  bonuses.push(`+${item.hp} HP`);
-        if(item.sp)  bonuses.push(`+${item.sp} SP`);
-        return `<div class="fc-mochila-item" onclick="toggleItem('${id}')">
-          <span class="fc-mochila-icon">${item.icon||'📦'}</span>
-          <div class="fc-mochila-info">
-            <div class="fc-mochila-nome">${item.nome}</div>
-            <div class="fc-mochila-bonus">${bonuses.join(' · ')||item.desc||''}</div>
-          </div>
-          <button class="fc-equip-btn" onclick="event.stopPropagation();toggleItem('${id}')">Equipar</button>
-        </div>`;
-      }).join('')
-    : '<div class="fc-mochila-empty">Mochila vazia</div>';
-
-  document.querySelector('#modal-ficha .ficha-sheet').innerHTML = `
-    <div class="fc-header" style="background:linear-gradient(135deg,${cor}99 0%,transparent 70%),radial-gradient(ellipse at 15% 60%,${cor}55 0%,transparent 55%)">
-      <div class="fc-avatar" style="border-color:${cor};background:${cor}33">${cls.avatar||cls.icon||'⚔️'}</div>
-      <div class="fc-info">
-        <div class="fc-nome">${eu.nome}</div>
-        <div class="fc-classe">${cls.icon||''} ${cls.nome||eu.classe}</div>
-        <div class="fc-nivel">NÍVEL ${nivel}</div>
-      </div>
-    </div>
-    <div class="fc-combat">
-      <div class="fc-combat-box fc-atk">
-        <div class="fc-combat-val">${atk}</div>
-        <div class="fc-combat-lbl">⚔️ ATK</div>
-      </div>
-      <div class="fc-combat-box fc-def">
-        <div class="fc-combat-val">${def}</div>
-        <div class="fc-combat-lbl">🛡️ DEF</div>
-      </div>
-      <div class="fc-res-bars">
-        <div class="fc-bar">
-          <div class="fc-bar-lbl"><span>HP</span><span>${hp}/${mhp}</span></div>
-          <div class="fc-bar-track"><div class="fc-bar-fill" style="width:${(hp/mhp)*100}%;background:var(--hp)"></div></div>
-        </div>
-        <div class="fc-bar">
-          <div class="fc-bar-lbl"><span>SP</span><span>${sp}/${msp}</span></div>
-          <div class="fc-bar-track"><div class="fc-bar-fill" style="width:${(sp/msp)*100}%;background:var(--sp)"></div></div>
-        </div>
-        <div class="fc-bar">
-          <div class="fc-bar-lbl"><span>EXP</span><span>${exp} XP</span></div>
-          <div class="fc-bar-track"><div class="fc-bar-fill" style="width:${Math.min(exp%100,100)}%;background:var(--exp)"></div></div>
-        </div>
-      </div>
-    </div>
-    <div class="fc-section-title">EQUIPAMENTOS</div>
-    <div class="fc-slots-grid">${slotsHtml}</div>
-    <div class="fc-section-title">MOCHILA</div>
-    <div class="fc-mochila">${mochilaHtml}</div>
-    <div class="fc-close" onclick="fecharFicha()">▼ FECHAR</div>
-  `;
-
-  document.getElementById('modal-ficha').classList.add('open');
-};
-
-window.toggleItem = async function(itemId) {
-  const eu = _meuEuCache;
-  if(!eu?.inventario) return;
-  const item = eu.inventario[itemId];
-  if(!item) return;
-  const nowEquipping = !item.equipado;
-  const ups = {};
-  if(nowEquipping && item.slot) {
-    Object.entries(eu.inventario).forEach(([id, i]) => {
-      if(i.slot === item.slot && i.equipado && id !== itemId) {
-        ups[`salas/${mySala}/jogadores/${myUid}/inventario/${id}/equipado`] = false;
-        eu.inventario[id].equipado = false;
-      }
-    });
-  }
-  ups[`salas/${mySala}/jogadores/${myUid}/inventario/${itemId}/equipado`] = nowEquipping;
-  eu.inventario[itemId].equipado = nowEquipping;
-  await update(ref(db), ups);
-  abrirFicha();
-};
-
-window.fecharFicha = function() {
-  document.getElementById('modal-ficha').classList.remove('open');
-};
-document.getElementById('modal-ficha').addEventListener('click', e => {
-  if(e.target === document.getElementById('modal-ficha')) fecharFicha();
-});
-
-// ─── Painel flutuante de inimigos ─────────────────────────────
-let _iniPanelOpen = false;
-
-window.toggleInimigosPanel = function() {
-  _iniPanelOpen = !_iniPanelOpen;
-  document.getElementById('float-ini-panel').classList.toggle('open', _iniPanelOpen);
-};
-
-function atualizarFloatInimigos(inimigos) {
-  const visiveis = Object.values(inimigos || {}).filter(i => i.visivel !== false && i.hp > 0);
-  const btn  = document.getElementById('float-ini-btn');
-  const list = document.getElementById('float-ini-list');
-  const cnt  = document.getElementById('float-ini-count');
-
-  btn.style.display = visiveis.length > 0 ? 'flex' : 'none';
-  cnt.textContent   = visiveis.length;
-
-  if(visiveis.length === 0) {
-    _iniPanelOpen = false;
-    document.getElementById('float-ini-panel').classList.remove('open');
-  }
-
-  list.innerHTML = visiveis.length === 0
-    ? '<div class="fip-empty">Nenhum inimigo à vista</div>'
-    : visiveis.map(ini => {
-        const pct = Math.max(0, Math.min(100, Math.round((ini.hp / ini.maxHp) * 100)));
-        const cor = pct > 55 ? '#e74c3c' : pct > 25 ? '#f39c12' : '#8b0000';
-        return `<div class="fip-row">
-          <span class="fip-icon">${ini.icon||'👿'}</span>
-          <div class="fip-info">
-            <div class="fip-nome">${ini.nome}</div>
-            <div class="fip-bar"><div class="fip-fill" style="width:${pct}%;background:${cor}"></div></div>
-          </div>
-          <span class="fip-hp" style="color:${cor}">${ini.hp}/${ini.maxHp}</span>
-        </div>`;
-      }).join('');
-}
-
-// ─── Botões de ação rápida ─────────────────────────────────────
-// ─── Modal de ação ────────────────────────────────────────────
-const TIPOS_ACAO = {
-  falar:    { titulo:'💬 Falar',      lbl1:'O QUE SEU PERSONAGEM DIZ?',    ph1:'Digite a fala...',             lbl2:'COMO? (TOM, EXPRESSÃO)',        ph2:'gritando, rindo, sussurrando...' },
-  atacar:   { titulo:'⚔️ Ataque Básico', lbl1:'QUEM VOCÊ ATACA?',            ph1:'Descreva o alvo...',           lbl2:'COMO? COM QUÊ?',               ph2:'com a espada, com um soco...' },
-  skill:    { titulo:'✨ Skill',       lbl1:'SKILL SELECIONADA',             ph1:'Nome da skill...',             lbl2:'ALVO OU DETALHE ADICIONAL',    ph2:'em quem / como aplica...' },
-  defender: { titulo:'🛡️ Defender',  lbl1:'COMO VOCÊ SE DEFENDE?',         ph1:'Descreva sua defesa...',       lbl2:'DETALHE ADICIONAL',             ph2:'usando o escudo, recuando...' },
-  mover:    { titulo:'🏃 Mover',      lbl1:'PARA ONDE VOCÊ SE MOVE?',       ph1:'Destino ou direção...',        lbl2:'COMO? (DETALHE)',               ph2:'furtivamente, correndo...' },
-  livre:    { titulo:'🎯 Ação Livre',  lbl1:'O QUE VOCÊ FAZ?',              ph1:'Descreva livremente...',       lbl2:'DETALHE ADICIONAL (OPCIONAL)',  ph2:'mais detalhes...' },
-};
-
-let _tipoAcaoAtual = null;
-let _slots = [null, null];
-let _prevJaEnviou = false;
-let _mortoMostrado = false;
-let _histInitialized = false;
-let _currentAudio = null;
-let voiceEnabled = localStorage.getItem('rpg_voice') === '1';
-
-window.abrirModalAcao = async function(tipo, preFill) {
-  _tipoAcaoAtual = tipo;
-  const t = TIPOS_ACAO[tipo];
-  document.getElementById('modal-acao-title').textContent   = t.titulo;
-  document.getElementById('modal-acao-lbl1').textContent    = t.lbl1;
-  document.getElementById('modal-acao-txt').placeholder     = t.ph1;
-  document.getElementById('modal-acao-txt').value           = preFill || '';
-  document.getElementById('modal-acao-lbl2').textContent    = t.lbl2;
-  document.getElementById('modal-acao-detalhe').placeholder = t.ph2;
-  document.getElementById('modal-acao-detalhe').value       = '';
-
-  const alvoDiv = document.getElementById('inimigos-alvo');
-  const gridEl  = document.getElementById('inimigos-grid');
-  alvoDiv.style.display = 'none';
-  gridEl.innerHTML = '';
-
-  if((tipo === 'atacar' || tipo === 'skill') && mySala) {
-    const iniSnap = await get(ref(db, `salas/${mySala}/inimigos`));
-    const inimigos = iniSnap.val() || {};
-    const visiveis = Object.values(inimigos).filter(i => i.visivel !== false && i.hp > 0);
-    if(visiveis.length > 0) {
-      visiveis.forEach(ini => {
-        const pct = Math.round((ini.hp / ini.maxHp) * 100);
-        const btn = document.createElement('button');
-        btn.className = 'inimigo-btn';
-        btn.innerHTML = `
-          <span class="inimigo-icon">${ini.icon||'👿'}</span>
-          <div class="inimigo-info">
-            <div class="inimigo-nome">${ini.nome}</div>
-            <div class="inimigo-hp-bar"><div class="inimigo-hp-fill" style="width:${pct}%"></div></div>
-          </div>
-          <span class="inimigo-hp-txt">${ini.hp}/${ini.maxHp}</span>`;
-        btn.onclick = () => selecionarAlvo(ini.nome, btn);
-        gridEl.appendChild(btn);
-      });
-      alvoDiv.style.display = 'flex';
-    }
-  }
-
-  document.getElementById('modal-acao').classList.add('open');
-  if(!preFill) setTimeout(() => document.getElementById('modal-acao-txt').focus(), 100);
-};
-
-window.selecionarAlvo = function(nome, btn) {
-  document.querySelectorAll('.inimigo-btn').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  const txt = document.getElementById('modal-acao-txt');
-  txt.value = nome;
-  txt.focus();
-};
-
-window.fecharModalAcao = function() {
-  document.getElementById('modal-acao').classList.remove('open');
-};
-
-window.confirmarAcao = function() {
-  const txt     = document.getElementById('modal-acao-txt').value.trim();
-  const detalhe = document.getElementById('modal-acao-detalhe').value.trim();
-  if(!txt) { toast('Descreva a ação antes de confirmar!'); return; }
-  const t = TIPOS_ACAO[_tipoAcaoAtual];
-  _slots[0] = detalhe ? `${t.titulo}: ${txt} (${detalhe})` : `${t.titulo}: ${txt}`;
-  _slots[1] = null;
-  fecharModalAcao();
-  enviarAcoes();
-};
-
-window.limparSlot = function(idx) {
-  _slots[idx] = null;
-  renderizarSlots();
-};
-
-function renderizarSlots() {
-  [0,1].forEach(i => {
-    const slot = document.getElementById(`slot${i+1}`);
-    if(_slots[i]) {
-      slot.className = 'acao-slot preenchida';
-      slot.innerHTML = `
-        <span class="acao-slot-num">${i===0?'①':'②'}</span>
-        <span class="acao-slot-texto">${_slots[i]}</span>
-        <button class="acao-slot-del" onclick="limparSlot(${i})">✕</button>`;
-    } else {
-      slot.className = 'acao-slot';
-      slot.innerHTML = `
-        <span class="acao-slot-num">${i===0?'①':'②'}</span>
-        <span class="acao-slot-vazia">${i===0?'Escolha uma ação abaixo...':'Segunda ação (opcional)...'}</span>`;
-    }
-  });
-}
-
-document.getElementById('modal-acao').addEventListener('click', e => {
-  if(e.target === document.getElementById('modal-acao')) fecharModalAcao();
-});
-
-// ─── Status bar ────────────────────────────────────────────────
-function atualizarStatusBar(jogadores, rodada, estado) {
-  const roundEl = document.getElementById('chapter-round');
-  if (roundEl) roundEl.textContent = `Rodada ${rodada || '—'}`;
-
-  const bar = document.getElementById('player-portraits');
-  if (!bar) return;
-  bar.innerHTML = '';
-  Object.entries(jogadores).forEach(([uid, j]) => {
-    const online  = j.ativo !== false;
-    const done    = (j.acao1 != null && j.acao2 != null) || !j.vivo || !j.consciente;
-    const waiting = online && !done && estado === 'aguardando';
-    const statusCls = !online ? 'away' : waiting ? 'typing' : 'online';
-    const chip = document.createElement('div');
-    chip.className = 'player-chip';
-    chip.innerHTML = `
-      <div class="pc-portrait">
-        <img src="${spriteUrl(j.classe||'guerreiro', j.sexo||'m')}" onerror="this.style.display='none'" alt="">
-        <span class="pc-status ${statusCls}"></span>
-      </div>
-      <div class="pc-name">${j.nome.split(' ')[0]}</div>
-      <div class="pc-state">${done?'✓ pronto':'aguardando'}</div>`;
-    bar.appendChild(chip);
-  });
-}
-
-// ─── Historia ──────────────────────────────────────────────────
-function renderizarHistoria(historia) {
-  if(!historia) return;
-  const entries = Object.entries(historia)
-    .map(([k,v]) => ({k,...v}))
-    .sort((a,b) => (a.ts||0)-(b.ts||0));
-
-  if(entries.length === 0) return;
-  document.getElementById('historia-empty').style.display = 'none';
-  const el = document.getElementById('narrative-panel');
-  const testCards = document.getElementById('test-cards');
-
-  entries.forEach(entry => {
-    if(renderedHistKeys.has(entry.k)) return;
-    renderedHistKeys.add(entry.k);
-
-    if(entry.role === 'dados') {
-      // Render into test-cards panel
-      if(!testCards) return;
-      const linhas = (entry.content || '').split('\n').filter(l => l.trim());
-      linhas.forEach(linha => {
-        const [nome, acao, roll, result, cls] = linha.split('|');
-        const card = document.createElement('div');
-        card.className = 'test-card';
-        const verdictCls = cls === 'crit' ? 'crit' : cls === 'fail' ? 'fail' : 'succ';
-        const verdictTxt = cls === 'crit' ? 'CRÍTICO!' : cls === 'fail' ? 'FALHOU' : 'SUCESSO';
-        const diceParts = (roll||'').match(/=\s*(\d+)\s*(?:[+-]\d+)?\s*=\s*(\d+)/);
-        const total = diceParts ? diceParts[2] : '—';
-        card.innerHTML = `
-          <div class="tc-label">TESTE</div>
-          <div class="tc-actor">${nome||''}</div>
-          <div class="tc-desc">${(acao||'').substring(0,40)}</div>
-          <div class="tc-roll">
-            <span class="tc-dice-ico">🎲</span>
-            <span class="tc-formula">${roll||''}</span>
-          </div>
-          <div class="tc-total ${verdictCls}">${total}</div>
-          <div class="tc-verdict ${verdictCls}">${verdictTxt}</div>`;
-        testCards.appendChild(card);
-      });
-      // Auto-expand test panel when new cards arrive
-      const tph = document.getElementById('test-panel-header');
-      const tp  = document.getElementById('test-panel');
-      if(tph && tp) { tph.classList.add('open'); tp.classList.add('open'); }
-      // Client-side movement preview — AI POS tags will refine positions later
-      linhas.forEach(linha => {
-        const parts = linha.split('|');
-        const nome  = (parts[0]||'').replace(/\s*\(bônus\)$/,'').trim();
-        const acao  = (parts[1]||'').toLowerCase();
-        const cls   = parts[4];
-        const tipo  = (parts[5]||'').trim();
-        if(tipo !== 'jogador') return;
-        const emMov = /aproxim|corro|avanç|pulo|furtiv|escal|caminh|carre|corr|move|atac|vai|ir |investid/.test(acao);
-        if(!emMov || cls === 'fail') return;
-        const uid = Object.keys(_curJogs).find(u => (_curJogs[u]?.nome||'').toLowerCase() === nome.toLowerCase());
-        if(!uid) return;
-        const key = mapKeyJog(uid);
-        const pos = _mapPos[key];
-        if(!pos) return;
-        const inis = Object.entries(_mapPos).filter(([k]) => k.startsWith('e_'));
-        if(!inis.length) return;
-        const nearest = inis.reduce((b,[k,p]) => {
-          const d = Math.abs(p.col-pos.col)+Math.abs(p.row-pos.row); return d < b.d ? {k,p,d} : b;
-        }, {k:'',p:{col:10,row:7},d:999});
-        const dc = nearest.p.col - pos.col, dr = nearest.p.row - pos.row;
-        const steps = cls === 'crit' ? 5 : 3;
-        const nc = clamp(pos.col + Math.sign(dc)*Math.min(steps, Math.abs(dc)), 0, MAP_COLS-1);
-        const nr = clamp(pos.row + (Math.abs(dc) < 3 ? Math.sign(dr) : 0), 0, MAP_ROWS-1);
-        _mapPos[key] = { col: nc, row: nr };
-        const sp = document.getElementById('map-sprites')?.querySelector(`[data-key="${key}"]`);
-        sp?.classList.add('bounce'); setTimeout(()=>sp?.classList.remove('bounce'),500);
-      });
-      // Host persists the preview positions so other clients see it immediately
-      if(amIHost && mySala && Object.keys(_mapPos).length) {
-        const posUps = {};
-        Object.entries(_mapPos).forEach(([k,v]) => { posUps[`salas/${mySala}/mapPos/${k}`] = v; });
-        update(ref(db), posUps); // fire-and-forget
-      }
-      setTimeout(renderizarMapaSprites, 60);
-      return;
-    }
-
-    const div = document.createElement('div');
-    if(entry.role === 'rodada') {
-      div.className = 'narr-divider';
-      div.textContent = `RODADA ${entry.content}`;
-    } else if(entry.role === 'model') {
-      div.className = 'narr-entry';
-      div.innerHTML = `<div class="narr-gm">
-        <div class="narr-gm-header">✦ MESTRE</div>
-        ${formatarTexto(entry.content)}
-      </div>`;
-      if (_histInitialized) narrarTexto(entry.content);
-    } else if(entry.role === 'status') {
-      return;
-    } else {
-      // user role — player actions block
-      const linhas = (entry.content||'').split('\n').filter(l=>l.trim());
-      const acoesDivs = linhas.map(l => {
-        const colonIdx = l.indexOf(':');
-        if(colonIdx === -1) return `<div class="narr-action"><div class="narr-action-body"><div class="narr-action-text">${l}</div></div></div>`;
-        const nome = l.substring(0, colonIdx).trim();
-        const texto = l.substring(colonIdx+1).trim();
-        const isMe = nome.toLowerCase() === myNome.toLowerCase();
-        const cls  = isMe ? (_meuEuCache?.classe || 'guerreiro') : 'guerreiro';
-        const sexo = isMe ? (_meuEuCache?.sexo   || 'm')         : 'm';
-        return `<div class="narr-action${isMe?' mine':''}">
-          <div class="narr-action-avatar">
-            <img src="${spriteUrl(cls, sexo)}" onerror="this.style.display='none'" alt="">
-          </div>
-          <div class="narr-action-body">
-            <div class="narr-action-name ${isMe?'mine-label':'other-label'}">${nome.toUpperCase()}</div>
-            <div class="narr-action-text">${texto}</div>
-          </div>
-        </div>`;
-      }).join('');
-      div.className = 'narr-entry';
-      div.innerHTML = acoesDivs;
-    }
-    el.appendChild(div);
-  });
-
-  el.scrollTop = el.scrollHeight;
-  renderCombatLog(entries);
-}
-
-function renderCombatLog(entries) {
-  const el = document.getElementById('combat-log');
-  if(!el) return;
-  const relevant = entries
-    .filter(e => e.role === 'model' || (e.role === 'dados'))
-    .slice(-5);
-  el.innerHTML = relevant.map(e => {
-    if(e.role === 'model') {
-      const txt = e.content.replace(/\n/g,' ').substring(0, 95) + (e.content.length > 95 ? '…' : '');
-      return `<div class="cl-entry gm">${txt}</div>`;
-    }
-    // dados: show first line only
-    const firstLine = (e.content || '').split('\n')[0];
-    const parts = firstLine.split('|');
-    const actor = parts[0] || '';
-    const result = parts[3] || '';
-    return `<div class="cl-entry dice">${actor} — ${result}</div>`;
-  }).join('');
-  el.scrollTop = el.scrollHeight;
-}
-
-function formatarTexto(t) {
-  return t
-    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g,'<em>$1</em>')
-    .split('\n').join('<br>');
-}
-
-// ─── Nova entrada de ação por textarea ─────────────────────────
-window.confirmarAcaoTexto = function() {
-  const inp = document.getElementById('action-input');
-  const txt = inp.value.trim();
-  if(!txt) { toast('Descreva a ação antes de confirmar!'); return; }
-  _slots[0] = txt;
-  _slots[1] = null;
-  inp.value = '';
-  enviarAcoes();
-};
-
-window.focarInputAcao = function() {
-  const inp = document.getElementById('action-input');
-  if(inp) { inp.focus(); inp.scrollIntoView({ behavior:'smooth', block:'nearest' }); }
-};
-
-window.qs = function(texto) {
-  const inp = document.getElementById('action-input');
-  if(inp) { inp.value = texto; inp.focus(); }
-};
-
-window.toggleTestPanel = function() {
-  const header = document.getElementById('test-panel-header');
-  const panel  = document.getElementById('test-panel');
-  if(!header || !panel) return;
-  header.classList.toggle('open');
-  panel.classList.toggle('open');
-};
-
-window.toggleCharSheet = function() {
-  document.getElementById('right-col').classList.toggle('sheet-open');
-  document.getElementById('sheet-backdrop').classList.toggle('open');
-};
-
-window.sendChat = function() {
-  const inp = document.getElementById('chat-input');
-  if (!inp || !inp.value.trim()) return;
-  inp.value = '';
-};
-
-window.toggleHistory = function() {
-  const panel = document.getElementById('history-panel');
-  if (panel) panel.classList.toggle('open');
-};
-
-// ─── Cena / sprites ────────────────────────────────────────────
-function inimigosSprite(nome) {
-  const n = nome.toLowerCase();
-  if(n.includes('arqueiro'))                       return 'sprites/goblin_arqueiro.png';
-  if(n.includes('batedor') || n.includes('bate'))  return 'sprites/goblin_batedor.png';
-  if(n.includes('bruto'))                          return 'sprites/goblin_bruto.png';
-  if(n.includes('líder') || n.includes('lider'))   return 'sprites/goblin_lider.png';
-  return 'sprites/goblin_batedor.png';
-}
-
-function atualizarCena(jogadores, inimigos) {
-  _curJogs = jogadores || {};
-  _curInis = inimigos  || {};
-
-  const jogArr  = Object.values(jogadores||{}).filter(j => j.vivo && j.consciente);
-  const iniArr  = Object.values(inimigos ||{}).filter(i => i.visivel!==false && i.hp>0);
-  const combate = iniArr.length > 0;
-
-  document.getElementById('screen-game')?.classList.toggle('combat-active', combate);
-
-  if(combate) {
-    if(Object.keys(_terrain).length === 0) gerarTerrain();
-    initMapPositions(jogadores, inimigos||{});
-    desenharCanvas();
-    renderizarMapaSprites();
-    renderizarIniBar(jogadores, inimigos||{});
-    // Update battle header turn counter
-    const turnEl = document.getElementById('battle-turn-lbl');
-    if(turnEl) {
-      const rodada = document.getElementById('round-display')?.textContent?.match(/\d+/)?.[0] || '1';
-      turnEl.textContent = `· Turno ${rodada}`;
-    }
-  } else {
-    if(Object.keys(_terrain).length > 0) {
-      _terrain = {};
-      // Host clears persisted positions when combat ends
-      if(amIHost && mySala) remove(ref(db, `salas/${mySala}/mapPos`));
-      // Clear local _mapPos so next combat gets fresh positions
-      Object.keys(_mapPos).forEach(k => delete _mapPos[k]);
-    }
-    // Exploração: sprites atmosféricos na scene-area
-    const spEl = document.getElementById('scene-sprites');
-    if(spEl) {
-      spEl.className = '';
-      spEl.innerHTML = jogArr.map(j => `
-        <div class="scene-char">
-          <img src="sprites/${j.classe}_${j.sexo||'m'}.png" onerror="this.src='sprites/guerreiro_m.png'" alt="">
-          <div class="scene-char-name">${j.nome}</div>
-        </div>`).join('');
-    }
-  }
-}
-
-// ─── Input area ────────────────────────────────────────────────
-function atualizarInputArea(eu, estado, jogadores) {
-  const mn   = document.getElementById('msg-narrando');
-  const me   = document.getElementById('msg-enviado');
-  const mi   = document.getElementById('msg-inconsciente');
-  const btns = document.getElementById('action-left');
-
-  const jaMorto  = !eu.vivo || !eu.consciente;
-  const jaEnviou = eu.acao1 != null;
-  const narrando = estado === 'narrando' || estado === 'iniciando';
-
-  mn.style.display   = narrando ? 'flex' : 'none';
-  me.style.display   = (jaEnviou && !narrando) ? 'block' : 'none';
-  mi.style.display   = jaMorto ? 'block' : 'none';
-  btns.style.display = (jaMorto || narrando || jaEnviou) ? 'none' : 'flex';
-
-  if(_prevJaEnviou && !jaEnviou && !jaMorto) {
-    _slots = [null, null];
-    const inp = document.getElementById('action-input');
-    if(inp) inp.value = '';
-  }
-  _prevJaEnviou = jaEnviou;
-
-  if(!eu.vivo && !_mortoMostrado) {
-    _mortoMostrado = true;
-    document.getElementById('modal-morto').classList.add('open');
-  }
-}
-
-// ─── Enviar ações ──────────────────────────────────────────────
-window.enviarAcoes = async function() {
-  if(!_slots[0]) { toast('Defina pelo menos a primeira ação!'); return; }
-  await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), {
-    acao1: _slots[0],
-    acao2: _slots[1] || '(sem segunda ação)'
-  });
-};
-
-
-// ─── Verificar rodada ──────────────────────────────────────────
-function verificarRodada(jogadores, data) {
-  // Espera TODOS os participantes (vivos/conscientes), online ou não — jogo assíncrono
-  const participantes = Object.values(jogadores).filter(j => j.vivo && j.consciente);
-  if(participantes.length === 0) return;
-  const todos = participantes.every(j => j.acao1 != null && j.acao2 != null);
-  if(todos) chamarIA(jogadores, data);
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  IA — GEMINI
-// ═══════════════════════════════════════════════════════════════
-function buildSystemPrompt(jogadores, inimigos) {
-  const fichas = Object.values(jogadores).map(j => {
-    const cls = CLASSES[j.classe];
-    const status = !j.vivo ? '(MORTO)' : !j.consciente ? '(INCONSCIENTE)' : '';
-    return `• ${j.nome} [${cls?.nome||j.classe}] ${status} — HP ${j.hp}/${j.maxHp} | SP ${j.sp}/${j.maxSp} | EXP ${j.exp}`;
-  }).join('\n');
-
-  const iniList = Object.values(inimigos || {})
-    .filter(i => i.visivel !== false && i.hp > 0)
-    .map(i => `• ${i.icon||'👿'} ${i.nome} — HP ${i.hp}/${i.maxHp}`)
-    .join('\n');
-
-  // Build current positions text (1-indexed for the AI)
-  const posTxt = Object.entries(_mapPos).map(([key, pos]) => {
-    if(key.startsWith('p_')) {
-      const j = jogadores[key.slice(2)];
-      return j ? `• ${j.nome}: col ${pos.col+1}, lin ${pos.row+1}` : null;
-    }
-    const ini = Object.values(inimigos||{}).find(i => mapKeyIni(i.nome) === key);
-    return ini ? `• ${ini.icon||'👿'} ${ini.nome}: col ${pos.col+1}, lin ${pos.row+1}` : null;
-  }).filter(Boolean).join('\n');
-
-  // Build distances between every player–enemy pair
-  const jPosArr = Object.entries(_mapPos).filter(([k]) => k.startsWith('p_'));
-  const iPosArr = Object.entries(_mapPos).filter(([k]) => k.startsWith('e_'));
-  const distTxt = jPosArr.flatMap(([jk, jp]) => {
-    const j = jogadores[jk.slice(2)];
-    if(!j) return [];
-    return iPosArr.map(([ik, ip]) => {
-      const ini = Object.values(inimigos||{}).find(i => mapKeyIni(i.nome) === ik);
-      if(!ini) return null;
-      const dist = Math.abs(jp.col - ip.col) + Math.abs(jp.row - ip.row);
-      const range = dist <= 1 ? 'corpo a corpo ✅' : dist <= 3 ? 'alcance curto (arco/magia curta)' : 'longe — precisa mover antes de atacar';
-      return `• ${j.nome} ↔ ${ini.nome}: ${dist} célula(s) — ${range}`;
-    }).filter(Boolean);
-  }).join('\n');
-
-  const mapSection = (iniList && posTxt) ? `
-MAPA DE BATALHA (grade ${MAP_COLS} colunas × ${MAP_ROWS} linhas, col 1=esquerda, col ${MAP_COLS}=direita):
-${posTxt}
-${distTxt ? `\nDISTÂNCIAS:\n${distTxt}` : ''}
-Regras de alcance: 0-1 célula = corpo a corpo | 2-4 = arco/magia curta | 5+ = magia longa
-
-` : '';
-
-  return `Você é um narrador de RPG. Escreva em português do Brasil com drama e impacto — mas seja DIRETO. Cada palavra deve contar.
-
-VOZ:
-- Verbos fortes: "rasga", "despenca", "estala". Sem enchimento.
-- Travessões (—) e reticências (...) para pausas. Só quando necessário.
-- Corte: gritos de guerra do inimigo, preparativos óbvios, motivações genéricas.
-- Foque no RESULTADO da ação, não na preparação. O que aconteceu? Como o alvo reagiu?
-
-${iniList
-  ? `COMBATE — máximo 70 palavras. Cada frase = um impacto.
-CERTO: "A lâmina de ${Object.values(jogadores)[0]?.nome||'o herói'} rasga o ar. O goblin tenta desviar — tarde demais. Sangue. Recua rosnando."
-ERRADO: "O goblin deu um grito de guerra e correu em direção ao personagem para dar uma machadada."
-Narre: resultado físico do acerto/erro, reação do alvo. Nada mais.`
-  : `EXPLORAÇÃO — máximo 100 palavras. Clima e presságio.
-Gancho → 1-2 detalhes sensoriais concretos → tensão → fim aberto. Sem floreios.`}
-
-FICHAS DOS PERSONAGENS:
-${fichas}
-${iniList ? `\nINIMIGOS PRESENTES:\n${iniList}\n` : ''}${mapSection}REGRAS DO SISTEMA:
-- Trate todas as ações como simultâneas na mesma rodada
-- Seja consistente com os eventos anteriores da história
-- NÃO inclua tags no corpo da narração
-- AO FINAL inclua em linhas separadas:
-  STATS: [HP:Nome:valor] [SP:Nome:valor] [EXP:Nome:+ganho] [MORTO:Nome] [INCONS:Nome]
-         [INIMIGO:Nome:hpAtual:hpMax:ícone] [MATAR:Nome]
-${iniList ? `  POS: [MOV:Nome:col:lin] para CADA personagem/inimigo que se moveu nesta rodada (col 1-${MAP_COLS}, lin 1-${MAP_ROWS})
-  Exemplo POS: POS: [MOV:Igor:4:3] [MOV:Goblin Bruto:7:4] [MOV:Goblin Arqueiro:8:2]
-  Inimigos agressivos DEVEM se aproximar dos aventureiros. Se o goblin carrega, mova-o!
-  Se ninguém se moveu, OMITA a linha POS.` : ''}
-- Exemplos STATS: STATS: [HP:Igor:95] [EXP:Igor:+20] [INIMIGO:Goblin:45:80:👺] [MATAR:Rato]
-- Atualize HP dos inimigos a cada rodada. Use [MATAR:Nome] quando derrotado.
-- EXP mínimo +10 por rodada. HP/SP devem ser valores absolutos.`;
-}
-
-function mostrarRetryUI(tentativa, totalMs) {
-  const info = document.getElementById('retry-info');
-  const txt  = document.getElementById('retry-txt');
-  const fill = document.getElementById('retry-fill');
-  if(!info) return;
-  info.style.display = 'block';
-  const pct = Math.round((tentativa-1)/10*100);
-  fill.style.width = pct+'%';
-  const seg = Math.round(totalMs/1000);
-  txt.textContent = `Tentativa ${tentativa}/10… aguardando ${seg}s`;
-}
-
 function ocultarRetryUI() {
-  const info = document.getElementById('retry-info');
-  const fill = document.getElementById('retry-fill');
-  if(!info) return;
-  info.style.display = 'none';
-  fill.style.width = '0%';
+  const el = document.getElementById('retry-ui');
+  if (el) el.style.display = 'none';
 }
 
-async function chamarIAInicio() {
-  if(chamandoIA) return;
-  if(!getApiKey()) { pedirApiKey(() => chamarIAInicio()); return; }
+// ═══════════════════════════════════════════════════════════════
+//  PARSEAR STATS (inimigos / HP)
+// ═══════════════════════════════════════════════════════════════
+async function processarStats(resposta, jogadores, inimigos) {
+  const ups = {};
+  const statsLine = resposta.match(/STATS:\s*([^\n]+)/i)?.[1] || '';
+
+  // Criar/atualizar inimigos
+  [...statsLine.matchAll(/\[INIMIGO:([^:]+):(\d+):(\d+):([^\]]+)\]/gi)].forEach(([,nome,hp,maxHp,icon]) => {
+    const key = nome.trim().replace(/\W/g,'_');
+    ups[`salas/${mySala}/inimigos/${key}`] = {
+      nome: nome.trim(), hp: +hp, maxHp: +maxHp, icon: icon.trim()
+    };
+  });
+
+  // Atualizar HP inimigo
+  [...resposta.matchAll(/\[HP:([^:]+):(\d+)\]/gi)].forEach(([,nome,hp]) => {
+    const key = nome.trim().replace(/\W/g,'_');
+    const ini = inimigos[key] || Object.values(inimigos).find(i => i.nome === nome.trim());
+    if (ini) {
+      const k = Object.entries(inimigos).find(([,v]) => v === ini)?.[0] || key;
+      ups[`salas/${mySala}/inimigos/${k}/hp`] = +hp;
+    }
+  });
+
+  // Matar inimigo
+  [...resposta.matchAll(/\[MATAR:([^\]]+)\]/gi)].forEach(([,nome]) => {
+    const ini = Object.entries(inimigos).find(([,v]) => v.nome === nome.trim());
+    if (ini) ups[`salas/${mySala}/inimigos/${ini[0]}/hp`] = 0;
+  });
+
+  // Atualizar HP jogador
+  [...resposta.matchAll(/\[JOGADOR:([^:]+):(\d+)\]/gi)].forEach(([,nome,hp]) => {
+    const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
+    if (entry) ups[`salas/${mySala}/jogadores/${entry[0]}/hp`] = Math.max(0, +hp);
+  });
+
+  if (Object.keys(ups).length) await update(ref(db), ups);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  GROQ — chamarOpenAI
+// ═══════════════════════════════════════════════════════════════
+async function chamarOpenAI(systemPrompt, history, userMsg, onRetry) {
+  const apiKey = getApiKey();
+  if (!apiKey) return null;
+
+  const messages = [
+    { role:'system', content: systemPrompt },
+    ...history.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.content || '' })),
+    { role:'user', content: userMsg }
+  ];
+
+  const body = JSON.stringify({ model:'llama-3.3-70b-versatile', messages, temperature:0.85, max_tokens:600 });
+
+  for (let t = 1; t <= 10; t++) {
+    if (t > 1) {
+      const wait = Math.min(t * 2000, 16000);
+      if (onRetry) onRetry(t, wait);
+      await new Promise(r => setTimeout(r, wait));
+    }
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
+        body
+      });
+      const d = await res.json();
+      if (d.error) {
+        if (/rate.limit|overload|529|503/i.test(d.error.message||'') && t < 10) continue;
+        toast(`Erro IA: ${(d.error.message||'').substring(0,80)}`);
+        return null;
+      }
+      return d.choices?.[0]?.message?.content || '';
+    } catch {
+      if (t === 10) { toast('Erro de conexão após 10 tentativas'); return null; }
+    }
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  IA — INÍCIO
+// ═══════════════════════════════════════════════════════════════
+window.chamarIAInicio = async function() {
+  if (chamandoIA) return;
+  if (!getApiKey()) { pedirApiKey(() => chamarIAInicio()); return; }
   chamandoIA = true;
-  const btn = document.getElementById('btn-iniciar-narrar');
-  if(btn) btn.style.display = 'none';
+  document.getElementById('btn-iniciar-wrap').style.display = 'none';
 
   try {
     const snap = await get(ref(db, `salas/${mySala}`));
@@ -2040,143 +552,84 @@ async function chamarIAInicio() {
     await update(ref(db, `salas/${mySala}/config`), { estado: 'narrando' });
 
     const nomes = Object.values(jogadores)
-      .map(j => `${j.nome} (${CLASSES[j.classe]?.nome||j.classe})`)
+      .map(j => `${j.nome} (${CLASSES[j.classe]?.nome || j.classe})`)
       .join(', ');
 
     const prompt = `Abra esta campanha de RPG medieval com impacto cinematográfico. Personagens: ${nomes}.
 
-ESTRUTURA DA ABERTURA — siga esta sequência em 4 partes:
-1. AMBIÊNCIA (2 frases): pinte o cenário com detalhes sensoriais — sons, cheiros, texturas, não apenas o visual.
-2. PRESSÁGIO (1-2 frases): um detalhe que algo está errado — silêncio suspeito, sombra que se move, animal que foge em pânico.
-3. O ATAQUE: escolha LIVREMENTE o cenário (floresta, estrada, taverna, ruínas, porto, vila) e os antagonistas. Dê a eles um detalhe visual memorável que os torne únicos — não use criaturas genéricas sem personalidade.
-4. GANCHO FINAL (1 frase): urgência máxima. Os aventureiros precisam agir AGORA.
+ESTRUTURA DA ABERTURA:
+1. AMBIÊNCIA (2 frases): cenário com detalhes sensoriais — sons, cheiros, texturas.
+2. PRESSÁGIO (1-2 frases): um detalhe que algo está errado.
+3. O ATAQUE: escolha livremente o cenário e antagonistas com detalhes visuais únicos.
+4. GANCHO FINAL (1 frase): urgência máxima.
 
-Tom: narração de abertura de filme épico de fantasia. Apaixonado, tenso, vívido. Use o estilo de narrador que você é.
-OBRIGATÓRIO ao final: STATS: [INIMIGO:nome:hp:hpMax:ícone] para cada inimigo visível.
-Exemplo: STATS: [INIMIGO:Goblin Batedores:30:30:👺] [INIMIGO:Goblin Arqueiro:25:25:🏹] [INIMIGO:Líder Goblin:55:55:👹]`;
+Máximo 100 palavras. Tom épico e cinematográfico.
+OBRIGATÓRIO ao final: STATS: [INIMIGO:nome:hp:hpMax:ícone] para cada inimigo.`;
 
     const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, {}), [], prompt, mostrarRetryUI);
-
     ocultarRetryUI();
 
-    if(!resposta) {
+    if (!resposta) {
       await update(ref(db, `salas/${mySala}/config`), { estado: 'lobby' });
-      if(amIHost && btn) btn.style.display = 'block';
+      document.getElementById('btn-iniciar-wrap').style.display = amIHost ? 'block' : 'none';
       return;
     }
 
-    const ts = Date.now();
-    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparStats(resposta), ts });
+    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), ts: Date.now() });
     await processarStats(resposta, jogadores, {});
-    processarPosicoes(resposta);
     await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando', rodada: 1 });
   } finally {
     chamandoIA = false;
     ocultarRetryUI();
   }
-}
+};
 
+// ═══════════════════════════════════════════════════════════════
+//  IA — TURNO
+// ═══════════════════════════════════════════════════════════════
 async function chamarIA(jogadores, data) {
-  if(chamandoIA) return;
+  if (chamandoIA) return;
+  if (!getApiKey()) { pedirApiKey(() => {}); return; }
   chamandoIA = true;
 
   try {
+    const config  = data.config  || {};
+    const inimigos = data.inimigos || {};
+    const historia = data.historia || {};
+    const rodada  = config.rodada || 1;
+
     await update(ref(db, `salas/${mySala}/config`), { estado: 'narrando' });
 
-    const apiKey = getApiKey();
-    if(!apiKey) {
-      pedirApiKey(async () => {
-        await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
-      });
-      return;
-    }
+    // Monta histórico (últimas 10 entradas)
+    const hist = Object.values(historia)
+      .sort((a,b) => (a.ts||0)-(b.ts||0))
+      .filter(e => e.role === 'model' || e.role === 'user')
+      .slice(-10);
 
+    // Monta mensagem das ações desta rodada
     const acoes = Object.values(jogadores)
-      .map(j => {
-        if(!j.vivo) return `${j.nome}: (morto, sem ação)`;
-        if(!j.consciente) return `${j.nome}: (inconsciente, sem ação)`;
-        return `${j.nome}: [Principal] ${j.acao1 || '(nenhuma)'}  [Bônus] ${j.acao2 || '(nenhuma)'}`;
-      }).join('\n');
+      .filter(j => j.acao1)
+      .map(j => `${j.nome}: ${j.acao1}`)
+      .join('\n');
 
-    const [histSnap, iniSnap] = await Promise.all([
-      get(ref(db, `salas/${mySala}/historia`)),
-      get(ref(db, `salas/${mySala}/inimigos`))
-    ]);
-    const inimigos = iniSnap.val() || {};
-    const histRaw  = histSnap.val() || {};
-    const histArr  = Object.values(histRaw).sort((a,b)=>(a.ts||0)-(b.ts||0));
-    const gemHist  = histArr
-      .filter(e => e.role==='model' || e.role==='user')
-      .map(e => ({ role: e.role==='model'?'model':'user', parts:[{text:e.content}] }));
+    const msg = `Rodada ${rodada}.\n\nAções dos jogadores:\n${acoes}`;
 
-    const rodada = data.config.rodada || 1;
-
-    // Rolar dados dos jogadores e dos inimigos
-    const rolls      = rolarRodada(jogadores);
-    const iniRolls   = rolarInimigos(inimigos, jogadores);
-
-    const rollsTxt = [
-      ...rolls.map(r => {
-        const modStr = r.mod >= 0 ? `+${r.mod}` : `${r.mod}`;
-        const status = r.critico ? 'CRÍTICO!' : r.falha ? 'FALHA CRÍTICA!' : r.sucesso ? 'SUCESSO' : 'FALHOU';
-        return `  ${r.nome}${r.bonus?' (bônus)':''}: ${r.acao.substring(0,50)} → 1d20${modStr}=${r.dado}${modStr}=${r.total} vs DC${r.dc} → ${status}`;
-      }),
-      ...iniRolls.map(r => {
-        const modStr = r.mod >= 0 ? `+${r.mod}` : `${r.mod}`;
-        const status = r.critico ? 'CRÍTICO!' : r.falha ? 'ERROU!' : r.sucesso ? 'ACERTOU' : 'ERROU';
-        return `  ${r.nome} ataca ${r.alvo}: 1d20${modStr}=${r.dado}${modStr}=${r.total} vs DC${r.dc} → ${status}`;
-      })
-    ].join('\n');
-
-    // Salva o card de dados (pipe-delimited, sem JSON)
-    const dadosLinhas = [
-      ...rolls.map(r => {
-        const modStr = r.mod >= 0 ? `+${r.mod}` : `${r.mod}`;
-        const label  = LABEL_TIPO[r.tipo] || 'Teste';
-        const emoji  = r.critico ? '💥' : r.falha ? '💀' : r.sucesso ? '✅' : '❌';
-        const status = r.critico ? 'CRÍTICO!' : r.falha ? 'FALHA!' : r.sucesso ? 'SUCESSO' : 'FALHOU';
-        const cls    = r.critico ? 'crit' : (!r.sucesso || r.falha) ? 'fail' : 'ok';
-        const bonus  = r.bonus ? ' (bônus)' : '';
-        const acao   = r.acao.substring(0, 50).replace(/\|/g, '/');
-        return `${r.nome}${bonus}|${acao}|${label}: 1d20${modStr} = ${r.dado}${modStr} = ${r.total} vs DC${r.dc}|${emoji} ${status}|${cls}|jogador`;
-      }),
-      ...iniRolls.map(r => {
-        const modStr = r.mod >= 0 ? `+${r.mod}` : `${r.mod}`;
-        const emoji  = r.critico ? '💥' : r.falha ? '💨' : r.sucesso ? '⚔️' : '💨';
-        const status = r.critico ? 'CRÍTICO!' : r.falha ? 'ERROU!' : r.sucesso ? 'ACERTOU!' : 'ERROU!';
-        const cls    = r.critico ? 'crit' : !r.sucesso ? 'fail' : 'ok';
-        return `${r.icon} ${r.nome}|→ ${r.alvo}|Ataque: 1d20${modStr} = ${r.dado}${modStr} = ${r.total} vs DC${r.dc}|${emoji} ${status}|${cls}|inimigo`;
-      })
-    ].join('\n');
-
-    await push(ref(db, `salas/${mySala}/historia`), { role:'rodada', content: String(rodada), ts: Date.now()-3 });
-    await push(ref(db, `salas/${mySala}/historia`), { role:'user',   content: acoes,           ts: Date.now()-2 });
-    if(dadosLinhas) await push(ref(db, `salas/${mySala}/historia`), { role:'dados', content: dadosLinhas, ts: Date.now()-1 });
-
-    const msgComDados = `${acoes}\n\nRESULTADOS DOS DADOS DESTA RODADA — use-os fielmente ao narrar:\n${rollsTxt}\nCRÍTICO = efeito espetacular / FALHA = desastre / SUCESSO/ACERTOU = funciona / FALHOU/ERROU = sem efeito.`;
-
-    const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), gemHist, msgComDados, mostrarRetryUI);
-
+    const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), hist, msg, mostrarRetryUI);
     ocultarRetryUI();
 
-    if(!resposta) {
+    if (!resposta) {
       await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
       return;
     }
 
-    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparStats(resposta), ts: Date.now() });
-    await processarStats(resposta, jogadores, inimigos);
-    processarPosicoes(resposta);
-
+    // Limpar ações dos jogadores + avançar rodada
     const ups = {};
-    Object.keys(jogadores).forEach(uid => {
-      ups[`salas/${mySala}/jogadores/${uid}/acao1`] = null;
-      ups[`salas/${mySala}/jogadores/${uid}/acao2`] = null;
-    });
+    Object.keys(jogadores).forEach(uid => { ups[`salas/${mySala}/jogadores/${uid}/acao1`] = null; });
     ups[`salas/${mySala}/config/estado`] = 'aguardando';
     ups[`salas/${mySala}/config/rodada`] = rodada + 1;
-    // Persist map positions so all clients see the movement
-    Object.entries(_mapPos).forEach(([k, v]) => { ups[`salas/${mySala}/mapPos/${k}`] = v; });
+
+    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), ts: Date.now() });
+    await processarStats(resposta, jogadores, inimigos);
     await update(ref(db), ups);
   } finally {
     chamandoIA = false;
@@ -2184,350 +637,33 @@ async function chamarIA(jogadores, data) {
   }
 }
 
-function limparStats(texto) {
-  return texto
-    .replace(/\nPOS:.*$/m, '').replace(/POS:.*$/gm, '')
-    .replace(/\nSTATS:.*$/m,'').replace(/STATS:.*$/gm,'')
-    .trim();
-}
-
-async function processarStats(resposta, jogadores, iniAtual) {
-  const statsLine = resposta.match(/STATS:([\s\S]*)/);
-  if(!statsLine) return;
-  const tags = statsLine[1].matchAll(/\[([A-Z]+):([^\]]+)\]/g);
-  const ups = {};
-  for(const [,tipo,resto] of tags) {
-    const partes = resto.split(':');
-    const nome   = partes[0].trim();
-    const v1     = (partes[1] || '').trim();
-    const v2     = (partes[2] || '').trim();
-    const v3     = (partes[3] || '').trim();
-
-    if(tipo === 'INIMIGO') {
-      const hp    = parseInt(v1) || 0;
-      const maxHp = parseInt(v2) || hp;
-      const icon  = v3 || '👿';
-      const key   = nome.toLowerCase().replace(/[^a-z0-9]/g, '_');
-      ups[`salas/${mySala}/inimigos/${key}`] = { nome, hp: Math.max(0,hp), maxHp, icon, visivel: hp > 0 };
-      continue;
-    }
-    if(tipo === 'MATAR') {
-      const key = nome.toLowerCase().replace(/[^a-z0-9]/g, '_');
-      ups[`salas/${mySala}/inimigos/${key}/hp`]      = 0;
-      ups[`salas/${mySala}/inimigos/${key}/visivel`] = false;
-      continue;
-    }
-
-    const uid = Object.keys(jogadores).find(u =>
-      jogadores[u].nome.toLowerCase() === nome.toLowerCase()
-    );
-    if(!uid) continue;
-    const j    = jogadores[uid];
-    const base = `salas/${mySala}/jogadores/${uid}`;
-    if(tipo==='HP') {
-      const v = parseInt(v1);
-      if(!isNaN(v)) ups[`${base}/hp`] = Math.max(0, Math.min(v, j.maxHp));
-    } else if(tipo==='SP') {
-      const v = parseInt(v1);
-      if(!isNaN(v)) ups[`${base}/sp`] = Math.max(0, Math.min(v, j.maxSp));
-    } else if(tipo==='EXP') {
-      const v = parseInt(v1.replace('+',''));
-      if(!isNaN(v)) ups[`${base}/exp`] = (j.exp||0)+v;
-    } else if(tipo==='MORTO') {
-      ups[`${base}/vivo`] = false; ups[`${base}/hp`] = 0;
-    } else if(tipo==='INCONS') {
-      ups[`${base}/consciente`] = false;
-    }
-  }
-  if(Object.keys(ups).length) await update(ref(db), ups);
-}
-
-function processarPosicoes(resposta) {
-  // Search anywhere in the response — Groq doesn't always put POS on its own line
-  const tags = [...resposta.matchAll(/\[MOV:([^\]]+)\]/g)];
-  if(!tags.length) return false;
-  let moved = false;
-  tags.forEach(([, resto]) => {
-    const parts = resto.split(':');
-    const nome = parts[0].trim();
-    const col  = parseInt(parts[1]) - 1;
-    const row  = parseInt(parts[2]) - 1;
-    if(isNaN(col) || isNaN(row)) return;
-    const cc = clamp(col, 0, MAP_COLS - 1);
-    const cr = clamp(row, 0, MAP_ROWS - 1);
-
-    // Try player first
-    const uid = Object.keys(_curJogs).find(u =>
-      (_curJogs[u]?.nome||'').toLowerCase() === nome.toLowerCase()
-    );
-    if(uid) {
-      const key = mapKeyJog(uid);
-      if(!_mapPos[key]) _mapPos[key] = { col: cc, row: cr }; // create if missing
-      _mapPos[key] = { col: cc, row: cr };
-      const sp = document.getElementById('map-sprites')?.querySelector(`[data-key="${key}"]`);
-      sp?.classList.add('bounce'); setTimeout(() => sp?.classList.remove('bounce'), 500);
-      moved = true;
-      return;
-    }
-    // Try enemy
-    const iniKey = Object.keys(_curInis).find(k =>
-      (_curInis[k]?.nome||'').toLowerCase() === nome.toLowerCase()
-    );
-    if(iniKey) {
-      const key = mapKeyIni(_curInis[iniKey].nome);
-      if(!_mapPos[key]) _mapPos[key] = { col: cc, row: cr }; // create if missing
-      _mapPos[key] = { col: cc, row: cr };
-      const sp = document.getElementById('map-sprites')?.querySelector(`[data-key="${key}"]`);
-      sp?.classList.add('bounce'); setTimeout(() => sp?.classList.remove('bounce'), 500);
-      moved = true;
-    }
-  });
-  return moved;
-}
-
-async function chamarOpenAI(systemPrompt, history, userMsg, onRetry) {
-  const apiKey = getApiKey();
-  if(!apiKey) return null;
-
-  const messages = [
-    { role:'system', content: systemPrompt },
-    ...history.map(m => ({ role: m.role==='model' ? 'assistant' : 'user', content: m.parts?.[0]?.text || m.content || '' })),
-    { role:'user', content: userMsg }
-  ];
-
-  const body = JSON.stringify({ model:'llama-3.3-70b-versatile', messages, temperature:0.85, max_tokens:600 });
-  const MAX = 10;
-
-  for(let t=1; t<=MAX; t++) {
-    if(t>1) {
-      const waitMs = Math.min(t*2000, 16000);
-      if(onRetry) onRetry(t, waitMs);
-      await new Promise(r=>setTimeout(r, waitMs));
-    }
-    try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
-        body
-      });
-      const d = await res.json();
-      if(d.error) {
-        const msg = d.error.message || '';
-        if((/rate.limit|overload|529|503|timeout/i.test(msg)) && t<MAX) continue;
-        toast(`Erro IA: ${msg.substring(0,80)}`);
-        return null;
-      }
-      return d.choices?.[0]?.message?.content || '';
-    } catch(e) {
-      if(t===MAX){ toast('Erro de conexão com a IA após 10 tentativas'); return null; }
-    }
-  }
-  return null;
-}
-
 // ═══════════════════════════════════════════════════════════════
-//  RECONECTAR
+//  SYSTEM PROMPT
 // ═══════════════════════════════════════════════════════════════
-async function tentarReconectar() {
-  if(!mySala || !myNome) return false;
-  try {
-    const snap = await get(ref(db, `salas/${mySala}`));
-    if(!snap.exists()) return false;
-    const data = snap.val();
-    if(!data.jogadores?.[myUid]) return false;
+function buildSystemPrompt(jogadores, inimigos) {
+  const jogList = Object.values(jogadores).map(j =>
+    `${j.nome} (${CLASSES[j.classe]?.nome||j.classe}) — HP:${j.hp}/${j.maxHp} SP:${j.sp}/${j.maxSp}`
+  ).join('\n');
 
-    await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), { ativo: true });
-    onDisconnect(ref(db, `salas/${mySala}/jogadores/${myUid}/ativo`)).set(false);
+  const iniList = Object.values(inimigos).filter(i => i.hp > 0).map(i =>
+    `${i.icon||'👹'} ${i.nome} — HP:${i.hp}/${i.maxHp}`
+  ).join('\n');
 
-    if(data.config.estado === 'lobby') irParaLobby(mySala);
-    else irParaJogo(mySala);
-    return true;
-  } catch { return false; }
+  return `Você é um narrador de RPG. Escreva em português do Brasil com drama e impacto — mas seja DIRETO. Cada palavra deve contar.
+
+VOZ:
+- Verbos fortes: "rasga", "despenca", "estala". Sem enchimento.
+- Foque no RESULTADO da ação, não na preparação.
+- ${iniList ? 'COMBATE — máximo 70 palavras.' : 'EXPLORAÇÃO — máximo 100 palavras.'}
+
+JOGADORES:
+${jogList}
+${iniList ? `\nINIMIGOS:\n${iniList}` : ''}
+
+FORMATO DE RESPOSTA:
+- Narração curta e impactante.
+- Para atualizar HP de inimigos: STATS: [HP:NomeInimigo:novoHp]
+- Para matar inimigo: STATS: [MATAR:NomeInimigo]
+- Para dano ao jogador: STATS: [JOGADOR:NomeJogador:novoHp]
+- Para novos inimigos: STATS: [INIMIGO:nome:hp:hpMax:ícone]`;
 }
-
-// ═══════════════════════════════════════════════════════════════
-//  SKILL TREE
-// ═══════════════════════════════════════════════════════════════
-const SKILLS = {
-  guerreiro: [
-    { nivel:1, nome:'Golpe Poderoso',    icon:'⚔️',  sp:10, desc:'Concentra força num golpe devastador que ignora parte da defesa.' },
-    { nivel:1, nome:'Postura Defensiva', icon:'🛡️',  sp:8,  desc:'Adota postura que reduz o dano recebido por uma rodada.' },
-    { nivel:1, nome:'Provocar',          icon:'😤',  sp:5,  desc:'Atrai a atenção dos inimigos, protegendo os aliados.' },
-    { nivel:2, nome:'Investida',         icon:'🐂',  sp:15, desc:'Avança em alta velocidade causando dano e empurrando o alvo.' },
-    { nivel:2, nome:'Desarmar',          icon:'🤜',  sp:12, desc:'Tenta arrancar a arma das mãos do inimigo.' },
-    { nivel:2, nome:'Contra-Ataque',     icon:'↩️',  sp:15, desc:'Prepara um revide imediato ao próximo ataque recebido.' },
-    { nivel:3, nome:'Fúria de Combate',  icon:'💢',  sp:22, desc:'Entra em frenesi desferindo múltiplos golpes rápidos.' },
-    { nivel:3, nome:'Golpe Devastador',  icon:'💥',  sp:28, desc:'Ataque capaz de quebrar armaduras e atordoar.' },
-    { nivel:3, nome:'Bastião',           icon:'🏰',  sp:20, desc:'Cria uma linha de defesa, protegendo todos os aliados próximos.' },
-    { nivel:5, nome:'Redemoinho',        icon:'🌀',  sp:38, desc:'Gira com a arma atingindo todos os inimigos ao redor.' },
-    { nivel:5, nome:'Lâmina da Ruína',   icon:'🗡️',  sp:45, desc:'Golpe lendário que corta a própria realidade.' },
-  ],
-  mago: [
-    { nivel:1, nome:'Míssil Mágico',     icon:'💫',  sp:8,  desc:'Projétil arcano de energia pura que nunca erra o alvo.' },
-    { nivel:1, nome:'Faísca Ardente',    icon:'🔥',  sp:10, desc:'Lança uma faísca de fogo que pode incendiar o alvo.' },
-    { nivel:1, nome:'Choque Glacial',    icon:'❄️',  sp:10, desc:'Jato de gelo que pode congelar parcialmente o alvo.' },
-    { nivel:2, nome:'Bola de Fogo',      icon:'🔥',  sp:22, desc:'Esfera de fogo que explode em área ao atingir o alvo.' },
-    { nivel:2, nome:'Escudo Arcano',     icon:'🔮',  sp:18, desc:'Barreira mágica que absorve os próximos ataques.' },
-    { nivel:2, nome:'Raio',             icon:'⚡',  sp:20, desc:'Descarga elétrica que atinge em linha reta.' },
-    { nivel:3, nome:'Tempestade Arcana', icon:'🌩️',  sp:32, desc:'Invoca uma tempestade de energia mágica em área.' },
-    { nivel:3, nome:'Dissipar Magia',    icon:'✨',  sp:25, desc:'Cancela um feitiço ativo inimigo ou efeito mágico.' },
-    { nivel:3, nome:'Familiar',          icon:'🦉',  sp:28, desc:'Invoca um familiar para explorar, vigiar ou atacar.' },
-    { nivel:5, nome:'Parar o Tempo',     icon:'⏳',  sp:50, desc:'Suspende o tempo brevemente, agindo antes de todos.' },
-    { nivel:5, nome:'Toque da Morte',    icon:'💀',  sp:55, desc:'Magia necrótica que drena a vida do alvo diretamente.' },
-  ],
-  ladino: [
-    { nivel:1, nome:'Ataque Furtivo',    icon:'🥷',  sp:8,  desc:'Ataque preciso em pontos vitais causando dano extra.' },
-    { nivel:1, nome:'Fumaça',            icon:'💨',  sp:6,  desc:'Joga uma bomba de fumaça para dificultar visão inimiga.' },
-    { nivel:1, nome:'Desviar',           icon:'💨',  sp:5,  desc:'Reflexos aguçados para esquivar de ataques.' },
-    { nivel:2, nome:'Roubar',            icon:'💰',  sp:10, desc:'Tenta furtar um item do alvo sem ser notado.' },
-    { nivel:2, nome:'Veneno',            icon:'☠️',  sp:15, desc:'Aplica veneno na arma causando dano contínuo.' },
-    { nivel:2, nome:'Golpe Duplo',       icon:'⚡',  sp:18, desc:'Dois ataques rápidos em sequência.' },
-    { nivel:3, nome:'Desaparecer',       icon:'🌑',  sp:25, desc:'Some das vistas tornando-se invisível por uma rodada.' },
-    { nivel:3, nome:'Emboscada',         icon:'🎯',  sp:28, desc:'Prepara uma armadilha letal para o próximo inimigo.' },
-    { nivel:3, nome:'Sombras',           icon:'🕷️',  sp:22, desc:'Funde-se às sombras se movendo sem ser detectado.' },
-    { nivel:5, nome:'Assassínio',        icon:'🗡️',  sp:45, desc:'Golpe mortal em ponto vital com chances de abater instantaneamente.' },
-    { nivel:5, nome:'Sombra Viva',       icon:'👤',  sp:40, desc:'Cria uma ilusão perfeita de si mesmo como distração.' },
-  ],
-  clerigo: [
-    { nivel:1, nome:'Curar',             icon:'💚',  sp:12, desc:'Cura os ferimentos de um aliado usando energia divina.' },
-    { nivel:1, nome:'Bênção',            icon:'✨',  sp:8,  desc:'Abençoa um aliado aumentando seus ataques e defesas.' },
-    { nivel:1, nome:'Luz Sagrada',       icon:'☀️',  sp:10, desc:'Projeta luz sagrada que prejudica mortos-vivos.' },
-    { nivel:2, nome:'Purificar',         icon:'🌿',  sp:15, desc:'Remove venenos, maldições e efeitos negativos.' },
-    { nivel:2, nome:'Escudo Divino',     icon:'🛡️',  sp:18, desc:'Envolve um aliado em proteção divina.' },
-    { nivel:2, nome:'Punição Sagrada',   icon:'⚡',  sp:20, desc:'Raio de energia sagrada que queima o alvo.' },
-    { nivel:3, nome:'Cura em Área',      icon:'💚',  sp:30, desc:'Cura todos os aliados próximos simultaneamente.' },
-    { nivel:3, nome:'Ressurreição',      icon:'🔆',  sp:40, desc:'Traz de volta um aliado inconsciente com HP mínimo.' },
-    { nivel:3, nome:'Maldição',          icon:'🔮',  sp:25, desc:'Lança uma maldição enfraquecendo permanentemente o alvo.' },
-    { nivel:5, nome:'Milagre',           icon:'🌟',  sp:55, desc:'Chama a intervenção divina para um efeito extraordinário.' },
-    { nivel:5, nome:'Julgamento',        icon:'⚖️',  sp:48, desc:'Julgamento divino que pulveriza criaturas malignas.' },
-  ],
-  barbaro: [
-    { nivel:1, nome:'Fúria',             icon:'💢',  sp:0,  desc:'Entra em estado de fúria aumentando força e resistência.' },
-    { nivel:1, nome:'Golpe Selvagem',    icon:'🪓',  sp:8,  desc:'Ataque brutal sem técnica mas com força devastadora.' },
-    { nivel:1, nome:'Rugido',            icon:'😤',  sp:5,  desc:'Rugido aterrorizante que intimida inimigos próximos.' },
-    { nivel:2, nome:'Esmagar',           icon:'💥',  sp:15, desc:'Golpe que pode derrubar ou atordoar o alvo.' },
-    { nivel:2, nome:'Agarrar',           icon:'✊',  sp:10, desc:'Agarra o inimigo imobilizando-o.' },
-    { nivel:2, nome:'Resistência Bruta', icon:'🪨',  sp:12, desc:'Ignora parte do dano recebido pelo puro vigor.' },
-    { nivel:3, nome:'Berserker',         icon:'🔴',  sp:25, desc:'Fúria absoluta: ataca sem parar mas ignora defesa.' },
-    { nivel:3, nome:'Tremor',            icon:'🌍',  sp:28, desc:'Golpeia o chão causando tremor que derruba todos ao redor.' },
-    { nivel:3, nome:'Pele de Pedra',     icon:'🪨',  sp:20, desc:'Pele endurece como pedra reduzindo muito o dano.' },
-    { nivel:5, nome:'Caos',              icon:'🌪️',  sp:45, desc:'Destruição total: atinge tudo e todos ao redor.' },
-    { nivel:5, nome:'Avatar',            icon:'👹',  sp:55, desc:'Transforma-se num avatar de destruição por uma rodada.' },
-  ],
-  arqueiro: [
-    { nivel:1, nome:'Tiro Preciso',      icon:'🎯',  sp:8,  desc:'Mira cuidadosa que aumenta muito a precisão e dano.' },
-    { nivel:1, nome:'Tiro Rápido',       icon:'💨',  sp:6,  desc:'Solta uma flecha rapidamente sem perder posição.' },
-    { nivel:1, nome:'Marcar Alvo',       icon:'👁️',  sp:5,  desc:'Marca um inimigo para receber mais dano de todos.' },
-    { nivel:2, nome:'Flecha de Fogo',    icon:'🔥',  sp:15, desc:'Flecha envolta em chamas que incendeia o alvo.' },
-    { nivel:2, nome:'Chuva de Flechas',  icon:'🌧️',  sp:20, desc:'Lança diversas flechas em área atingindo vários alvos.' },
-    { nivel:2, nome:'Tiro Perfurante',   icon:'⬆️',  sp:18, desc:'Flecha que atravessa múltiplos inimigos em linha.' },
-    { nivel:3, nome:'Flecha Explosiva',  icon:'💥',  sp:28, desc:'Flecha com explosivo que causa dano em área.' },
-    { nivel:3, nome:'Tiro Paralisante',  icon:'⚡',  sp:25, desc:'Flecha especial que paralisa o alvo temporariamente.' },
-    { nivel:3, nome:'Olho de Águia',     icon:'🦅',  sp:22, desc:'Aguça a visão para atingir alvos em enorme distância.' },
-    { nivel:5, nome:'Tiro Impossível',   icon:'⭐',  sp:45, desc:'Flecha que dobra no ar para contornar obstáculos.' },
-    { nivel:5, nome:'Saraivada',         icon:'🌩️',  sp:50, desc:'Dezenas de flechas disparadas em frações de segundo.' },
-  ],
-};
-
-let _skillSelecionada = null;
-
-window.abrirArvoreSkills = function() {
-  if(!_meuEuCache) return;
-  const eu     = _meuEuCache;
-  const nivel  = Math.floor((eu.exp || 0) / 100) + 1;
-  const skills = SKILLS[eu.classe] || [];
-  const cls    = CLASSES[eu.classe] || {};
-
-  document.getElementById('skill-sheet-sub').textContent =
-    `${cls.nome||eu.classe} · Nível ${nivel} · SP ${eu.sp}/${eu.maxSp}`;
-
-  // Agrupa por nível
-  const porNivel = {};
-  skills.forEach(s => { (porNivel[s.nivel] = porNivel[s.nivel]||[]).push(s); });
-
-  const lista = document.getElementById('skill-tree-lista');
-  lista.innerHTML = '';
-
-  Object.keys(porNivel).sort((a,b)=>a-b).forEach(nv => {
-    const bloqueado = nivel < parseInt(nv);
-    const sec = document.createElement('div');
-    sec.className = 'skill-nivel';
-
-    const lbl = document.createElement('div');
-    lbl.className = 'skill-nivel-lbl' + (bloqueado?' locked':'');
-    lbl.textContent = bloqueado ? `NÍVEL ${nv}  🔒 (requer nível ${nv})` : `NÍVEL ${nv}`;
-    sec.appendChild(lbl);
-
-    const cards = document.createElement('div');
-    cards.className = 'skill-cards';
-    porNivel[nv].forEach((sk, i) => {
-      const spok = eu.sp >= sk.sp;
-      const avail = !bloqueado && spok;
-      const card = document.createElement('div');
-      card.className = 'skill-card ' + (avail ? 'unlocked' : 'locked');
-      card.innerHTML = `
-        <div class="skill-card-top">
-          <span class="skill-card-icon">${sk.icon}</span>
-          <div>
-            <div class="skill-card-nome">${sk.nome}</div>
-            <div class="skill-card-sp">${sk.sp > 0 ? `${sk.sp} SP` : 'Grátis'}</div>
-          </div>
-        </div>
-        <div class="skill-card-desc">${sk.desc}</div>
-        ${bloqueado ? `<div class="skill-card-lock">🔒 Nível ${nv} necessário</div>` : ''}
-        ${!bloqueado && !spok ? `<div class="skill-card-lock">SP insuficiente</div>` : ''}
-      `;
-      if(avail) card.onclick = () => selecionarSkill(sk);
-      cards.appendChild(card);
-    });
-    sec.appendChild(cards);
-    lista.appendChild(sec);
-  });
-
-  // Mostra fase 1
-  document.getElementById('skill-tree-lista').style.display = '';
-  document.getElementById('skill-detail-panel').classList.remove('active');
-  document.getElementById('modal-skill').classList.add('open');
-};
-
-function selecionarSkill(sk) {
-  _skillSelecionada = sk;
-  document.getElementById('sk-icon').textContent  = sk.icon;
-  document.getElementById('sk-nome').textContent  = sk.nome;
-  document.getElementById('sk-desc').textContent  = sk.desc + (sk.sp > 0 ? ` (Custo: ${sk.sp} SP)` : '');
-  document.getElementById('sk-detalhe').value     = '';
-  document.getElementById('skill-tree-lista').style.display   = 'none';
-  document.getElementById('skill-detail-panel').classList.add('active');
-  setTimeout(() => document.getElementById('sk-detalhe').focus(), 100);
-}
-
-window.voltarArvore = function() {
-  document.getElementById('skill-tree-lista').style.display   = '';
-  document.getElementById('skill-detail-panel').classList.remove('active');
-};
-
-window.fecharSkillTree = function() {
-  document.getElementById('modal-skill').classList.remove('open');
-};
-
-window.confirmarSkill = function() {
-  if(!_skillSelecionada) return;
-  const detalhe = document.getElementById('sk-detalhe').value.trim();
-  const preFill = detalhe
-    ? `${_skillSelecionada.icon} ${_skillSelecionada.nome}: ${detalhe}`
-    : `${_skillSelecionada.icon} ${_skillSelecionada.nome}`;
-  fecharSkillTree();
-  // Abre modal de ação com skill pré-preenchida e seleção de alvo
-  abrirModalAcao('skill', preFill);
-};
-
-document.getElementById('modal-skill').addEventListener('click', e => {
-  if(e.target === document.getElementById('modal-skill')) fecharSkillTree();
-});
-
-// ═══════════════════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════════════════
-// tentarReconectar routes to lobby/game if active session exists
-// initStartScreen (async IIFE above) handles the welcome/char-creation flow
-await tentarReconectar();

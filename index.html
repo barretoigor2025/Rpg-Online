@@ -1,582 +1,116 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-  <title>RPG Online — Sala Virtual</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <title>RPG Online</title>
   <link rel="stylesheet" href="css/layout.css">
 </head>
 <body>
 
-<!-- ═══════════════════ TELA: CRIAÇÃO DE PERSONAGEM ═══════════════════ -->
-<div id="screen-char-creation" class="screen">
-  <div class="cc-box">
-    <div class="entry-logo">
-      <span class="icon">⚔️</span>
-      <h1>RPG ONLINE</h1>
-      <p>CRIE SEU PERSONAGEM</p>
-    </div>
-
-    <!-- Progress indicator -->
-    <div class="cc-progress">
-      <div class="cc-dot active" id="cc-dot-1">1</div>
-      <div class="cc-line" id="cc-line-1"></div>
-      <div class="cc-dot" id="cc-dot-2">2</div>
-      <div class="cc-line" id="cc-line-2"></div>
-      <div class="cc-dot" id="cc-dot-3">3</div>
-      <div class="cc-line" id="cc-line-3"></div>
-      <div class="cc-dot" id="cc-dot-4">4</div>
-    </div>
-
-    <!-- Passo 1: Escolha de Classe -->
-    <div id="cc-step1" class="cc-step active">
-      <div class="cc-step-title">PASSO 1 — ESCOLHA SUA CLASSE</div>
-      <div class="cc-class-grid" id="cc-class-grid"></div>
-      <button class="btn btn-primary" onclick="ccNext(1)">PRÓXIMO →</button>
-    </div>
-
-    <!-- Passo 2: Escolha de Gênero -->
-    <div id="cc-step2" class="cc-step">
-      <div class="cc-step-title">PASSO 2 — ESCOLHA SEU GÊNERO</div>
-      <div class="cc-sprite-preview">
-        <img id="cc-sprite2" src="sprites/guerreiro_m.png" alt="sprite">
-      </div>
-      <div class="cc-gender-row">
-        <button id="cc-btn-m" class="cc-gender-btn active" onclick="ccSetSexo('m')">♂ MASCULINO</button>
-        <button id="cc-btn-f" class="cc-gender-btn" onclick="ccSetSexo('f')">♀ FEMININO</button>
-      </div>
-      <div class="cc-nav">
-        <button class="btn btn-secondary" onclick="ccBack(2)">← VOLTAR</button>
-        <button class="btn btn-primary" onclick="ccNext(2)">PRÓXIMO →</button>
-      </div>
-    </div>
-
-    <!-- Passo 3: Nome -->
-    <div id="cc-step3" class="cc-step">
-      <div class="cc-step-title">PASSO 3 — NOME DO HERÓI</div>
-      <div style="display:flex;gap:14px;align-items:center">
-        <div class="cc-sprite-preview sm" style="flex-shrink:0">
-          <img id="cc-sprite3" src="sprites/guerreiro_m.png" alt="sprite">
-        </div>
-        <div style="flex:1">
-          <label>COMO TE CHAMAM, AVENTUREIRO?</label>
-          <input id="cc-nome" type="text" placeholder="Nome do herói..." maxlength="18" autocomplete="off"
-            onkeydown="if(event.key==='Enter') ccNext(3)">
-        </div>
-      </div>
-      <div class="cc-nav">
-        <button class="btn btn-secondary" onclick="ccBack(3)">← VOLTAR</button>
-        <button class="btn btn-primary" onclick="ccNext(3)">PRÓXIMO →</button>
-      </div>
-    </div>
-
-    <!-- Passo 4: Confirmação -->
-    <div id="cc-step4" class="cc-step">
-      <div class="cc-step-title">PASSO 4 — SEU PERSONAGEM</div>
-      <div class="cc-confirm-card">
-        <img id="cc-sprite4" src="sprites/guerreiro_m.png" alt="sprite">
-        <div class="cc-confirm-info">
-          <div class="cn" id="cc-conf-nome">—</div>
-          <div class="cc" id="cc-conf-classe">—</div>
-          <div class="cs" id="cc-conf-sexo">—</div>
-          <div class="cs" id="cc-conf-stats" style="margin-top:6px;color:var(--text2)">—</div>
-        </div>
-      </div>
-      <div class="cc-nav">
-        <button class="btn btn-secondary" onclick="ccBack(4)">← VOLTAR</button>
-        <button class="btn btn-primary" onclick="ccConfirmar()">⚔️ COMEÇAR AVENTURA</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════ TELA: BOAS-VINDAS ═══════════════════ -->
-<div id="screen-welcome" class="screen active">
-  <div class="entry-box">
-    <div class="entry-logo">
-      <span class="icon">⚔️</span>
-      <h1>RPG ONLINE</h1>
-      <p>SALA VIRTUAL DE CAMPANHA</p>
-    </div>
-
-    <!-- Loading enquanto verifica Firebase -->
-    <div id="wlc-loading" style="text-align:center;color:var(--text3);font-size:12px;letter-spacing:2px;padding:24px 0">
-      VERIFICANDO DADOS...
-    </div>
-
-    <!-- Opções (exibidas após verificação) -->
-    <div id="wlc-options" style="display:none;flex-direction:column;gap:12px">
-
-      <!-- Personagem salvo (mostrado se existir no Firebase) -->
-      <div id="wlc-saved" style="display:none;flex-direction:column;gap:8px">
-        <div style="font-size:10px;color:var(--text3);letter-spacing:2px;text-align:center">SEU PERSONAGEM</div>
-        <div class="wlc-saved-card" onclick="usarPersonagemSalvo()">
-          <img id="wlc-sprite" src="sprites/guerreiro_m.png" alt="sprite">
-          <div class="wlc-saved-info">
-            <div class="wn" id="wlc-nome">—</div>
-            <div class="wc" id="wlc-classe">—</div>
-            <div class="ws" id="wlc-stats">—</div>
-          </div>
-        </div>
-        <button class="btn btn-primary" onclick="usarPersonagemSalvo()">
-          ▶ JOGAR COMO <span id="wlc-btn-nome">—</span>
-        </button>
-        <div class="wlc-divider">— OU —</div>
-      </div>
-
-      <button class="btn btn-secondary" onclick="showScreen('screen-char-creation')">
-        ⚔️ CRIAR NOVO PERSONAGEM
-      </button>
-
-      <button class="btn-danger-link" id="btn-apagar-personagem" style="display:none" onclick="apagarPersonagem()">
-        🗑 Apagar personagem
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════ TELA: ESCOLHA DE SALA ═══════════════════ -->
-<div id="screen-sala" class="screen">
-  <div class="entry-box">
-    <div class="entry-logo" style="margin-bottom:4px">
-      <span class="icon" style="font-size:28px">⚔️</span>
-      <h1 style="font-size:18px">RPG ONLINE</h1>
-    </div>
-
-    <!-- Personagem ativo -->
-    <div class="entry-char-card" id="entry-char-card">
-      <img id="entry-char-sprite" src="sprites/guerreiro_m.png" alt="sprite">
-      <div class="ec-info">
-        <div class="ec-nome" id="entry-char-nome">—</div>
-        <div class="ec-cls"  id="entry-char-cls">—</div>
-      </div>
-      <button class="ec-btn" onclick="showScreen('screen-char-creation')">TROCAR</button>
-    </div>
-
-    <!-- Continuar partida anterior (oculto até verificar) -->
-    <div id="sala-opt-continuar" style="display:none" class="sala-opt">
-      <div class="sala-opt-title"><span>🔄</span> CONTINUAR PARTIDA ANTERIOR</div>
-      <div class="sala-continuar-code" id="sala-ultima-code">----</div>
-      <button class="btn btn-primary" onclick="continuarPartida()">ENTRAR NA SALA</button>
-    </div>
-
-    <!-- Entrar em sala -->
-    <div class="sala-opt">
-      <div class="sala-opt-title"><span>🚪</span> ENTRAR EM SALA EXISTENTE</div>
-      <div class="join-big">
-        <input id="inp-codigo" type="text" placeholder="RUNE" maxlength="4" autocomplete="off"
-          style="text-transform:uppercase;letter-spacing:8px;text-align:center;font-size:28px;font-weight:bold;padding:14px"
-          onkeydown="if(event.key==='Enter') entrarSala()">
-      </div>
-      <button class="btn btn-primary" onclick="entrarSala()">🚪 ENTRAR NA SALA</button>
-    </div>
-
-    <!-- Criar sala -->
-    <div class="sala-opt">
-      <div class="sala-opt-title"><span>✨</span> NOVA AVENTURA</div>
-      <button class="btn btn-primary" onclick="criarSala()">⚔️ CRIAR NOVA SALA</button>
-    </div>
-
-    <button class="sala-link" onclick="showScreen('screen-char-creation')">
-      Criar novo personagem
-    </button>
-    <button class="btn-danger-link" onclick="apagarPersonagem()">
-      🗑 Apagar personagem
-    </button>
-  </div>
-</div>
-
-<!-- ═══════════════════ TELA: LOBBY ═══════════════════ -->
-<div id="screen-lobby" class="screen">
+<!-- ══ TELA LOBBY ══ -->
+<div id="screen-lobby">
   <div class="lobby-box">
-    <div class="sala-code-card">
-      <div class="lbl">CÓDIGO DA SALA</div>
-      <div class="code" id="lobby-code">----</div>
-      <div class="hint">Compartilhe este código com seus amigos</div>
+    <h1 class="logo">⚔ RPG Online</h1>
+
+    <!-- Chave API -->
+    <div class="field-group" id="api-section">
+      <label class="field-lbl">Chave API Groq</label>
+      <div class="row-input">
+        <input type="password" id="api-input" placeholder="gsk_...">
+        <button class="btn-sm" onclick="salvarApiKey()">Salvar</button>
+      </div>
+      <span id="api-status" class="hint"></span>
     </div>
 
-    <div class="players-card">
-      <div class="title">AVENTUREIROS NA SALA</div>
-      <div id="lista-jogadores"></div>
-      <div style="font-size:10px;color:var(--text3);margin-top:10px;display:flex;align-items:center;gap:5px">
-        <span style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block"></span> online
-        &nbsp;
-        <span style="width:7px;height:7px;border-radius:50%;background:#555;display:inline-block"></span> ausente
+    <hr class="divider">
+
+    <!-- Criar personagem -->
+    <div class="field-group">
+      <label class="field-lbl">Seu personagem</label>
+      <input type="text" id="char-nome" placeholder="Nome do personagem" maxlength="24">
+      <div id="class-grid">
+        <button class="class-btn active" data-class="guerreiro">⚔️ Guerreiro</button>
+        <button class="class-btn" data-class="mago">🔮 Mago</button>
+        <button class="class-btn" data-class="ladino">🗡️ Ladino</button>
+        <button class="class-btn" data-class="clerigo">✨ Clérigo</button>
+        <button class="class-btn" data-class="barbaro">🪓 Bárbaro</button>
+        <button class="class-btn" data-class="arqueiro">🏹 Arqueiro</button>
       </div>
     </div>
 
-    <button class="btn btn-primary" id="btn-iniciar" onclick="iniciarJogo()" style="display:none">
-      ⚔️ Iniciar Aventura
-    </button>
-    <div class="lobby-status" id="lobby-status">Aguardando o anfitrião iniciar...</div>
-    <button class="btn btn-danger" onclick="sairDaSala()" style="margin-top:4px">← Sair da Sala</button>
+    <hr class="divider">
+
+    <!-- Criar / Entrar -->
+    <div class="room-actions">
+      <button class="btn-primary" onclick="criarSala()">Criar Sala</button>
+      <div class="row-input">
+        <input type="text" id="code-input" placeholder="Código da sala" maxlength="6" style="text-transform:uppercase">
+        <button class="btn-sm" onclick="entrarSala()">Entrar</button>
+      </div>
+    </div>
+
+    <div id="lobby-error" class="error-msg"></div>
   </div>
 </div>
 
-<!-- ═══════════════════ TELA: JOGO ═══════════════════ -->
-<div id="screen-game" class="screen">
-
-  <!-- STATUS BAR -->
-  <div id="status-bar">
-    <div id="session-info">
-      <div id="chapter-label">SALA</div>
-      <div id="chapter-title"><span id="top-sala" onclick="copiarCodigo()">----</span></div>
-      <div id="location-row">
-        <span id="location-label">📍 —</span>
-        <span id="time-label">⏱ <span id="chapter-round">Rodada —</span></span>
-      </div>
+<!-- ══ TELA DE JOGO ══ -->
+<div id="screen-game" style="display:none">
+  <!-- Topbar -->
+  <div id="topbar">
+    <div id="topbar-left">
+      <span id="room-code"></span>
+      <span id="round-display"></span>
     </div>
-    <div id="player-portraits"></div>
-    <div id="status-right">
-      <div id="voice-indicator"></div>
-      <button id="voice-btn" onclick="toggleVoz()" title="Narração por voz">
-        <span class="vb-icon">🔇</span>
-        <span>VOZ</span>
-      </button>
-      <button id="btn-reset-campanha" class="sb-action danger" onclick="resetarCampanha()" style="display:none">☢️ Reset</button>
-      <button class="sb-action" onclick="sairDaSala()">← Sair</button>
+    <div id="topbar-right">
+      <button id="voice-btn" class="icon-btn" onclick="toggleVoz()" title="Narração">🔊</button>
+      <button class="icon-btn" onclick="resetarSala()" title="Resetar">↺</button>
     </div>
   </div>
 
-  <!-- MAIN CONTENT -->
-  <div id="main-content">
+  <!-- Lista de jogadores -->
+  <div id="players-bar"></div>
 
-    <!-- LEFT COLUMN -->
-    <div id="left-col">
-
-      <!-- Scene -->
-      <div id="scene-area">
-        <div id="scene-bg"></div>
-        <div id="scene-trees"></div>
-        <div id="scene-ground"></div>
-        <div id="scene-overlay">
-          <div id="scene-loc-badge">—</div>
-          <div id="scene-time-badge">—</div>
-        </div>
-        <div id="scene-sprites"></div>
-        <div id="scene-particles"></div>
-      </div>
-
-      <!-- Battle Map (ativa durante combate) -->
-      <div id="battle-map">
-        <!-- Header: título + turno -->
-        <div id="battle-header">
-          <span id="battle-title">⚔ BATALHA</span>
-          <span id="battle-turn-lbl"></span>
-          <button id="btn-fugir-battle" onclick="document.getElementById('btn-reset')?.click()">Fugir</button>
-        </div>
-        <!-- Barra de iniciativa (largura total) -->
-        <div id="ini-bar">
-          <span class="ini-lbl">INICIATIVA</span>
-          <div id="ini-list"></div>
-        </div>
-        <!-- Layout 3 colunas -->
-        <div id="battle-columns">
-          <!-- Sidebar esquerda -->
-          <div id="battle-sidebar-left">
-            <div class="bsl-section">
-              <div class="bsl-title">Objetivo</div>
-              <div class="bsl-text" id="battle-obj">Derrote os inimigos ou fuja da área.</div>
-            </div>
-            <div class="bsl-section" id="bsl-ini-mini">
-              <div class="bsl-title">Iniciativa</div>
-              <div id="ini-list-mini"></div>
-            </div>
-          </div>
-          <!-- Mapa central -->
-          <div id="map-container">
-            <canvas id="map-canvas"></canvas>
-            <div id="map-sprites"></div>
-          </div>
-          <!-- Sidebar direita -->
-          <div id="battle-sidebar-right">
-            <div class="bsl-section">
-              <div class="bsl-title">Legenda</div>
-              <div class="leg-row"><span class="leg-sq leg-player"></span><span>Herói</span></div>
-              <div class="leg-row"><span class="leg-sq leg-enemy"></span><span>Inimigo</span></div>
-              <div class="leg-row"><span class="leg-sq leg-ele"></span><span>Elevado</span></div>
-            </div>
-            <div class="bsl-section" id="battle-unit-panel">
-              <div class="bsl-title">Unidade</div>
-              <div id="bui-name"></div>
-              <div id="bui-type"></div>
-              <div class="bui-bar-wrap"><div id="bui-hp-fill" class="bui-bar-fill player"></div></div>
-              <div id="bui-hp-val"></div>
-            </div>
-          </div>
-        </div>
-        <!-- Log de combate -->
-        <div id="combat-log"></div>
-      </div>
-
-      <!-- Portrait Cards (mobile only) -->
-      <div id="portrait-cards">
-        <div class="pc-card" id="pc-ficha">
-          <div class="pc-char-row">
-            <div id="pc-avatar"></div>
-            <div class="pc-char-stats">
-              <div id="pc-name">— · Nv1</div>
-              <div class="pc-bar"><span class="pc-lbl">HP</span><div class="pc-track"><div id="pc-hp-fill"></div></div><span id="pc-hp-val">—</span></div>
-              <div class="pc-bar"><span class="pc-lbl">SP</span><div class="pc-track"><div id="pc-sp-fill"></div></div><span id="pc-sp-val">—</span></div>
-            </div>
-          </div>
-          <div id="pc-conds"></div>
-          <div id="pc-equips"></div>
-        </div>
-        <div class="pc-card" id="pc-actions">
-          <div class="pc-action-grid">
-            <button class="pc-act-btn" onclick="abrirArvoreSkills()">⚔️<span>Habilidades</span></button>
-            <button class="pc-act-btn" onclick="toggleCharSheet()">🎒<span>Inventário</span></button>
-            <button class="pc-act-btn" onclick="focarInputAcao()">💬<span>Falar</span></button>
-            <button class="pc-act-btn" onclick="toggleCharSheet()">📋<span>Status</span></button>
-          </div>
-        </div>
-      </div>
-
-      <!-- PC Modal (portrait actions) -->
-      <div id="pc-modal">
-        <div id="pc-modal-inner">
-          <div id="pc-modal-head"></div>
-          <div id="pc-modal-body"></div>
-        </div>
-      </div>
-
-      <!-- Narrative Panel -->
-      <div id="narrative-panel">
-        <div class="msg-empty" id="historia-empty">
-          <span class="emj">📜</span>
-          <span>A aventura está prestes a começar...</span>
-          <div class="retry-info" id="retry-info" style="display:none">
-            <span id="retry-txt">Conectando...</span>
-            <div class="retry-bar"><div class="retry-fill" id="retry-fill" style="width:0%"></div></div>
-          </div>
-          <button id="btn-iniciar-narrar" onclick="hostIniciarOuRetentar()" style="display:none">🎲 Iniciar Aventura</button>
-        </div>
-      </div>
-
-      <!-- Test Panel -->
-      <div id="test-panel-header" onclick="toggleTestPanel()">
-        🎲 RESULTADOS DE TESTES
-        <span id="test-count" style="color:var(--test-color);margin-left:4px"></span>
-        <span id="test-panel-toggle">▲</span>
-      </div>
-      <div id="test-panel"><div id="test-cards"></div></div>
-    </div>
-
-    <!-- RIGHT COLUMN -->
-    <div id="right-col">
-
-      <!-- My Character Panel -->
-      <div id="my-char-panel">
-        <div id="my-char-header">
-          MEU PERSONAGEM
-          <button id="close-sheet-btn" onclick="toggleCharSheet()">✕ fechar</button>
-        </div>
-        <div id="my-char-body">
-          <div id="my-portrait"></div>
-          <div id="my-stats">
-            <div id="my-name">—</div>
-            <div id="my-class">—</div>
-            <div class="my-bar-row">
-              <span class="my-bar-label">HP</span>
-              <div class="my-bar"><div class="my-bar-fill" id="hp-bar" style="width:100%;background:#cc4444"></div></div>
-              <span class="my-bar-val" id="hp-val">—</span>
-            </div>
-            <div class="my-bar-row">
-              <span class="my-bar-label">SP</span>
-              <div class="my-bar"><div class="my-bar-fill" id="sp-bar" style="width:100%;background:var(--blue)"></div></div>
-              <span class="my-bar-val" id="sp-val">—</span>
-            </div>
-          </div>
-        </div>
-        <div id="my-conditions"></div>
-        <div id="my-equip"></div>
-      </div>
-
-      <!-- RP Chat -->
-      <div id="rp-chat">
-        <div id="rp-chat-header">
-          CHAT ROLEPLAY <div class="live-dot"></div>
-        </div>
-        <div id="rp-chat-msgs"></div>
-        <div id="chat-input-wrap">
-          <input type="text" id="chat-input" placeholder="Fale com o grupo...">
-          <button id="btn-chat" onclick="sendChat()">↵</button>
-        </div>
-      </div>
-
-      <!-- History -->
-      <div id="history-header" onclick="toggleHistory()">
-        📜 HISTÓRICO <span id="hist-toggle">▼</span>
-      </div>
-      <div id="history-panel"><div id="hist-list"></div></div>
-
-      <!-- Inventory -->
-      <div id="inventory-bar">
-        <div id="inv-label">Inventário Rápido</div>
-        <div id="inv-items"></div>
-      </div>
-    </div>
+  <!-- Área da história -->
+  <div id="story-area">
+    <div id="story-content"></div>
+    <div id="story-bottom"></div>
   </div>
 
-  <!-- Sheet Backdrop -->
-  <div id="sheet-backdrop" onclick="toggleCharSheet()"></div>
+  <!-- Inimigos ativos (se em combate) -->
+  <div id="enemies-bar" style="display:none"></div>
 
-  <!-- Action Bar -->
+  <!-- Retry UI -->
+  <div id="retry-ui" style="display:none">
+    <span id="retry-msg"></span>
+  </div>
+
+  <!-- Input de ação -->
   <div id="action-bar">
-    <div id="action-left">
-      <div id="action-wrap">
-        <textarea id="action-input" placeholder="O que seu personagem faz? Descreva livremente..."></textarea>
-        <button id="btn-enviar" onclick="confirmarAcaoTexto()">
-          <span class="benv-icon">✦</span>
-          <span class="benv-lbl">ENVIAR AÇÃO</span>
-        </button>
-      </div>
-      <div id="quick-sug">
-        <button class="qs" onclick="qs('examino o ambiente ao redor com atenção')">👁 Examinar</button>
-        <button class="qs" onclick="qs('fico alerta e escuto qualquer barulho')">👂 Escutar</button>
-        <button class="qs" onclick="qs('me escondo nas sombras e aguardo')">🌑 Esconder</button>
-        <button class="qs" onclick="qs('ataco o inimigo mais próximo com força total')">⚔️ Atacar</button>
-        <button class="qs" onclick="qs('me defendo e aguardo a próxima abertura')">🛡️ Defender</button>
-        <button class="qs" onclick="qs('curo um aliado que está ferido')">💚 Curar</button>
-        <button class="qs" onclick="qs('uso minha skill especial contra o inimigo')">✨ Skill</button>
-      </div>
+    <div id="action-wrap">
+      <textarea id="action-input" rows="2" placeholder="O que seu personagem faz? Descreva livremente..."></textarea>
+      <button id="btn-send" onclick="enviarAcao()">
+        <span class="send-icon">✦</span>
+      </button>
     </div>
-    <div class="acao-footer">
-      <div id="msg-narrando">
-        <div class="dots-wrap"><div class="dot-a"></div><div class="dot-a"></div><div class="dot-a"></div></div>
-        O Mestre narra...
-      </div>
-      <div id="msg-enviado">✅ Ações enviadas! Aguardando todos...</div>
-      <div id="msg-inconsciente">💀 Você está inconsciente ou morto.</div>
-      <div style="flex:1"></div>
-    </div>
-  </div>
-
-  <!-- Combat Overlay -->
-  <div id="combat-overlay">
-    <div id="combat-content">
-      <div id="cbt-icon">⚔️</div>
-      <div id="cbt-title">⚠ EMBOSCADA!</div>
-      <div id="cbt-sub">Prepare-se para o combate!</div>
-      <div id="cbt-bar"><div id="cbt-bar-fill"></div></div>
-      <button id="btn-combat" onclick="enterCombat()">⚔ ENTRAR NO COMBATE ▶</button>
-    </div>
-  </div>
-
-  <div id="voice-toast"></div>
-</div>
-
-<!-- ═══════ PAINEL FLUTUANTE: INIMIGOS ═══════ -->
-<button id="float-ini-btn" onclick="toggleInimigosPanel()">
-  <span class="fib-icon">👹</span>
-  <span class="fib-count" id="float-ini-count">0</span>
-</button>
-<div id="float-ini-panel">
-  <div class="fip-header">
-    <span class="fip-title">⚔️ INIMIGOS</span>
-    <button class="fip-close" onclick="toggleInimigosPanel()">✕</button>
-  </div>
-  <div id="float-ini-list"></div>
-</div>
-
-<!-- ═══════════════════ MODAL: AÇÃO ═══════════════════ -->
-<div id="modal-acao">
-  <div class="acao-sheet">
-    <div class="acao-sheet-title" id="modal-acao-title">⚔️ Atacar</div>
-    <!-- Alvos visíveis (só aparece quando há inimigos) -->
-    <div id="inimigos-alvo">
-      <label>INIMIGOS À VISTA — escolha o alvo</label>
-      <div id="inimigos-grid"></div>
-    </div>
-    <div>
-      <label id="modal-acao-lbl1">DESCREVA SUA AÇÃO</label>
-      <textarea id="modal-acao-txt" placeholder=""></textarea>
-    </div>
-    <div>
-      <label id="modal-acao-lbl2">DETALHE ADICIONAL (opcional)</label>
-      <input type="text" id="modal-acao-detalhe" placeholder="">
-    </div>
-    <div class="acao-sheet-footer">
-      <button class="btn btn-secondary" onclick="fecharModalAcao()">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmarAcao()">Confirmar ação</button>
+    <div id="action-status"></div>
+    <div id="btn-iniciar-wrap" style="display:none">
+      <button id="btn-iniciar-narrar" class="btn-primary" onclick="chamarIAInicio()">⚔ Iniciar Aventura</button>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════ MODAL: FICHA ═══════════════════ -->
-<div id="modal-ficha">
-  <div class="ficha-sheet"></div>
-</div>
-
-<!-- ═══════════════════ MODAL: API KEY ═══════════════════ -->
-<div id="modal-key">
+<!-- ══ MODAL API KEY ══ -->
+<div id="modal-apikey" style="display:none">
   <div class="modal-box">
-    <h2>🔑 Chave da API Groq</h2>
-    <p>Crie sua chave gratuita em <strong>console.groq.com</strong> → API Keys → Create API Key. É grátis, só precisa de cadastro.</p>
-    <div>
-      <label>COLE SUA CHAVE AQUI</label>
-      <input id="inp-key" type="password" placeholder="gsk_..." autocomplete="off">
-    </div>
-    <button class="btn btn-primary" onclick="salvarKey()">Salvar e Continuar</button>
-    <p style="font-size:11px;color:var(--text3)">
-      A chave começa com "gsk_". Nunca compartilhe com ninguém.
-    </p>
-  </div>
-</div>
-
-<!-- ═══════════════════ MODAL: MORTO ═══════════════════ -->
-<div id="modal-morto">
-  <div class="morto-box">
-    <span class="emj">💀</span>
-    <h2>Você caiu em batalha</h2>
-    <p style="color:var(--text2);font-size:14px;line-height:1.7">
-      Seus companheiros continuam a luta.<br>
-      Você pode observar o restante da aventura.
-    </p>
-    <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px">
-      <button class="btn btn-secondary" onclick="document.getElementById('modal-morto').classList.remove('open')">👁 Observar Partida</button>
-      <button class="btn btn-secondary" style="opacity:.7" onclick="sairDaSala()">← Voltar ao Lobby</button>
-    </div>
+    <p>Insira sua chave Groq para continuar:</p>
+    <input type="password" id="modal-api-input" placeholder="gsk_...">
+    <button class="btn-primary" onclick="confirmarApiKeyModal()">Confirmar</button>
   </div>
 </div>
 
 <div id="toast"></div>
-
-<!-- ═══════════════════ MODAL: SKILL TREE ═══════════════════ -->
-<div id="modal-skill">
-  <div class="skill-sheet">
-    <div class="skill-sheet-head">
-      <div>
-        <h2>✨ Árvore de Skills</h2>
-        <p id="skill-sheet-sub">Guerreiro · Nível 1</p>
-      </div>
-      <button class="skill-sheet-close" onclick="fecharSkillTree()">✕</button>
-    </div>
-
-    <!-- Fase 1: árvore -->
-    <div class="skill-tree" id="skill-tree-lista"></div>
-
-    <!-- Fase 2: detalhe -->
-    <div class="skill-detail-panel" id="skill-detail-panel">
-      <div class="skill-selected-card">
-        <div class="skill-selected-icon" id="sk-icon">✨</div>
-        <div class="skill-selected-info">
-          <h3 id="sk-nome">Skill</h3>
-          <p id="sk-desc">Descrição</p>
-        </div>
-      </div>
-      <div>
-        <label>COMO VOCÊ USA ESSA SKILL?</label>
-        <textarea id="sk-detalhe" style="height:70px;resize:none;font-size:15px" placeholder="Descreva como aplica a skill... (opcional)"></textarea>
-      </div>
-      <div class="skill-detail-footer">
-        <button class="btn btn-secondary" onclick="voltarArvore()">← Voltar</button>
-        <button class="btn btn-primary" onclick="confirmarSkill()">Usar Skill ✨</button>
-      </div>
-    </div>
-  </div>
-</div>
+<div id="voice-indicator"></div>
 
 <script type="module" src="js/main.js"></script>
 </body>
