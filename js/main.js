@@ -175,30 +175,154 @@ function rolarRodada(jogadores) {
 // ═══════════════════════════════════════════════════════════════
 //  MAPA TÁTICO
 // ═══════════════════════════════════════════════════════════════
-const MAP_COLS = 10, MAP_ROWS = 6;
-const _mapPos = {};       // 'p_{uid}' | 'e_{nomeKey}' → {col,row}
-let _curJogs  = {};
-let _curInis  = {};
+const MAP_COLS = 20, MAP_ROWS = 15;
+// Tile size is computed dynamically from canvas width so the map always fits
+let TILE_W = 32, TILE_H = 16;
+function atualizarTileSize() {
+  const canvas = document.getElementById('map-canvas');
+  const W = canvas ? (canvas.width || 400) : 400;
+  // Fit active zone (cols 0-19, rows 0-14) into canvas width
+  // Isometric width = (MAP_COLS + MAP_ROWS) * TILE_W/2
+  // Target: 90% of canvas width
+  TILE_W = Math.max(16, Math.min(48, Math.floor(W * 0.9 * 2 / (MAP_COLS + MAP_ROWS))));
+  TILE_H = Math.floor(TILE_W / 2);
+}
+const _mapPos  = {};  // 'p_{uid}' | 'e_{nomeKey}' → {col,row}
+let _curJogs   = {};
+let _curInis   = {};
+let _terrain   = {}; // key="col,row" → {height:0-3}
 
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 function mapKeyJog(uid)  { return `p_${uid}`; }
 function mapKeyIni(nome) { return `e_${nome.replace(/\W/g,'_')}`; }
 
+function isoToScreen(col, row, h) {
+  const canvas = document.getElementById('map-canvas');
+  const W = canvas ? (canvas.width  || 400) : 400;
+  const H = canvas ? (canvas.height || 300) : 300;
+  const cx = W / 2;
+  const ty = H * 0.06;
+  return {
+    x: cx + (col - row) * TILE_W / 2,
+    y: ty + (col + row) * TILE_H / 2 - (h || 0) * TILE_H
+  };
+}
+
+function estimarTamanho(nome) {
+  if(/(balrog|dragon|ancient troll|ent coloss|colossal)/i.test(nome)) return 4;
+  if(/(troll|giant spider|fell beast|spider matriarch|dire bear|ent)/i.test(nome)) return 3;
+  if(/(cave|great bear|dire warg|grande|large)/i.test(nome)) return 2;
+  return 1;
+}
+
+function gerarTerrain() {
+  _terrain = {};
+  // Central ruins cluster (cols 8-10, rows 5-9)
+  [[8,5],[8,6],[9,5],[9,6],[9,7],[10,6],[10,7]].forEach(([c,r]) => {
+    _terrain[`${c},${r}`] = { height: 1 };
+  });
+  // Elevated rock in center (height 2)
+  _terrain['9,7']  = { height: 2 };
+  _terrain['10,7'] = { height: 2 };
+  // Enemy zone platforms (cols 14-16, rows 6-8)
+  [[14,6],[14,7],[15,6],[15,7],[15,8],[16,7]].forEach(([c,r]) => {
+    _terrain[`${c},${r}`] = { height: 1 };
+  });
+  // Random scattered stones
+  [[5,4],[6,10],[12,4],[12,10],[7,8]].forEach(([c,r]) => {
+    if(Math.random() < 0.7) _terrain[`${c},${r}`] = { height: 1 };
+  });
+}
+
+function _desenharTile(ctx, col, row, h) {
+  const isEnemy = col >= Math.floor(MAP_COLS * 0.6);
+  const {x, y}  = isoToScreen(col, row, h);
+  const hw = TILE_W / 2, hh = TILE_H / 2;
+
+  // Top face
+  ctx.beginPath();
+  ctx.moveTo(x,      y);
+  ctx.lineTo(x + hw, y + hh);
+  ctx.lineTo(x,      y + TILE_H);
+  ctx.lineTo(x - hw, y + hh);
+  ctx.closePath();
+  if(isEnemy) {
+    ctx.fillStyle = h > 0 ? '#1c0a0a' : '#100505';
+  } else {
+    ctx.fillStyle = h > 1 ? '#1c2036' : h > 0 ? '#141828' : '#0b0e1a';
+  }
+  ctx.fill();
+  ctx.strokeStyle = h > 0 ? 'rgba(130,150,210,.22)' : 'rgba(88,104,160,.10)';
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+
+  if(h > 0) {
+    const sh = h * TILE_H;
+    // Left face
+    ctx.beginPath();
+    ctx.moveTo(x - hw, y + hh);
+    ctx.lineTo(x,      y + TILE_H);
+    ctx.lineTo(x,      y + TILE_H + sh);
+    ctx.lineTo(x - hw, y + hh + sh);
+    ctx.closePath();
+    ctx.fillStyle = '#050710';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(88,104,160,.07)';
+    ctx.stroke();
+    // Right face
+    ctx.beginPath();
+    ctx.moveTo(x,      y + TILE_H);
+    ctx.lineTo(x + hw, y + hh);
+    ctx.lineTo(x + hw, y + hh + sh);
+    ctx.lineTo(x,      y + TILE_H + sh);
+    ctx.closePath();
+    ctx.fillStyle = '#07091230';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(88,104,160,.07)';
+    ctx.stroke();
+  }
+}
+
+function desenharCanvas() {
+  const canvas = document.getElementById('map-canvas');
+  const cont   = document.getElementById('map-container');
+  if(!canvas || !cont) return;
+  const W = cont.clientWidth  || 400;
+  const H = cont.clientHeight || 300;
+  if(canvas.width !== W || canvas.height !== H) {
+    canvas.width  = W;
+    canvas.height = H;
+  }
+  atualizarTileSize();
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  // Painter's algorithm — draw col+row ascending for correct depth overlap
+  for(let sum = 0; sum <= (MAP_COLS - 1) + (MAP_ROWS - 1); sum++) {
+    for(let col = 0; col < MAP_COLS; col++) {
+      const row = sum - col;
+      if(row < 0 || row >= MAP_ROWS) continue;
+      const t = _terrain[`${col},${row}`] || { height: 0 };
+      _desenharTile(ctx, col, row, t.height);
+    }
+  }
+}
+
 function initMapPositions(jogadores, inimigos) {
   const jArr = Object.entries(jogadores).filter(([,j]) => j.vivo && j.consciente);
   const iArr = Object.entries(inimigos||{}).filter(([,i]) => i.visivel!==false && i.hp>0);
+  const midR = Math.floor((MAP_ROWS - 1) / 2);
   jArr.forEach(([uid,], i) => {
     const k = mapKeyJog(uid);
     if(!_mapPos[k]) _mapPos[k] = {
-      col: 1,
-      row: clamp(Math.round((MAP_ROWS-1)/2 - (jArr.length-1)/2 + i), 0, MAP_ROWS-1)
+      col: 2 + (i % 2),
+      row: clamp(midR - Math.floor(jArr.length / 2) + i, 2, MAP_ROWS - 3)
     };
   });
   iArr.forEach(([,ini], i) => {
     const k = mapKeyIni(ini.nome);
     if(!_mapPos[k]) _mapPos[k] = {
-      col: MAP_COLS - 2,
-      row: clamp(Math.round((MAP_ROWS-1)/2 - (iArr.length-1)/2 + i), 0, MAP_ROWS-1)
+      col: MAP_COLS - 5 + (i % 2),
+      row: clamp(midR - Math.floor(iArr.length / 2) + i, 2, MAP_ROWS - 3)
     };
   });
   const valid = new Set([
@@ -208,62 +332,59 @@ function initMapPositions(jogadores, inimigos) {
   Object.keys(_mapPos).forEach(k => { if(!valid.has(k)) delete _mapPos[k]; });
 }
 
-function renderizarMapaGrid() {
-  const grid = document.getElementById('map-grid');
-  if(!grid || grid.children.length === MAP_COLS * MAP_ROWS) return;
-  grid.innerHTML = '';
-  for(let r = 0; r < MAP_ROWS; r++)
-    for(let c = 0; c < MAP_COLS; c++) {
-      const cell = document.createElement('div');
-      cell.className = 'map-cell' + (c >= MAP_COLS * 0.6 ? ' enemy-zone' : '');
-      grid.appendChild(cell);
-    }
-}
+function renderizarMapaGrid() { desenharCanvas(); }
 
 function renderizarMapaSprites() {
   const spEl = document.getElementById('map-sprites');
   const cont = document.getElementById('map-container');
   if(!spEl || !cont) return;
-  const W = cont.clientWidth  || 400;
-  const H = cont.clientHeight || 222;
-  const cW = W / MAP_COLS;
-  const cH = H / MAP_ROWS;
-  const seen = new Set();
 
+  // Sync canvas if needed
+  const canvas = document.getElementById('map-canvas');
+  if(canvas && (canvas.width !== cont.clientWidth || canvas.height !== cont.clientHeight)) {
+    desenharCanvas(); // also calls atualizarTileSize
+  } else {
+    atualizarTileSize();
+  }
+
+  const seen = new Set();
   Object.entries(_mapPos).forEach(([key, pos]) => {
     seen.add(key);
     const isP = key.startsWith('p_');
     const uid = isP ? key.slice(2) : null;
-    const left = (pos.col + 0.5) * cW;
-    const top  = (pos.row + 0.9) * cH;
+    const h   = (_terrain[`${pos.col},${pos.row}`] || {}).height || 0;
+    const scr = isoToScreen(pos.col, pos.row, h);
+    // Anchor at bottom-center of tile top face
+    const left = scr.x;
+    const top  = scr.y + TILE_H;
+
     let sprEl = spEl.querySelector(`[data-key="${key}"]`);
     if(!sprEl) {
       const j   = isP ? _curJogs[uid] : null;
       const ini = isP ? null : Object.values(_curInis).find(i => mapKeyIni(i.nome) === key);
       if(!j && !ini) return;
+      const sz     = isP ? 1 : estimarTamanho(ini.nome);
       const imgSrc = isP ? `sprites/${j.classe}_${j.sexo||'m'}.png` : inimigosSprite(ini.nome);
       const nome   = isP ? j.nome : ini.nome;
       const hpPct  = isP ? Math.round((j.hp/j.maxHp)*100) : Math.round((ini.hp/ini.maxHp)*100);
       sprEl = document.createElement('div');
-      sprEl.className  = `map-sprite ${isP ? 'map-player' : 'map-enemy'}`;
+      sprEl.className   = `map-sprite sz${sz} ${isP ? 'map-player' : 'map-enemy'}`;
       sprEl.dataset.key = key;
-      sprEl.innerHTML  = `
+      sprEl.innerHTML   = `
         <div class="map-sprite-bar"><div class="map-sprite-bar-fill" style="width:${hpPct}%"></div></div>
         <img src="${imgSrc}" onerror="this.style.display='none'" alt="">
         <div class="map-sprite-name">${nome}</div>`;
-      sprEl.style.left = `${left}px`;
-      sprEl.style.top  = `${top}px`;
       spEl.appendChild(sprEl);
     } else {
-      sprEl.style.left = `${left}px`;
-      sprEl.style.top  = `${top}px`;
-      const entity = key.startsWith('p_') ? _curJogs[uid] : Object.values(_curInis).find(i => mapKeyIni(i.nome) === key);
+      const entity = isP ? _curJogs[uid] : Object.values(_curInis).find(i => mapKeyIni(i.nome) === key);
       if(entity) {
-        const pct = Math.round((entity.hp / entity.maxHp) * 100);
+        const pct  = Math.round((entity.hp / entity.maxHp) * 100);
         const fill = sprEl.querySelector('.map-sprite-bar-fill');
         if(fill) fill.style.width = `${pct}%`;
       }
     }
+    sprEl.style.left = `${left}px`;
+    sprEl.style.top  = `${top}px`;
   });
   spEl.querySelectorAll('[data-key]').forEach(el => { if(!seen.has(el.dataset.key)) el.remove(); });
 }
@@ -327,7 +448,10 @@ function resolverMovimentoEntry(nome, acao, roll) {
 }
 
 window.addEventListener('resize', () => {
-  if(Object.keys(_mapPos).length > 0) renderizarMapaSprites();
+  if(Object.keys(_mapPos).length > 0) {
+    desenharCanvas();
+    renderizarMapaSprites();
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -1452,6 +1576,28 @@ function renderizarHistoria(historia) {
   });
 
   el.scrollTop = el.scrollHeight;
+  renderCombatLog(entries);
+}
+
+function renderCombatLog(entries) {
+  const el = document.getElementById('combat-log');
+  if(!el) return;
+  const relevant = entries
+    .filter(e => e.role === 'model' || (e.role === 'dados'))
+    .slice(-5);
+  el.innerHTML = relevant.map(e => {
+    if(e.role === 'model') {
+      const txt = e.content.replace(/\n/g,' ').substring(0, 95) + (e.content.length > 95 ? '…' : '');
+      return `<div class="cl-entry gm">${txt}</div>`;
+    }
+    // dados: show first line only
+    const firstLine = (e.content || '').split('\n')[0];
+    const parts = firstLine.split('|');
+    const actor = parts[0] || '';
+    const result = parts[3] || '';
+    return `<div class="cl-entry dice">${actor} — ${result}</div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
 }
 
 function formatarTexto(t) {
@@ -1527,11 +1673,13 @@ function atualizarCena(jogadores, inimigos) {
   document.getElementById('screen-game')?.classList.toggle('combat-active', combate);
 
   if(combate) {
+    if(Object.keys(_terrain).length === 0) gerarTerrain();
     initMapPositions(jogadores, inimigos||{});
-    renderizarMapaGrid();
+    desenharCanvas();
     renderizarMapaSprites();
     renderizarIniBar(jogadores, inimigos||{});
   } else {
+    _terrain = {};
     // Exploração: sprites atmosféricos na scene-area
     const spEl = document.getElementById('scene-sprites');
     if(spEl) {
@@ -1634,10 +1782,10 @@ function buildSystemPrompt(jogadores, inimigos) {
   }).join('\n');
 
   const mapSection = (iniList && posTxt) ? `
-MAPA DE BATALHA (grade 10 colunas × 6 linhas, col 1=esquerda, col 10=direita):
+MAPA DE BATALHA (grade ${MAP_COLS} colunas × ${MAP_ROWS} linhas, col 1=esquerda, col ${MAP_COLS}=direita):
 ${posTxt}
 ${distTxt ? `\nDISTÂNCIAS:\n${distTxt}` : ''}
-Regras de alcance: 0-1 célula = corpo a corpo | 2-3 = arco/magia curta | 4+ = magia longa
+Regras de alcance: 0-1 célula = corpo a corpo | 2-4 = arco/magia curta | 5+ = magia longa
 
 ` : '';
 
@@ -1671,7 +1819,7 @@ ${iniList ? `\nINIMIGOS PRESENTES:\n${iniList}\n` : ''}${mapSection}REGRAS DO SI
 - AO FINAL inclua em linhas separadas:
   STATS: [HP:Nome:valor] [SP:Nome:valor] [EXP:Nome:+ganho] [MORTO:Nome] [INCONS:Nome]
          [INIMIGO:Nome:hpAtual:hpMax:ícone] [MATAR:Nome]
-${iniList ? `  POS: [MOV:Nome:col:lin] para CADA personagem/inimigo que se moveu nesta rodada (col 1-10, lin 1-6)
+${iniList ? `  POS: [MOV:Nome:col:lin] para CADA personagem/inimigo que se moveu nesta rodada (col 1-${MAP_COLS}, lin 1-${MAP_ROWS})
   Exemplo POS: POS: [MOV:Igor:4:3] [MOV:Goblin Bruto:7:4] [MOV:Goblin Arqueiro:8:2]
   Inimigos agressivos DEVEM se aproximar dos aventureiros. Se o goblin carrega, mova-o!
   Se ninguém se moveu, OMITA a linha POS.` : ''}

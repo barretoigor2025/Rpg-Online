@@ -333,69 +333,75 @@
     #battle-map{display:none;flex-direction:column;min-height:0}
     #screen-game.combat-active #scene-area{display:none}
     #screen-game.combat-active #battle-map{display:flex;flex:1;min-height:0}
-    #screen-game.combat-active #narrative-panel{max-height:160px}
+    #screen-game.combat-active #narrative-panel{display:none}
 
     /* Initiative bar */
     #ini-bar{
-      flex-shrink:0;height:38px;display:flex;align-items:center;gap:4px;
+      flex-shrink:0;height:44px;display:flex;align-items:center;gap:4px;
       padding:0 10px;background:var(--surface2);
       border-bottom:1px solid rgba(88,104,160,.35);overflow-x:auto;scrollbar-width:none;
     }
     #ini-bar::-webkit-scrollbar{display:none}
     .ini-lbl{font-size:7px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;flex-shrink:0;padding-right:6px;border-right:1px solid rgba(88,104,160,.2);margin-right:2px}
     .ini-chip{
-      display:flex;align-items:center;gap:3px;padding:2px 6px;flex-shrink:0;
+      display:flex;align-items:center;gap:3px;padding:3px 7px;flex-shrink:0;
       border-radius:10px;font-size:7px;letter-spacing:.2px;cursor:default;
       border:1px solid rgba(88,104,160,.22);background:var(--surface);
     }
-    .ini-chip.player{border-color:rgba(122,184,245,.4);background:rgba(122,184,245,.07)}
-    .ini-chip.enemy{border-color:rgba(204,68,68,.35);background:rgba(204,68,68,.06)}
-    .ini-chip img{width:14px;height:18px;object-fit:cover;object-position:center top;image-rendering:pixelated}
-    .ini-chip-name{color:var(--text2);max-width:48px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ini-chip.player{border-color:rgba(76,175,80,.5);background:rgba(76,175,80,.08)}
+    .ini-chip.enemy{border-color:rgba(204,68,68,.45);background:rgba(204,68,68,.08)}
+    .ini-chip img{width:16px;height:22px;object-fit:cover;object-position:center top;image-rendering:pixelated}
+    .ini-chip-name{color:var(--text2);max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .ini-chip-hp{font-size:5.5px;color:var(--text3);margin-top:1px}
 
-    /* Map container + grid */
-    #map-container{
-      flex:1;position:relative;overflow:hidden;
-      background:#06080f;
-    }
-    #map-container::before{
-      content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
-      background:
-        repeating-linear-gradient(0deg,transparent,transparent calc(100%/6 - 1px),rgba(88,104,160,.07) calc(100%/6)),
-        repeating-linear-gradient(90deg,transparent,transparent calc(10% - 1px),rgba(88,104,160,.07) 10%);
-    }
-    #map-grid{
-      position:absolute;inset:0;display:grid;
-      grid-template-columns:repeat(10,1fr);
-      grid-template-rows:repeat(6,1fr);
-    }
-    .map-cell{border-right:1px solid rgba(88,104,160,.06);border-bottom:1px solid rgba(88,104,160,.06)}
-    .map-cell:nth-child(even){background:rgba(18,22,40,.6)}
-    .map-cell:nth-child(odd){background:rgba(10,13,25,.6)}
-    .map-cell.enemy-zone{background:rgba(60,8,8,.45)}
+    /* Map container — canvas-based isometric */
+    #map-container{flex:1;position:relative;overflow:hidden;background:#050710}
+    #map-canvas{position:absolute;inset:0;width:100%;height:100%}
 
     /* Sprites on map */
     #map-sprites{position:absolute;inset:0;z-index:5;pointer-events:none}
     .map-sprite{
       position:absolute;display:flex;flex-direction:column;align-items:center;gap:1px;
-      transform:translate(-50%,-88%);
+      transform:translate(-50%,-100%);
       transition:left .55s cubic-bezier(.34,1.4,.64,1),top .55s cubic-bezier(.34,1.4,.64,1);
     }
+    /* Size classes */
+    .map-sprite.sz1 img{width:30px;height:40px}
+    .map-sprite.sz2 img{width:52px;height:70px}
+    .map-sprite.sz3 img{width:76px;height:102px}
+    .map-sprite.sz4 img{width:100px;height:134px}
+    .map-sprite.sz1 .map-sprite-bar{width:28px}
+    .map-sprite.sz2 .map-sprite-bar{width:50px}
+    .map-sprite.sz3 .map-sprite-bar{width:74px}
+    .map-sprite.sz4 .map-sprite-bar{width:98px}
     .map-sprite img{
-      width:30px;height:40px;object-fit:cover;object-position:center top;
+      object-fit:cover;object-position:center top;
       image-rendering:pixelated;filter:drop-shadow(0 3px 8px rgba(0,0,0,.95));
     }
-    .map-sprite-bar{width:28px;height:3px;background:rgba(0,0,0,.7);border-radius:2px;overflow:hidden}
+    .map-sprite-bar{height:3px;background:rgba(0,0,0,.7);border-radius:2px;overflow:hidden}
     .map-sprite-bar-fill{height:100%;border-radius:2px;transition:width .4s}
     .map-player .map-sprite-bar-fill{background:var(--green)}
     .map-enemy .map-sprite-bar-fill{background:var(--red)}
+    .map-player img{filter:drop-shadow(0 2px 6px rgba(0,0,0,.9)) drop-shadow(0 0 4px rgba(76,175,80,.7))}
+    .map-enemy img{filter:drop-shadow(0 2px 6px rgba(0,0,0,.9)) drop-shadow(0 0 4px rgba(204,68,68,.75))}
     .map-sprite-name{font-size:5.5px;color:var(--silver);letter-spacing:.2px;white-space:nowrap;text-align:center}
-    .map-enemy img{filter:drop-shadow(0 3px 8px rgba(204,68,68,.75))}
     .map-sprite.bounce{animation:map-bounce .45s ease-out}
-    @keyframes map-bounce{0%{transform:translate(-50%,-88%) scale(1)}40%{transform:translate(-50%,-105%) scale(1.12)}100%{transform:translate(-50%,-88%) scale(1)}}
+    @keyframes map-bounce{0%{transform:translate(-50%,-100%) scale(1)}40%{transform:translate(-50%,-118%) scale(1.12)}100%{transform:translate(-50%,-100%) scale(1)}}
     .map-sprite.fail-shake{animation:fail-shake .35s ease-out}
-    @keyframes fail-shake{0%,100%{transform:translate(-50%,-88%)}25%{transform:translate(-46%,-88%)}75%{transform:translate(-54%,-88%)}}
+    @keyframes fail-shake{0%,100%{transform:translate(-50%,-100%)}25%{transform:translate(-46%,-100%)}75%{transform:translate(-54%,-100%)}}
+
+    /* Combat log (replaces narrative panel in combat mode) */
+    #combat-log{
+      flex-shrink:0;max-height:110px;overflow-y:auto;
+      background:rgba(4,6,12,.95);border-top:1px solid rgba(88,104,160,.2);
+      padding:6px 10px;display:flex;flex-direction:column;gap:3px;scrollbar-width:none;
+    }
+    #combat-log:empty{display:none}
+    #combat-log::-webkit-scrollbar{display:none}
+    .cl-entry{font-size:9px;color:var(--text2);line-height:1.45;
+      border-left:2px solid rgba(88,104,160,.3);padding-left:6px}
+    .cl-entry.gm{border-left-color:var(--gold);color:var(--silver2)}
+    .cl-entry.dice{border-left-color:rgba(88,104,160,.45);color:var(--text3);font-size:8px}
 
     /* ── Portrait cards (mobile only) ── */
     #portrait-cards{display:none}
