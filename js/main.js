@@ -154,13 +154,20 @@ function rolarAcao(nome, classe, acao, bonus) {
   return { nome, classe, acao, tipo, dado, mod, total, dc, sucesso, critico, falha, bonus: !!bonus };
 }
 
+function detectarEtapas(acao) {
+  const partes = acao.split(/,\s*(?=[a-záéíóúâêîôûãõç])/i);
+  if(partes.length <= 1) return [acao];
+  return partes.filter(p => p.trim().length > 4).slice(0, 3);
+}
+
 function rolarRodada(jogadores) {
   const rolls = [];
   Object.values(jogadores).forEach(j => {
     if(!j.vivo || !j.consciente) return;
-    if(j.acao1 && j.acao1 !== '(nenhuma)') rolls.push(rolarAcao(j.nome, j.classe, j.acao1, false));
-    if(j.acao2 && j.acao2 !== '(sem segunda ação)' && j.acao2 !== '(nenhuma)')
-      rolls.push(rolarAcao(j.nome, j.classe, j.acao2, true));
+    if(j.acao1 && j.acao1 !== '(nenhuma)') {
+      detectarEtapas(j.acao1).forEach((etapa, i) =>
+        rolls.push(rolarAcao(j.nome, j.classe, etapa.trim(), i > 0)));
+    }
   });
   return rolls;
 }
@@ -488,7 +495,7 @@ function _nextUtterance() {
   fetch('https://api.groq.com/openai/v1/audio/speech', {
     method: 'POST',
     headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
-    body: JSON.stringify({ model:'playai-tts', input: limpo, voice:'Fritz-PlayAI', response_format:'mp3', speed: 1.3 })
+    body: JSON.stringify({ model:'playai-tts', input: limpo, voice:'Dorian-PlayAI', response_format:'mp3', speed: 1.1 })
   }).then(async res => {
     if (!res.ok) { _narrarWebSpeechQueued(limpo); return; }
     const blob = await res.blob();
@@ -733,6 +740,7 @@ function irParaJogo(codigo) {
     atualizarInputArea(eu, data.config.estado, jogadores);
     atualizarBotaoIniciar(data);
     atualizarFloatInimigos(data.inimigos);
+    atualizarCena(jogadores, data.inimigos);
 
     // Host: verifica se todos enviaram
     if(amIHost && data.config.estado === 'aguardando' && !chamandoIA) {
@@ -1137,13 +1145,10 @@ window.confirmarAcao = function() {
   const detalhe = document.getElementById('modal-acao-detalhe').value.trim();
   if(!txt) { toast('Descreva a ação antes de confirmar!'); return; }
   const t = TIPOS_ACAO[_tipoAcaoAtual];
-  const acaoFinal = detalhe ? `${t.titulo}: ${txt} (${detalhe})` : `${t.titulo}: ${txt}`;
-  // Preenche primeiro slot vazio
-  if(_slots[0] === null) { _slots[0] = acaoFinal; }
-  else if(_slots[1] === null) { _slots[1] = acaoFinal; }
-  else { _slots[0] = _slots[1]; _slots[1] = acaoFinal; } // substitui a última
-  renderizarSlots();
+  _slots[0] = detalhe ? `${t.titulo}: ${txt} (${detalhe})` : `${t.titulo}: ${txt}`;
+  _slots[1] = null;
   fecharModalAcao();
+  enviarAcoes();
 };
 
 window.limparSlot = function(idx) {
@@ -1239,6 +1244,10 @@ function renderizarHistoria(historia) {
           <div class="tc-verdict ${verdictCls}">${verdictTxt}</div>`;
         testCards.appendChild(card);
       });
+      // Auto-expand test panel when new cards arrive
+      const tph = document.getElementById('test-panel-header');
+      const tp  = document.getElementById('test-panel');
+      if(tph && tp) { tph.classList.add('open'); tp.classList.add('open'); }
       return;
     }
 
@@ -1297,14 +1306,10 @@ window.confirmarAcaoTexto = function() {
   const inp = document.getElementById('action-input');
   const txt = inp.value.trim();
   if(!txt) { toast('Descreva a ação antes de confirmar!'); return; }
-  if(_slots[0] === null)      { _slots[0] = txt; }
-  else if(_slots[1] === null) { _slots[1] = txt; }
-  else { _slots[0] = _slots[1]; _slots[1] = txt; }
+  _slots[0] = txt;
+  _slots[1] = null;
   inp.value = '';
-  renderizarSlots();
-  const slots = document.getElementById('acao-slots');
-  if(slots) slots.style.display = 'flex';
-  toast(_slots[1] ? '✅ Segunda ação definida!' : '✅ Primeira ação definida!', 1800);
+  enviarAcoes();
 };
 
 window.focarInputAcao = function() {
@@ -1341,31 +1346,70 @@ window.toggleHistory = function() {
   if (panel) panel.classList.toggle('open');
 };
 
+// ─── Cena / sprites ────────────────────────────────────────────
+function inimigosSprite(nome) {
+  const n = nome.toLowerCase();
+  if(n.includes('arqueiro'))                       return 'sprites/goblin_arqueiro.png';
+  if(n.includes('batedor') || n.includes('bate'))  return 'sprites/goblin_batedor.png';
+  if(n.includes('bruto'))                          return 'sprites/goblin_bruto.png';
+  if(n.includes('líder') || n.includes('lider'))   return 'sprites/goblin_lider.png';
+  return 'sprites/goblin_batedor.png';
+}
+
+function atualizarCena(jogadores, inimigos) {
+  const spEl  = document.getElementById('scene-sprites');
+  const scEl  = document.getElementById('scene-area');
+  if(!spEl) return;
+
+  const jogArr = Object.values(jogadores || {}).filter(j => j.vivo && j.consciente);
+  const iniArr = Object.values(inimigos  || {}).filter(i => i.visivel !== false && i.hp > 0);
+  const combate = iniArr.length > 0;
+
+  scEl && scEl.classList.toggle('combat-mode', combate);
+
+  if(!combate) {
+    spEl.className = 'scene-sprites-center';
+    spEl.innerHTML = jogArr.map(j => `
+      <div class="scene-char">
+        <img src="sprites/${j.classe}_${j.sexo||'m'}.png" onerror="this.src='sprites/guerreiro_m.png'" alt="">
+        <div class="scene-char-name">${j.nome}</div>
+      </div>`).join('');
+  } else {
+    spEl.className = 'scene-sprites-combat';
+    const playersHtml = jogArr.map(j => `
+      <div class="scene-char">
+        <img src="sprites/${j.classe}_${j.sexo||'m'}.png" onerror="this.src='sprites/guerreiro_m.png'" alt="">
+        <div class="scene-char-name">${j.nome}</div>
+      </div>`).join('');
+    const inimigosHtml = iniArr.slice(0,3).map(i => `
+      <div class="scene-char enemy-char">
+        <img src="${inimigosSprite(i.nome)}" onerror="this.style.display='none'" alt="">
+        <div class="scene-char-name enemy-name">${i.nome}</div>
+      </div>`).join('');
+    spEl.innerHTML = `
+      <div class="scene-side">${playersHtml}</div>
+      <div class="scene-side">${inimigosHtml}</div>`;
+  }
+}
+
 // ─── Input area ────────────────────────────────────────────────
 function atualizarInputArea(eu, estado, jogadores) {
-  const btn   = document.getElementById('btn-encerrar');
-  const mn    = document.getElementById('msg-narrando');
-  const me    = document.getElementById('msg-enviado');
-  const mi    = document.getElementById('msg-inconsciente');
-  const btns  = document.getElementById('action-left');
-  const slots = document.getElementById('acao-slots');
+  const mn   = document.getElementById('msg-narrando');
+  const me   = document.getElementById('msg-enviado');
+  const mi   = document.getElementById('msg-inconsciente');
+  const btns = document.getElementById('action-left');
 
   const jaMorto  = !eu.vivo || !eu.consciente;
   const jaEnviou = eu.acao1 != null;
   const narrando = estado === 'narrando' || estado === 'iniciando';
 
-  mn.style.display  = narrando ? 'flex'  : 'none';
-  me.style.display  = jaEnviou ? 'block' : 'none';
-  mi.style.display  = jaMorto  ? 'block' : 'none';
-
-  btns.style.display  = (jaMorto || narrando) ? 'none' : 'flex';
-  slots.style.display = (jaMorto || narrando || (_slots[0]===null && _slots[1]===null)) ? 'none' : 'flex';
-  btn.style.display   = (jaMorto || jaEnviou || narrando) ? 'none' : 'block';
+  mn.style.display   = narrando ? 'flex' : 'none';
+  me.style.display   = (jaEnviou && !narrando) ? 'block' : 'none';
+  mi.style.display   = jaMorto ? 'block' : 'none';
+  btns.style.display = (jaMorto || narrando || jaEnviou) ? 'none' : 'flex';
 
   if(_prevJaEnviou && !jaEnviou && !jaMorto) {
     _slots = [null, null];
-    renderizarSlots();
-    if(slots) slots.style.display = 'none';
     const inp = document.getElementById('action-input');
     if(inp) inp.value = '';
   }

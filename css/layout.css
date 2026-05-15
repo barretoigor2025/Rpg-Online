@@ -370,16 +370,24 @@
       background:rgba(0,0,0,.4);border:1px solid rgba(88,104,160,.18);
       padding:3px 8px;border-radius:3px;
     }
-    #scene-sprites{
-      position:absolute;bottom:18px;left:0;right:0;
+    #scene-sprites,
+    .scene-sprites-center,
+    .scene-sprites-combat{
+      position:absolute;bottom:14px;left:0;right:0;
       display:flex;align-items:flex-end;justify-content:center;gap:18px;
     }
+    .scene-sprites-combat{justify-content:space-between;padding:0 12px}
+    .scene-side{display:flex;align-items:flex-end;gap:10px}
+    #scene-area.combat-mode{height:130px}
     .scene-char{display:flex;flex-direction:column;align-items:center;gap:2px;animation:float 3s ease-in-out infinite}
     .scene-char:nth-child(2){animation-delay:.6s}
     .scene-char:nth-child(3){animation-delay:1.2s}
     @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
     .scene-char img{width:44px;height:58px;object-fit:cover;object-position:center top;image-rendering:pixelated;filter:drop-shadow(0 4px 12px rgba(0,0,0,.95))}
+    #scene-area.combat-mode .scene-char img{width:56px;height:72px}
     .scene-char-name{font-size:7px;color:var(--silver);letter-spacing:.5px}
+    .enemy-char img{filter:drop-shadow(0 4px 12px rgba(204,68,68,.9))!important}
+    .enemy-name{color:var(--red)!important}
     #scene-particles{position:absolute;inset:0;pointer-events:none;overflow:hidden}
     .particle{
       position:absolute;width:2px;height:2px;border-radius:50%;
@@ -637,17 +645,6 @@
       background:var(--bg);padding:7px 10px;
       display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;
     }
-    #acao-slots{display:flex;flex-direction:column;gap:5px;width:100%;order:-1}
-    .acao-slot{
-      display:flex;align-items:center;gap:8px;
-      background:rgba(56,64,96,.08);border:1px dashed rgba(56,64,96,.3);
-      border-radius:var(--r);padding:7px 10px;min-height:36px;
-    }
-    .acao-slot.preenchida{border-style:solid;border-color:var(--gold);background:rgba(56,64,96,.15)}
-    .acao-slot-num{font-size:10px;color:var(--text3);letter-spacing:1px;flex-shrink:0;width:14px}
-    .acao-slot-texto{flex:1;font-size:12px;color:var(--text);line-height:1.4}
-    .acao-slot-vazia{flex:1;font-size:12px;color:var(--text3);font-style:italic}
-    .acao-slot-del{background:transparent;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:0 2px;flex-shrink:0}
     #action-left{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
     #action-wrap{display:flex;gap:6px;align-items:stretch}
     #action-input{
