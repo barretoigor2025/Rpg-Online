@@ -249,11 +249,11 @@ function _desenharTile(ctx, col, row, h) {
 
   const gTop = ctx.createLinearGradient(x - hw, y, x + hw, y + TILE_H);
   if(isEnemy) {
-    gTop.addColorStop(0, h > 0 ? '#2e1010' : '#1a0808');
-    gTop.addColorStop(1, h > 0 ? '#1a0808' : '#0f0404');
+    gTop.addColorStop(0, h > 0 ? '#3a1a1a' : '#2e1010');
+    gTop.addColorStop(1, h > 0 ? '#2a0e0e' : '#1e0808');
   } else {
-    gTop.addColorStop(0, h > 1 ? '#2c3055' : h > 0 ? '#212540' : '#181c2e');
-    gTop.addColorStop(1, h > 1 ? '#181c36' : h > 0 ? '#141828' : '#0e1020');
+    gTop.addColorStop(0, h > 1 ? '#c8c8d4' : h > 0 ? '#bcbcc8' : '#b8b8c0');
+    gTop.addColorStop(1, h > 1 ? '#a8a8b8' : h > 0 ? '#9c9cac' : '#9898a4');
   }
   ctx.fillStyle = gTop;
   ctx.fill();
@@ -262,9 +262,7 @@ function _desenharTile(ctx, col, row, h) {
   ctx.beginPath();
   ctx.moveTo(x, y);
   ctx.lineTo(x + hw, y + hh);
-  ctx.strokeStyle = h > 0
-    ? (isEnemy ? 'rgba(255,100,80,.2)' : 'rgba(160,180,255,.3)')
-    : (isEnemy ? 'rgba(200,60,60,.12)' : 'rgba(100,120,200,.15)');
+  ctx.strokeStyle = isEnemy ? 'rgba(255,80,80,.3)' : 'rgba(255,255,255,.6)';
   ctx.lineWidth = 0.8;
   ctx.stroke();
 
@@ -274,13 +272,13 @@ function _desenharTile(ctx, col, row, h) {
   ctx.lineTo(x, y + TILE_H);
   ctx.lineTo(x - hw, y + hh);
   ctx.lineTo(x, y);
-  ctx.strokeStyle = 'rgba(60,80,140,.18)';
-  ctx.lineWidth = 0.4;
+  ctx.strokeStyle = isEnemy ? 'rgba(80,20,20,.6)' : 'rgba(60,60,80,.35)';
+  ctx.lineWidth = 0.5;
   ctx.stroke();
 
   if(h > 0) {
     const sh = h * TILE_H;
-    // Left face (darker)
+    // Left face (shadow side)
     ctx.beginPath();
     ctx.moveTo(x - hw, y + hh);
     ctx.lineTo(x,      y + TILE_H);
@@ -288,14 +286,14 @@ function _desenharTile(ctx, col, row, h) {
     ctx.lineTo(x - hw, y + hh + sh);
     ctx.closePath();
     const gL = ctx.createLinearGradient(x - hw, y + hh, x - hw, y + hh + sh);
-    gL.addColorStop(0, isEnemy ? '#0f0404' : '#0c0f1e');
-    gL.addColorStop(1, isEnemy ? '#080202' : '#06080f');
+    gL.addColorStop(0, isEnemy ? '#1a0808' : '#707078');
+    gL.addColorStop(1, isEnemy ? '#0e0404' : '#505058');
     ctx.fillStyle = gL;
     ctx.fill();
-    ctx.strokeStyle = 'rgba(50,70,130,.12)';
+    ctx.strokeStyle = isEnemy ? 'rgba(80,20,20,.4)' : 'rgba(40,40,60,.4)';
     ctx.lineWidth = 0.4;
     ctx.stroke();
-    // Right face (slightly lighter)
+    // Right face (medium tone)
     ctx.beginPath();
     ctx.moveTo(x,      y + TILE_H);
     ctx.lineTo(x + hw, y + hh);
@@ -303,11 +301,11 @@ function _desenharTile(ctx, col, row, h) {
     ctx.lineTo(x,      y + TILE_H + sh);
     ctx.closePath();
     const gR = ctx.createLinearGradient(x, y + TILE_H, x, y + TILE_H + sh);
-    gR.addColorStop(0, isEnemy ? '#140606' : '#10141f');
-    gR.addColorStop(1, isEnemy ? '#0a0303' : '#080a14');
+    gR.addColorStop(0, isEnemy ? '#220e0e' : '#888890');
+    gR.addColorStop(1, isEnemy ? '#140606' : '#686870');
     ctx.fillStyle = gR;
     ctx.fill();
-    ctx.strokeStyle = 'rgba(50,70,130,.12)';
+    ctx.strokeStyle = isEnemy ? 'rgba(80,20,20,.4)' : 'rgba(40,40,60,.4)';
     ctx.lineWidth = 0.4;
     ctx.stroke();
   }
@@ -393,7 +391,7 @@ function renderizarMapaSprites() {
     const scr = isoToScreen(pos.col, pos.row, h);
     // Anchor at bottom-center of tile top face
     const left = scr.x;
-    const top  = scr.y + TILE_H;
+    const top  = scr.y + TILE_H / 2;
 
     let sprEl = spEl.querySelector(`[data-key="${key}"]`);
     if(!sprEl) {
