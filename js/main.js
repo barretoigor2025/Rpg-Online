@@ -239,46 +239,76 @@ function _desenharTile(ctx, col, row, h) {
   const {x, y}  = isoToScreen(col, row, h);
   const hw = TILE_W / 2, hh = TILE_H / 2;
 
-  // Top face
+  // Top face — gradient for 3D stone look
   ctx.beginPath();
   ctx.moveTo(x,      y);
   ctx.lineTo(x + hw, y + hh);
   ctx.lineTo(x,      y + TILE_H);
   ctx.lineTo(x - hw, y + hh);
   ctx.closePath();
+
+  const gTop = ctx.createLinearGradient(x - hw, y, x + hw, y + TILE_H);
   if(isEnemy) {
-    ctx.fillStyle = h > 0 ? '#1c0a0a' : '#100505';
+    gTop.addColorStop(0, h > 0 ? '#2e1010' : '#1a0808');
+    gTop.addColorStop(1, h > 0 ? '#1a0808' : '#0f0404');
   } else {
-    ctx.fillStyle = h > 1 ? '#1c2036' : h > 0 ? '#141828' : '#0b0e1a';
+    gTop.addColorStop(0, h > 1 ? '#2c3055' : h > 0 ? '#212540' : '#181c2e');
+    gTop.addColorStop(1, h > 1 ? '#181c36' : h > 0 ? '#141828' : '#0e1020');
   }
+  ctx.fillStyle = gTop;
   ctx.fill();
-  ctx.strokeStyle = h > 0 ? 'rgba(130,150,210,.22)' : 'rgba(88,104,160,.10)';
-  ctx.lineWidth = 0.5;
+
+  // Bright top-left edge highlight (simulates light source)
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + hw, y + hh);
+  ctx.strokeStyle = h > 0
+    ? (isEnemy ? 'rgba(255,100,80,.2)' : 'rgba(160,180,255,.3)')
+    : (isEnemy ? 'rgba(200,60,60,.12)' : 'rgba(100,120,200,.15)');
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+
+  // Grid line outline (rest of diamond)
+  ctx.beginPath();
+  ctx.moveTo(x + hw, y + hh);
+  ctx.lineTo(x, y + TILE_H);
+  ctx.lineTo(x - hw, y + hh);
+  ctx.lineTo(x, y);
+  ctx.strokeStyle = 'rgba(60,80,140,.18)';
+  ctx.lineWidth = 0.4;
   ctx.stroke();
 
   if(h > 0) {
     const sh = h * TILE_H;
-    // Left face
+    // Left face (darker)
     ctx.beginPath();
     ctx.moveTo(x - hw, y + hh);
     ctx.lineTo(x,      y + TILE_H);
     ctx.lineTo(x,      y + TILE_H + sh);
     ctx.lineTo(x - hw, y + hh + sh);
     ctx.closePath();
-    ctx.fillStyle = '#050710';
+    const gL = ctx.createLinearGradient(x - hw, y + hh, x - hw, y + hh + sh);
+    gL.addColorStop(0, isEnemy ? '#0f0404' : '#0c0f1e');
+    gL.addColorStop(1, isEnemy ? '#080202' : '#06080f');
+    ctx.fillStyle = gL;
     ctx.fill();
-    ctx.strokeStyle = 'rgba(88,104,160,.07)';
+    ctx.strokeStyle = 'rgba(50,70,130,.12)';
+    ctx.lineWidth = 0.4;
     ctx.stroke();
-    // Right face
+    // Right face (slightly lighter)
     ctx.beginPath();
     ctx.moveTo(x,      y + TILE_H);
     ctx.lineTo(x + hw, y + hh);
     ctx.lineTo(x + hw, y + hh + sh);
     ctx.lineTo(x,      y + TILE_H + sh);
     ctx.closePath();
-    ctx.fillStyle = '#07091230';
+    const gR = ctx.createLinearGradient(x, y + TILE_H, x, y + TILE_H + sh);
+    gR.addColorStop(0, isEnemy ? '#140606' : '#10141f');
+    gR.addColorStop(1, isEnemy ? '#0a0303' : '#080a14');
+    ctx.fillStyle = gR;
     ctx.fill();
-    ctx.strokeStyle = 'rgba(88,104,160,.07)';
+    ctx.strokeStyle = 'rgba(50,70,130,.12)';
+    ctx.lineWidth = 0.4;
     ctx.stroke();
   }
 }
@@ -305,6 +335,13 @@ function desenharCanvas() {
       _desenharTile(ctx, col, row, t.height);
     }
   }
+  // Atmospheric edge fog — darkens edges to focus attention on center
+  const fog = ctx.createRadialGradient(W * 0.5, H * 0.42, H * 0.12, W * 0.5, H * 0.42, H * 0.72);
+  fog.addColorStop(0, 'rgba(4,6,18,0)');
+  fog.addColorStop(0.6, 'rgba(4,6,18,.1)');
+  fog.addColorStop(1, 'rgba(4,6,18,.82)');
+  ctx.fillStyle = fog;
+  ctx.fillRect(0, 0, W, H);
 }
 
 function initMapPositions(jogadores, inimigos) {
@@ -1530,7 +1567,34 @@ function renderizarHistoria(historia) {
       const tph = document.getElementById('test-panel-header');
       const tp  = document.getElementById('test-panel');
       if(tph && tp) { tph.classList.add('open'); tp.classList.add('open'); }
-      // Sprites are moved by AI POS tags, not by dice results
+      // Client-side movement preview — AI POS tags will refine positions later
+      linhas.forEach(linha => {
+        const parts = linha.split('|');
+        const nome  = (parts[0]||'').replace(/\s*\(bônus\)$/,'').trim();
+        const acao  = (parts[1]||'').toLowerCase();
+        const cls   = parts[4];
+        const tipo  = (parts[5]||'').trim();
+        if(tipo !== 'jogador') return;
+        const emMov = /aproxim|corro|avanç|pulo|furtiv|escal|caminh|carre|corr|move|atac|vai|ir |investid/.test(acao);
+        if(!emMov || cls === 'fail') return;
+        const uid = Object.keys(_curJogs).find(u => (_curJogs[u]?.nome||'').toLowerCase() === nome.toLowerCase());
+        if(!uid) return;
+        const key = mapKeyJog(uid);
+        const pos = _mapPos[key];
+        if(!pos) return;
+        const inis = Object.entries(_mapPos).filter(([k]) => k.startsWith('e_'));
+        if(!inis.length) return;
+        const nearest = inis.reduce((b,[k,p]) => {
+          const d = Math.abs(p.col-pos.col)+Math.abs(p.row-pos.row); return d < b.d ? {k,p,d} : b;
+        }, {k:'',p:{col:10,row:7},d:999});
+        const dc = nearest.p.col - pos.col, dr = nearest.p.row - pos.row;
+        const steps = cls === 'crit' ? 5 : 3;
+        const nc = clamp(pos.col + Math.sign(dc)*Math.min(steps, Math.abs(dc)), 0, MAP_COLS-1);
+        const nr = clamp(pos.row + (Math.abs(dc) < 3 ? Math.sign(dr) : 0), 0, MAP_ROWS-1);
+        _mapPos[key] = { col: nc, row: nr };
+        const sp = document.getElementById('map-sprites')?.querySelector(`[data-key="${key}"]`);
+        sp?.classList.add('bounce'); setTimeout(()=>sp?.classList.remove('bounce'),500);
+      });
       setTimeout(renderizarMapaSprites, 60);
       return;
     }
@@ -2064,9 +2128,9 @@ async function processarStats(resposta, jogadores, iniAtual) {
 }
 
 function processarPosicoes(resposta) {
-  const posLine = resposta.match(/^POS:(.*)/m);
-  if(!posLine) return false;
-  const tags = [...posLine[1].matchAll(/\[MOV:([^\]]+)\]/g)];
+  // Search anywhere in the response — Groq doesn't always put POS on its own line
+  const tags = [...resposta.matchAll(/\[MOV:([^\]]+)\]/g)];
+  if(!tags.length) return false;
   let moved = false;
   tags.forEach(([, resto]) => {
     const parts = resto.split(':');
@@ -2083,12 +2147,11 @@ function processarPosicoes(resposta) {
     );
     if(uid) {
       const key = mapKeyJog(uid);
-      if(_mapPos[key]) {
-        _mapPos[key] = { col: cc, row: cr };
-        const sp = document.getElementById('map-sprites')?.querySelector(`[data-key="${key}"]`);
-        sp?.classList.add('bounce'); setTimeout(() => sp?.classList.remove('bounce'), 500);
-        moved = true;
-      }
+      if(!_mapPos[key]) _mapPos[key] = { col: cc, row: cr }; // create if missing
+      _mapPos[key] = { col: cc, row: cr };
+      const sp = document.getElementById('map-sprites')?.querySelector(`[data-key="${key}"]`);
+      sp?.classList.add('bounce'); setTimeout(() => sp?.classList.remove('bounce'), 500);
+      moved = true;
       return;
     }
     // Try enemy
@@ -2097,12 +2160,11 @@ function processarPosicoes(resposta) {
     );
     if(iniKey) {
       const key = mapKeyIni(_curInis[iniKey].nome);
-      if(_mapPos[key]) {
-        _mapPos[key] = { col: cc, row: cr };
-        const sp = document.getElementById('map-sprites')?.querySelector(`[data-key="${key}"]`);
-        sp?.classList.add('bounce'); setTimeout(() => sp?.classList.remove('bounce'), 500);
-        moved = true;
-      }
+      if(!_mapPos[key]) _mapPos[key] = { col: cc, row: cr }; // create if missing
+      _mapPos[key] = { col: cc, row: cr };
+      const sp = document.getElementById('map-sprites')?.querySelector(`[data-key="${key}"]`);
+      sp?.classList.add('bounce'); setTimeout(() => sp?.classList.remove('bounce'), 500);
+      moved = true;
     }
   });
   return moved;

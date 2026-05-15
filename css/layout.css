@@ -332,6 +332,9 @@
     /* ══ BATTLE MAP ══ */
     #battle-map{display:none;flex-direction:column;min-height:0}
     #screen-game.combat-active #scene-area{display:none}
+    #screen-game.combat-active #portrait-cards{display:none!important}
+    #screen-game.combat-active #test-panel,
+    #screen-game.combat-active #test-panel-header{display:none!important}
     #screen-game.combat-active #battle-map{display:flex;flex:1;min-height:0}
     #screen-game.combat-active #narrative-panel{display:none}
 
@@ -350,7 +353,7 @@
     }
     .ini-chip.player{border-color:rgba(76,175,80,.5);background:rgba(76,175,80,.08)}
     .ini-chip.enemy{border-color:rgba(204,68,68,.45);background:rgba(204,68,68,.08)}
-    .ini-chip img{width:16px;height:22px;object-fit:cover;object-position:center top;image-rendering:pixelated}
+    .ini-chip img{width:20px;height:28px;object-fit:cover;object-position:center top;image-rendering:pixelated}
     .ini-chip-name{color:var(--text2);max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .ini-chip-hp{font-size:5.5px;color:var(--text3);margin-top:1px}
 
@@ -366,14 +369,14 @@
       transition:left .55s cubic-bezier(.34,1.4,.64,1),top .55s cubic-bezier(.34,1.4,.64,1);
     }
     /* Size classes */
-    .map-sprite.sz1 img{width:30px;height:40px}
-    .map-sprite.sz2 img{width:52px;height:70px}
-    .map-sprite.sz3 img{width:76px;height:102px}
-    .map-sprite.sz4 img{width:100px;height:134px}
-    .map-sprite.sz1 .map-sprite-bar{width:28px}
-    .map-sprite.sz2 .map-sprite-bar{width:50px}
-    .map-sprite.sz3 .map-sprite-bar{width:74px}
-    .map-sprite.sz4 .map-sprite-bar{width:98px}
+    .map-sprite.sz1 img{width:38px;height:52px}
+    .map-sprite.sz2 img{width:60px;height:82px}
+    .map-sprite.sz3 img{width:84px;height:114px}
+    .map-sprite.sz4 img{width:108px;height:148px}
+    .map-sprite.sz1 .map-sprite-bar{width:36px}
+    .map-sprite.sz2 .map-sprite-bar{width:58px}
+    .map-sprite.sz3 .map-sprite-bar{width:82px}
+    .map-sprite.sz4 .map-sprite-bar{width:106px}
     .map-sprite img{
       object-fit:cover;object-position:center top;
       image-rendering:pixelated;filter:drop-shadow(0 3px 8px rgba(0,0,0,.95));
