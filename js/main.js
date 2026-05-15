@@ -1406,15 +1406,7 @@ function renderizarHistoria(historia) {
       const tph = document.getElementById('test-panel-header');
       const tp  = document.getElementById('test-panel');
       if(tph && tp) { tph.classList.add('open'); tp.classList.add('open'); }
-      // Move sprites based on roll results
-      linhas.forEach(linha => {
-        const parts = linha.split('|');
-        const nome = parts[0], acao = parts[1], cls = parts[4], tipo = (parts[5]||'').trim();
-        if(tipo === 'jogador') {
-          resolverMovimentoEntry(nome.replace(/\s*\(bônus\)$/,'').trim(), acao,
-            { sucesso: cls !== 'fail', critico: cls === 'crit', falha: cls === 'fail' });
-        }
-      });
+      // Sprites are moved by AI POS tags, not by dice results
       setTimeout(renderizarMapaSprites, 60);
       return;
     }
@@ -1616,6 +1608,39 @@ function buildSystemPrompt(jogadores, inimigos) {
     .map(i => `• ${i.icon||'👿'} ${i.nome} — HP ${i.hp}/${i.maxHp}`)
     .join('\n');
 
+  // Build current positions text (1-indexed for the AI)
+  const posTxt = Object.entries(_mapPos).map(([key, pos]) => {
+    if(key.startsWith('p_')) {
+      const j = jogadores[key.slice(2)];
+      return j ? `• ${j.nome}: col ${pos.col+1}, lin ${pos.row+1}` : null;
+    }
+    const ini = Object.values(inimigos||{}).find(i => mapKeyIni(i.nome) === key);
+    return ini ? `• ${ini.icon||'👿'} ${ini.nome}: col ${pos.col+1}, lin ${pos.row+1}` : null;
+  }).filter(Boolean).join('\n');
+
+  // Build distances between every player–enemy pair
+  const jPosArr = Object.entries(_mapPos).filter(([k]) => k.startsWith('p_'));
+  const iPosArr = Object.entries(_mapPos).filter(([k]) => k.startsWith('e_'));
+  const distTxt = jPosArr.flatMap(([jk, jp]) => {
+    const j = jogadores[jk.slice(2)];
+    if(!j) return [];
+    return iPosArr.map(([ik, ip]) => {
+      const ini = Object.values(inimigos||{}).find(i => mapKeyIni(i.nome) === ik);
+      if(!ini) return null;
+      const dist = Math.abs(jp.col - ip.col) + Math.abs(jp.row - ip.row);
+      const range = dist <= 1 ? 'corpo a corpo ✅' : dist <= 3 ? 'alcance curto (arco/magia curta)' : 'longe — precisa mover antes de atacar';
+      return `• ${j.nome} ↔ ${ini.nome}: ${dist} célula(s) — ${range}`;
+    }).filter(Boolean);
+  }).join('\n');
+
+  const mapSection = (iniList && posTxt) ? `
+MAPA DE BATALHA (grade 10 colunas × 6 linhas, col 1=esquerda, col 10=direita):
+${posTxt}
+${distTxt ? `\nDISTÂNCIAS:\n${distTxt}` : ''}
+Regras de alcance: 0-1 célula = corpo a corpo | 2-3 = arco/magia curta | 4+ = magia longa
+
+` : '';
+
   return `Você é um narrador lendário de campanhas de RPG — um bardo veterano que faz os jogadores prenderem a respiração. Escreva em português do Brasil com alma e drama.
 
 VOZ DO NARRADOR:
@@ -1639,15 +1664,18 @@ O silêncio pode ser tão ameaçador quanto um rugido. Use o ambiente para criar
 
 FICHAS DOS PERSONAGENS:
 ${fichas}
-${iniList ? `\nINIMIGOS PRESENTES:\n${iniList}\n` : ''}
-REGRAS DO SISTEMA:
+${iniList ? `\nINIMIGOS PRESENTES:\n${iniList}\n` : ''}${mapSection}REGRAS DO SISTEMA:
 - Trate todas as ações como simultâneas na mesma rodada
 - Seja consistente com os eventos anteriores da história
-- NÃO inclua tags de stats no corpo da narração
-- AO FINAL inclua em linha separada APENAS as atualizações necessárias:
+- NÃO inclua tags no corpo da narração
+- AO FINAL inclua em linhas separadas:
   STATS: [HP:Nome:valor] [SP:Nome:valor] [EXP:Nome:+ganho] [MORTO:Nome] [INCONS:Nome]
          [INIMIGO:Nome:hpAtual:hpMax:ícone] [MATAR:Nome]
-- Exemplos: STATS: [HP:Igor:95] [EXP:Igor:+20] [INIMIGO:Goblin:45:80:👺] [MATAR:Rato]
+${iniList ? `  POS: [MOV:Nome:col:lin] para CADA personagem/inimigo que se moveu nesta rodada (col 1-10, lin 1-6)
+  Exemplo POS: POS: [MOV:Igor:4:3] [MOV:Goblin Bruto:7:4] [MOV:Goblin Arqueiro:8:2]
+  Inimigos agressivos DEVEM se aproximar dos aventureiros. Se o goblin carrega, mova-o!
+  Se ninguém se moveu, OMITA a linha POS.` : ''}
+- Exemplos STATS: STATS: [HP:Igor:95] [EXP:Igor:+20] [INIMIGO:Goblin:45:80:👺] [MATAR:Rato]
 - Atualize HP dos inimigos a cada rodada. Use [MATAR:Nome] quando derrotado.
 - EXP mínimo +10 por rodada. HP/SP devem ser valores absolutos.`;
 }
@@ -1715,6 +1743,7 @@ Exemplo: STATS: [INIMIGO:Goblin Batedores:30:30:👺] [INIMIGO:Goblin Arqueiro:2
     const ts = Date.now();
     await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparStats(resposta), ts });
     await processarStats(resposta, jogadores, {});
+    processarPosicoes(resposta);
     await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando', rodada: 1 });
   } finally {
     chamandoIA = false;
@@ -1812,6 +1841,7 @@ async function chamarIA(jogadores, data) {
 
     await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparStats(resposta), ts: Date.now() });
     await processarStats(resposta, jogadores, inimigos);
+    if(processarPosicoes(resposta)) setTimeout(renderizarMapaSprites, 120);
 
     const ups = {};
     Object.keys(jogadores).forEach(uid => {
@@ -1828,7 +1858,10 @@ async function chamarIA(jogadores, data) {
 }
 
 function limparStats(texto) {
-  return texto.replace(/\nSTATS:.*$/m,'').replace(/STATS:.*$/gm,'').trim();
+  return texto
+    .replace(/\nPOS:.*$/m, '').replace(/POS:.*$/gm, '')
+    .replace(/\nSTATS:.*$/m,'').replace(/STATS:.*$/gm,'')
+    .trim();
 }
 
 async function processarStats(resposta, jogadores, iniAtual) {
@@ -1880,6 +1913,51 @@ async function processarStats(resposta, jogadores, iniAtual) {
     }
   }
   if(Object.keys(ups).length) await update(ref(db), ups);
+}
+
+function processarPosicoes(resposta) {
+  const posLine = resposta.match(/^POS:(.*)/m);
+  if(!posLine) return false;
+  const tags = [...posLine[1].matchAll(/\[MOV:([^\]]+)\]/g)];
+  let moved = false;
+  tags.forEach(([, resto]) => {
+    const parts = resto.split(':');
+    const nome = parts[0].trim();
+    const col  = parseInt(parts[1]) - 1;
+    const row  = parseInt(parts[2]) - 1;
+    if(isNaN(col) || isNaN(row)) return;
+    const cc = clamp(col, 0, MAP_COLS - 1);
+    const cr = clamp(row, 0, MAP_ROWS - 1);
+
+    // Try player first
+    const uid = Object.keys(_curJogs).find(u =>
+      (_curJogs[u]?.nome||'').toLowerCase() === nome.toLowerCase()
+    );
+    if(uid) {
+      const key = mapKeyJog(uid);
+      if(_mapPos[key]) {
+        _mapPos[key] = { col: cc, row: cr };
+        const sp = document.getElementById('map-sprites')?.querySelector(`[data-key="${key}"]`);
+        sp?.classList.add('bounce'); setTimeout(() => sp?.classList.remove('bounce'), 500);
+        moved = true;
+      }
+      return;
+    }
+    // Try enemy
+    const iniKey = Object.keys(_curInis).find(k =>
+      (_curInis[k]?.nome||'').toLowerCase() === nome.toLowerCase()
+    );
+    if(iniKey) {
+      const key = mapKeyIni(_curInis[iniKey].nome);
+      if(_mapPos[key]) {
+        _mapPos[key] = { col: cc, row: cr };
+        const sp = document.getElementById('map-sprites')?.querySelector(`[data-key="${key}"]`);
+        sp?.classList.add('bounce'); setTimeout(() => sp?.classList.remove('bounce'), 500);
+        moved = true;
+      }
+    }
+  });
+  return moved;
 }
 
 async function chamarOpenAI(systemPrompt, history, userMsg, onRetry) {

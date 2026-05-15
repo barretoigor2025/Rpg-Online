@@ -330,10 +330,10 @@
     #left-col{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 
     /* ══ BATTLE MAP ══ */
-    #battle-map{display:none;flex-direction:column;flex-shrink:0;height:260px}
+    #battle-map{display:none;flex-direction:column;min-height:0}
     #screen-game.combat-active #scene-area{display:none}
-    #screen-game.combat-active #battle-map{display:flex}
-    #screen-game.combat-active #narrative-panel{max-height:170px}
+    #screen-game.combat-active #battle-map{display:flex;flex:1;min-height:0}
+    #screen-game.combat-active #narrative-panel{max-height:160px}
 
     /* Initiative bar */
     #ini-bar{
