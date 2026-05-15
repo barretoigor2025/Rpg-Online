@@ -182,7 +182,7 @@ function atualizarTileSize() {
   const canvas = document.getElementById('map-canvas');
   const W = canvas ? (canvas.width || 400) : 400;
   TILE_W = W >= 700 ? 60 : W >= 520 ? 48 : 40;
-  TILE_H = Math.floor(TILE_W * 0.75); // steeper angle fills portrait screen better
+  TILE_H = Math.floor(TILE_W / 2); // standard 2:1 isometric ratio
 }
 const _mapPos  = {};  // 'p_{uid}' | 'e_{nomeKey}' → {col,row}
 let _curJogs   = {};
@@ -255,7 +255,7 @@ function _desenharTile(ctx, col, row, h) {
   const isEnemy = col >= Math.floor(MAP_COLS * 0.6);
   const {x, y}  = isoToScreen(col, row, h);
   const hw = TILE_W / 2, hh = TILE_H / 2;
-  const sh = h * TILE_H * 2.5; // taller sides for dramatic block look
+  const sh = h * TILE_H * 1.8;
 
   // Top face — dark stone
   ctx.beginPath();
@@ -404,10 +404,9 @@ function desenharCanvas() {
   fog.addColorStop(1, 'rgba(4,6,18,.88)');
   ctx.fillStyle = fog;
   ctx.fillRect(0, 0, W, H);
-  // Debug overlay v3 — remove after confirming new code is live
   ctx.fillStyle = 'rgba(255,255,80,.9)';
   ctx.font = 'bold 12px monospace';
-  ctx.fillText(`v3 TW:${TILE_W} TH:${TILE_H} | ${W}x${H} | units:${Object.keys(_mapPos).length}`, 6, H - 6);
+  ctx.fillText(`v4 TW:${TILE_W} TH:${TILE_H} | ${W}x${H} | u:${Object.keys(_mapPos).length}`, 6, H - 6);
 }
 
 function initMapPositions(jogadores, inimigos) {
@@ -452,9 +451,9 @@ function renderizarMapaSprites() {
     const uid = isP ? key.slice(2) : null;
     const h   = (_terrain[`${pos.col},${pos.row}`] || {}).height || 0;
     const scr = isoToScreen(pos.col, pos.row, h);
-    // Anchor at bottom-center of tile top face
+    // Anchor sprite bottom at bottom vertex of tile diamond — character stands on tile
     const left = scr.x;
-    const top  = scr.y + TILE_H / 2;
+    const top  = scr.y + TILE_H;
 
     let sprEl = spEl.querySelector(`[data-key="${key}"]`);
     if(!sprEl) {
@@ -469,9 +468,9 @@ function renderizarMapaSprites() {
       sprEl.className   = `map-sprite sz${sz} ${isP ? 'map-player' : 'map-enemy'}`;
       sprEl.dataset.key = key;
       sprEl.innerHTML   = `
+        <div class="map-sprite-name">${nome}</div>
         <div class="map-sprite-bar"><div class="map-sprite-bar-fill" style="width:${hpPct}%"></div></div>
-        <img src="${imgSrc}" onerror="this.style.display='none'" alt="">
-        <div class="map-sprite-name">${nome}</div>`;
+        <img src="${imgSrc}" onerror="this.style.display='none'" alt="">`;
       spEl.appendChild(sprEl);
     } else {
       const entity = isP ? _curJogs[uid] : Object.values(_curInis).find(i => mapKeyIni(i.nome) === key);
