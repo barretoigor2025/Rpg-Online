@@ -1053,6 +1053,11 @@ function irParaJogo(codigo) {
     amIHost = (data.config.host === myUid);
     document.getElementById('btn-reset-campanha').style.display = amIHost ? 'inline-block' : 'none';
 
+    // Sync map positions from Firebase → local _mapPos (all clients)
+    if(data.mapPos) {
+      Object.entries(data.mapPos).forEach(([key, pos]) => { _mapPos[key] = pos; });
+    }
+
     atualizarTopbar(eu);
     atualizarStatusBar(jogadores, data.config.rodada, data.config.estado);
     renderizarHistoria(data.historia);
@@ -1095,6 +1100,7 @@ window.resetarCampanha = async function() {
   const ups = {};
   ups[`salas/${mySala}/historia`] = null;
   ups[`salas/${mySala}/inimigos`] = null;
+  ups[`salas/${mySala}/mapPos`]   = null;
   ups[`salas/${mySala}/config/estado`] = 'lobby';
   ups[`salas/${mySala}/config/rodada`] = 0;
 
@@ -1595,6 +1601,12 @@ function renderizarHistoria(historia) {
         const sp = document.getElementById('map-sprites')?.querySelector(`[data-key="${key}"]`);
         sp?.classList.add('bounce'); setTimeout(()=>sp?.classList.remove('bounce'),500);
       });
+      // Host persists the preview positions so other clients see it immediately
+      if(amIHost && mySala && Object.keys(_mapPos).length) {
+        const posUps = {};
+        Object.entries(_mapPos).forEach(([k,v]) => { posUps[`salas/${mySala}/mapPos/${k}`] = v; });
+        update(ref(db), posUps); // fire-and-forget
+      }
       setTimeout(renderizarMapaSprites, 60);
       return;
     }
@@ -1743,7 +1755,13 @@ function atualizarCena(jogadores, inimigos) {
     renderizarMapaSprites();
     renderizarIniBar(jogadores, inimigos||{});
   } else {
-    _terrain = {};
+    if(Object.keys(_terrain).length > 0) {
+      _terrain = {};
+      // Host clears persisted positions when combat ends
+      if(amIHost && mySala) remove(ref(db, `salas/${mySala}/mapPos`));
+      // Clear local _mapPos so next combat gets fresh positions
+      Object.keys(_mapPos).forEach(k => delete _mapPos[k]);
+    }
     // Exploração: sprites atmosféricos na scene-area
     const spEl = document.getElementById('scene-sprites');
     if(spEl) {
@@ -2053,7 +2071,7 @@ async function chamarIA(jogadores, data) {
 
     await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparStats(resposta), ts: Date.now() });
     await processarStats(resposta, jogadores, inimigos);
-    if(processarPosicoes(resposta)) setTimeout(renderizarMapaSprites, 120);
+    processarPosicoes(resposta);
 
     const ups = {};
     Object.keys(jogadores).forEach(uid => {
@@ -2062,6 +2080,8 @@ async function chamarIA(jogadores, data) {
     });
     ups[`salas/${mySala}/config/estado`] = 'aguardando';
     ups[`salas/${mySala}/config/rodada`] = rodada + 1;
+    // Persist map positions so all clients see the movement
+    Object.entries(_mapPos).forEach(([k, v]) => { ups[`salas/${mySala}/mapPos/${k}`] = v; });
     await update(ref(db), ups);
   } finally {
     chamandoIA = false;
