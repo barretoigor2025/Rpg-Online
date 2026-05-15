@@ -48,6 +48,7 @@ let voiceQueue  = [];
 let voiceBusy   = false;
 let _currentAudio = null;
 let _selectedClass = 'guerreiro';
+let _campanha   = null;
 
 // ═══════════════════════════════════════════════════════════════
 //  HELPERS
@@ -118,6 +119,59 @@ window.confirmarApiKeyModal = function() {
   if (_apiKeyPendingCb) { _apiKeyPendingCb(); _apiKeyPendingCb = null; }
 };
 
+// ═══════════════════════════════════════════════════════════════
+//  CAMPANHA — Carregar dados
+// ═══════════════════════════════════════════════════════════════
+async function carregarCampanha() {
+  try {
+    const res = await fetch('campanhas/beast-of-black-keep/campanha.json');
+    if (!res.ok) return;
+    _campanha = await res.json();
+    const el = document.getElementById('campaign-name');
+    if (el && _campanha) el.textContent = `📖 ${_campanha.titulo}`;
+  } catch(e) {
+    console.warn('Campanha não carregada:', e);
+  }
+}
+
+function buildCampaignContext() {
+  if (!_campanha) return '';
+
+  const npcs = Object.values(_campanha.npcs).map(n =>
+    `• ${n.nome} [${n.papel}]: ${(n.personalidade || '').substring(0, 100)}`
+  ).join('\n');
+
+  const regras = _campanha.regras_narracao.map(r => '• ' + r).join('\n');
+
+  return `
+═══ CAMPANHA: "${_campanha.titulo}" ═══
+${_campanha.prompt_sistema}
+
+REGRAS DO NARRADOR:
+${regras}
+
+NPCS PRINCIPAIS (conhecimento e comportamento):
+${npcs}
+
+MISSÃO DOS JOGADORES:
+Rastrear os Grimhollow Thools — monstros semelhantes a ogros que atacam Mhoried. Um deles é o Duque Oswald Laskaris, amaldiçoado. O verdadeiro inimigo é o Rei Chutter (ettin de duas cabeças, feiticeiro) que planeja invadir as cidades do norte. Choir o Necromante age nas sombras.
+
+CURA DE OSWALD (ingredientes para Mac Rónán ou Mac Rónán ritual):
+• Gillshade (Gruta Afogada): respirar água. Ingrediente 1.
+• Greybane (Caçada do Manticora): restaura memória. Ingrediente 2.
+• Cogumelos de Log-Wife (próx. Carcaça da Larva): Ingrediente 3.
+• Starshade Bloom (Twinfold Hollow): cura maldição sozinha (mais difícil de remover).
+• Pó de Sabedoria: restaura memórias de Oswald temporariamente — fica pacifista e confuso.
+
+IDENTIFICAR OSWALD:
+• Marca de nascença de hayberry no ombro
+• Dedo indicador maior que o polegar (Finn Willowheel o sapateiro sabe disso)
+• Pó de Sabedoria ou chá de greybane: memórias retornam brevemente
+
+ESTADO INICIAL DA CAMPANHA: ${_campanha.estado_inicial.localizacao} — ${_campanha.estado_inicial.momento}
+`;
+}
+
 // Preenche input se já tiver chave
 window.addEventListener('DOMContentLoaded', () => {
   const k = getApiKey();
@@ -129,6 +183,8 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('action-input')?.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarAcao(); }
   });
+
+  carregarCampanha();
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -555,15 +611,25 @@ window.chamarIAInicio = async function() {
       .map(j => `${j.nome} (${CLASSES[j.classe]?.nome || j.classe})`)
       .join(', ');
 
-    const prompt = `Abra esta campanha de RPG medieval com impacto cinematográfico. Personagens: ${nomes}.
+    const prompt = _campanha
+      ? `Inicie a campanha "${_campanha.titulo}". Personagens presentes: ${nomes}.
+
+CENA DE ABERTURA — A Festa de São Phanourius em Mhoried:
+Descreva o mercado festivo de outono sob os galhos dourados da Arbor Aeterna. Vendedores, fazendeiros, o cheiro de pão e nozes torradas, crianças brincando entre as raízes da árvore ancestral. A Duquesa Catherine Laskaris está presente com seu guarda-costas Sir Gregoras Pellos. Um bispo idoso, Bispo Methodios, abençoa a colheita enquanto atafulha a boca de avelãs de Mhoried.
+
+Então — o ataque. Uma criança grita. Um ESPANTALHO ASSOMBRADO rasga uma barraca com sua foice. Em segundos, mais surgem dos campos. São construtos mágicos de estopa podre e galhos partidos, brandindo foices e sacos de saque. Alguns atacam os cidadãos, outros arranham a Árvore Eterna.
+
+Narre com impacto e terror de folclore. Máximo 120 palavras.
+OBRIGATÓRIO ao final: STATS: [INIMIGO:Espantalho Assombrado:10:10:🪨] (2 por jogador — total: ${Object.keys(jogadores).length * 2} espantalhos, numere-os se necessário).`
+      : `Abra esta campanha de RPG medieval com impacto cinematográfico. Personagens: ${nomes}.
 
 ESTRUTURA DA ABERTURA:
-1. AMBIÊNCIA (2 frases): cenário com detalhes sensoriais — sons, cheiros, texturas.
-2. PRESSÁGIO (1-2 frases): um detalhe que algo está errado.
-3. O ATAQUE: escolha livremente o cenário e antagonistas com detalhes visuais únicos.
-4. GANCHO FINAL (1 frase): urgência máxima.
+1. AMBIÊNCIA (2 frases): cenário com detalhes sensoriais.
+2. PRESSÁGIO (1-2 frases): algo está errado.
+3. O ATAQUE: antagonistas com detalhes visuais únicos.
+4. GANCHO FINAL: urgência máxima.
 
-Máximo 100 palavras. Tom épico e cinematográfico.
+Máximo 100 palavras. Tom épico.
 OBRIGATÓRIO ao final: STATS: [INIMIGO:nome:hp:hpMax:ícone] para cada inimigo.`;
 
     const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, {}), [], prompt, mostrarRetryUI);
@@ -642,28 +708,31 @@ async function chamarIA(jogadores, data) {
 // ═══════════════════════════════════════════════════════════════
 function buildSystemPrompt(jogadores, inimigos) {
   const jogList = Object.values(jogadores).map(j =>
-    `${j.nome} (${CLASSES[j.classe]?.nome||j.classe}) — HP:${j.hp}/${j.maxHp} SP:${j.sp}/${j.maxSp}`
+    `${j.nome} (${CLASSES[j.classe]?.nome||j.classe}) — HP:${j.hp}/${j.maxHp}`
   ).join('\n');
 
   const iniList = Object.values(inimigos).filter(i => i.hp > 0).map(i =>
     `${i.icon||'👹'} ${i.nome} — HP:${i.hp}/${i.maxHp}`
   ).join('\n');
 
-  return `Você é um narrador de RPG. Escreva em português do Brasil com drama e impacto — mas seja DIRETO. Cada palavra deve contar.
+  const campCtx = buildCampaignContext();
 
+  return `Você é o Narrador. Escreva em português do Brasil com drama, impacto e tom de folclore sombrio. Seja DIRETO — cada palavra conta.
+${campCtx}
 VOZ:
-- Verbos fortes: "rasga", "despenca", "estala". Sem enchimento.
-- Foque no RESULTADO da ação, não na preparação.
-- ${iniList ? 'COMBATE — máximo 70 palavras.' : 'EXPLORAÇÃO — máximo 100 palavras.'}
+- Verbos fortes e sensoriais: "rasga", "despenca", "estala", "cheira a enxofre".
+- Foque no RESULTADO das ações, não na preparação.
+- ${iniList ? 'COMBATE ATIVO — máximo 80 palavras.' : 'EXPLORAÇÃO/DIÁLOGO — máximo 120 palavras.'}
+- Mantenha o tom: a floresta observa, os NPCs têm segredos, nada é seguro.
+- React às ações dos jogadores de forma coerente com o mundo da campanha.
 
-JOGADORES:
+JOGADORES ATIVOS:
 ${jogList}
-${iniList ? `\nINIMIGOS:\n${iniList}` : ''}
+${iniList ? `\nINIMIGOS EM CENA:\n${iniList}` : ''}
 
-FORMATO DE RESPOSTA:
-- Narração curta e impactante.
-- Para atualizar HP de inimigos: STATS: [HP:NomeInimigo:novoHp]
-- Para matar inimigo: STATS: [MATAR:NomeInimigo]
-- Para dano ao jogador: STATS: [JOGADOR:NomeJogador:novoHp]
-- Para novos inimigos: STATS: [INIMIGO:nome:hp:hpMax:ícone]`;
+TAGS OBRIGATÓRIAS (inclua ao final de cada resposta quando aplicável):
+• Novo inimigo em cena: STATS: [INIMIGO:nome:hp:hpMax:ícone]
+• Inimigo recebe dano: STATS: [HP:NomeInimigo:novoHp]
+• Inimigo morreu: STATS: [MATAR:NomeInimigo]
+• Jogador recebe dano: STATS: [JOGADOR:NomeJogador:novoHp]`;
 }

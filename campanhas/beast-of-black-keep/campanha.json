@@ -1,0 +1,609 @@
+{
+  "id": "beast-of-black-keep",
+  "titulo": "A Fera do Forte Negro",
+  "titulo_original": "The Beast of Black Keep",
+  "sistema": "GURPS Banestorm / Fantasy",
+  "jogadores_recomendados": "4-6",
+  "sessoes_estimadas": "3-5",
+  "tom": "folclore sombrio, fantasia sombria, pavor rastejante",
+  "idioma_narracao": "português brasileiro",
+
+  "sinopse": "A pequena cidade de Mhoried foi golpeada por uma calamidade oculta. Seu herdeiro, o Duque Oswald Laskaris, retornou de seus estudos em Megalos transformado numa forma monstruosa semelhante a um ogro. Incapaz de viver entre seu povo, fugiu para a floresta e começou a saquear assentamentos junto a dois monstros similares — os Grimhollow Thools. A Duquesa Catherine, sua irmã, proibiu qualquer dano a eles na esperança de um dia reverter a maldição. Mas uma escuridão mais profunda lançou raízes: um ettin de duas cabeças versado em feitiçaria, chamado Rei Chutter, planeja conquistar as cidades do norte.",
+
+  "estrutura": {
+    "parte1": {
+      "nome": "A Festa de São Phanourius",
+      "resumo": "Os PJs chegam ao mercado festivo de Mhoried. A Árvore Eterna (Arbor Aeterna) é atacada por espantalhos animados (construtos mágicos). Após a batalha, Gregoras Pellos, guarda-costas da Duquesa, contrata os PJs para rastrear os Grimhollow Thools em sua toca secreta no interior das Blackwoods.",
+      "recompensa_base": "5.000 moedas de prata por pôr fim aos ataques dos Thools; cavalaria concedida ao herói se Oswald for devolvido vivo"
+    },
+    "parte2": {
+      "nome": "As Blackwoods",
+      "resumo": "Exploração sandbox da floresta amaldiçoada. 16 locais principais, encontros aleatórios, NPCs com motivos próprios. Os PJs descobrem a conspiração do Rei Chutter e podem encontrar ingredientes para curar Oswald.",
+      "objetivo_principal": "Encontrar a toca dos Thools (Gloamreach) e descobrir qual deles é Oswald"
+    },
+    "parte3": {
+      "nome": "A Torre das Estrelas de Limm",
+      "resumo": "Um portal no fundo da toca dos Thools leva à Startower, uma torre ancestral no pico das Montanhas de Granito. Lá, o Rei Chutter prepara sua invasão. Os PJs devem derrotá-lo.",
+      "objetivo_principal": "Derrotar o Rei Chutter e desmontalar seus planos de conquista"
+    }
+  },
+
+  "regras_narracao": [
+    "Tom sempre sombrio e de pavor lento — nunca deixe os jogadores se sentirem completamente seguros nas Blackwoods",
+    "Descreva sons estranhos, sensação de ser observado, eventos inexplicáveis",
+    "NPCs têm motivações próprias — a crone mente, os elfos sombrios são hostis sem razão, os kobolds são covardes mas astutos",
+    "Encontros aleatórios: ao entrar em novo hex ou acampar, role 3d — em 6 ou menos há encontro",
+    "Navegação: a cada hex percorrido o líder deve rolar Navegação (ou Sobrevivência); fracasso = deriva 1 hex aleatório",
+    "Ervas mágicas são raras e precisam de rolagens (Naturalismo, Alquimia ou Ervas) para serem encontradas",
+    "Aumentar urgência: à medida que os PJs descobrem o plano de Chutter, descreva patrulhas de kobolds, kobolds buscando veneno de aranhas, etc.",
+    "Abrace o folclore: eventos estranhos não precisam de explicação imediata. O que parece místico, permanece místico.",
+    "Os Thools não são vilões — são vítimas de uma maldição. Oswald ainda tem uma centelha de humanidade.",
+    "Se os PJs ficarem perdidos, Mutter Grimmhaar pode aparecer para empurrá-los na direção certa (ainda que com motivos escusos)"
+  ],
+
+  "tags_mecanicas": {
+    "descricao": "Use tags no final das respostas para atualizar o estado do jogo. O sistema lê e processa estas tags.",
+    "formato_inimigo": "STATS: [INIMIGO:nome:hp_atual:hp_max:ícone]",
+    "formato_dano_inimigo": "STATS: [HP:nome_inimigo:novo_hp]",
+    "formato_matar": "STATS: [MATAR:nome_inimigo]",
+    "formato_jogador": "STATS: [JOGADOR:nome_jogador:novo_hp]",
+    "exemplos": [
+      "STATS: [INIMIGO:Espantalho Assombrado:10:10:🪨] [INIMIGO:Espantalho Assombrado 2:10:10:🪨]",
+      "STATS: [HP:Espantalho Assombrado:5]",
+      "STATS: [MATAR:Espantalho Assombrado]"
+    ]
+  },
+
+  "estado_inicial": {
+    "localizacao": "Mhoried — Mercado da Festa de São Phanourius",
+    "fase": "parte1",
+    "momento": "Um dia festivo de outono, sob os galhos dourados da Arbor Aeterna. Vendedores, fazendeiros e peregrinos enchem a praça."
+  },
+
+  "npcs": {
+    "duchess_catherine": {
+      "nome": "Duquesa Catherine Laskaris",
+      "papel": "governante de Mhoried, irmã de Oswald",
+      "aparencia": "jovem, movimentos leves, compra flores e alimentos dos fazendeiros com prazer genuíno",
+      "personalidade": "nobre, protetora, guarda segredo sobre o irmão",
+      "segredo": "sabe que um dos Thools é seu irmão Oswald — por isso proibiu ataques contra eles",
+      "posicao": "Parte 1 — mercado de Mhoried; depois no Forte Negro",
+      "reacao_default": "Boa — é cordial com aventureiros respeitosos",
+      "info_que_da": [
+        "Proíbe ataque aos Thools — diz que isso traria inimigos mais poderosos",
+        "Encoraja os PJs a trazerem informações sobre o ataque"
+      ]
+    },
+    "gregoras": {
+      "nome": "Sir Gregoras Pellos",
+      "papel": "guarda-costas da Duquesa, contrata os PJs",
+      "aparencia": "homem bonito, mace na cinta, veste pano acolchoado durante o festival",
+      "personalidade": "leal, prático, secretamente apaixonado pela Duquesa",
+      "segredo": "está apaixonado pela Duquesa Catherine",
+      "stats": {"ST":12,"DX":12,"IQ":12,"HT":12,"HP":12,"defesa":"Esquiva 10"},
+      "info_que_da": [
+        "Oswald foi estudar magia em Bannock; o mago cruel Dendybar o Manchado o transformou por castigo",
+        "Os Thools vivem no Grimhollow (seção norte das Blackwoods), localização exata desconhecida",
+        "Marca de nascença de Oswald: mancha em forma de fruto de hayberry no ombro",
+        "Oswald amava esculpir brinquedos de madeira para as crianças",
+        "Pode indicar Hobbleboot Sam como guia (100 pratas) ou vender mapa rudimentar (10 pratas)",
+        "Recompensa: 5.000 pratas por pôr fim aos ataques; título de cavaleiro + 100 hectares de terra por devolver Oswald vivo sem se machucar"
+      ]
+    },
+    "hobbleboot_sam": {
+      "nome": "Hobbleboot Sam",
+      "papel": "guia local",
+      "aparencia": "manqueja levemente, adora caçar cogumelos",
+      "personalidade": "acrofóbico, habilidoso nas matas",
+      "stats": {"ST":11,"DX":12,"IQ":11,"HT":11,"HP":11},
+      "skills": "Conhecimento das Blackwoods-12, Sobrevivência-12, Rastreamento-12",
+      "preco": "100 pratas"
+    },
+    "oswald": {
+      "nome": "Duque Oswald Laskaris (Thool)",
+      "papel": "vítima e alvo da missão principal",
+      "aparencia": "forma de ogro enorme (SM+1), pele acinzentada, olhos turvos — mas há uma estranha gentileza nos gestos",
+      "personalidade": "sem memórias do passado como humano; age como bruto leal a Chutter; confuso quando sua maldição começa a ser revertida",
+      "como_identificar": [
+        "Marca de hayberry no ombro (Percepção-3 para ver nas costas nuas)",
+        "Dedo indicador maior que o polegar do pé (Finn Willowheel o sapateiro sabe disso)",
+        "Pó de Sabedoria ou chá de greybane restaura memórias temporariamente (1d horas) — Oswald fica confuso e pacifista"
+      ],
+      "cura": [
+        "Starshade Bloom inalada à luz da lua (Twinfold Hollow)",
+        "Ritual de Mac Rónán com 3 ervas: gillshade + greybane + cogumelos de Log-Wife",
+        "Matar Dendybar o Manchado (fora do escopo desta campanha)",
+        "Pó de Sabedoria: restaura memórias temporariamente, deixa-o pacifista e confuso por 1d horas"
+      ],
+      "stats_como_thool": {"ST":15,"DX":12,"IQ":11,"HT":12,"HP":15,"SM":"+1","arma":"Lança 2d+1 imp","armadura":"DR 3 (couro em camadas)"}
+    },
+    "mutter_grimmhaar": {
+      "nome": "Mutter Grimmhaar",
+      "papel": "bruxa das Blackwoods, canibala",
+      "aparencia": "mulher alta e frágil, vestido preto surrado, chapéu de pele de anfíbio e teia de aranha",
+      "personalidade": "encantadora de forma perturbadora, encerra frases com 'que assim é', canibal obsessiva, ama larvas gigantes",
+      "localizacao": "Clareira 6 (sul das Blackwoods)",
+      "stats": {"ST":11,"DX":12,"IQ":12,"HT":13,"HP":11,"Magery":3},
+      "magias": "Clumsiness-15, Fumble-15, Pain-15, Paralyze Limb-15, Stun-15, Tanglefoot-15",
+      "mente": "Sabe que os Thools vivem num cânion a leste. Sabe que um deles era humano. Suspeita que a cura envolva matar o mago ou o druid Cnoc na Ríthe.",
+      "favores_para_revelar_info": [
+        "Matar o manticora a leste (ela o teme)",
+        "Levar uma encomenda ao filho Wulfram (uma caixa pregada — contém a cabeça do pai de Wulfram, ela mente e diz que é uma abóbora)"
+      ],
+      "comercio": "Dá gillshade + greybane em troca do intestino médio de uma larva gigante (vale 500+ pratas)",
+      "perigos": [
+        "Porta e janelas da cabana armadilhadas (Vontade vs. habilidade de encantamento 16 ou receba penalidade -1 a todos os testes)",
+        "Bule de sopa pode ser envenenado se ela estiver irritada",
+        "Morwenna (jovem em gaiola) precisa ser resgatada — canibal a estava guardando para a próxima lua cheia"
+      ],
+      "caixa_secreta": "Dentro de um baú contém: gemas (3.000 pratas), caixa manchada de sangue com a cabeça de Charles Skipton (pai de Wulfram), amuleto mágico (+1 FOR à noite), vestido vermelho mágico (transforma quem o usa em mulher bela)"
+    },
+    "wulfram": {
+      "nome": "Wulfram — O Homem Chifrado",
+      "papel": "filho da bruxa, hesitante entre bem e mal",
+      "aparencia": "chifres de veado na cabeça, mora numa cabana com telhado de chifres e antlers, parece sempre triste",
+      "personalidade": "temperamental, indeciso, recluso, ama frutas cítricas, sente falta do pai que nunca conheceu",
+      "segredo": "Matou o próprio pai (Charles Skipton) a conselho da bruxa-mãe — não sabe disso",
+      "localizacao": "Local 11 — sudeste das Blackwoods",
+      "stats": {"ST":15,"DX":13,"IQ":12,"HT":13,"HP":15,"arma":"Biting Kalos — machado longo encantado 2d+6 corte","armadura":"DR 2 couro"},
+      "dilema": "O Rei Chutter quer que ele lidere os kobolds no ataque ao norte. Choir o convenceu a não aceitar. Está indeciso.",
+      "como_ganhar_aliado": [
+        "Provar que a cabeça na caixa é de seu pai (Príncipe Kalos dos elfos sombrios sabe disso)",
+        "Se souber a verdade, entra em fúria mas eventualmente pede aos PJs para matar a bruxa-mãe, e dá seu machado como recompensa"
+      ]
+    },
+    "prince_kalos": {
+      "nome": "Príncipe Kalos",
+      "papel": "líder dos elfos sombrios",
+      "aparencia": "élfico, arrogante, 30 anos de trabalho restantes para terminar a estátua de Voorn",
+      "personalidade": "obsessivo com restaurar Hooded Voorn, intolerante a humanos, inteligente",
+      "localizacao": "Local 5 — acampamento élfico no norte",
+      "stats": {"ST":13,"DX":13,"IQ":13,"HT":13,"HP":13,"arma":"Espadão fino 2d+1 corte","armadura":"Cota de malha fina DR 4"},
+      "relacoes": "Paga à bruxa por raptar donzelas. Tem respeito por Charles Skipton (pai de Wulfram). Sabe que a caixa da bruxa contém a cabeça de Charles.",
+      "comercio": "Troca fragmentos de pedra de Voorn (pedras de poder de 1 ponto) por itens élfico de qualidade",
+      "reacao": "Hostil a não-elfos a menos que tragam fragmento de Voorn ou cheguem via Mutter Grimmhaar ou o Homem Chifrado"
+    },
+    "king_chutter": {
+      "nome": "Rei Chutter",
+      "papel": "antagonista principal, ettin de duas cabeças feiticeiro",
+      "aparencia": "ettin massivo de duas cabeças, usa capas e mistério, SM+0 mas muito intimidador",
+      "personalidade": "uma cabeça fala bem, a outra desconfia de tudo; bully, solitário, intolerante com humanos",
+      "localizacao_atual": "Startower de Limm (Montanhas de Granito) — acessível via portal no fundo da Gloamreach",
+      "plano": "Conquistar Mhoried, bloquear a grande rota comercial do norte de Megalos, governar do Forte Negro",
+      "aliados": ["Grimhollow Thools (seus tenentes)", "Kobolds (força bruta)", "Choir o Necromante (aliança estremecida)", "Dendybar o Manchado (pagou a ele para criar os Thools)"],
+      "stats": {"ST":21,"DX":11,"IQ":12,"HT":13,"HP":21,"FP":18,"Magery":4,"arma":"Cajado de Limm 3d+3 contusão","armadura":"DR 5 (couro + DR 2 pele)"},
+      "magias_chave": "Terremoto-15, Rajada de Areia-14, Jato de Areia-16, Tempestade de Areia-14, Escudo-14, Desviar Projétil-15, Pedra Teleguiada-16",
+      "tatica": "Cria dois Golems de Pergaminho primeiro; usa magias de terra e areia; recua para o parapeito se ferido; tenta jogar PJs da torre",
+      "fraqueza": "Desconfia de Choir (pode ser manipulado com isso); se Thools foram mortos, entra em fúria e perde estratégia"
+    },
+    "choir": {
+      "nome": "Choir — o Necromante",
+      "papel": "vilão nas sombras, promessas quebradas",
+      "aparencia": "nunca aparece diretamente — sua influência é sentida em toda a campanha",
+      "personalidade": "frio, calculista, traiu Chutter apostando na derrota do ettin",
+      "localizacao": "Escondido ao sul do Grimhollow, espionando os eventos",
+      "plano_real": "Quando Chutter morrer, reclamar a Torre de Limm para si e erguer seu próprio domínio",
+      "criações": ["Espantalhos Assombrados (Harrowed Scarecrows)", "Mother Clutch (horror de membros)", "Esqueletos Spearmen", "Marrowwithers (larvas de carne)"],
+      "gancho_futuro": "Pode ser o antagonista da próxima campanha"
+    },
+    "mac_ronan": {
+      "nome": "Mac Rónán",
+      "papel": "druid supremo do Cnoc na Ríthe, pode curar Oswald",
+      "aparencia": "ancião, capturado pelos kobolds",
+      "personalidade": "sábio, paciente, preocupado com a floresta",
+      "localizacao": "Capturado em Kobold-Town (2º andar da casa de Blunkin)",
+      "habilidades": "Cura Menor e Maior (até 11 HP); pode reverter a maldição de Oswald com ritual + 3 ervas",
+      "ervas_necessarias": ["Gillshade (Gruta Afogada)", "Greybane (Caçada do Manticora)", "Cogumelos de Log-Wife (próximo à Carcaça da Larva)"],
+      "info_que_da": "Confirma que o alto druid pode curar Oswald; sabe que Chutter é necromante poderoso; não sabe onde Chutter mora"
+    },
+    "muirenn": {
+      "nome": "Muirenn",
+      "papel": "assistente do druid no Cnoc na Ríthe",
+      "aparencia": "quieta, amigável",
+      "habilidades": "Cura Menor e Maior (até 11 HP), cura doenças leves",
+      "info_que_da": [
+        "Mac Rónán foi capturado pelos kobolds",
+        "A Poça do Pranto está perto do túmulo de uma campeã élfica do mar",
+        "Gillshade fica na Gruta Afogada (perigosa — espírito lá)",
+        "Greybane fica nas árvores harwood na caçada do manticora",
+        "Log-Wives foram ouvidas a alguns quilômetros ao norte"
+      ]
+    },
+    "fariborz": {
+      "nome": "Fariborz — o Piromante",
+      "papel": "aliado caótico / inimigo potencial",
+      "aparencia": "pouco atraente, usa armadura de pano à prova de fogo, carrega faca encantada com chamas",
+      "personalidade": "paranoico, egoísta, obsessivo com demônios de fogo, sadista",
+      "localizacao": "Perto do Depósito de Vulkrundshard (local 9)",
+      "segredo": "Sobreviveu ao enforcamento engolindo gillshade. É procurado por assassinato de dois sacerdotes e incêndio criminoso.",
+      "stats": {"ST":12,"DX":12,"IQ":13,"HT":11,"HP":12,"Magery":3},
+      "magias_chave": "Respirar Fogo-15, Bola de Fogo-15, Invocar Elemental de Fogo-14, Criar Fogo-15",
+      "se_ajudado": "Conta que Oswald pode ter memórias restauradas com Pó de Sabedoria ou chá de greybane; sabe algo sobre Dendybar",
+      "perigo": "Se deixado sozinho com o Vulkrundshard, pode ser possuído pelo demônio Thamazul"
+    },
+    "ruzalka": {
+      "nome": "Ruzalka",
+      "papel": "espírito d'água caprichoso",
+      "aparencia": "cabelos brancos, bela, vive na ruína submersa",
+      "personalidade": "esquecidiça, lecherosa, às vezes esquece de dar o beijo que permite respirar debaixo d'água",
+      "localizacao": "Local 13 — Gruta Afogada (Wane-Deep)",
+      "perigo": "Manda caranguejos capturar homens atraentes; usa magias para prender um deles",
+      "info_que_da": "Os Thools ficam numa caverna perto do vilarejo kobold a leste; há uma força sombria chamada Rei Chutter controlando-os",
+      "se_negociada": "Pode compartilhar informações mas tentará ficar com o homem mais atraente do grupo"
+    },
+    "blunkin": {
+      "nome": "Blunkin o Esmaga-Crânios",
+      "papel": "chefe kobold, fantoche dos Thools",
+      "aparencia": "kobold gordo, pouco inteligente, faz declarações absurdas que seus pares acham encantadoras",
+      "personalidade": "IQ 7, arrogante mas idiota, facilmente manipulável",
+      "localizacao": "Kobold-Town — único prédio de dois andares",
+      "info_que_da": "Inadvertidamente revela que os Thools moram 'numa caverna a uma milha a leste'",
+      "perigo": "Se insultado, manda capturar os PJs; se morto, kobolds entram em pânico"
+    },
+    "drizzle": {
+      "nome": "Drizzle",
+      "papel": "kobold cleptomaníaco",
+      "aparencia": "orelhas excepcionalmente longas, língua que se agita",
+      "personalidade": "amigável de forma suspeita, não consegue parar de roubar",
+      "localizacao": "Kobold-Town",
+      "skills": "Bater-Carteira-13, Furtividade-12",
+      "profecia": "Diz que se morrer, 'a profecia diz que o doom vai chover sobre a floresta' — isso é VERDADE (sua morte causa tempestade de 3 dias e -3 penalidade de escuridão)"
+    },
+    "valmorien_ysoria": {
+      "nome": "Valmorien e Ysoria",
+      "papel": "caçadores em busca do manticora",
+      "aparencia": "caçador experiente e aprendiz adolescente",
+      "localizacao": "Caçada do Manticora",
+      "info_que_da": "Chifres do manticora valem 3.000 pratas cada; seu plano é pendurar carcaça de veado para atrair o bicho"
+    },
+    "aelar_eisenli": {
+      "nome": "Aelar Eisenli",
+      "papel": "caçadora de recompensas élfica",
+      "aparencia": "furtiva, bem equipada, capacete da visão especial",
+      "personalidade": "honesta, legalista, não interfere com os Thools (segue a lei de Mhoried)",
+      "localizacao": "Encontro aleatório noturno",
+      "stats": "ST 13, DX 13, IQ 12, HT 12 — longa adaga, espadão fino, arco longo, anel de resistência mágica +2",
+      "missao": "Recapturar Fariborz o Piromante (recompensa de 500 pratas)"
+    },
+    "finn_willowheel": {
+      "nome": "Finn Willowheel",
+      "papel": "sapateiro élfico, dica de identificação de Oswald",
+      "aparencia": "velho e alegre, carrega sacola encantada com dezenas de sapatos",
+      "info_que_da": "O dedo indicador do duque Oswald é maior que o polegar do pé — exigiu cuidado especial ao fazer seus sapatos",
+      "localizacao": "Encontro aleatório (sul das Blackwoods)"
+    },
+    "dvalinn": {
+      "nome": "Dvalinn — o Anão",
+      "papel": "aliado resgatável em Kobold-Town",
+      "aparencia": "anão mal-humorado, com corte de flecha, quer vingança dos elfos sombrios",
+      "localizacao": "Preso em Kobold-Town",
+      "stats": "ST 13, DX 11, IQ 11, HT 12, DR 1 (pele dura); Machado/Maça-13, Sobrevivência-10",
+      "info_que_da": "Conhece a lenda do Vulkrundshard — avisa que provavelmente há um demônio dentro"
+    }
+  },
+
+  "locais": {
+    "mhoried": {
+      "nome": "Mhoried",
+      "descricao": "Cidade de ~1.200 habitantes (incluindo 100 anões), governada pela jovem Duquesa Catherine Laskaris do Forte Negro, uma fortaleza de granito construída por anões há cinco séculos. Situada ao longo da Rota Imperial do Norte. Famosa pelas avelãs.",
+      "pontos_de_interesse": ["Forte Negro (residência da Duquesa)", "Mercado da Festa de São Phanourius", "Arbor Aeterna (árvore ancestral, área de mana alta)"]
+    },
+    "blackwoods_entrada": {
+      "id": 1,
+      "nome": "Entrada das Blackwoods",
+      "descricao": "Arco de pedra coberto de musgo e sombra, com cerca de mil anos. Inscrições élficas. Um fio de corda desgastado pende do arco — onde Fariborz foi enforcado (e sobreviveu graças ao gillshade).",
+      "handout_b": "Pergaminho no chão: 'Aqui jaz Fariborz o Piromante, incendiário, traidor, execrado. Condenado pelo incêndio de Simithari. Que sua alma maldita arda onde nenhuma estrela brilha.'",
+      "pistas": [
+        "Rastros de figuras pesadas (os Thools) rumando ao sudeste",
+        "Rastros mais recentes de um homem rumando ao sudoeste (Fariborz, há 1 dia)"
+      ]
+    },
+    "wagao_tombado": {
+      "id": 2,
+      "nome": "A Carroça Tombada",
+      "descricao": "Carroça de mercadores de vidro tombada. Dois cadáveres com flechas pretas nos corações. Atacada pelos elfos sombrios de Azzika Fren.",
+      "tesouros": ["Bolsa com 50 pratas", "Garrafas finas de vinho de Caithness", "Colar de pérolas (75 pratas)", "Machado fino de anão com o nome 'Dvalinn' gravado (pertence ao anão preso em Kobold-Town)"]
+    },
+    "encruzilhada": {
+      "id": 3,
+      "nome": "A Encruzilhada",
+      "descricao": "Placa velha em três idiomas: 'Cuidado com as aranhas!' e 'Cnoc na Ríthe — 9 milhas'. Um javali ensandecido irrompe da vegetação com um braço humano ainda agarrado à lança em suas costas.",
+      "pistas": ["Caçador morto próximo com mapa rudimentar (Handout C) mostrando a cabana da bruxa"],
+      "tesouros": ["Lança de javali de qualidade fina (se reparada)", "Luva de qualidade boa no braço falso (sem braço dentro!)"]
+    },
+    "poco_das_lagrimas": {
+      "id": 4,
+      "nome": "O Poço das Lágrimas",
+      "descricao": "Poço de pedra meio engolido por vinhas. Runas élficas desgastadas. Ao entardecer, sons de choro suave sobem das profundezas.",
+      "magia": "Água torna-se mágica por 10 minutos ao nascer do sol. Beber em outro horário dá visões de memórias passadas (ghosts translúcidos) por 2 horas: +1 a Busca/Rastreio/Ocultismo, mas -2 a rolagens de reação por 1 dia.",
+      "segredo": "As visões podem levar ao túmulo de Jariella, a guerreira élfica do mar morta pelo manticora — portadora de Selvimar, espadão encantado com Puissance+1, Accuracy+1 e 3 gemas: Respirar Água, Resistir Raio, Pedra de Poder de 6 pontos"
+    },
+    "acampamento_elfico": {
+      "id": 5,
+      "nome": "O Acampamento dos Elfos Sombrios",
+      "descricao": "Pilares de pedra caídos em clareira. No centro, uma estátua de um elfo congelado a meio-grito — metade reconstruída: é Hooded Voorn, feiticeiro que tentou conjurar uma fortaleza subterrânea mas explodiu, petrificado em mil fragmentos.",
+      "elfos": "~50 elfos sombrios liderados pelo Príncipe Kalos. Hostis a não-elfos, salvo se PJs tiverem fragmento de pedra de Voorn ou chegarem via Mutter Grimmhaar ou Wulfram.",
+      "comercio": "Fragmentos de Voorn = pedras de poder de 1 ponto. Príncipe Kalos os troca por itens élficos de qualidade ou um cajado de iroko encantado com Geada.",
+      "aviso": "Se PJs recusarem entregar fragmento que possuem, Kalos manda mata-los"
+    },
+    "cabana_da_bruxa": {
+      "id": 6,
+      "nome": "A Cabana da Bruxa Grimmhaar",
+      "descricao": "Num claro sempre envolto em crepúsculo, uma cabana que parece um sapo podre. Teto coberto de teias e mofo. Ar pesado com cheiro de carne cozida.",
+      "armadilhas": [
+        "Portas e janelas hexadas (Vontade vs. encantamento 16 ou penalidade -1 a todos os testes; bruxa pode localizar a vítima)",
+        "Baú armadilhado (homem que abrir fica dormindo 2d horas; mulher que abrir faz o baú segui-la por 1d minutos)"
+      ],
+      "morwenna": "Jovem congelada em gaiola — filha de mercador capturada pelos elfos. Precisa ter a gaiola aberta (Arrombamento ou FOR vs. 14). Se liberada, a bruxa a perseguirá via elfos.",
+      "conteudo_bau": "Gemas (3.000 pratas), caixa com cabeça de Charles Skipton, amuleto +1 FOR à noite, vestido vermelho mágico"
+    },
+    "ruinas_simithari": {
+      "id": 7,
+      "nome": "As Ruínas de Simithari",
+      "descricao": "Antiga fortaleza élfica em colina, agora habitada por centenas de corvos. Torre chamuscada e colapsada. Sob as ruínas: despensa antiga com nozes glutenosas (sacia por 1 dia), vial de ashsalt (imunidade a fogo por 1 hora), luvas encantadas corte-resistentes.",
+      "habitantes": "Dois Marrowwithers (larvas de carne sem ossos) vivem na despensa subterrânea. Os tatuagens deles dizem 'Choir' — pista sobre o necromante.",
+      "tesouro_escondido": "Varinha de Fariborz perdida em arbustos queimados — parece galho de pinheiro calcinado (encantada com Piscar e Devolver Projétil)"
+    },
+    "caçada": {
+      "id": 8,
+      "nome": "Área de Caça — Aranhas e Manticora",
+      "descricao": "Duas áreas perigosas no norte das Blackwoods.",
+      "aranhas": {
+        "nome": "Wraithweaver Spiders",
+        "descricao": "Aranhas brancas como osso com olhos como brasas congeladas. Não tecem teia de seda — tecem véus de linha espectral quase invisível que paralisam com visões da própria morte.",
+        "stats": "ST 12, DX 13, IQ 3, HT 11, HP 12 — Mordida 1d pi+ causa Verificação de Medo a cada mordida"
+      },
+      "manticora": {
+        "nome": "Manticora Albina",
+        "descricao": "Fera maldita de pele branca, caça os veados negros nativos da floresta.",
+        "stats": "ST 18, DX 12, IQ 7, HT 12, HP 18, SM+1 — Garras/Mordida 2d+3 corte; Espinhos da cauda 2d pi+",
+        "perigo_especial": "Mordida causa infecção — ferida não cura naturalmente; -3 para magias de cura",
+        "tesouros": "Chifres valem 3.000 pratas cada; coração negro vale 500 pratas (fertiliza campos por anos)"
+      }
+    },
+    "vulkrundshard": {
+      "id": 9,
+      "nome": "Depósito de Vulkrundshard",
+      "descricao": "Enorme pedra negra e vitrificada com veias de luz vermelha viva. Ar quente, cheiro de cobre e trovão. Zona de mana alta.",
+      "segredo": "Dentro há a consciência do demônio Thamazul o Ladrão, aprisionado há 2 séculos. Finge ser um rei anão bondoso e pede ajuda. Se alguém revelar seu verdadeiro nome, o demônio tenta possuí-lo (Concurso de Vontade vs. 13).",
+      "recurso": "Fragmento extraído com sucesso (Geologia/Mineração) = pedra de poder de 2d pontos +1 a magias de fogo",
+      "aviso": "Se Fariborz ficar sozinho aqui, tem grande chance de ser possuído por Thamazul"
+    },
+    "twinfold_hollow": {
+      "id": 10,
+      "nome": "O Vale Gêmeo (Twinfold Hollow)",
+      "descricao": "Uma área da floresta que ganhou consciência — e se fraturou em duas personalidades. A cada 1d horas a personalidade muda.",
+      "personalidade_impar": {
+        "nome": "Rootflayer",
+        "descricao": "Árvore senciente maligna. Face na casca. Exige sacrifício de sangue (10 HP) para falar. Conhece segredos das Blackwoods. Se recusado, envia Barkthreshers (3 árvores andantes) para matar os PJs.",
+        "conhecimento": "Sabe sobre Rei Chutter, Mac Rónán, druidas, o demônio no Vulkrundshard, ervas"
+      },
+      "personalidade_par": {
+        "nome": "Brish Lorr Blackelm",
+        "descricao": "Face amigável, rouca e sussurrante. Ajuda espontaneamente na boa reação. Pede que PJs destruam 3 Barkthreshers que devoram o campo de Starshade.",
+        "recompensa": "Ensina como usar o Starshade Bloom para curar maldições de transformação (incluindo Oswald)"
+      },
+      "campo_de_starshade": "Um hectare de flores roxas pontilhadas. A vapor delas para a cura de doenças e maldições (+4 a resistir doenças; cura a maldição de Oswald se inalada à luz da lua). Remover planta do solo: Ervas ou Naturalismo."
+    },
+    "homem_chifrado": {
+      "id": 11,
+      "nome": "A Cabana do Homem Chifrado",
+      "descricao": "Clareira onde as árvores se inclinam e nenhum pássaro canta. Cabana com telhado de chifres e antlers. Placa: 'Guarda tua alma, pois o Homem Chifrado a reclamará.' Sons de choro vindo de dentro.",
+      "npc": "Wulfram — filho da bruxa com chifres de veado na cabeça. Melancólico. Convida para água e ensopado de javali se tratado com respeito.",
+      "gancho": "O Rei Chutter quer que Wulfram lidere os kobolds. Wulfram está indeciso. Os PJs podem influenciá-lo."
+    },
+    "cnoc_na_rithe": {
+      "id": 12,
+      "nome": "Cnoc na Ríthe — Santuário dos Druidas",
+      "descricao": "Anel de pedras e terra, abrigo para foragidos, perdidos e excomungados. Colheitas de frutas e centeio selvagem. Corvos pousam tranquilos como se sob proteção dos druidas.",
+      "saudacao": "'Você vem com mãos quietas ou calcanhares perseguidos? Fale a palavra, e se seu coração for verdadeiro, o bosque te abrigará.'",
+      "muirenn": "Assistente do druid. Cura até 11 HP. Mac Rónán está ausente — capturado pelos kobolds.",
+      "ataque_de_choir": "Se os PJs passarem a noite aqui: 12 esqueletos com lanças atacam o acampamento. Mother Clutch espera do lado de fora para pegar e dilacerar Muirenn."
+    },
+    "gruta_afogada": {
+      "id": 13,
+      "nome": "A Gruta Afogada (Drowned Grove)",
+      "descricao": "Lago enevoado com ruínas da Castellet Malvoisin afundada. Bordas com gillshade (grama verde e amarela listrada). Cadáver flutuando (o caçador Pietre, descartado por Ruzalka).",
+      "gillshade": "Identificação: Naturalismo ou Alquimia. Cru: respirar água por 1 hora. Chá: 1d horas.",
+      "ruzalka": "Espírito d'água de cabelos brancos que mora na ruína submersa. Manda caranguejos capturar homens atraentes. Seu beijo permite respirar debaixo d'água por tempo curto.",
+      "wane_deep": {
+        "descricao": "Ruína submersa com 7 salas. Penalidade -3 de escuridão. Armas corpo-a-corpo em -4.",
+        "salas": [
+          "1 - Entrada: Armadura enferrujada com manopla direita brilhante (protegida por magia)",
+          "2 - Estudo: Selo de bronze de Sir Giraud (500 pratas), carta de amor nunca enviada para Lady Naelira de Simithari",
+          "3 - Quarto do Quay Grabber: half-troll servidor de Ruzalka; coleção de itens roubados (3.000 pratas), anel mágico",
+          "4 - Sala dos Caranguejos: 1d caranguejos gigantes",
+          "5 - Sala de Pintura de Pomellina: murais mágicos, mosaico de polvo com 2 rubis (600 pratas cada) — Ruzalka pode animar o polvo para prender PJs",
+          "6 - Sala de Jantar: talheres de prata envelhecidos (300 pratas)",
+          "7 - Capela de Ruzalka: estátua da Virgem Maria, peixinhos prateados circulando. Embaixo de uma pedra na base: Varinha de Artesania de Pomellina (+2 a Arte para habilidade 12+)"
+        ]
+      }
+    },
+    "kobold_town": {
+      "id": 14,
+      "nome": "Kobold-Town",
+      "descricao": "Cidade improvisada de algumas centenas de kobolds de pele azul nas colinas rochosas da floresta. Agora mais organizada sob os Thools, treinando para a guerra.",
+      "kobolds_rebeldes": "Grupos de 2d kobolds acampados nas colinas, muito com medo para fugir (aranhas ao norte, floresta profunda ao sul). Prontos a compartilhar informações em troca de comida.",
+      "armadilhas": [
+        "Spring-Snare: puxa vítima pelo tornozelo para o ar (Percepção-5 para notar, DESTREZA vs. Armadilhas para desarmar)",
+        "Galho Espinhado e Rede: dano 2d perfurante + rede (Percepção-5 para notar)"
+      ],
+      "blunkin": "Chefe (IQ 7) no único prédio de dois andares. Guarda Mac Rónán preso no 2º andar.",
+      "dvalinn": "Anão preso no 2º andar junto de Mac Rónán.",
+      "murznut": "Comerciante kobold fluente em Anglish. Vende suprimentos básicos; tem informações sobre a captura do druid.",
+      "drizzle": "Kobold cleptomaníaco. Tentará roubar os PJs. Diz que se morrer, o doom virá (verdade)."
+    },
+    "carcaca_da_larva": {
+      "id": 15,
+      "nome": "A Carcaça da Larva Gigante",
+      "descricao": "Monstro morto, pálido, inchado, babando líquido âmbar espesso. Runas necromânticas entalhadas na pele. Cheiro nauseante (HT-4 ou enjoado por 1 hora).",
+      "recursos": "Intestino médio vale 1.500+ pratas (bruxa paga bem) ou comido: +1d+1 FOR por 24 horas (mas HT-4 contra enjoo)",
+      "log_wife": "Uma Log-Wife vive aqui — espírito feminino de uma árvore. Carpindo suavemente. Persegue PJs, tentando puxá-los para o chão.",
+      "cogumelos_da_log_wife": "Crescem no log dela. Ervas/Alquimia/Naturalismo-3 para identificar. Comer: +1 nível de atratividade por 2d dias. É um dos 3 ingredientes de Mac Rónán.",
+      "corpo_alquimista": "Embaixo da larva (FOR combinada 50 para mover): corpo de alquimista de Choir. Carrega: faca, rolo de Controlar Zumbi, amuleto com sigil de Choir, Pó de Reanimação."
+    },
+    "gloamreach": {
+      "id": 16,
+      "nome": "Gloamreach — Toca dos Thools",
+      "descricao": "Abismo dentado na floresta. Degraus estreitos descem 100 jardas até uma boca de caverna flanqueada por pilares rachados com runas élficas milenares. Os Thools arrombaram a porta de pedra original pela força bruta.",
+      "salas": [
+        "1 - Câmara de Entrada: Templo élfico destruído por tremor. Fusão de caverna natural e ruína, iluminada por lanternas kobold.",
+        "2 - A Capela dos Ídolos de Bronze: Dezenas de ídolos de bronze da morte com faces gastas por muitas mãos.",
+        "3 - O Cofre: Caixas de alimentos roubados, 3.000 moedas de ouro de al-Wazif, armadura de placas de 80 lbs para Chutter (5.000 pratas), livros de necromancia.",
+        "4 - O Salão dos Tronos: 7 tronos anões quebrados. Num deles, cristal rachado que, se tocado, permite ouvir o que acontece na sala de Blunkin. Espantalhos sentados em 2 tronos.",
+        "5 - O Covil dos Thools: Antigo centro do templo. Altar virou mesa de jantar com restos de peixe. 3 colchões de palha. Varas de pesca. Os 3 Thools normalmente estão aqui.",
+        "6 - A Forja e Poço de Ossos: Fornalha meio-construída. Fissura no chão cheia de ossos (para as magias de Choir). Queda de 3m = 2d dano.",
+        "7 - A Sala da Vala: Lado sul cheio d'água. Água encantada com portal de teleportação. Mosaico mostra portal — o portal abre uma vez por dia ao entardecer, por 60 minutos, e leva à Torre das Estrelas de Limm."
+      ],
+      "alquimistas_de_choir": "5 aprendizes de rosto pintado + 2 esqueletos animados de elfos. Se perturbados, jogam poções como projéteis (2d[1d-1] dano explosivo)."
+    },
+    "startower_de_limm": {
+      "nome": "A Torre das Estrelas de Limm",
+      "descricao": "Torre de 30m erguida num pico solitário das Montanhas de Granito. Pedra enegrecida como se por fogo ancestral. A sombra da torre aponta na direção errada para o sol. Portas de carvalho preto semi-abertas.",
+      "historia": "Construída um século antes do Banestorm por Limm, observador das estrelas e professor de segredos arcanos. Chutter encontrou seus ossos, os triturou e bebeu.",
+      "acessar": "Pelo portal na Sala da Vala da Gloamreach (ao entardecer, 60 minutos).",
+      "salas": [
+        "Câmara de Entrada: Paredes com glifos que piscam ao ser tocados. Prateleiras com tomos e pergaminhos. Escada central em espiral. Rei Chutter está aqui.",
+        "Parapeito: Chão polido magicamente escorregadio (recuo dobrado, falha crítica = queda). A 30m de altura. Constelações refletidas no piso negro."
+      ],
+      "rei_chutter": "Cria 2 Golems de Pergaminho primeiro. Usa magias de areia. Recua para o parapeito se ferido. Se usar Terremoto, a torre começa a inclinar (-1 a rolagens de DESTREZA no topo).",
+      "golems": "Feitos de livros. Vulneráveis ao fogo. Se pegarem fogo, correm em direção ao inimigo mais próximo e se agarram a ele, causando 1d-1 dano de queimadura."
+    }
+  },
+
+  "ervas_magicas": {
+    "gillshade": {
+      "descricao": "Grama longa verde e amarela que cresce perto de lagos mágicos",
+      "onde_achar": "Gruta Afogada (local 13); Mutter Grimmhaar também carrega",
+      "efeito": "Engolida: respirar água por 1 hora. Chá preparado: 1d horas. Ingrediente da cura de Oswald."
+    },
+    "greybane": {
+      "descricao": "Musgo raro roxo-cinzento que cresce no lado oeste de árvores harwood",
+      "onde_achar": "Caçada do Manticora (local 8); Mutter Grimmhaar também carrega",
+      "efeito": "Chá melhora memória. Restaura temporariamente as memórias de Oswald. Ingrediente da cura."
+    },
+    "cogumelos_da_log_wife": {
+      "descricao": "Cogumelos grandes e pintados que crescem apenas em logs habitados por uma Log-Wife",
+      "onde_achar": "Perto da Carcaça da Larva (local 15)",
+      "efeito": "Comer: +1 nível de atratividade por 2d dias. Ingrediente da cura de Oswald."
+    },
+    "starshade_bloom": {
+      "descricao": "Flores roxas pontilhadas raríssimas que brilham como estrelas em seda",
+      "onde_achar": "Somente no campo específico do Twinfold Hollow (local 10)",
+      "efeito": "Vapor ao luar: cura doenças e maldições de transformação (inclusive Oswald). Se inalada no solo: concede Precognição por 24 horas. +4 a resistir doenças."
+    },
+    "po_de_sabedoria": {
+      "descricao": "Pó alquímico que aumenta inteligência",
+      "onde_achar": "Na Gloamreach (sala dos alquimistas) e possivelmente com alquimistas",
+      "efeito": "Eleva IQ em 1 por 1d horas. Se dado a Oswald: memórias retornam, fica pacifista e confuso enquanto durar."
+    },
+    "blood_ivy": {
+      "descricao": "Hera com veias vermelhas gotejantes",
+      "onde_achar": "Sul das Blackwoods (Naturalismo para achar)",
+      "efeito": "Veneno: HT-4 ou 1d dano + alucinações por 1d horas"
+    },
+    "virethorn_root": {
+      "descricao": "Raízes segmentadas dos arbustos espinhosos das Blackwoods",
+      "onde_achar": "Em qualquer lugar com Naturalismo",
+      "efeito": "Chá: +2 a rolagens para resistir venenos e à mordida putrefativa do manticora"
+    }
+  },
+
+  "itens_magicos_notaveis": {
+    "selvimar": {
+      "descricao": "Espadão élfico muito fino e balanceado, criado pelas ondas do oceano",
+      "onde_achar": "Túmulo de Jariella a élfica do mar (perto do Poço das Lágrimas — visões da água mágica revelam a localização)",
+      "encantamentos": "Puissance +1, Accuracy +1; 3 gemas: Respirar Água, Resistir Raio, Pedra de Poder de 6 pontos"
+    },
+    "cajado_de_limm": {
+      "descricao": "Cajado do arquimago Limm, roubado por Rei Chutter",
+      "poder": "Pedra de poder de 8 pontos. Pode criar Golems de Pergaminho (3 energia). Encantado com Moldar Pedra nível 21. Guia Psíquico."
+    },
+    "varinha_de_pomellina": {
+      "descricao": "Varinha de madeira de louro com ponta de prata em forma de estilete",
+      "onde_achar": "Debaixo de uma pedra na base da estátua na capela de Ruzalka",
+      "poder": "+2 a Arte para quem tem habilidade 12+. Pode secar/preservar pigmentos (1 energia), alisar pedra/madeira (2 energia), iluminar área por 1 hora."
+    },
+    "varinha_de_fariborz": {
+      "descricao": "Galho de pinheiro calcinado — parece galho morto",
+      "onde_achar": "Arbustos queimados nas Ruínas de Simithari",
+      "poder": "Piscar e Devolver Projétil"
+    },
+    "biting_kalos": {
+      "descricao": "Machado longo de elfo sombrio, presente de aniversário de Príncipe Kalos a Wulfram",
+      "poder": "2d+6 corte, Puissance +1, Espada Leal; cada golpe é considerado um ataque dissimulado (-1 à defesa do adversário)"
+    },
+    "machado_negro_anti_arvore": {
+      "descricao": "Machado de cabo preto encontrado num espantalho destruído no ataque a Mhoried",
+      "poder": "Dano ×2 contra árvores vivas — claramente destinado a atacar a Arbor Aeterna"
+    }
+  },
+
+  "criaturas_key": {
+    "espantalho_assombrado": {
+      "nome": "Espantalho Assombrado (Harrowed Scarecrow)",
+      "stats": "ST 10, DX 12, IQ 7, HT 10, HP 10",
+      "ataque": "Foice barata 1d+3 corte; 1 em 3 carrega uma foice de ceifa (1d+4 corte); 1 carrega maçã fumegante (nuvem de 3m, HT-4 ou enjoado por 10 min)",
+      "especial": "Immune a perfurante (×1/5 dano), meio dano a impaling; Vulnerável ao fogo (×2); sem cérebro, sem sangue, sem vísceras",
+      "tatica": "Sempre ataca em All-Out Attack para dano máximo"
+    },
+    "grimhollow_thool": {
+      "nome": "Grimhollow Thool",
+      "stats": "ST 15, DX 12, IQ 11, HT 12, HP 15, SM+1",
+      "ataque": "Lança 2d+1 imp; Chicote de 3 jardas 2d-1(0.5) contusão; Faca de reserva 2d-1 imp",
+      "armadura": "DR 3 (couro em camadas) + DR 2 (pele dura)",
+      "especial": "Resistência Mágica 2, Combate Reflexivo, Visão Noturna 3",
+      "nota": "São 3 Thools: Oswald (o alvo), Warin (ex-nobre) e Samir (ex-poeta)"
+    },
+    "golem_de_pergaminho": {
+      "nome": "Golem de Pergaminho",
+      "stats": "ST 13, DX 12, IQ 8, HT 12, HP 13",
+      "especial": "Voa (Move 6). Metade do dano por impaling, 1/3 de piercing. Vulnerável ao fogo (×2). Pode refletir magias (rol 1d, em 5+ reflete). Se pegar fogo, corre para abraçar o inimigo mais próximo causando 1d-1 queimadura.",
+      "tatica": "Criado por Chutter para 3 energia via cajado de Limm"
+    },
+    "mother_clutch": {
+      "nome": "Mother Clutch",
+      "stats": "ST 13, DX 13, IQ 8, HT 12, HP 16, SM+2",
+      "especial": "10 braços extras, 2 ataques extras, visão noturna, imune a controle mental. Metade dano de impaling, 1/3 de piercing.",
+      "tatica": "Rola pelo perímetro do acampamento, agarra vítimas e arranca membros para adicionar aos seus"
+    }
+  },
+
+  "encontros_aleatorios": {
+    "norte_blackwoods": [
+      "Patrulha de elfos sombrios (1d elfos, mínimo 2) — furtivos, podem ter um prisioneiro humano",
+      "Emboscada de aranhas (1d aranhas, +2 se na Caçada das Aranhas)",
+      "A Bruxa Grimmhaar colhendo ervas — menos tagarela fora de casa, convida para 'caldo de osso'",
+      "Georgie Ratcliffe — homem perdido apaixonado por Ruzalka, procura a Gruta Afogada",
+      "Espantalhos Perdidos — 1d-1 espantalhos (mínimo 2) sem inteligência, atacam a tudo",
+      "Leguminosas-Tornozelo (ankle-snappers) — raízes carnívoras que agarram tornozelos e puxam para o chão"
+    ],
+    "sul_blackwoods": [
+      "Larva Gigante (tamanho de carroça) — intestino médio vale 500 pratas",
+      "Kobolds Rebeldes (2d kobolds) — contra Blunkin, podem ajudar",
+      "Finn Willowheel, sapateiro élfico — conhece a característica especial dos pés de Oswald",
+      "Lanterna Errante e o Velho Druid Adormecido (Tadgán) — sabe o nome verdadeiro de Rootflayer",
+      "Bugbears Assassinos (3) — procurados, sabem pouco da floresta",
+      "O Troll das Blackwoods (Moss-Belly) — faminto, sequestra pessoas para assar"
+    ],
+    "noturno": [
+      "Esqueleto Falho (de Choir) — sem pernas, crânio de veado, inofensivo mas perturbador",
+      "O Kobold Moribundo (Ferf) — mordido por aranha, morre sem cure. Se salvo, tem informação sobre ataque iminente e vial de veneno de aranha",
+      "Mother Clutch — passa pelo acampamento ignorando os PJs (a menos que interfira), indo para as Ruínas de Simithari",
+      "Uma matilha de corvos noturnos — barulho pode atrair elfos, trolls, kobolds, aranhas ou Fariborz (role 1d6)",
+      "Orcs Bandidos (4) — exaustos e irritados, tentam emboscada com flechas",
+      "Aelar Eisenli — espiã élfica de caça a Fariborz. Amigável se PJs tiverem boas intenções"
+    ]
+  },
+
+  "conclusoes_possiveis": {
+    "oswald_morto": "Duquesa Catherine entristece mas honra os PJs pelo esforço. Mhoried realiza funeral público para o Duque amaldiçoado. 5.000 pratas de recompensa.",
+    "oswald_capturado_sem_cura": "Oswald fica preso no Forte Negro. Catherine passa anos buscando ingredientes — eventualmente falha e ele morre. Funeral comovente.",
+    "oswald_restaurado_a_humano": "Oswald, envergonhado, abdica e vai para Caithness como sacerdote. Planeja vingança secreta contra Dendybar. Catherine oferece estates nas terras prometidas além das 5.000 pratas e cavalaria.",
+    "chutter_derrotado": "Plano de invasão desfeito. Catherine recompensa generosamente. Choir continua nas sombras — gancho para próxima campanha.",
+    "chutter_vivo": "Ele recua mas não desiste. Voltará mais forte. Choir pode tomar seu lugar como ameaça.",
+    "choir_nunca_encontrado": "Permanece como ameaça latente — próxima campanha pronta"
+  },
+
+  "prompt_sistema": "Você é o Narrador de 'A Fera do Forte Negro', uma campanha de RPG de fantasia sombria no mundo de Yrth (GURPS Banestorm). Narre em português brasileiro. Tom: folclore sombrio, pavor rastejante, humor negro ocasional. NUNCA deixe os jogadores se sentirem completamente seguros nas Blackwoods. Descreva sons estranhos, a sensação de ser observado, eventos inexplicáveis. Cada NPC tem motivos próprios — a bruxa mente, os elfos são hostis, os kobolds são covardes mas astutos. Aplique as regras STATS quando houver combate ou mudança de HP. Quando inimigos aparecerem em combate, registre-os com STATS: [INIMIGO:nome:hp:hpMax:ícone]. Mantenha a coerência com os NPCs e locais da campanha. Seja descritivo — a floresta vive, respira, observa. Aumente a tensão gradualmente conforme os PJs se aprofundam nas Blackwoods e descobrem o plano do Rei Chutter."
+}
