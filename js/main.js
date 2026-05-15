@@ -182,7 +182,7 @@ function atualizarTileSize() {
   const canvas = document.getElementById('map-canvas');
   const W = canvas ? (canvas.width || 400) : 400;
   TILE_W = W >= 700 ? 56 : W >= 520 ? 44 : 32;
-  TILE_H = Math.floor(TILE_W / 2);
+  TILE_H = Math.floor(TILE_W * 0.75); // steeper angle fills portrait screen better
 }
 const _mapPos  = {};  // 'p_{uid}' | 'e_{nomeKey}' → {col,row}
 let _curJogs   = {};
@@ -404,6 +404,10 @@ function desenharCanvas() {
   fog.addColorStop(1, 'rgba(4,6,18,.88)');
   ctx.fillStyle = fog;
   ctx.fillRect(0, 0, W, H);
+  // Debug overlay — remove after confirming new code is live
+  ctx.fillStyle = 'rgba(255,255,100,.85)';
+  ctx.font = '11px monospace';
+  ctx.fillText(`TW:${TILE_W} cam:(${Math.round(_camDiag)},${Math.round(_camDepth)}) ${W}x${H}`, 6, H - 6);
 }
 
 function initMapPositions(jogadores, inimigos) {
