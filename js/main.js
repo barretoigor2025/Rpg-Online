@@ -487,15 +487,13 @@ function renderizarMapaSprites() {
 }
 
 function renderizarIniBar(jogadores, inimigos) {
-  const list = document.getElementById('ini-list');
-  if(!list) return;
   const items = [
     ...Object.entries(jogadores).filter(([,j]) => j.vivo && j.consciente)
       .map(([,j]) => ({ type:'player', nome:j.nome, src:`sprites/${j.classe}_${j.sexo||'m'}.png`, hp:j.hp, max:j.maxHp })),
     ...Object.values(inimigos||{}).filter(i => i.hp>0)
       .map(i => ({ type:'enemy', nome:i.nome, src:inimigosSprite(i.nome), hp:i.hp, max:i.maxHp }))
   ];
-  list.innerHTML = items.map(it => `
+  const chipHtml = items.map(it => `
     <div class="ini-chip ${it.type}">
       <img src="${it.src}" onerror="this.style.display='none'" alt="">
       <div>
@@ -503,6 +501,34 @@ function renderizarIniBar(jogadores, inimigos) {
         <div class="ini-chip-hp">${it.hp}/${it.max}</div>
       </div>
     </div>`).join('');
+  const list = document.getElementById('ini-list');
+  if(list) list.innerHTML = chipHtml;
+
+  // Mini list in left sidebar
+  const mini = document.getElementById('ini-list-mini');
+  if(mini) {
+    mini.innerHTML = items.map(it => `
+      <div class="ini-mini-row ${it.type}">
+        <img src="${it.src}" onerror="this.style.display='none'" alt="">
+        <span class="ini-mini-name">${it.nome.split(' ')[0]}</span>
+      </div>`).join('');
+  }
+
+  // Populate selected unit panel with first player by default
+  const first = items.find(i => i.type === 'player') || items[0];
+  if(first) atualizarUnidadePanel(first);
+}
+
+function atualizarUnidadePanel(unit) {
+  const pct = Math.round((unit.hp / unit.max) * 100);
+  const nameEl = document.getElementById('bui-name');
+  const typeEl = document.getElementById('bui-type');
+  const fillEl = document.getElementById('bui-hp-fill');
+  const valEl  = document.getElementById('bui-hp-val');
+  if(nameEl) nameEl.textContent = unit.nome;
+  if(typeEl) typeEl.textContent = unit.type === 'player' ? 'Herói' : 'Inimigo';
+  if(fillEl) { fillEl.style.width = `${pct}%`; fillEl.className = `bui-bar-fill ${unit.type}`; }
+  if(valEl)  valEl.textContent  = `HP ${unit.hp}/${unit.max}`;
 }
 
 function resolverMovimentoEntry(nome, acao, roll) {
@@ -1814,6 +1840,12 @@ function atualizarCena(jogadores, inimigos) {
     desenharCanvas();
     renderizarMapaSprites();
     renderizarIniBar(jogadores, inimigos||{});
+    // Update battle header turn counter
+    const turnEl = document.getElementById('battle-turn-lbl');
+    if(turnEl) {
+      const rodada = document.getElementById('round-display')?.textContent?.match(/\d+/)?.[0] || '1';
+      turnEl.textContent = `· Turno ${rodada}`;
+    }
   } else {
     if(Object.keys(_terrain).length > 0) {
       _terrain = {};

@@ -259,14 +259,53 @@
 
       <!-- Battle Map (ativa durante combate) -->
       <div id="battle-map">
+        <!-- Header: título + turno -->
+        <div id="battle-header">
+          <span id="battle-title">⚔ BATALHA</span>
+          <span id="battle-turn-lbl"></span>
+          <button id="btn-fugir-battle" onclick="document.getElementById('btn-reset')?.click()">Fugir</button>
+        </div>
+        <!-- Barra de iniciativa (largura total) -->
         <div id="ini-bar">
-          <span class="ini-lbl">⚔ INICIATIVA</span>
+          <span class="ini-lbl">INICIATIVA</span>
           <div id="ini-list"></div>
         </div>
-        <div id="map-container">
-          <canvas id="map-canvas"></canvas>
-          <div id="map-sprites"></div>
+        <!-- Layout 3 colunas -->
+        <div id="battle-columns">
+          <!-- Sidebar esquerda -->
+          <div id="battle-sidebar-left">
+            <div class="bsl-section">
+              <div class="bsl-title">Objetivo</div>
+              <div class="bsl-text" id="battle-obj">Derrote os inimigos ou fuja da área.</div>
+            </div>
+            <div class="bsl-section" id="bsl-ini-mini">
+              <div class="bsl-title">Iniciativa</div>
+              <div id="ini-list-mini"></div>
+            </div>
+          </div>
+          <!-- Mapa central -->
+          <div id="map-container">
+            <canvas id="map-canvas"></canvas>
+            <div id="map-sprites"></div>
+          </div>
+          <!-- Sidebar direita -->
+          <div id="battle-sidebar-right">
+            <div class="bsl-section">
+              <div class="bsl-title">Legenda</div>
+              <div class="leg-row"><span class="leg-sq leg-player"></span><span>Herói</span></div>
+              <div class="leg-row"><span class="leg-sq leg-enemy"></span><span>Inimigo</span></div>
+              <div class="leg-row"><span class="leg-sq leg-ele"></span><span>Elevado</span></div>
+            </div>
+            <div class="bsl-section" id="battle-unit-panel">
+              <div class="bsl-title">Unidade</div>
+              <div id="bui-name"></div>
+              <div id="bui-type"></div>
+              <div class="bui-bar-wrap"><div id="bui-hp-fill" class="bui-bar-fill player"></div></div>
+              <div id="bui-hp-val"></div>
+            </div>
+          </div>
         </div>
+        <!-- Log de combate -->
         <div id="combat-log"></div>
       </div>
 
