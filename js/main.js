@@ -176,13 +176,25 @@ function rolarRodada(jogadores) {
 //  MAPA TÁTICO
 // ═══════════════════════════════════════════════════════════════
 const MAP_COLS = 20, MAP_ROWS = 15;
-// Tile size: fixed by screen width — tiles are always large, map extends beyond canvas edges
-let TILE_W = 32, TILE_H = 16;
+let TILE_W = 28, TILE_H = 14;
 function atualizarTileSize() {
   const canvas = document.getElementById('map-canvas');
-  const W = canvas ? (canvas.width || 400) : 400;
-  TILE_W = W >= 700 ? 60 : W >= 520 ? 48 : 40;
-  TILE_H = Math.floor(TILE_W / 2); // standard 2:1 isometric ratio
+  const W = canvas ? (canvas.width  || 300) : 300;
+  const H = canvas ? (canvas.height || 400) : 400;
+  const positions = Object.values(_mapPos);
+  if(positions.length >= 2) {
+    // Fit all units in view with padding
+    const diags  = positions.map(p => p.col - p.row);
+    const depths = positions.map(p => p.col + p.row);
+    const dSpan  = Math.max(1, Math.max(...diags)  - Math.min(...diags)  + 8);
+    const pSpan  = Math.max(1, Math.max(...depths) - Math.min(...depths) + 8);
+    const twW = Math.floor(W * 2 / dSpan);
+    const twH = Math.floor(H * 2 / pSpan);
+    TILE_W = Math.max(18, Math.min(56, Math.min(twW, twH)));
+  } else {
+    TILE_W = W >= 500 ? 44 : 28;
+  }
+  TILE_H = Math.floor(TILE_W / 2);
 }
 const _mapPos  = {};  // 'p_{uid}' | 'e_{nomeKey}' → {col,row}
 let _curJogs   = {};
@@ -195,7 +207,7 @@ function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 function mapKeyJog(uid)  { return `p_${uid}`; }
 function mapKeyIni(nome) { return `e_${nome.replace(/\W/g,'_')}`; }
 
-// Centers camera on the average position of all units on the map
+// Centers camera on the bounding box of all units so everyone is always in view
 function atualizarCamera() {
   const positions = Object.values(_mapPos);
   if(positions.length === 0) {
@@ -204,14 +216,13 @@ function atualizarCamera() {
     _camDepth = (mc + mr) * TILE_H / 2;
     return;
   }
-  let sd = 0, sp = 0;
-  positions.forEach(p => {
+  const diags  = positions.map(p => (p.col - p.row) * TILE_W / 2);
+  const depths = positions.map(p => {
     const h = (_terrain[`${p.col},${p.row}`] || {}).height || 0;
-    sd += (p.col - p.row) * TILE_W / 2;
-    sp += (p.col + p.row) * TILE_H / 2 - h * TILE_H;
+    return (p.col + p.row) * TILE_H / 2 - h * TILE_H;
   });
-  _camDiag  = sd / positions.length;
-  _camDepth = sp / positions.length;
+  _camDiag  = (Math.min(...diags)  + Math.max(...diags))  / 2;
+  _camDepth = (Math.min(...depths) + Math.max(...depths)) / 2;
 }
 
 // Converts grid position to canvas pixel coords — camera-aware, tiles fill screen
@@ -404,9 +415,6 @@ function desenharCanvas() {
   fog.addColorStop(1, 'rgba(4,6,18,.88)');
   ctx.fillStyle = fog;
   ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = 'rgba(255,255,80,.9)';
-  ctx.font = 'bold 12px monospace';
-  ctx.fillText(`v4 TW:${TILE_W} TH:${TILE_H} | ${W}x${H} | u:${Object.keys(_mapPos).length}`, 6, H - 6);
 }
 
 function initMapPositions(jogadores, inimigos) {
