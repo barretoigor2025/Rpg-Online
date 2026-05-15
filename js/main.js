@@ -1411,18 +1411,26 @@ function buildSystemPrompt(jogadores, inimigos) {
     .map(i => `• ${i.icon||'👿'} ${i.nome} — HP ${i.hp}/${i.maxHp}`)
     .join('\n');
 
-  return `Você é o Mestre de uma campanha de RPG no estilo D&D 5e, em mundo medieval.
-Escreva em português do Brasil.
+  return `Você é um narrador lendário de campanhas de RPG — um bardo veterano que faz os jogadores prenderem a respiração. Escreva em português do Brasil com alma e drama.
 
-⚠️ REGRA OBRIGATÓRIA DE ESTILO:
+VOZ DO NARRADOR:
+- Frases CURTAS e impactantes nos momentos tensos. Frases LONGAS e atmosféricas na exploração.
+- Detalhes sensoriais concretos: cheiro de sangue e terra molhada, rangido de couro velho, frio nos dedos.
+- Use travessões (—) e reticências (...) para criar pausas cinematográficas.
+- Verbos fortes em vez de adjetivos fracos: "rasga", "despenca", "estala" — não "ataca fortemente".
+- Chame os personagens pelo nome com naturalidade, como velhos conhecidos do narrador.
+- Inimigos têm emoções: raiva, medo, dor — eles reagem, não são apenas alvos.
+
 ${iniList
-  ? `COMBATE ATIVO — máximo 120 palavras de narração total.
-Máximo 3 frases por personagem. Diga a AÇÃO, o RESULTADO e um detalhe físico.
-CERTO: "Febre erra o golpe. O goblin desvia e contra-ataca, arranhando fundo o braço do guerreiro."
-ERRADO: "Febre lança o golpe mas a sorte não estava com ele, a esperança caiu por terra..."
-PROIBIDO: sentimentos internos longos, metáforas abstratas, adjetivos em excesso.
-Mencione EFEITOS (queimadura, sangramento, atordoamento) quando skill ou crítico causarem.`
-  : `EXPLORAÇÃO — máximo 160 palavras. Pode ser mais descritivo, mas vívido e direto.`}
+  ? `COMBATE — máximo 120 palavras. Ritmo frenético, frases curtas.
+CERTO: "A lâmina rasga o ar — o goblin se esquiva, tarde demais. Sangue. Ele recua rosnando."
+CERTO (CRÍTICO): "O golpe parte o escudo ao meio. O inimigo vai ao chão com um grito abafado."
+CERTO (FALHA): "Os pés escorregam na lama. Queda. Exposto. O arqueiro não perde a chance."
+ERRADO: "tentou atacar mas não teve muita sorte dessa vez com o seu golpe."
+Mencione: efeito físico de críticos/skills, posição dos combatentes, reação emocional dos inimigos.`
+  : `EXPLORAÇÃO — máximo 160 palavras. Clima, presságio e atmosfera.
+Estrutura: gancho de impacto → detalhes sensoriais → tensão latente → fim aberto que convida à ação.
+O silêncio pode ser tão ameaçador quanto um rugido. Use o ambiente para criar pressentimento.`}
 
 FICHAS DOS PERSONAGENS:
 ${fichas}
@@ -1477,11 +1485,17 @@ async function chamarIAInicio() {
       .map(j => `${j.nome} (${CLASSES[j.classe]?.nome||j.classe})`)
       .join(', ');
 
-    const prompt = `Inicie uma campanha de RPG medieval estilo D&D para: ${nomes}.
-CENÁRIO OBRIGATÓRIO: os personagens estão atravessando uma floresta densa à noite quando são surpreendidos por uma emboscada. Criaturas hostis (goblins, bandidos, ou monstros da floresta — escolha você) atacam de todos os lados saindo das sombras das árvores.
-Crie uma abertura cinematográfica e tensa: descreva a floresta, o momento do ataque, de onde vêm os inimigos e quantos são. Termine com os inimigos avançando e os aventureiros precisando agir AGORA.
-OBRIGATÓRIO ao final: crie os inimigos com a tag STATS usando [INIMIGO:nome:hp:hpMax:ícone] para cada inimigo visível.
-Exemplo de encerramento da linha STATS: STATS: [INIMIGO:Goblin Batedores:30:30:👺] [INIMIGO:Goblin Arqueiro:25:25:🏹] [INIMIGO:Líder Goblin:55:55:👹]`;
+    const prompt = `Abra esta campanha de RPG medieval com impacto cinematográfico. Personagens: ${nomes}.
+
+ESTRUTURA DA ABERTURA — siga esta sequência em 4 partes:
+1. AMBIÊNCIA (2 frases): pinte o cenário com detalhes sensoriais — sons, cheiros, texturas, não apenas o visual.
+2. PRESSÁGIO (1-2 frases): um detalhe que algo está errado — silêncio suspeito, sombra que se move, animal que foge em pânico.
+3. O ATAQUE: escolha LIVREMENTE o cenário (floresta, estrada, taverna, ruínas, porto, vila) e os antagonistas. Dê a eles um detalhe visual memorável que os torne únicos — não use criaturas genéricas sem personalidade.
+4. GANCHO FINAL (1 frase): urgência máxima. Os aventureiros precisam agir AGORA.
+
+Tom: narração de abertura de filme épico de fantasia. Apaixonado, tenso, vívido. Use o estilo de narrador que você é.
+OBRIGATÓRIO ao final: STATS: [INIMIGO:nome:hp:hpMax:ícone] para cada inimigo visível.
+Exemplo: STATS: [INIMIGO:Goblin Batedores:30:30:👺] [INIMIGO:Goblin Arqueiro:25:25:🏹] [INIMIGO:Líder Goblin:55:55:👹]`;
 
     const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, {}), [], prompt, mostrarRetryUI);
 
@@ -1673,7 +1687,7 @@ async function chamarOpenAI(systemPrompt, history, userMsg, onRetry) {
     { role:'user', content: userMsg }
   ];
 
-  const body = JSON.stringify({ model:'llama-3.3-70b-versatile', messages, temperature:0.8, max_tokens:950 });
+  const body = JSON.stringify({ model:'llama-3.3-70b-versatile', messages, temperature:0.88, max_tokens:950 });
   const MAX = 10;
 
   for(let t=1; t<=MAX; t++) {
