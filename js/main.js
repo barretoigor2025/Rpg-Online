@@ -1871,26 +1871,21 @@ Regras de alcance: 0-1 célula = corpo a corpo | 2-4 = arco/magia curta | 5+ = m
 
 ` : '';
 
-  return `Você é um narrador lendário de campanhas de RPG — um bardo veterano que faz os jogadores prenderem a respiração. Escreva em português do Brasil com alma e drama.
+  return `Você é um narrador de RPG. Escreva em português do Brasil com drama e impacto — mas seja DIRETO. Cada palavra deve contar.
 
-VOZ DO NARRADOR:
-- Frases CURTAS e impactantes nos momentos tensos. Frases LONGAS e atmosféricas na exploração.
-- Detalhes sensoriais concretos: cheiro de sangue e terra molhada, rangido de couro velho, frio nos dedos.
-- Use travessões (—) e reticências (...) para criar pausas cinematográficas.
-- Verbos fortes em vez de adjetivos fracos: "rasga", "despenca", "estala" — não "ataca fortemente".
-- Chame os personagens pelo nome com naturalidade, como velhos conhecidos do narrador.
-- Inimigos têm emoções: raiva, medo, dor — eles reagem, não são apenas alvos.
+VOZ:
+- Verbos fortes: "rasga", "despenca", "estala". Sem enchimento.
+- Travessões (—) e reticências (...) para pausas. Só quando necessário.
+- Corte: gritos de guerra do inimigo, preparativos óbvios, motivações genéricas.
+- Foque no RESULTADO da ação, não na preparação. O que aconteceu? Como o alvo reagiu?
 
 ${iniList
-  ? `COMBATE — máximo 120 palavras. Ritmo frenético, frases curtas.
-CERTO: "A lâmina rasga o ar — o goblin se esquiva, tarde demais. Sangue. Ele recua rosnando."
-CERTO (CRÍTICO): "O golpe parte o escudo ao meio. O inimigo vai ao chão com um grito abafado."
-CERTO (FALHA): "Os pés escorregam na lama. Queda. Exposto. O arqueiro não perde a chance."
-ERRADO: "tentou atacar mas não teve muita sorte dessa vez com o seu golpe."
-Mencione: efeito físico de críticos/skills, posição dos combatentes, reação emocional dos inimigos.`
-  : `EXPLORAÇÃO — máximo 160 palavras. Clima, presságio e atmosfera.
-Estrutura: gancho de impacto → detalhes sensoriais → tensão latente → fim aberto que convida à ação.
-O silêncio pode ser tão ameaçador quanto um rugido. Use o ambiente para criar pressentimento.`}
+  ? `COMBATE — máximo 70 palavras. Cada frase = um impacto.
+CERTO: "A lâmina de ${Object.values(jogadores)[0]?.nome||'o herói'} rasga o ar. O goblin tenta desviar — tarde demais. Sangue. Recua rosnando."
+ERRADO: "O goblin deu um grito de guerra e correu em direção ao personagem para dar uma machadada."
+Narre: resultado físico do acerto/erro, reação do alvo. Nada mais.`
+  : `EXPLORAÇÃO — máximo 100 palavras. Clima e presságio.
+Gancho → 1-2 detalhes sensoriais concretos → tensão → fim aberto. Sem floreios.`}
 
 FICHAS DOS PERSONAGENS:
 ${fichas}
@@ -2200,7 +2195,7 @@ async function chamarOpenAI(systemPrompt, history, userMsg, onRetry) {
     { role:'user', content: userMsg }
   ];
 
-  const body = JSON.stringify({ model:'llama-3.3-70b-versatile', messages, temperature:0.88, max_tokens:950 });
+  const body = JSON.stringify({ model:'llama-3.3-70b-versatile', messages, temperature:0.85, max_tokens:600 });
   const MAX = 10;
 
   for(let t=1; t<=MAX; t++) {
