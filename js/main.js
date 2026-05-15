@@ -173,6 +173,164 @@ function rolarRodada(jogadores) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  MAPA TÁTICO
+// ═══════════════════════════════════════════════════════════════
+const MAP_COLS = 10, MAP_ROWS = 6;
+const _mapPos = {};       // 'p_{uid}' | 'e_{nomeKey}' → {col,row}
+let _curJogs  = {};
+let _curInis  = {};
+
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+function mapKeyJog(uid)  { return `p_${uid}`; }
+function mapKeyIni(nome) { return `e_${nome.replace(/\W/g,'_')}`; }
+
+function initMapPositions(jogadores, inimigos) {
+  const jArr = Object.entries(jogadores).filter(([,j]) => j.vivo && j.consciente);
+  const iArr = Object.entries(inimigos||{}).filter(([,i]) => i.visivel!==false && i.hp>0);
+  jArr.forEach(([uid,], i) => {
+    const k = mapKeyJog(uid);
+    if(!_mapPos[k]) _mapPos[k] = {
+      col: 1,
+      row: clamp(Math.round((MAP_ROWS-1)/2 - (jArr.length-1)/2 + i), 0, MAP_ROWS-1)
+    };
+  });
+  iArr.forEach(([,ini], i) => {
+    const k = mapKeyIni(ini.nome);
+    if(!_mapPos[k]) _mapPos[k] = {
+      col: MAP_COLS - 2,
+      row: clamp(Math.round((MAP_ROWS-1)/2 - (iArr.length-1)/2 + i), 0, MAP_ROWS-1)
+    };
+  });
+  const valid = new Set([
+    ...jArr.map(([uid]) => mapKeyJog(uid)),
+    ...iArr.map(([,i]) => mapKeyIni(i.nome))
+  ]);
+  Object.keys(_mapPos).forEach(k => { if(!valid.has(k)) delete _mapPos[k]; });
+}
+
+function renderizarMapaGrid() {
+  const grid = document.getElementById('map-grid');
+  if(!grid || grid.children.length === MAP_COLS * MAP_ROWS) return;
+  grid.innerHTML = '';
+  for(let r = 0; r < MAP_ROWS; r++)
+    for(let c = 0; c < MAP_COLS; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'map-cell' + (c >= MAP_COLS * 0.6 ? ' enemy-zone' : '');
+      grid.appendChild(cell);
+    }
+}
+
+function renderizarMapaSprites() {
+  const spEl = document.getElementById('map-sprites');
+  const cont = document.getElementById('map-container');
+  if(!spEl || !cont) return;
+  const W = cont.clientWidth  || 400;
+  const H = cont.clientHeight || 222;
+  const cW = W / MAP_COLS;
+  const cH = H / MAP_ROWS;
+  const seen = new Set();
+
+  Object.entries(_mapPos).forEach(([key, pos]) => {
+    seen.add(key);
+    const isP = key.startsWith('p_');
+    const uid = isP ? key.slice(2) : null;
+    const left = (pos.col + 0.5) * cW;
+    const top  = (pos.row + 0.9) * cH;
+    let sprEl = spEl.querySelector(`[data-key="${key}"]`);
+    if(!sprEl) {
+      const j   = isP ? _curJogs[uid] : null;
+      const ini = isP ? null : Object.values(_curInis).find(i => mapKeyIni(i.nome) === key);
+      if(!j && !ini) return;
+      const imgSrc = isP ? `sprites/${j.classe}_${j.sexo||'m'}.png` : inimigosSprite(ini.nome);
+      const nome   = isP ? j.nome : ini.nome;
+      const hpPct  = isP ? Math.round((j.hp/j.maxHp)*100) : Math.round((ini.hp/ini.maxHp)*100);
+      sprEl = document.createElement('div');
+      sprEl.className  = `map-sprite ${isP ? 'map-player' : 'map-enemy'}`;
+      sprEl.dataset.key = key;
+      sprEl.innerHTML  = `
+        <div class="map-sprite-bar"><div class="map-sprite-bar-fill" style="width:${hpPct}%"></div></div>
+        <img src="${imgSrc}" onerror="this.style.display='none'" alt="">
+        <div class="map-sprite-name">${nome}</div>`;
+      sprEl.style.left = `${left}px`;
+      sprEl.style.top  = `${top}px`;
+      spEl.appendChild(sprEl);
+    } else {
+      sprEl.style.left = `${left}px`;
+      sprEl.style.top  = `${top}px`;
+      const entity = key.startsWith('p_') ? _curJogs[uid] : Object.values(_curInis).find(i => mapKeyIni(i.nome) === key);
+      if(entity) {
+        const pct = Math.round((entity.hp / entity.maxHp) * 100);
+        const fill = sprEl.querySelector('.map-sprite-bar-fill');
+        if(fill) fill.style.width = `${pct}%`;
+      }
+    }
+  });
+  spEl.querySelectorAll('[data-key]').forEach(el => { if(!seen.has(el.dataset.key)) el.remove(); });
+}
+
+function renderizarIniBar(jogadores, inimigos) {
+  const list = document.getElementById('ini-list');
+  if(!list) return;
+  const items = [
+    ...Object.entries(jogadores).filter(([,j]) => j.vivo && j.consciente)
+      .map(([,j]) => ({ type:'player', nome:j.nome, src:`sprites/${j.classe}_${j.sexo||'m'}.png`, hp:j.hp, max:j.maxHp })),
+    ...Object.values(inimigos||{}).filter(i => i.hp>0)
+      .map(i => ({ type:'enemy', nome:i.nome, src:inimigosSprite(i.nome), hp:i.hp, max:i.maxHp }))
+  ];
+  list.innerHTML = items.map(it => `
+    <div class="ini-chip ${it.type}">
+      <img src="${it.src}" onerror="this.style.display='none'" alt="">
+      <div>
+        <div class="ini-chip-name">${it.nome}</div>
+        <div class="ini-chip-hp">${it.hp}/${it.max}</div>
+      </div>
+    </div>`).join('');
+}
+
+function resolverMovimentoEntry(nome, acao, roll) {
+  const uid = Object.keys(_curJogs).find(k => _curJogs[k]?.nome === nome);
+  if(!uid) return;
+  const key = mapKeyJog(uid);
+  const pos = _mapPos[key];
+  if(!pos) return;
+
+  const tipo = detectarTipoAcao(acao||'');
+  const a    = (acao||'').toLowerCase();
+  const emMov = tipo==='mover' || a.includes('aproxim') || a.includes('corro') ||
+                a.includes('avanç') || a.includes('pulo') || a.includes('furtiv') ||
+                a.includes('escal') || a.includes('caminh') || a.includes('carre');
+
+  const iniEntries = Object.entries(_mapPos).filter(([k]) => k.startsWith('e_'));
+  if(iniEntries.length === 0) return;
+  const nearest = iniEntries.reduce((best, [k,p]) => {
+    const d = Math.abs(p.col-pos.col)+Math.abs(p.row-pos.row);
+    return d < best.d ? {k,p,d} : best;
+  }, {k:'',p:{col:5,row:2},d:999});
+
+  const dc = nearest.p.col - pos.col;
+  const dr = nearest.p.row - pos.row;
+  const sprEl = document.getElementById('map-sprites')?.querySelector(`[data-key="${key}"]`);
+
+  if(roll.critico && emMov) {
+    _mapPos[key] = { col:clamp(nearest.p.col+(dc>0?-1:1),0,MAP_COLS-1), row:clamp(nearest.p.row,0,MAP_ROWS-1) };
+    sprEl?.classList.add('bounce'); setTimeout(()=>sprEl?.classList.remove('bounce'),500);
+  } else if(roll.sucesso && emMov) {
+    const stepC = dc!==0 ? Math.sign(dc)*Math.min(2,Math.abs(dc)) : 0;
+    const stepR = Math.abs(dc)<1 && dr!==0 ? Math.sign(dr) : 0;
+    _mapPos[key] = { col:clamp(pos.col+stepC,0,MAP_COLS-1), row:clamp(pos.row+stepR,0,MAP_ROWS-1) };
+    sprEl?.classList.add('bounce'); setTimeout(()=>sprEl?.classList.remove('bounce'),500);
+  } else if(roll.sucesso && tipo==='atacar') {
+    _mapPos[key] = { col:clamp(pos.col+Math.sign(dc),0,MAP_COLS-1), row:pos.row };
+  } else if(!roll.sucesso) {
+    sprEl?.classList.add('fail-shake'); setTimeout(()=>sprEl?.classList.remove('fail-shake'),400);
+  }
+}
+
+window.addEventListener('resize', () => {
+  if(Object.keys(_mapPos).length > 0) renderizarMapaSprites();
+});
+
+// ═══════════════════════════════════════════════════════════════
 //  ESTADO LOCAL
 // ═══════════════════════════════════════════════════════════════
 let myUid    = localStorage.getItem('rpg_uid')    || crypto.randomUUID();
@@ -1248,6 +1406,16 @@ function renderizarHistoria(historia) {
       const tph = document.getElementById('test-panel-header');
       const tp  = document.getElementById('test-panel');
       if(tph && tp) { tph.classList.add('open'); tp.classList.add('open'); }
+      // Move sprites based on roll results
+      linhas.forEach(linha => {
+        const parts = linha.split('|');
+        const nome = parts[0], acao = parts[1], cls = parts[4], tipo = (parts[5]||'').trim();
+        if(tipo === 'jogador') {
+          resolverMovimentoEntry(nome.replace(/\s*\(bônus\)$/,'').trim(), acao,
+            { sucesso: cls !== 'fail', critico: cls === 'crit', falha: cls === 'fail' });
+        }
+      });
+      setTimeout(renderizarMapaSprites, 60);
       return;
     }
 
@@ -1357,38 +1525,31 @@ function inimigosSprite(nome) {
 }
 
 function atualizarCena(jogadores, inimigos) {
-  const spEl  = document.getElementById('scene-sprites');
-  const scEl  = document.getElementById('scene-area');
-  if(!spEl) return;
+  _curJogs = jogadores || {};
+  _curInis = inimigos  || {};
 
-  const jogArr = Object.values(jogadores || {}).filter(j => j.vivo && j.consciente);
-  const iniArr = Object.values(inimigos  || {}).filter(i => i.visivel !== false && i.hp > 0);
+  const jogArr  = Object.values(jogadores||{}).filter(j => j.vivo && j.consciente);
+  const iniArr  = Object.values(inimigos ||{}).filter(i => i.visivel!==false && i.hp>0);
   const combate = iniArr.length > 0;
 
-  scEl && scEl.classList.toggle('combat-mode', combate);
+  document.getElementById('screen-game')?.classList.toggle('combat-active', combate);
 
-  if(!combate) {
-    spEl.className = 'scene-sprites-center';
-    spEl.innerHTML = jogArr.map(j => `
-      <div class="scene-char">
-        <img src="sprites/${j.classe}_${j.sexo||'m'}.png" onerror="this.src='sprites/guerreiro_m.png'" alt="">
-        <div class="scene-char-name">${j.nome}</div>
-      </div>`).join('');
+  if(combate) {
+    initMapPositions(jogadores, inimigos||{});
+    renderizarMapaGrid();
+    renderizarMapaSprites();
+    renderizarIniBar(jogadores, inimigos||{});
   } else {
-    spEl.className = 'scene-sprites-combat';
-    const playersHtml = jogArr.map(j => `
-      <div class="scene-char">
-        <img src="sprites/${j.classe}_${j.sexo||'m'}.png" onerror="this.src='sprites/guerreiro_m.png'" alt="">
-        <div class="scene-char-name">${j.nome}</div>
-      </div>`).join('');
-    const inimigosHtml = iniArr.slice(0,3).map(i => `
-      <div class="scene-char enemy-char">
-        <img src="${inimigosSprite(i.nome)}" onerror="this.style.display='none'" alt="">
-        <div class="scene-char-name enemy-name">${i.nome}</div>
-      </div>`).join('');
-    spEl.innerHTML = `
-      <div class="scene-side">${playersHtml}</div>
-      <div class="scene-side">${inimigosHtml}</div>`;
+    // Exploração: sprites atmosféricos na scene-area
+    const spEl = document.getElementById('scene-sprites');
+    if(spEl) {
+      spEl.className = '';
+      spEl.innerHTML = jogArr.map(j => `
+        <div class="scene-char">
+          <img src="sprites/${j.classe}_${j.sexo||'m'}.png" onerror="this.src='sprites/guerreiro_m.png'" alt="">
+          <div class="scene-char-name">${j.nome}</div>
+        </div>`).join('');
+    }
   }
 }
 
