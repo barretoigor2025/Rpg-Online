@@ -553,7 +553,7 @@ async function processarStats(resposta, jogadores, inimigos) {
 // ═══════════════════════════════════════════════════════════════
 //  GROQ — chamarOpenAI
 // ═══════════════════════════════════════════════════════════════
-async function chamarOpenAI(systemPrompt, history, userMsg, onRetry) {
+async function chamarOpenAI(systemPrompt, history, userMsg, onRetry, maxTokens = 600) {
   const apiKey = getApiKey();
   if (!apiKey) return null;
 
@@ -563,7 +563,7 @@ async function chamarOpenAI(systemPrompt, history, userMsg, onRetry) {
     { role:'user', content: userMsg }
   ];
 
-  const body = JSON.stringify({ model:'llama-3.3-70b-versatile', messages, temperature:0.85, max_tokens:600 });
+  const body = JSON.stringify({ model:'llama-3.3-70b-versatile', messages, temperature:0.85, max_tokens: maxTokens });
 
   for (let t = 1; t <= 10; t++) {
     if (t > 1) {
@@ -592,7 +592,7 @@ async function chamarOpenAI(systemPrompt, history, userMsg, onRetry) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  IA — INÍCIO
+//  IA — INÍCIO (introdução em dois atos)
 // ═══════════════════════════════════════════════════════════════
 window.chamarIAInicio = async function() {
   if (chamandoIA) return;
@@ -604,45 +604,66 @@ window.chamarIAInicio = async function() {
     const snap = await get(ref(db, `salas/${mySala}`));
     const data = snap.val();
     const jogadores = data.jogadores || {};
-
-    await update(ref(db, `salas/${mySala}/config`), { estado: 'narrando' });
-
+    const sysPrompt = buildSystemPrompt(jogadores, {});
     const nomes = Object.values(jogadores)
       .map(j => `${j.nome} (${CLASSES[j.classe]?.nome || j.classe})`)
       .join(', ');
+    const totalEspantalhos = Math.max(2, Object.keys(jogadores).length * 2);
 
-    const prompt = _campanha
-      ? `Inicie a campanha "${_campanha.titulo}". Personagens presentes: ${nomes}.
+    await update(ref(db, `salas/${mySala}/config`), { estado: 'narrando' });
 
-CENA DE ABERTURA — A Festa de São Phanourius em Mhoried:
-Descreva o mercado festivo de outono sob os galhos dourados da Arbor Aeterna. Vendedores, fazendeiros, o cheiro de pão e nozes torradas, crianças brincando entre as raízes da árvore ancestral. A Duquesa Catherine Laskaris está presente com seu guarda-costas Sir Gregoras Pellos. Um bispo idoso, Bispo Methodios, abençoa a colheita enquanto atafulha a boca de avelãs de Mhoried.
+    // ── ATO 1: A cena e o ataque ──────────────────────────────
+    const ato1 = _campanha
+      ? `INÍCIO DA CAMPANHA "${_campanha.titulo}".
+Personagens presentes: ${nomes}.
 
-Então — o ataque. Uma criança grita. Um ESPANTALHO ASSOMBRADO rasga uma barraca com sua foice. Em segundos, mais surgem dos campos. São construtos mágicos de estopa podre e galhos partidos, brandindo foices e sacos de saque. Alguns atacam os cidadãos, outros arranham a Árvore Eterna.
+Narre em dois blocos sem títulos:
 
-Narre com impacto e terror de folclore. Máximo 120 palavras.
-OBRIGATÓRIO ao final: STATS: [INIMIGO:Espantalho Assombrado:10:10:🪨] (2 por jogador — total: ${Object.keys(jogadores).length * 2} espantalhos, numere-os se necessário).`
-      : `Abra esta campanha de RPG medieval com impacto cinematográfico. Personagens: ${nomes}.
+BLOCO A — A FESTA (3-4 frases):
+O mercado festivo de outono de Mhoried fervilha sob os galhos dourados da Arbor Aeterna, a árvore ancestral que há milênios fertiliza as colheitas. Vendedores exibem avelãs, tapeçarias e prata lavrada. A jovem Duquesa Catherine Laskaris passeia entre as barracas acompanhada de seu guarda-costas Sir Gregoras Pellos. O velho Bispo Methodios abençoa a colheita enquanto atafulha a boca de avelãs. As crianças brincam entre as raízes imensas da árvore. Use detalhes sensoriais: sons, cheiros, texturas.
 
-ESTRUTURA DA ABERTURA:
-1. AMBIÊNCIA (2 frases): cenário com detalhes sensoriais.
-2. PRESSÁGIO (1-2 frases): algo está errado.
-3. O ATAQUE: antagonistas com detalhes visuais únicos.
-4. GANCHO FINAL: urgência máxima.
+BLOCO B — O ATAQUE (4-5 frases):
+De repente, uma criança grita. Um espantalho arranca o tecido de uma barraca com sua foice enferrujada — e em segundos mais surgem dos campos ao sul: construtos hediondos de estopa podre e galhos partidos, olhos de brasa, brandindo foices e carregando sacos para saquear. Alguns atacam os cidadãos. Outros arranha a casca da Árvore Eterna com garras de ferro. Os personagens estão em meio ao caos.
 
-Máximo 100 palavras. Tom épico.
-OBRIGATÓRIO ao final: STATS: [INIMIGO:nome:hp:hpMax:ícone] para cada inimigo.`;
+Tom: folclore sombrio, horror de aldeia, urgência brutal. Máximo 150 palavras no total.
+OBRIGATÓRIO ao final: STATS: ${Array.from({length: totalEspantalhos}, (_,i) => `[INIMIGO:Espantalho ${i+1}:10:10:🪨]`).join(' ')}`
+      : `Abertura cinematográfica de campanha de RPG medieval. Personagens: ${nomes}.
+Descreva: 1) Cenário festivo (2 frases sensoriais); 2) Presságio; 3) Ataque de criaturas hostis.
+Máximo 120 palavras. STATS: [INIMIGO:nome:hp:hpMax:ícone] para cada inimigo.`;
 
-    const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, {}), [], prompt, mostrarRetryUI);
+    const resp1 = await chamarOpenAI(sysPrompt, [], ato1, mostrarRetryUI, 700);
+    ocultarRetryUI();
+    if (!resp1) { await update(ref(db, `salas/${mySala}/config`), { estado: 'lobby' }); document.getElementById('btn-iniciar-wrap').style.display = amIHost ? 'block' : 'none'; return; }
+
+    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resp1), ts: Date.now() });
+    await processarStats(resp1, jogadores, {});
+
+    // ── ATO 2: Após a batalha — briefing completo de Gregoras ──
+    await new Promise(r => setTimeout(r, 1200));
+
+    const ato2 = `Os espantalhos foram destruídos. Feridos são atendidos. O cheiro de estopa queimada paira no ar.
+
+Sir Gregoras Pellos se aproxima dos personagens (${nomes}) com um copo de cidra fria para cada um e os convida para longe da multidão. Com voz baixa e grave, conta a verdade que a cidade não sabe:
+
+Narre em três parágrafos curtos e diretos:
+
+1. O DUQUE PERDIDO: Há dois anos, o jovem Duque Oswald Laskaris — irmão da Duquesa Catherine — partiu para estudar magia em Bannock. Confiou no mestre errado: Dendybar, o Manchado, um feiticeiro cruel e caprichoso que, em vez de ensinar, transformou Oswald num monstro semelhante a um ogro como punição por ser "indigno". A Duquesa proibiu qualquer ataque aos Thools por esperança de reverter a maldição.
+
+2. A MISSÃO: Gregoras pede que os personagens entrem nas Blackwoods ao sul, rastreiem a toca secreta dos Grimhollow Thools, identifiquem qual deles é Oswald (uma marca de nascença em forma de fruto de hayberry no ombro pode ajudar) e — se houver como — o salvem. Se não houver esperança, que ponham fim à miséria do homem. E que descubram quem está por trás desses espantalhos e do plano de atacar a cidade.
+
+3. A RECOMPENSA + PARTIDA: Os mercadores de Mhoried pagarão 5.000 moedas de prata pelo fim dos ataques dos Thools. Se Oswald for devolvido vivo, a Duquesa concederá cavalaria e 100 hectares de terra fértil ao norte a cada herói — terra suficiente para construir uma fazenda ou um solar. Gregoras menciona que um guia chamado Hobbleboot Sam pode acompanhá-los por 100 pratas, ou vender um mapa rudimentar por 10. Ele aponta para o sul: as Blackwoods começam a apenas algumas milhas dali.
+
+Termine com uma fala final de Gregoras em discurso direto — sombria, esperançosa, deixando o peso da missão no ar.
+Tom: grave, medieval, pessoal. Máximo 220 palavras. SEM tags STATS nesta cena.`;
+
+    const hist1 = [{ role:'model', content: limparTags(resp1) }];
+    const resp2 = await chamarOpenAI(sysPrompt, hist1, ato2, mostrarRetryUI, 900);
     ocultarRetryUI();
 
-    if (!resposta) {
-      await update(ref(db, `salas/${mySala}/config`), { estado: 'lobby' });
-      document.getElementById('btn-iniciar-wrap').style.display = amIHost ? 'block' : 'none';
-      return;
+    if (resp2) {
+      await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resp2), ts: Date.now() });
     }
 
-    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), ts: Date.now() });
-    await processarStats(resposta, jogadores, {});
     await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando', rodada: 1 });
   } finally {
     chamandoIA = false;
