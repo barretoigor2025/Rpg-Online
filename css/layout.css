@@ -251,6 +251,8 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 }
 .chip-hp.low { color: var(--red); }
 .chip-hp.ok  { color: var(--green); }
+.player-chip.ausente { opacity: .45; border-style: dashed; }
+.chip-ausente { font-size: 9px; color: var(--text3); font-style: italic; }
 
 /* Story area */
 #story-area {

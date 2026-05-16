@@ -147,8 +147,8 @@ function setActionStatus(msg) {
 
 function limparTags(txt) {
   return txt
-    .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV)[^\]]*\]\s*)+/gi, '')
-    .replace(/\[MOV:[^\]]+\]/gi, '')
+    .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV|JOGADOR|AUSENTE|PRESENTE)[^\]]*\]\s*)+/gi, '')
+    .replace(/\[(?:MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR):[^\]]+\]/gi, '')
     .trim();
 }
 
@@ -427,7 +427,7 @@ function irParaJogo(codigo) {
 
     // Host narra quando estado = 'aguardando' e todos enviaram ação
     if (amIHost && config.estado === 'aguardando') {
-      const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && j.ativo);
+      const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
       const todosEnviaram = ativos.length > 0 && ativos.every(j => j.acao1 != null);
       if (todosEnviaram && !chamandoIA) chamarIA(jogadores, data);
     }
@@ -447,11 +447,11 @@ function renderizarJogadores(jogadores, config) {
     const cls   = CLASSES[j.classe];
     const icon  = cls?.icon || '⚔️';
     const perIcons = (j.pericias||[]).map(k => PERICIAS[k]?.icon || '').join('');
-    return `<div class="player-chip ${isMe ? 'me' : ''} ${j.ativo === false ? 'offline' : ''}">
+    return `<div class="player-chip ${isMe ? 'me' : ''} ${j.ativo === false ? 'offline' : ''} ${j.ausente ? 'ausente' : ''}">
       <span>${icon}</span>
       <span class="chip-name">${j.nome}</span>
-      <span class="chip-hp ${hpCls}">PV ${j.hp}/${j.maxHp}</span>
-      ${j.ac != null ? `<span class="chip-hp" style="color:var(--blue)">CA ${j.ac}</span>` : ''}
+      ${j.ausente ? '<span class="chip-ausente">outra cena</span>' : `<span class="chip-hp ${hpCls}">PV ${j.hp}/${j.maxHp}</span>`}
+      ${!j.ausente && j.ac != null ? `<span class="chip-hp" style="color:var(--blue)">CA ${j.ac}</span>` : ''}
       ${perIcons ? `<span class="chip-adv">${perIcons}</span>` : ''}
     </div>`;
   }).join('');
@@ -532,10 +532,10 @@ function atualizarInputArea(eu, config) {
 
   if (btn) btn.disabled = jaEnviou || narrando || morto;
 
-  if (morto)       setActionStatus('Seu personagem está fora de combate.');
-  else if (narrando) setActionStatus('A IA está narrando...');
-  else if (jaEnviou) setActionStatus('Aguardando outros jogadores...');
-  else               setActionStatus('');
+  if (morto)         setActionStatus('Seu personagem está fora de combate.');
+  else if (narrando) setActionStatus('⏳ Narrando...');
+  else if (jaEnviou) setActionStatus('⏳ Aguardando ação dos jogadores...');
+  else               setActionStatus('Aguardando ação dos jogadores...');
 
   if (iniciarWrap && config.estado !== 'lobby') iniciarWrap.style.display = 'none';
 }
@@ -627,7 +627,7 @@ function _nextUtterance() {
   fetch('https://api.groq.com/openai/v1/audio/speech', {
     method: 'POST',
     headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
-    body: JSON.stringify({ model:'playai-tts', input: limpo, voice:'Dorian-PlayAI', response_format:'mp3', speed:1.1 })
+    body: JSON.stringify({ model:'playai-tts', input: limpo, voice:'Dorian-PlayAI', response_format:'mp3', speed:1.35 })
   }).then(async res => {
     if (!res.ok) { _narrarWebSpeech(limpo); return; }
     const blob = await res.blob();
@@ -645,7 +645,7 @@ function _narrarWebSpeech(texto) {
   const utt = new SpeechSynthesisUtterance(texto);
   const voz = speechSynthesis.getVoices().find(v => v.lang.startsWith('pt')) || null;
   if (voz) utt.voice = voz;
-  utt.rate = 1.2; utt.pitch = 0.82;
+  utt.rate = 1.45; utt.pitch = 0.82;
   utt.onend = utt.onerror = () => _nextUtterance();
   speechSynthesis.speak(utt);
 }
@@ -700,6 +700,18 @@ async function processarStats(resposta, jogadores, inimigos) {
   [...resposta.matchAll(/\[JOGADOR:([^:]+):(\d+)\]/gi)].forEach(([,nome,hp]) => {
     const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
     if (entry) ups[`salas/${mySala}/jogadores/${entry[0]}/hp`] = Math.max(0, +hp);
+  });
+
+  // Marcar jogador como ausente da cena atual
+  [...resposta.matchAll(/\[AUSENTE:([^\]]+)\]/gi)].forEach(([,nome]) => {
+    const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
+    if (entry) ups[`salas/${mySala}/jogadores/${entry[0]}/ausente`] = true;
+  });
+
+  // Marcar jogador como presente novamente
+  [...resposta.matchAll(/\[PRESENTE:([^\]]+)\]/gi)].forEach(([,nome]) => {
+    const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
+    if (entry) ups[`salas/${mySala}/jogadores/${entry[0]}/ausente`] = false;
   });
 
   if (Object.keys(ups).length) await update(ref(db), ups);
@@ -957,17 +969,20 @@ ${campCtx}
 VOZ:
 - Verbos fortes e sensoriais: "rasga", "despenca", "estala", "cheira a enxofre".
 - Foque no RESULTADO das ações, não na preparação.
-- ${iniList ? 'COMBATE ATIVO — máximo 80 palavras.' : 'EXPLORAÇÃO/DIÁLOGO — máximo 120 palavras.'}
+- ${iniList ? 'COMBATE ATIVO — máximo 50 palavras.' : 'EXPLORAÇÃO/DIÁLOGO — máximo 70 palavras.'}
 - Mantenha o tom: a floresta observa, os NPCs têm segredos, nada é seguro.
-- React às ações dos jogadores de forma coerente com o mundo da campanha.
+- NUNCA termine com pergunta ao jogador. Não escreva "O que você faz?", "Como reagem?", "O que fazem a seguir?" ou similar. A narração termina com a consequência da cena, não com uma pergunta.
+- Se jogadores estiverem em locais diferentes, narre apenas a cena atual. Use [AUSENTE:nome] para marcar quem saiu da cena e [PRESENTE:nome] para quem retorna.
 
 JOGADORES ATIVOS:
 ${jogList}
 ${iniList ? `\nINIMIGOS EM CENA:\n${iniList}` : ''}
 
-TAGS OBRIGATÓRIAS (inclua ao final de cada resposta quando aplicável):
-• Novo inimigo em cena: STATS: [INIMIGO:nome:hp:hpMax:ícone]
+TAGS (ao final da resposta quando aplicável):
+• Novo inimigo: STATS: [INIMIGO:nome:hp:hpMax:ícone]
 • Inimigo recebe dano: STATS: [HP:NomeInimigo:novoHp]
 • Inimigo morreu: STATS: [MATAR:NomeInimigo]
-• Jogador recebe dano: STATS: [JOGADOR:NomeJogador:novoHp]`;
+• Jogador recebe dano: STATS: [JOGADOR:NomeJogador:novoHp]
+• Jogador sai da cena atual: STATS: [AUSENTE:NomeJogador]
+• Jogador volta à cena: STATS: [PRESENTE:NomeJogador]`;
 }
