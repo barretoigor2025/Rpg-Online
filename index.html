@@ -154,6 +154,22 @@
 <div id="toast"></div>
 <div id="voice-indicator"></div>
 
+<!-- ══ INTRO SLIDES ══ -->
+<div id="intro-overlay" style="display:none">
+  <div id="intro-card">
+    <div id="intro-meta">
+      <span id="intro-progress"></span>
+      <span id="intro-icon"></span>
+    </div>
+    <h2 id="intro-titulo"></h2>
+    <p id="intro-texto"></p>
+    <div id="intro-nav">
+      <button id="btn-intro-prev" class="btn-sm" onclick="voltarSlide()">◀ Voltar</button>
+      <button id="btn-intro-next" class="btn-primary" onclick="avancarSlide()">Próximo ▶</button>
+    </div>
+  </div>
+</div>
+
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

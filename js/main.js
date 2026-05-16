@@ -114,6 +114,9 @@ let _selectedClass  = 'guerreiro';
 let _selectedAdvs   = new Set();
 let _selectedGender = 'm';
 let _campanha   = null;
+let _introSlides = [];
+let _introIdx    = 0;
+let _introAtivo  = false;
 
 // ═══════════════════════════════════════════════════════════════
 //  HELPERS
@@ -406,6 +409,15 @@ function irParaJogo(codigo) {
     renderizarInimigos(inimigos);
     renderizarHistoria(historia, jogadores);
     atualizarInputArea(jogadores[myUid], config);
+
+    // Intro slides: abrir para todos quando estado = 'intro'
+    if (config.estado === 'intro' && !_introAtivo) {
+      iniciarIntroSlides(jogadores);
+    }
+    // Fechar intro quando estado mudar para qualquer outra coisa
+    if (config.estado !== 'intro' && _introAtivo) {
+      fecharIntro();
+    }
 
     // Host inicia narração automaticamente se lobby com jogadores prontos
     if (amIHost && config.estado === 'lobby' && Object.keys(jogadores).length > 0) {
@@ -735,83 +747,138 @@ async function chamarOpenAI(systemPrompt, history, userMsg, onRetry, maxTokens =
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  IA — INÍCIO (introdução em dois atos)
+//  INTRO — SLIDES DE APRESENTAÇÃO DA CAMPANHA
 // ═══════════════════════════════════════════════════════════════
-window.chamarIAInicio = async function() {
-  if (chamandoIA) return;
-  if (!getApiKey()) { pedirApiKey(() => chamarIAInicio()); return; }
-  chamandoIA = true;
-  document.getElementById('btn-iniciar-wrap').style.display = 'none';
+function getIntroSlides(nomes) {
+  return [
+    { icone: '🏰', titulo: 'O Reino de Mhoried',
+      texto: 'O reino de Mhoried celebra a colheita de outono. Sob a Arbor Aeterna — a árvore ancestral que fertiliza as terras há milênios — o mercado fervilha com avelãs, tapeçarias e prata lavrada. A jovem Duquesa Catherine Laskaris passeia entre as barracas com seu guarda-costas, Sir Gregoras Pellos.' },
+    { icone: '⚔️', titulo: 'Os Aventureiros',
+      texto: `Presentes no festival estão vocês: ${nomes}. Aventureiros de ofícios distintos, reunidos pelo acaso numa tarde de outono. O velho Bispo Methodios abençoa a colheita enquanto crianças brincam nas raízes imensas da Árvore. Uma tarde perfeita... até a primeira criança gritar.` },
+    { icone: '🪨', titulo: 'O Ataque',
+      texto: 'Espantalhos emergem dos campos ao sul — construtos de estopa podre e galhos partidos, olhos de brasa, brandindo foices enferrujadas. Eles arrancam barracas, aterrorizam cidadãos e arranham a casca da Árvore Eterna com garras de ferro. O caos explode no coração do festival.' },
+    { icone: '🗡️', titulo: 'Gregoras Fala',
+      texto: 'Com os espantalhos destruídos e os feridos atendidos, Sir Gregoras Pellos se aproxima. O guarda-costas da Duquesa é um homem de meia-idade com cicatrizes antigas e olhos cansados. Oferece cidra fria e pede que se afastem da multidão — tem algo que a cidade não pode ouvir.' },
+    { icone: '🔮', titulo: 'A Verdade Oculta',
+      texto: 'Há dois anos, o jovem Duque Oswald Laskaris partiu para estudar magia. O mestre que escolheu — Dendybar, o Manchado — o transformou em monstro como punição. Oswald vive agora nas Blackwoods, entre os Grimhollow Thools. A Duquesa proíbe ataques diretos: ainda há esperança de salvá-lo.' },
+    { icone: '📜', titulo: 'A Missão',
+      texto: 'Gregoras pede que entrem nas Blackwoods, rastreiem a toca dos Thools e encontrem Oswald — identificável por uma marca de fruto de hayberry no ombro esquerdo. Salvem-no se possível. Se não houver esperança, ponham fim à sua miséria. E descubram quem planeja os próximos ataques.' },
+    { icone: '💰', titulo: 'A Recompensa',
+      texto: '5.000 moedas de prata pagas pelos mercadores de Mhoried pelo fim dos ataques. Se Oswald voltar vivo, a Duquesa concede 100 hectares de terra fértil a cada herói. Gregoras menciona Hobbleboot Sam — um guia local por 100 pratas, ou um mapa rudimentar por apenas 10.' },
+    { icone: '🌲', titulo: 'A Partida',
+      texto: '"As Blackwoods começam a poucas milhas daqui," diz Gregoras, apontando para o sul. "Algo naquelas matas planeja o próximo ataque — e desta vez pode ser maior." Ele olha para cada um de vocês. "Oswald sofre. Mhoried sofre. Vocês são a única esperança que nos resta."' }
+  ];
+}
+
+function iniciarIntroSlides(jogadores) {
+  const nomes = Object.values(jogadores)
+    .map(j => `${j.nome} (${CLASSES[j.classe]?.nome || j.classe})`)
+    .join(', ');
+  _introSlides = getIntroSlides(nomes);
+  _introIdx    = 0;
+  _introAtivo  = true;
+  document.getElementById('intro-overlay').style.display = 'flex';
+  mostrarSlide(0);
+}
+
+function mostrarSlide(idx) {
+  const slide = _introSlides[idx];
+  if (!slide) return;
+  const total  = _introSlides.length;
+  const isLast = idx === total - 1;
+
+  document.getElementById('intro-progress').textContent = `${idx + 1} / ${total}`;
+  document.getElementById('intro-icon').textContent     = slide.icone;
+  document.getElementById('intro-titulo').textContent   = slide.titulo;
+  document.getElementById('intro-texto').textContent    = slide.texto;
+
+  const prevBtn = document.getElementById('btn-intro-prev');
+  const nextBtn = document.getElementById('btn-intro-next');
+  prevBtn.style.display = idx > 0 ? '' : 'none';
+
+  if (isLast) {
+    if (amIHost) {
+      nextBtn.textContent = '⚔ Começar Aventura!';
+      nextBtn.onclick = () => finalizarIntro();
+    } else {
+      nextBtn.textContent = '✓ Estou Pronto';
+      nextBtn.disabled = false;
+      nextBtn.onclick = () => { nextBtn.disabled = true; nextBtn.textContent = 'Aguardando o narrador...'; };
+    }
+  } else {
+    nextBtn.disabled = false;
+    nextBtn.textContent = 'Próximo ▶';
+    nextBtn.onclick = () => avancarSlide();
+  }
+
+  narrarTexto(slide.texto);
+}
+
+window.avancarSlide = function() {
+  if (_introIdx < _introSlides.length - 1) {
+    _introIdx++;
+    mostrarSlide(_introIdx);
+  }
+};
+
+window.voltarSlide = function() {
+  if (_introIdx > 0) {
+    _introIdx--;
+    mostrarSlide(_introIdx);
+  }
+};
+
+async function finalizarIntro() {
+  const nextBtn = document.getElementById('btn-intro-next');
+  if (nextBtn) { nextBtn.disabled = true; nextBtn.textContent = 'Iniciando...'; }
 
   try {
     const snap = await get(ref(db, `salas/${mySala}`));
     const data = snap.val();
     const jogadores = data.jogadores || {};
-    const sysPrompt = buildSystemPrompt(jogadores, {});
-    const nomes = Object.values(jogadores)
-      .map(j => `${j.nome} (${CLASSES[j.classe]?.nome || j.classe})`)
-      .join(', ');
-    const totalEspantalhos = Math.max(2, Object.keys(jogadores).length * 2);
+    const totalEsp  = Math.max(2, Object.keys(jogadores).length * 2);
 
     await update(ref(db, `salas/${mySala}/config`), { estado: 'narrando' });
 
-    // ── ATO 1: A cena e o ataque ──────────────────────────────
-    const ato1 = _campanha
-      ? `INÍCIO DA CAMPANHA "${_campanha.titulo}".
-Personagens presentes: ${nomes}.
+    const nomes = Object.values(jogadores)
+      .map(j => `${j.nome} (${CLASSES[j.classe]?.nome || j.classe})`).join(', ');
 
-Narre em dois blocos sem títulos:
+    const prompt = `Cena de combate: ${nomes} estão no festival de Mhoried quando espantalhos atacam. Em 2 frases curtas e impactantes, descreva o momento em que o primeiro espantalho irrompeu de entre as barracas. Tom de horror de aldeia, brutal e direto.
+STATS: ${Array.from({length: totalEsp}, (_,i) => `[INIMIGO:Espantalho ${i+1}:10:10:🪨]`).join(' ')}`;
 
-BLOCO A — A FESTA (3-4 frases):
-O mercado festivo de outono de Mhoried fervilha sob os galhos dourados da Arbor Aeterna, a árvore ancestral que há milênios fertiliza as colheitas. Vendedores exibem avelãs, tapeçarias e prata lavrada. A jovem Duquesa Catherine Laskaris passeia entre as barracas acompanhada de seu guarda-costas Sir Gregoras Pellos. O velho Bispo Methodios abençoa a colheita enquanto atafulha a boca de avelãs. As crianças brincam entre as raízes imensas da árvore. Use detalhes sensoriais: sons, cheiros, texturas.
-
-BLOCO B — O ATAQUE (4-5 frases):
-De repente, uma criança grita. Um espantalho arranca o tecido de uma barraca com sua foice enferrujada — e em segundos mais surgem dos campos ao sul: construtos hediondos de estopa podre e galhos partidos, olhos de brasa, brandindo foices e carregando sacos para saquear. Alguns atacam os cidadãos. Outros arranha a casca da Árvore Eterna com garras de ferro. Os personagens estão em meio ao caos.
-
-Tom: folclore sombrio, horror de aldeia, urgência brutal. Máximo 150 palavras no total.
-OBRIGATÓRIO ao final: STATS: ${Array.from({length: totalEspantalhos}, (_,i) => `[INIMIGO:Espantalho ${i+1}:10:10:🪨]`).join(' ')}`
-      : `Abertura cinematográfica de campanha de RPG medieval. Personagens: ${nomes}.
-Descreva: 1) Cenário festivo (2 frases sensoriais); 2) Presságio; 3) Ataque de criaturas hostis.
-Máximo 120 palavras. STATS: [INIMIGO:nome:hp:hpMax:ícone] para cada inimigo.`;
-
-    const resp1 = await chamarOpenAI(sysPrompt, [], ato1, mostrarRetryUI, 700);
-    ocultarRetryUI();
-    if (!resp1) { await update(ref(db, `salas/${mySala}/config`), { estado: 'lobby' }); document.getElementById('btn-iniciar-wrap').style.display = amIHost ? 'block' : 'none'; return; }
-
-    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resp1), ts: Date.now() });
-    await processarStats(resp1, jogadores, {});
-
-    // ── ATO 2: Após a batalha — briefing completo de Gregoras ──
-    await new Promise(r => setTimeout(r, 1200));
-
-    const ato2 = `Os espantalhos foram destruídos. Feridos são atendidos. O cheiro de estopa queimada paira no ar.
-
-Sir Gregoras Pellos se aproxima dos personagens (${nomes}) com um copo de cidra fria para cada um e os convida para longe da multidão. Com voz baixa e grave, conta a verdade que a cidade não sabe:
-
-Narre em três parágrafos curtos e diretos:
-
-1. O DUQUE PERDIDO: Há dois anos, o jovem Duque Oswald Laskaris — irmão da Duquesa Catherine — partiu para estudar magia em Bannock. Confiou no mestre errado: Dendybar, o Manchado, um feiticeiro cruel e caprichoso que, em vez de ensinar, transformou Oswald num monstro semelhante a um ogro como punição por ser "indigno". A Duquesa proibiu qualquer ataque aos Thools por esperança de reverter a maldição.
-
-2. A MISSÃO: Gregoras pede que os personagens entrem nas Blackwoods ao sul, rastreiem a toca secreta dos Grimhollow Thools, identifiquem qual deles é Oswald (uma marca de nascença em forma de fruto de hayberry no ombro pode ajudar) e — se houver como — o salvem. Se não houver esperança, que ponham fim à miséria do homem. E que descubram quem está por trás desses espantalhos e do plano de atacar a cidade.
-
-3. A RECOMPENSA + PARTIDA: Os mercadores de Mhoried pagarão 5.000 moedas de prata pelo fim dos ataques dos Thools. Se Oswald for devolvido vivo, a Duquesa concederá cavalaria e 100 hectares de terra fértil ao norte a cada herói — terra suficiente para construir uma fazenda ou um solar. Gregoras menciona que um guia chamado Hobbleboot Sam pode acompanhá-los por 100 pratas, ou vender um mapa rudimentar por 10. Ele aponta para o sul: as Blackwoods começam a apenas algumas milhas dali.
-
-Termine com uma fala final de Gregoras em discurso direto — sombria, esperançosa, deixando o peso da missão no ar.
-Tom: grave, medieval, pessoal. Máximo 220 palavras. SEM tags STATS nesta cena.`;
-
-    const hist1 = [{ role:'model', content: limparTags(resp1) }];
-    const resp2 = await chamarOpenAI(sysPrompt, hist1, ato2, mostrarRetryUI, 900);
+    const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, {}), [], prompt, mostrarRetryUI, 150);
     ocultarRetryUI();
 
-    if (resp2) {
-      await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resp2), ts: Date.now() });
+    if (resposta) {
+      await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), ts: Date.now() });
+      await processarStats(resposta, jogadores, {});
     }
-
     await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando', rodada: 1 });
-  } finally {
-    chamandoIA = false;
+  } catch(e) {
     ocultarRetryUI();
+    if (nextBtn) { nextBtn.disabled = false; nextBtn.textContent = '⚔ Começar Aventura!'; }
   }
+}
+
+function fecharIntro() {
+  _introAtivo = false;
+  const el = document.getElementById('intro-overlay');
+  if (el) el.style.display = 'none';
+  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  voiceQueue = []; voiceBusy = false;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  IA — INÍCIO (dispara slides de introdução)
+// ═══════════════════════════════════════════════════════════════
+window.chamarIAInicio = async function() {
+  if (!getApiKey()) { pedirApiKey(() => chamarIAInicio()); return; }
+  document.getElementById('btn-iniciar-wrap').style.display = 'none';
+  const snap = await get(ref(db, `salas/${mySala}`));
+  const jogadores = (snap.val()?.jogadores) || {};
+  await update(ref(db, `salas/${mySala}/config`), { estado: 'intro' });
+  iniciarIntroSlides(jogadores);
 };
 
 // ═══════════════════════════════════════════════════════════════
