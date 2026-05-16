@@ -32,8 +32,10 @@
 
     <!-- Criar personagem -->
     <div class="field-group">
-      <label class="field-lbl">Seu personagem</label>
+      <label class="field-lbl">Personagem · 150 pontos GURPS</label>
       <input type="text" id="char-nome" placeholder="Nome do personagem" maxlength="24">
+
+      <label class="field-lbl" style="margin-top:2px">Arquétipo</label>
       <div id="class-grid">
         <button class="class-btn active" data-class="guerreiro">⚔️ Guerreiro</button>
         <button class="class-btn" data-class="mago">🔮 Mago</button>
@@ -42,6 +44,30 @@
         <button class="class-btn" data-class="barbaro">🪓 Bárbaro</button>
         <button class="class-btn" data-class="arqueiro">🏹 Arqueiro</button>
       </div>
+
+      <!-- Preview GURPS -->
+      <div id="gurps-preview">
+        <div class="gurps-attrs">
+          <div class="attr-box"><span class="attr-lbl">FOR</span><span class="attr-val" id="prev-ST">13</span></div>
+          <div class="attr-box"><span class="attr-lbl">DES</span><span class="attr-val" id="prev-DX">12</span></div>
+          <div class="attr-box"><span class="attr-lbl">INT</span><span class="attr-val" id="prev-IQ">10</span></div>
+          <div class="attr-box"><span class="attr-lbl">SAU</span><span class="attr-val" id="prev-HT">12</span></div>
+        </div>
+        <div class="gurps-derived">
+          <span>❤️ PV <strong id="prev-HP">13</strong></span>
+          <span>⚡ PF <strong id="prev-FP">12</strong></span>
+          <span>🏃 Mov <strong id="prev-Move">6</strong></span>
+          <span>🧠 Von <strong id="prev-Will">10</strong></span>
+          <span>👁️ Per <strong id="prev-Per">10</strong></span>
+        </div>
+        <div id="arquetipo-desc" class="hint"></div>
+      </div>
+
+      <label class="field-lbl" style="margin-top:4px">Vantagens <span class="hint" style="text-transform:none;letter-spacing:0">(máx. 2)</span></label>
+      <div id="adv-grid" class="adv-chips"></div>
+
+      <label class="field-lbl" style="margin-top:4px">Desvantagem <span class="hint" style="text-transform:none;letter-spacing:0">(opcional · ganha pontos)</span></label>
+      <div id="disadv-grid" class="adv-chips"></div>
     </div>
 
     <hr class="divider">

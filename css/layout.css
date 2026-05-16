@@ -451,3 +451,70 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   animation: pulse 1s infinite;
 }
 @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+
+/* ══ GURPS CHARACTER CREATION ══ */
+#gurps-preview {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gurps-attrs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 6px;
+}
+.attr-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 4px;
+}
+.attr-lbl {
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.attr-val {
+  font-size: 18px;
+  color: var(--gold);
+  font-weight: bold;
+  line-height: 1.2;
+}
+.gurps-derived {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text2);
+}
+.adv-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.adv-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text2);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all .12s;
+}
+.adv-chip:hover { border-color: rgba(88,104,160,.5); color: var(--text); }
+.adv-chip.selected { border-color: var(--gold); color: var(--gold); background: rgba(200,160,80,.08); }
+.adv-chip.disadv.selected { border-color: var(--red); color: var(--red); background: rgba(204,68,68,.08); }
+.chip-cost { font-size: 9px; color: var(--text3); }
+.chip-adv { font-size: 11px; }

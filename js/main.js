@@ -17,16 +17,76 @@ const app = initializeApp({
 const db = getDatabase(app);
 
 // ═══════════════════════════════════════════════════════════════
-//  CLASSES
+//  GURPS — ARQUÉTIPOS, VANTAGENS E DESVANTAGENS
 // ═══════════════════════════════════════════════════════════════
-const CLASSES = {
-  guerreiro: { nome:'Guerreiro', icon:'⚔️', hp:120, sp:60,  atk:8, def:5  },
-  mago:      { nome:'Mago',      icon:'🔮', hp:60,  sp:120, atk:3, def:1  },
-  ladino:    { nome:'Ladino',    icon:'🗡️', hp:80,  sp:80,  atk:6, def:3  },
-  clerigo:   { nome:'Clérigo',   icon:'✨', hp:90,  sp:100, atk:4, def:4  },
-  barbaro:   { nome:'Bárbaro',   icon:'🪓', hp:150, sp:40,  atk:10, def:2 },
-  arqueiro:  { nome:'Arqueiro',  icon:'🏹', hp:85,  sp:70,  atk:7, def:3  },
+const ARQUETIPOS = {
+  guerreiro: {
+    nome: 'Guerreiro', icon: '⚔️',
+    ST: 13, DX: 12, IQ: 10, HT: 12,
+    descricao: 'Combatente experiente. FOR alta para dano brutal, DES sólida para acertar golpes.',
+    sugeridas: ['combat_reflexes','high_pain_threshold']
+  },
+  mago: {
+    nome: 'Mago', icon: '🔮',
+    ST: 10, DX: 11, IQ: 14, HT: 10,
+    descricao: 'Arcano poderoso. INT excepcional para magias. Fisicamente frágil — depende de aliados.',
+    sugeridas: ['magery1','strong_will']
+  },
+  ladino: {
+    nome: 'Ladino', icon: '🗡️',
+    ST: 11, DX: 14, IQ: 11, HT: 11,
+    descricao: 'Especialista furtivo. DES altíssima para ataques rápidos, esquivas e subterfúgio.',
+    sugeridas: ['combat_reflexes','acute_vision']
+  },
+  clerigo: {
+    nome: 'Clérigo', icon: '✨',
+    ST: 11, DX: 11, IQ: 13, HT: 12,
+    descricao: 'Curandeiro e combatente divino. INT e SAU equilibradas para cura e resistência.',
+    sugeridas: ['strong_will','fit']
+  },
+  barbaro: {
+    nome: 'Bárbaro', icon: '🪓',
+    ST: 15, DX: 11, IQ: 9,  HT: 13,
+    descricao: 'Força bruta da natureza. FOR máxima, SAU extraordinária. Instinto puro sobre intelecto.',
+    sugeridas: ['high_pain_threshold','hard_to_kill']
+  },
+  arqueiro: {
+    nome: 'Arqueiro', icon: '🏹',
+    ST: 11, DX: 13, IQ: 11, HT: 12,
+    descricao: 'Atirador preciso. DES e SAU sólidas para combate à distância e sobrevivência na floresta.',
+    sugeridas: ['acute_vision','night_vision']
+  }
 };
+
+const VANTAGENS = {
+  combat_reflexes:    { nome: 'Reflexos de Combate',    custo: 15, icon: '⚡', desc: '+2 Testes de Medo; raramente surpreendido' },
+  high_pain_threshold:{ nome: 'Alto Limiar de Dor',     custo: 10, icon: '🛡️', desc: 'Ignora penalidades de choque por ferimento' },
+  magery1:            { nome: 'Magia 1',                 custo: 15, icon: '✨', desc: 'Pode usar magia; +1 em todas as magias' },
+  night_vision:       { nome: 'Visão Noturna 3',         custo:  3, icon: '🌙', desc: 'Reduz penalidade de escuridão em 3' },
+  fit:                { nome: 'Boa Forma',                custo:  5, icon: '💪', desc: '+1 em testes de SAU para fadiga e recuperação' },
+  hard_to_kill:       { nome: 'Difícil de Matar 2',      custo:  4, icon: '❤️', desc: '+2 em testes de SAU ao beira da morte' },
+  acute_vision:       { nome: 'Visão Aguçada +2',        custo:  4, icon: '🔍', desc: '+2 em Percepção visual' },
+  luck:               { nome: 'Sorte',                   custo: 15, icon: '🍀', desc: 'Pode rerrolar 1 teste por hora real de jogo' },
+  strong_will:        { nome: 'Força de Vontade +2',     custo:  8, icon: '🧠', desc: '+2 em testes de Vontade e resistência mental' }
+};
+
+const DESVANTAGENS = {
+  bad_temper:    { nome: 'Mau Gênio',                 pts: -10, icon: '😤', desc: 'Perde o controle ao ser provocado (SAU-10)' },
+  cowardice:     { nome: 'Covardia',                  pts: -10, icon: '😱', desc: '-2 em Testes de Medo; evita confronto' },
+  curious:       { nome: 'Curioso',                   pts:  -5, icon: '🔎', desc: 'Precisa investigar o que é misterioso' },
+  overconfident: { nome: 'Excessivamente Confiante',  pts:  -5, icon: '😏', desc: 'Subestima perigos e inimigos' }
+};
+
+function gurpsDerivados(arq) {
+  const speed = ((arq.DX + arq.HT) / 4).toFixed(2);
+  return {
+    HP: arq.ST, maxHp: arq.ST,
+    FP: arq.HT, maxFP: arq.HT,
+    Will: arq.IQ, Per: arq.IQ,
+    speed: parseFloat(speed),
+    move: Math.floor(parseFloat(speed))
+  };
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  ESTADO
@@ -47,7 +107,9 @@ let voiceEnabled = localStorage.getItem('rpg_voice') !== '0';
 let voiceQueue  = [];
 let voiceBusy   = false;
 let _currentAudio = null;
-let _selectedClass = 'guerreiro';
+let _selectedClass  = 'guerreiro';
+let _selectedAdvs   = new Set();
+let _selectedDisadv = null;
 let _campanha   = null;
 
 // ═══════════════════════════════════════════════════════════════
@@ -85,13 +147,87 @@ function limparTags(txt) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  LOBBY — CLASSE SELEÇÃO
+//  LOBBY — SELEÇÃO DE ARQUÉTIPO, VANTAGENS E DESVANTAGENS
 // ═══════════════════════════════════════════════════════════════
+function atualizarPreviewGurps() {
+  const arq = ARQUETIPOS[_selectedClass];
+  if (!arq) return;
+  const d = gurpsDerivados(arq);
+
+  document.getElementById('prev-ST').textContent   = arq.ST;
+  document.getElementById('prev-DX').textContent   = arq.DX;
+  document.getElementById('prev-IQ').textContent   = arq.IQ;
+  document.getElementById('prev-HT').textContent   = arq.HT;
+  document.getElementById('prev-HP').textContent   = d.HP;
+  document.getElementById('prev-FP').textContent   = d.FP;
+  document.getElementById('prev-Move').textContent = d.move;
+  document.getElementById('prev-Will').textContent = d.Will;
+  document.getElementById('prev-Per').textContent  = d.Per;
+  const desc = document.getElementById('arquetipo-desc');
+  if (desc) desc.textContent = arq.descricao;
+
+  // Custo restante para mostrar quais vantagens cabem
+  const pts = calcPontos();
+  document.querySelectorAll('.adv-chip[data-adv]').forEach(chip => {
+    const v = VANTAGENS[chip.dataset.adv];
+    chip.classList.toggle('sem-pontos', v && pts + v.custo > 150 && !_selectedAdvs.has(chip.dataset.adv));
+  });
+}
+
+function calcPontos() {
+  const arq = ARQUETIPOS[_selectedClass] || {};
+  const ST = arq.ST||10, DX = arq.DX||10, IQ = arq.IQ||10, HT = arq.HT||10;
+  const attrCost = (ST-10)*10 + (DX-10)*20 + (IQ-10)*20 + (HT-10)*10;
+  const advCost  = [..._selectedAdvs].reduce((s,k) => s + (VANTAGENS[k]?.custo||0), 0);
+  const disadvPts= _selectedDisadv ? (DESVANTAGENS[_selectedDisadv]?.pts||0) : 0;
+  return attrCost + advCost + disadvPts;
+}
+
+function renderAdvGrid() {
+  const advGrid    = document.getElementById('adv-grid');
+  const disadvGrid = document.getElementById('disadv-grid');
+  if (!advGrid || !disadvGrid) return;
+
+  advGrid.innerHTML = Object.entries(VANTAGENS).map(([k, v]) => {
+    const sel = _selectedAdvs.has(k);
+    return `<button class="adv-chip${sel?' selected':''}" data-adv="${k}" onclick="toggleAdv('${k}')">
+      ${v.icon} ${v.nome} <span class="chip-cost">${v.custo}pts</span>
+    </button>`;
+  }).join('');
+
+  disadvGrid.innerHTML = Object.entries(DESVANTAGENS).map(([k, v]) => {
+    const sel = _selectedDisadv === k;
+    return `<button class="adv-chip disadv${sel?' selected':''}" data-disadv="${k}" onclick="toggleDisadv('${k}')">
+      ${v.icon} ${v.nome} <span class="chip-cost">${v.pts}pts</span>
+    </button>`;
+  }).join('');
+
+  atualizarPreviewGurps();
+}
+
+window.toggleAdv = function(k) {
+  if (_selectedAdvs.has(k)) {
+    _selectedAdvs.delete(k);
+  } else {
+    if (_selectedAdvs.size >= 2) { toast('Máximo 2 vantagens.', 1500); return; }
+    _selectedAdvs.add(k);
+  }
+  renderAdvGrid();
+};
+
+window.toggleDisadv = function(k) {
+  _selectedDisadv = (_selectedDisadv === k) ? null : k;
+  renderAdvGrid();
+};
+
 document.querySelectorAll('.class-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.class-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     _selectedClass = btn.dataset.class;
+    _selectedAdvs  = new Set();
+    _selectedDisadv = null;
+    renderAdvGrid();
   });
 });
 
@@ -184,6 +320,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarAcao(); }
   });
 
+  renderAdvGrid();
   carregarCampanha();
 });
 
@@ -191,11 +328,23 @@ window.addEventListener('DOMContentLoaded', () => {
 //  SALA — CRIAR / ENTRAR
 // ═══════════════════════════════════════════════════════════════
 function getDadosPersonagem() {
-  const nome  = document.getElementById('char-nome')?.value?.trim();
-  const cl    = _selectedClass || 'guerreiro';
-  const stats = CLASSES[cl];
+  const nome = document.getElementById('char-nome')?.value?.trim();
+  const cl   = _selectedClass || 'guerreiro';
+  const arq  = ARQUETIPOS[cl];
   if (!nome) { document.getElementById('lobby-error').textContent = 'Digite o nome do personagem.'; return null; }
-  return { nome, classe: cl, hp: stats.hp, maxHp: stats.hp, sp: stats.sp, maxSp: stats.sp, atk: stats.atk, def: stats.def, vivo: true, consciente: true };
+  const d = gurpsDerivados(arq);
+  const vantagens  = [..._selectedAdvs];
+  const desvantagem = _selectedDisadv;
+  return {
+    nome, arquetipo: cl,
+    ST: arq.ST, DX: arq.DX, IQ: arq.IQ, HT: arq.HT,
+    hp: d.HP, maxHp: d.HP,
+    FP: d.FP, maxFP: d.FP,
+    Will: d.Will, Per: d.Per,
+    speed: d.speed, move: d.move,
+    vantagens, desvantagem,
+    vivo: true, consciente: true
+  };
 }
 
 window.criarSala = async function() {
@@ -232,7 +381,7 @@ window.entrarSala = async function() {
 
   const existing = data.jogadores?.[myUid];
   if (existing) {
-    await update(ref(db, `salas/${code}/jogadores/${myUid}`), { ativo: true, nome: p.nome, classe: p.classe });
+    await update(ref(db, `salas/${code}/jogadores/${myUid}`), { ativo: true, nome: p.nome, arquetipo: p.arquetipo });
   } else {
     await set(ref(db, `salas/${code}/jogadores/${myUid}`), { ...p, uid: myUid, ativo: true });
   }
@@ -291,13 +440,17 @@ function renderizarJogadores(jogadores, config) {
   if (!bar) return;
   bar.innerHTML = Object.values(jogadores).map(j => {
     const isMe  = j.uid === myUid;
-    const hpPct = Math.round((j.hp / j.maxHp) * 100);
+    const hpPct = Math.round((j.hp / (j.maxHp||1)) * 100);
     const hpCls = hpPct < 30 ? 'low' : 'ok';
-    const cls   = CLASSES[j.classe];
+    const arq   = ARQUETIPOS[j.arquetipo];
+    const icon  = arq?.icon || '⚔️';
+    const advIcons = (j.vantagens||[]).map(k => VANTAGENS[k]?.icon || '').join('');
     return `<div class="player-chip ${isMe ? 'me' : ''} ${j.ativo === false ? 'offline' : ''}">
-      <span>${cls?.icon || '⚔️'}</span>
+      <span>${icon}</span>
       <span class="chip-name">${j.nome}</span>
-      <span class="chip-hp ${hpCls}">${j.hp}/${j.maxHp}</span>
+      <span class="chip-hp ${hpCls}">PV ${j.hp}/${j.maxHp}</span>
+      ${j.FP != null ? `<span class="chip-hp" style="color:var(--blue)">PF ${j.FP}/${j.maxFP}</span>` : ''}
+      ${advIcons ? `<span class="chip-adv">${advIcons}</span>` : ''}
     </div>`;
   }).join('');
 }
@@ -412,12 +565,13 @@ window.resetarSala = async function() {
   ups[`salas/${mySala}/config/estado`]  = 'lobby';
   ups[`salas/${mySala}/config/rodada`]  = 0;
   Object.keys(jogadores).forEach(uid => {
-    const j = jogadores[uid];
-    const s = CLASSES[j.classe] || CLASSES.guerreiro;
-    ups[`salas/${mySala}/jogadores/${uid}/hp`] = s.hp;
-    ups[`salas/${mySala}/jogadores/${uid}/maxHp`] = s.hp;
-    ups[`salas/${mySala}/jogadores/${uid}/sp`] = s.sp;
-    ups[`salas/${mySala}/jogadores/${uid}/maxSp`] = s.sp;
+    const j   = jogadores[uid];
+    const arq = ARQUETIPOS[j.arquetipo] || ARQUETIPOS.guerreiro;
+    const d   = gurpsDerivados(arq);
+    ups[`salas/${mySala}/jogadores/${uid}/hp`]    = d.HP;
+    ups[`salas/${mySala}/jogadores/${uid}/maxHp`] = d.HP;
+    ups[`salas/${mySala}/jogadores/${uid}/FP`]    = d.FP;
+    ups[`salas/${mySala}/jogadores/${uid}/maxFP`] = d.FP;
     ups[`salas/${mySala}/jogadores/${uid}/acao1`] = null;
     ups[`salas/${mySala}/jogadores/${uid}/vivo`]  = true;
     ups[`salas/${mySala}/jogadores/${uid}/consciente`] = true;
@@ -728,9 +882,12 @@ async function chamarIA(jogadores, data) {
 //  SYSTEM PROMPT
 // ═══════════════════════════════════════════════════════════════
 function buildSystemPrompt(jogadores, inimigos) {
-  const jogList = Object.values(jogadores).map(j =>
-    `${j.nome} (${CLASSES[j.classe]?.nome||j.classe}) — HP:${j.hp}/${j.maxHp}`
-  ).join('\n');
+  const jogList = Object.values(jogadores).map(j => {
+    const arq = ARQUETIPOS[j.arquetipo];
+    const advStr = (j.vantagens||[]).map(k => VANTAGENS[k]?.nome).filter(Boolean).join(', ');
+    const disStr = j.desvantagem ? DESVANTAGENS[j.desvantagem]?.nome : '';
+    return `${j.nome} (${arq?.nome||j.arquetipo}) — FOR:${j.ST||'?'} DES:${j.DX||'?'} INT:${j.IQ||'?'} SAU:${j.HT||'?'} | PV:${j.hp}/${j.maxHp} PF:${j.FP||j.HT}/${j.maxFP||j.HT} Von:${j.Will||j.IQ} Per:${j.Per||j.IQ}${advStr?` | Vant:${advStr}`:''}${disStr?` | Desv:${disStr}`:''}`;
+  }).join('\n');
 
   const iniList = Object.values(inimigos).filter(i => i.hp > 0).map(i =>
     `${i.icon||'👹'} ${i.nome} — HP:${i.hp}/${i.maxHp}`
