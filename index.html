@@ -32,10 +32,10 @@
 
     <!-- Criar personagem -->
     <div class="field-group">
-      <label class="field-lbl">Personagem · 150 pontos GURPS</label>
+      <label class="field-lbl">Personagem</label>
       <input type="text" id="char-nome" placeholder="Nome do personagem" maxlength="24">
 
-      <label class="field-lbl" style="margin-top:2px">Arquétipo</label>
+      <label class="field-lbl" style="margin-top:4px">Classe</label>
       <div id="class-grid">
         <button class="class-btn active" data-class="guerreiro">⚔️ Guerreiro</button>
         <button class="class-btn" data-class="mago">🔮 Mago</button>
@@ -45,29 +45,40 @@
         <button class="class-btn" data-class="arqueiro">🏹 Arqueiro</button>
       </div>
 
-      <!-- Preview GURPS -->
-      <div id="gurps-preview">
-        <div class="gurps-attrs">
-          <div class="attr-box"><span class="attr-lbl">FOR</span><span class="attr-val" id="prev-ST">13</span></div>
-          <div class="attr-box"><span class="attr-lbl">DES</span><span class="attr-val" id="prev-DX">12</span></div>
-          <div class="attr-box"><span class="attr-lbl">INT</span><span class="attr-val" id="prev-IQ">10</span></div>
-          <div class="attr-box"><span class="attr-lbl">SAU</span><span class="attr-val" id="prev-HT">12</span></div>
+      <!-- Preview: sprite + gênero + atributos AD&D -->
+      <div id="char-preview">
+        <div id="sprite-col">
+          <img id="char-sprite" src="sprites/guerreiro_m.png" alt="" onerror="this.style.opacity='.3'">
+          <div id="gender-toggle">
+            <button class="gender-btn active" data-gender="m" onclick="toggleGenero('m')">♂</button>
+            <button class="gender-btn" data-gender="f" onclick="toggleGenero('f')">♀</button>
+          </div>
         </div>
-        <div class="gurps-derived">
-          <span>❤️ PV <strong id="prev-HP">13</strong></span>
-          <span>⚡ PF <strong id="prev-FP">12</strong></span>
-          <span>🏃 Mov <strong id="prev-Move">6</strong></span>
-          <span>🧠 Von <strong id="prev-Will">10</strong></span>
-          <span>👁️ Per <strong id="prev-Per">10</strong></span>
+        <div id="stats-col">
+          <div class="dnd-attrs">
+            <div class="attr-box"><span class="attr-lbl">FOR</span><span class="attr-val" id="prev-STR">16</span><span class="attr-mod" id="prev-STR-mod">+3</span></div>
+            <div class="attr-box"><span class="attr-lbl">DES</span><span class="attr-val" id="prev-DEX">14</span><span class="attr-mod" id="prev-DEX-mod">+2</span></div>
+            <div class="attr-box"><span class="attr-lbl">CON</span><span class="attr-val" id="prev-CON">15</span><span class="attr-mod" id="prev-CON-mod">+2</span></div>
+            <div class="attr-box"><span class="attr-lbl">INT</span><span class="attr-val" id="prev-INT">10</span><span class="attr-mod" id="prev-INT-mod">0</span></div>
+            <div class="attr-box"><span class="attr-lbl">SAB</span><span class="attr-val" id="prev-WIS">10</span><span class="attr-mod" id="prev-WIS-mod">0</span></div>
+            <div class="attr-box"><span class="attr-lbl">CAR</span><span class="attr-val" id="prev-CHA">10</span><span class="attr-mod" id="prev-CHA-mod">0</span></div>
+          </div>
+          <div class="dnd-derived">
+            <span>❤️ PV <strong id="prev-HP">14</strong></span>
+            <span>🛡️ CA <strong id="prev-AC">17</strong></span>
+            <span>⚡ Init <strong id="prev-Init">+2</strong></span>
+          </div>
+          <div class="dnd-saves">
+            <span>Fort <strong id="prev-Fort">+4</strong></span>
+            <span>Ref <strong id="prev-Ref">+2</strong></span>
+            <span>Von <strong id="prev-Will">0</strong></span>
+          </div>
+          <div id="class-feature-lbl" class="feat-tag"></div>
         </div>
-        <div id="arquetipo-desc" class="hint"></div>
       </div>
 
-      <label class="field-lbl" style="margin-top:4px">Vantagens <span class="hint" style="text-transform:none;letter-spacing:0">(máx. 2)</span></label>
+      <label class="field-lbl" style="margin-top:4px">Perícias <span class="hint" style="text-transform:none;letter-spacing:0">(máx. 2)</span></label>
       <div id="adv-grid" class="adv-chips"></div>
-
-      <label class="field-lbl" style="margin-top:4px">Desvantagem <span class="hint" style="text-transform:none;letter-spacing:0">(opcional · ganha pontos)</span></label>
-      <div id="disadv-grid" class="adv-chips"></div>
     </div>
 
     <hr class="divider">

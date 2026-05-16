@@ -452,20 +452,60 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 }
 @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
 
-/* ══ GURPS CHARACTER CREATION ══ */
-#gurps-preview {
+/* ══ AD&D CHARACTER CREATION ══ */
+#char-preview {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r);
-  padding: 10px 12px;
+  padding: 10px;
+}
+
+#sprite-col {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-.gurps-attrs {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
+  align-items: center;
   gap: 6px;
+  flex-shrink: 0;
+}
+#char-sprite {
+  width: 64px;
+  height: 80px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  border-radius: 4px;
+}
+#gender-toggle { display: flex; gap: 4px; }
+.gender-btn {
+  width: 26px;
+  height: 26px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .12s;
+  font-family: inherit;
+}
+.gender-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(200,160,80,.1); }
+
+#stats-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dnd-attrs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
 }
 .attr-box {
   display: flex;
@@ -474,27 +514,46 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 6px 4px;
+  padding: 4px 2px;
 }
 .attr-lbl {
-  font-size: 9px;
+  font-size: 8px;
   color: var(--text3);
   letter-spacing: 1px;
   text-transform: uppercase;
 }
 .attr-val {
-  font-size: 18px;
+  font-size: 16px;
   color: var(--gold);
   font-weight: bold;
-  line-height: 1.2;
+  line-height: 1.1;
 }
-.gurps-derived {
+.attr-mod {
+  font-size: 9px;
+  color: var(--blue);
+  line-height: 1;
+}
+.dnd-derived {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
   font-size: 11px;
   color: var(--text2);
+  flex-wrap: wrap;
 }
+.dnd-saves {
+  display: flex;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text2);
+}
+.feat-tag {
+  font-size: 10px;
+  color: var(--gold);
+  border-left: 2px solid rgba(200,160,80,.4);
+  padding-left: 6px;
+  line-height: 1.4;
+}
+
 .adv-chips {
   display: flex;
   flex-wrap: wrap;
@@ -512,9 +571,9 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   font-size: 11px;
   cursor: pointer;
   transition: all .12s;
+  font-family: inherit;
 }
 .adv-chip:hover { border-color: rgba(88,104,160,.5); color: var(--text); }
 .adv-chip.selected { border-color: var(--gold); color: var(--gold); background: rgba(200,160,80,.08); }
-.adv-chip.disadv.selected { border-color: var(--red); color: var(--red); background: rgba(204,68,68,.08); }
-.chip-cost { font-size: 9px; color: var(--text3); }
+.chip-attr { font-size: 8px; color: var(--text3); }
 .chip-adv { font-size: 11px; }

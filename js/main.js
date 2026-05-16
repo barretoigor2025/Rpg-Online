@@ -17,74 +17,77 @@ const app = initializeApp({
 const db = getDatabase(app);
 
 // ═══════════════════════════════════════════════════════════════
-//  GURPS — ARQUÉTIPOS, VANTAGENS E DESVANTAGENS
+//  AD&D — CLASSES, PERÍCIAS E DERIVADOS
 // ═══════════════════════════════════════════════════════════════
-const ARQUETIPOS = {
+const CLASSES = {
   guerreiro: {
     nome: 'Guerreiro', icon: '⚔️',
-    ST: 13, DX: 12, IQ: 10, HT: 12,
-    descricao: 'Combatente experiente. FOR alta para dano brutal, DES sólida para acertar golpes.',
-    sugeridas: ['combat_reflexes','high_pain_threshold']
+    STR: 16, DEX: 14, CON: 15, INT: 10, WIS: 10, CHA: 10,
+    dado_vida: 10, ca_armor: 5, fort_base: 2, ref_base: 0, will_base: 0,
+    descricao: 'Combatente versátil. Usa qualquer arma ou armadura. Superior no corpo a corpo.',
+    habilidade: { nome: 'Ataque Extra', desc: 'Uma vez por combate, faz dois ataques em um único turno.' }
   },
   mago: {
     nome: 'Mago', icon: '🔮',
-    ST: 10, DX: 11, IQ: 14, HT: 10,
-    descricao: 'Arcano poderoso. INT excepcional para magias. Fisicamente frágil — depende de aliados.',
-    sugeridas: ['magery1','strong_will']
+    STR: 8, DEX: 12, CON: 10, INT: 17, WIS: 13, CHA: 12,
+    dado_vida: 4, ca_armor: 0, fort_base: 0, ref_base: 0, will_base: 2,
+    descricao: 'Arquimago em formação. Magias devastadoras — mas fisicamente frágil.',
+    habilidade: { nome: 'Grimório', desc: 'Conhece 3 magias arcanas. Pode identificar itens e criaturas mágicas.' }
   },
   ladino: {
     nome: 'Ladino', icon: '🗡️',
-    ST: 11, DX: 14, IQ: 11, HT: 11,
-    descricao: 'Especialista furtivo. DES altíssima para ataques rápidos, esquivas e subterfúgio.',
-    sugeridas: ['combat_reflexes','acute_vision']
+    STR: 10, DEX: 17, CON: 11, INT: 13, WIS: 10, CHA: 13,
+    dado_vida: 6, ca_armor: 2, fort_base: 0, ref_base: 2, will_base: 0,
+    descricao: 'Especialista furtivo. Ataca na sombra para dano máximo e some antes da reação.',
+    habilidade: { nome: 'Ataque Furtivo', desc: 'Causa dano duplo ao atacar por surpresa ou flanqueando inimigo.' }
   },
   clerigo: {
     nome: 'Clérigo', icon: '✨',
-    ST: 11, DX: 11, IQ: 13, HT: 12,
-    descricao: 'Curandeiro e combatente divino. INT e SAU equilibradas para cura e resistência.',
-    sugeridas: ['strong_will','fit']
+    STR: 12, DEX: 10, CON: 12, INT: 12, WIS: 16, CHA: 13,
+    dado_vida: 8, ca_armor: 5, fort_base: 0, ref_base: 0, will_base: 2,
+    descricao: 'Sacerdote guerreiro. Cura aliados e confronta mortos-vivos com poder divino.',
+    habilidade: { nome: 'Canalizar Divindade', desc: 'Cura 1d6+SAB aliado adjacente ou repele mortos-vivos em 10m.' }
   },
   barbaro: {
     nome: 'Bárbaro', icon: '🪓',
-    ST: 15, DX: 11, IQ: 9,  HT: 13,
-    descricao: 'Força bruta da natureza. FOR máxima, SAU extraordinária. Instinto puro sobre intelecto.',
-    sugeridas: ['high_pain_threshold','hard_to_kill']
+    STR: 18, DEX: 12, CON: 16, INT: 8, WIS: 9, CHA: 8,
+    dado_vida: 12, ca_armor: 3, fort_base: 2, ref_base: 2, will_base: 0,
+    descricao: 'Força bruta da natureza. Em fúria, torna-se quase imparável.',
+    habilidade: { nome: 'Fúria', desc: 'FOR +4 e resistência a dano físico por 3 rodadas. 1 uso por combate.' }
   },
   arqueiro: {
     nome: 'Arqueiro', icon: '🏹',
-    ST: 11, DX: 13, IQ: 11, HT: 12,
-    descricao: 'Atirador preciso. DES e SAU sólidas para combate à distância e sobrevivência na floresta.',
-    sugeridas: ['acute_vision','night_vision']
+    STR: 12, DEX: 16, CON: 13, INT: 11, WIS: 13, CHA: 10,
+    dado_vida: 8, ca_armor: 4, fort_base: 0, ref_base: 2, will_base: 0,
+    descricao: 'Rastreador preciso. Abate inimigos à distância antes de serem vistos.',
+    habilidade: { nome: 'Tiro Certeiro', desc: 'Ignora metade da cobertura. +2 de ataque a alvos acima de 10m.' }
   }
 };
 
-const VANTAGENS = {
-  combat_reflexes:    { nome: 'Reflexos de Combate',    custo: 15, icon: '⚡', desc: '+2 Testes de Medo; raramente surpreendido' },
-  high_pain_threshold:{ nome: 'Alto Limiar de Dor',     custo: 10, icon: '🛡️', desc: 'Ignora penalidades de choque por ferimento' },
-  magery1:            { nome: 'Magia 1',                 custo: 15, icon: '✨', desc: 'Pode usar magia; +1 em todas as magias' },
-  night_vision:       { nome: 'Visão Noturna 3',         custo:  3, icon: '🌙', desc: 'Reduz penalidade de escuridão em 3' },
-  fit:                { nome: 'Boa Forma',                custo:  5, icon: '💪', desc: '+1 em testes de SAU para fadiga e recuperação' },
-  hard_to_kill:       { nome: 'Difícil de Matar 2',      custo:  4, icon: '❤️', desc: '+2 em testes de SAU ao beira da morte' },
-  acute_vision:       { nome: 'Visão Aguçada +2',        custo:  4, icon: '🔍', desc: '+2 em Percepção visual' },
-  luck:               { nome: 'Sorte',                   custo: 15, icon: '🍀', desc: 'Pode rerrolar 1 teste por hora real de jogo' },
-  strong_will:        { nome: 'Força de Vontade +2',     custo:  8, icon: '🧠', desc: '+2 em testes de Vontade e resistência mental' }
+const PERICIAS = {
+  atletismo:    { nome: 'Atletismo',    attr: 'FOR', icon: '💪', desc: '+2 escalada, natação e saltos' },
+  furtividade:  { nome: 'Furtividade',  attr: 'DES', icon: '🌑', desc: '+2 mover-se sem ser detectado' },
+  acrobacia:    { nome: 'Acrobacia',    attr: 'DES', icon: '🤸', desc: '+2 equilíbrio e manobras em combate' },
+  arcana:       { nome: 'Arcana',       attr: 'INT', icon: '📚', desc: '+2 identificar magia e criaturas arcanas' },
+  medicina:     { nome: 'Medicina',     attr: 'SAB', icon: '⚕️', desc: '+2 estabilizar feridos e tratar doenças' },
+  percepcao:    { nome: 'Percepção',    attr: 'SAB', icon: '👁️', desc: '+2 notar detalhes ocultos e emboscadas' },
+  persuasao:    { nome: 'Persuasão',    attr: 'CAR', icon: '💬', desc: '+2 convencer e negociar com NPCs' },
+  sobrevivencia:{ nome: 'Sobrevivência',attr: 'SAB', icon: '🌿', desc: '+2 rastrear, caçar e orientar-se na natureza' }
 };
 
-const DESVANTAGENS = {
-  bad_temper:    { nome: 'Mau Gênio',                 pts: -10, icon: '😤', desc: 'Perde o controle ao ser provocado (SAU-10)' },
-  cowardice:     { nome: 'Covardia',                  pts: -10, icon: '😱', desc: '-2 em Testes de Medo; evita confronto' },
-  curious:       { nome: 'Curioso',                   pts:  -5, icon: '🔎', desc: 'Precisa investigar o que é misterioso' },
-  overconfident: { nome: 'Excessivamente Confiante',  pts:  -5, icon: '😏', desc: 'Subestima perigos e inimigos' }
-};
+function dndMod(val) { return Math.floor((val - 10) / 2); }
 
-function gurpsDerivados(arq) {
-  const speed = ((arq.DX + arq.HT) / 4).toFixed(2);
+function dndDerivados(cls) {
+  const conMod = dndMod(cls.CON);
+  const dexMod = dndMod(cls.DEX);
+  const wisMod = dndMod(cls.WIS);
   return {
-    HP: arq.ST, maxHp: arq.ST,
-    FP: arq.HT, maxFP: arq.HT,
-    Will: arq.IQ, Per: arq.IQ,
-    speed: parseFloat(speed),
-    move: Math.floor(parseFloat(speed))
+    hp: Math.max(1, cls.dado_vida + conMod),
+    ac: 10 + dexMod + cls.ca_armor,
+    init: dexMod,
+    fort: conMod + cls.fort_base,
+    ref:  dexMod + cls.ref_base,
+    will: wisMod + cls.will_base
   };
 }
 
@@ -109,7 +112,7 @@ let voiceBusy   = false;
 let _currentAudio = null;
 let _selectedClass  = 'guerreiro';
 let _selectedAdvs   = new Set();
-let _selectedDisadv = null;
+let _selectedGender = 'm';
 let _campanha   = null;
 
 // ═══════════════════════════════════════════════════════════════
@@ -147,77 +150,67 @@ function limparTags(txt) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  LOBBY — SELEÇÃO DE ARQUÉTIPO, VANTAGENS E DESVANTAGENS
+//  LOBBY — SELEÇÃO DE CLASSE, GÊNERO E PERÍCIAS (AD&D)
 // ═══════════════════════════════════════════════════════════════
-function atualizarPreviewGurps() {
-  const arq = ARQUETIPOS[_selectedClass];
-  if (!arq) return;
-  const d = gurpsDerivados(arq);
+function atualizarPreview() {
+  const cls = CLASSES[_selectedClass];
+  if (!cls) return;
+  const d   = dndDerivados(cls);
+  const fmt = v => (v >= 0 ? '+' : '') + v;
 
-  document.getElementById('prev-ST').textContent   = arq.ST;
-  document.getElementById('prev-DX').textContent   = arq.DX;
-  document.getElementById('prev-IQ').textContent   = arq.IQ;
-  document.getElementById('prev-HT').textContent   = arq.HT;
-  document.getElementById('prev-HP').textContent   = d.HP;
-  document.getElementById('prev-FP').textContent   = d.FP;
-  document.getElementById('prev-Move').textContent = d.move;
-  document.getElementById('prev-Will').textContent = d.Will;
-  document.getElementById('prev-Per').textContent  = d.Per;
-  const desc = document.getElementById('arquetipo-desc');
-  if (desc) desc.textContent = arq.descricao;
+  document.getElementById('prev-STR').textContent     = cls.STR;
+  document.getElementById('prev-DEX').textContent     = cls.DEX;
+  document.getElementById('prev-CON').textContent     = cls.CON;
+  document.getElementById('prev-INT').textContent     = cls.INT;
+  document.getElementById('prev-WIS').textContent     = cls.WIS;
+  document.getElementById('prev-CHA').textContent     = cls.CHA;
+  document.getElementById('prev-STR-mod').textContent = fmt(dndMod(cls.STR));
+  document.getElementById('prev-DEX-mod').textContent = fmt(dndMod(cls.DEX));
+  document.getElementById('prev-CON-mod').textContent = fmt(dndMod(cls.CON));
+  document.getElementById('prev-INT-mod').textContent = fmt(dndMod(cls.INT));
+  document.getElementById('prev-WIS-mod').textContent = fmt(dndMod(cls.WIS));
+  document.getElementById('prev-CHA-mod').textContent = fmt(dndMod(cls.CHA));
+  document.getElementById('prev-HP').textContent      = d.hp;
+  document.getElementById('prev-AC').textContent      = d.ac;
+  document.getElementById('prev-Init').textContent    = fmt(d.init);
+  document.getElementById('prev-Fort').textContent    = fmt(d.fort);
+  document.getElementById('prev-Ref').textContent     = fmt(d.ref);
+  document.getElementById('prev-Will').textContent    = fmt(d.will);
 
-  // Custo restante para mostrar quais vantagens cabem
-  const pts = calcPontos();
-  document.querySelectorAll('.adv-chip[data-adv]').forEach(chip => {
-    const v = VANTAGENS[chip.dataset.adv];
-    chip.classList.toggle('sem-pontos', v && pts + v.custo > 150 && !_selectedAdvs.has(chip.dataset.adv));
-  });
+  const feat = document.getElementById('class-feature-lbl');
+  if (feat) feat.textContent = `⚔ ${cls.habilidade.nome} — ${cls.habilidade.desc}`;
+
+  const sprite = document.getElementById('char-sprite');
+  if (sprite) sprite.src = `sprites/${_selectedClass}_${_selectedGender}.png`;
 }
 
-function calcPontos() {
-  const arq = ARQUETIPOS[_selectedClass] || {};
-  const ST = arq.ST||10, DX = arq.DX||10, IQ = arq.IQ||10, HT = arq.HT||10;
-  const attrCost = (ST-10)*10 + (DX-10)*20 + (IQ-10)*20 + (HT-10)*10;
-  const advCost  = [..._selectedAdvs].reduce((s,k) => s + (VANTAGENS[k]?.custo||0), 0);
-  const disadvPts= _selectedDisadv ? (DESVANTAGENS[_selectedDisadv]?.pts||0) : 0;
-  return attrCost + advCost + disadvPts;
-}
-
-function renderAdvGrid() {
-  const advGrid    = document.getElementById('adv-grid');
-  const disadvGrid = document.getElementById('disadv-grid');
-  if (!advGrid || !disadvGrid) return;
-
-  advGrid.innerHTML = Object.entries(VANTAGENS).map(([k, v]) => {
+function renderFeatGrid() {
+  const grid = document.getElementById('adv-grid');
+  if (!grid) return;
+  grid.innerHTML = Object.entries(PERICIAS).map(([k, v]) => {
     const sel = _selectedAdvs.has(k);
-    return `<button class="adv-chip${sel?' selected':''}" data-adv="${k}" onclick="toggleAdv('${k}')">
-      ${v.icon} ${v.nome} <span class="chip-cost">${v.custo}pts</span>
+    return `<button class="adv-chip${sel ? ' selected' : ''}" onclick="toggleAdv('${k}')" title="${v.desc}">
+      ${v.icon} ${v.nome} <span class="chip-attr">${v.attr}</span>
     </button>`;
   }).join('');
-
-  disadvGrid.innerHTML = Object.entries(DESVANTAGENS).map(([k, v]) => {
-    const sel = _selectedDisadv === k;
-    return `<button class="adv-chip disadv${sel?' selected':''}" data-disadv="${k}" onclick="toggleDisadv('${k}')">
-      ${v.icon} ${v.nome} <span class="chip-cost">${v.pts}pts</span>
-    </button>`;
-  }).join('');
-
-  atualizarPreviewGurps();
+  atualizarPreview();
 }
 
 window.toggleAdv = function(k) {
   if (_selectedAdvs.has(k)) {
     _selectedAdvs.delete(k);
   } else {
-    if (_selectedAdvs.size >= 2) { toast('Máximo 2 vantagens.', 1500); return; }
+    if (_selectedAdvs.size >= 2) { toast('Máximo 2 perícias.', 1500); return; }
     _selectedAdvs.add(k);
   }
-  renderAdvGrid();
+  renderFeatGrid();
 };
 
-window.toggleDisadv = function(k) {
-  _selectedDisadv = (_selectedDisadv === k) ? null : k;
-  renderAdvGrid();
+window.toggleGenero = function(g) {
+  _selectedGender = g;
+  document.querySelectorAll('.gender-btn').forEach(b => b.classList.toggle('active', b.dataset.gender === g));
+  const sprite = document.getElementById('char-sprite');
+  if (sprite) sprite.src = `sprites/${_selectedClass}_${g}.png`;
 };
 
 document.querySelectorAll('.class-btn').forEach(btn => {
@@ -226,8 +219,7 @@ document.querySelectorAll('.class-btn').forEach(btn => {
     btn.classList.add('active');
     _selectedClass = btn.dataset.class;
     _selectedAdvs  = new Set();
-    _selectedDisadv = null;
-    renderAdvGrid();
+    renderFeatGrid();
   });
 });
 
@@ -320,7 +312,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarAcao(); }
   });
 
-  renderAdvGrid();
+  renderFeatGrid();
   carregarCampanha();
 });
 
@@ -329,20 +321,18 @@ window.addEventListener('DOMContentLoaded', () => {
 // ═══════════════════════════════════════════════════════════════
 function getDadosPersonagem() {
   const nome = document.getElementById('char-nome')?.value?.trim();
-  const cl   = _selectedClass || 'guerreiro';
-  const arq  = ARQUETIPOS[cl];
   if (!nome) { document.getElementById('lobby-error').textContent = 'Digite o nome do personagem.'; return null; }
-  const d = gurpsDerivados(arq);
-  const vantagens  = [..._selectedAdvs];
-  const desvantagem = _selectedDisadv;
+  const cl  = _selectedClass || 'guerreiro';
+  const cls = CLASSES[cl];
+  const d   = dndDerivados(cls);
   return {
-    nome, arquetipo: cl,
-    ST: arq.ST, DX: arq.DX, IQ: arq.IQ, HT: arq.HT,
-    hp: d.HP, maxHp: d.HP,
-    FP: d.FP, maxFP: d.FP,
-    Will: d.Will, Per: d.Per,
-    speed: d.speed, move: d.move,
-    vantagens, desvantagem,
+    nome, classe: cl, sexo: _selectedGender,
+    STR: cls.STR, DEX: cls.DEX, CON: cls.CON,
+    INT: cls.INT, WIS: cls.WIS, CHA: cls.CHA,
+    hp: d.hp, maxHp: d.hp,
+    ac: d.ac, init: d.init,
+    fort: d.fort, ref: d.ref, will: d.will,
+    pericias: [..._selectedAdvs],
     vivo: true, consciente: true
   };
 }
@@ -381,7 +371,7 @@ window.entrarSala = async function() {
 
   const existing = data.jogadores?.[myUid];
   if (existing) {
-    await update(ref(db, `salas/${code}/jogadores/${myUid}`), { ativo: true, nome: p.nome, arquetipo: p.arquetipo });
+    await update(ref(db, `salas/${code}/jogadores/${myUid}`), { ativo: true, nome: p.nome, classe: p.classe, sexo: p.sexo });
   } else {
     await set(ref(db, `salas/${code}/jogadores/${myUid}`), { ...p, uid: myUid, ativo: true });
   }
@@ -442,15 +432,15 @@ function renderizarJogadores(jogadores, config) {
     const isMe  = j.uid === myUid;
     const hpPct = Math.round((j.hp / (j.maxHp||1)) * 100);
     const hpCls = hpPct < 30 ? 'low' : 'ok';
-    const arq   = ARQUETIPOS[j.arquetipo];
-    const icon  = arq?.icon || '⚔️';
-    const advIcons = (j.vantagens||[]).map(k => VANTAGENS[k]?.icon || '').join('');
+    const cls   = CLASSES[j.classe];
+    const icon  = cls?.icon || '⚔️';
+    const perIcons = (j.pericias||[]).map(k => PERICIAS[k]?.icon || '').join('');
     return `<div class="player-chip ${isMe ? 'me' : ''} ${j.ativo === false ? 'offline' : ''}">
       <span>${icon}</span>
       <span class="chip-name">${j.nome}</span>
       <span class="chip-hp ${hpCls}">PV ${j.hp}/${j.maxHp}</span>
-      ${j.FP != null ? `<span class="chip-hp" style="color:var(--blue)">PF ${j.FP}/${j.maxFP}</span>` : ''}
-      ${advIcons ? `<span class="chip-adv">${advIcons}</span>` : ''}
+      ${j.ac != null ? `<span class="chip-hp" style="color:var(--blue)">CA ${j.ac}</span>` : ''}
+      ${perIcons ? `<span class="chip-adv">${perIcons}</span>` : ''}
     </div>`;
   }).join('');
 }
@@ -566,12 +556,11 @@ window.resetarSala = async function() {
   ups[`salas/${mySala}/config/rodada`]  = 0;
   Object.keys(jogadores).forEach(uid => {
     const j   = jogadores[uid];
-    const arq = ARQUETIPOS[j.arquetipo] || ARQUETIPOS.guerreiro;
-    const d   = gurpsDerivados(arq);
-    ups[`salas/${mySala}/jogadores/${uid}/hp`]    = d.HP;
-    ups[`salas/${mySala}/jogadores/${uid}/maxHp`] = d.HP;
-    ups[`salas/${mySala}/jogadores/${uid}/FP`]    = d.FP;
-    ups[`salas/${mySala}/jogadores/${uid}/maxFP`] = d.FP;
+    const cls = CLASSES[j.classe] || CLASSES.guerreiro;
+    const d   = dndDerivados(cls);
+    ups[`salas/${mySala}/jogadores/${uid}/hp`]    = d.hp;
+    ups[`salas/${mySala}/jogadores/${uid}/maxHp`] = d.hp;
+    ups[`salas/${mySala}/jogadores/${uid}/ac`]    = d.ac;
     ups[`salas/${mySala}/jogadores/${uid}/acao1`] = null;
     ups[`salas/${mySala}/jogadores/${uid}/vivo`]  = true;
     ups[`salas/${mySala}/jogadores/${uid}/consciente`] = true;
@@ -883,10 +872,11 @@ async function chamarIA(jogadores, data) {
 // ═══════════════════════════════════════════════════════════════
 function buildSystemPrompt(jogadores, inimigos) {
   const jogList = Object.values(jogadores).map(j => {
-    const arq = ARQUETIPOS[j.arquetipo];
-    const advStr = (j.vantagens||[]).map(k => VANTAGENS[k]?.nome).filter(Boolean).join(', ');
-    const disStr = j.desvantagem ? DESVANTAGENS[j.desvantagem]?.nome : '';
-    return `${j.nome} (${arq?.nome||j.arquetipo}) — FOR:${j.ST||'?'} DES:${j.DX||'?'} INT:${j.IQ||'?'} SAU:${j.HT||'?'} | PV:${j.hp}/${j.maxHp} PF:${j.FP||j.HT}/${j.maxFP||j.HT} Von:${j.Will||j.IQ} Per:${j.Per||j.IQ}${advStr?` | Vant:${advStr}`:''}${disStr?` | Desv:${disStr}`:''}`;
+    const cls = CLASSES[j.classe];
+    const perStr = (j.pericias||[]).map(k => PERICIAS[k]?.nome).filter(Boolean).join(', ');
+    const hab  = cls?.habilidade?.nome || '';
+    const fmt  = v => (v >= 0 ? '+' : '') + v;
+    return `${j.nome} (${cls?.nome||j.classe}) — FOR:${j.STR} DES:${j.DEX} CON:${j.CON} INT:${j.INT} SAB:${j.WIS} CAR:${j.CHA} | PV:${j.hp}/${j.maxHp} CA:${j.ac} Init:${fmt(j.init)}${hab ? ` | Hab:${hab}` : ''}${perStr ? ` | Perícias:${perStr}` : ''}`;
   }).join('\n');
 
   const iniList = Object.values(inimigos).filter(i => i.hp > 0).map(i =>
