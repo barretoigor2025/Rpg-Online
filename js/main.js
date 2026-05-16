@@ -147,8 +147,8 @@ function setActionStatus(msg) {
 
 function limparTags(txt) {
   return txt
-    .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV|JOGADOR|AUSENTE|PRESENTE)[^\]]*\]\s*)+/gi, '')
-    .replace(/\[(?:MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR):[^\]]+\]/gi, '')
+    .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV|JOGADOR|AUSENTE|PRESENTE)[^\]]*\]\s*)*/gi, '')
+    .replace(/\[(?:INIMIGO|MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR):[^\]]+\]/gi, '')
     .trim();
 }
 
@@ -978,11 +978,8 @@ JOGADORES ATIVOS:
 ${jogList}
 ${iniList ? `\nINIMIGOS EM CENA:\n${iniList}` : ''}
 
-TAGS (ao final da resposta quando aplicável):
-• Novo inimigo: STATS: [INIMIGO:nome:hp:hpMax:ícone]
-• Inimigo recebe dano: STATS: [HP:NomeInimigo:novoHp]
-• Inimigo morreu: STATS: [MATAR:NomeInimigo]
-• Jogador recebe dano: STATS: [JOGADOR:NomeJogador:novoHp]
-• Jogador sai da cena atual: STATS: [AUSENTE:NomeJogador]
-• Jogador volta à cena: STATS: [PRESENTE:NomeJogador]`;
+TAGS MECÂNICAS — coloque SOMENTE na última linha da resposta, nunca no meio do texto:
+STATS: [INIMIGO:nome:hp:hpMax:ícone] [HP:nome:novoHp] [MATAR:nome] [JOGADOR:nome:novoHp] [AUSENTE:nome] [PRESENTE:nome]
+Exemplo correto: "O espantalho cai em chamas.\nSTATS: [MATAR:Espantalho 1] [JOGADOR:Aldric:8]"
+NUNCA escreva tags no meio das frases narrativas.`;
 }
