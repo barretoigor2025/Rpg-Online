@@ -861,3 +861,204 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   border-radius: 0 4px 4px 0;
   line-height: 1.4;
 }
+
+/* ══ EQUIPAMENTO ══ */
+.equip-section-header {
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(200,160,80,.7);
+  border-top: 1px solid rgba(200,160,80,.15);
+  padding-top: 10px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+.equip-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.equip-slot {
+  background: rgba(20,24,40,.6);
+  border: 1px solid rgba(200,160,80,.15);
+  border-radius: 6px;
+  padding: 6px 4px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.equip-slot:hover {
+  border-color: rgba(200,160,80,.4);
+  background: rgba(30,36,56,.7);
+}
+.equip-slot.ocupado {
+  border-color: rgba(200,160,80,.35);
+  background: rgba(200,160,80,.06);
+}
+.equip-slot-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+.equip-slot-label {
+  font-size: 8px;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: rgba(200,160,80,.5);
+}
+.equip-slot-item {
+  font-size: 9px;
+  color: #d4c090;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 2px;
+}
+.equip-slot.mochila-slot {
+  grid-column: span 1;
+  position: relative;
+}
+.equip-mochila-badge {
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  font-size: 8px;
+  color: var(--gold);
+  background: rgba(200,160,80,.15);
+  border-radius: 8px;
+  padding: 0 4px;
+  line-height: 14px;
+}
+
+/* ══ MOCHILA OVERLAY ══ */
+#mochila-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 90;
+  width: min(340px, 92vw);
+  max-height: 70vh;
+  background: rgba(8,10,20,.97);
+  border: 1px solid rgba(200,160,80,.35);
+  border-radius: 10px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.7);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.mochila-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(200,160,80,.2);
+  font-size: 13px;
+  color: var(--gold);
+  letter-spacing: .5px;
+}
+.mochila-close {
+  background: none;
+  border: none;
+  color: rgba(200,160,80,.6);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.mochila-close:hover { color: var(--gold); }
+.mochila-items {
+  overflow-y: auto;
+  flex: 1;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mochila-vazia {
+  text-align: center;
+  color: rgba(200,160,80,.35);
+  font-size: 12px;
+  padding: 20px 0;
+}
+.mochila-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(20,24,40,.5);
+  border: 1px solid rgba(200,160,80,.1);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+.mochila-item-nome {
+  font-size: 12px;
+  color: #d8cca8;
+  flex: 1;
+}
+.mochila-item-qtd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.mochila-qtd-val {
+  font-size: 12px;
+  color: var(--gold);
+  min-width: 20px;
+  text-align: center;
+}
+.mochila-qty-btn {
+  background: rgba(200,160,80,.12);
+  border: 1px solid rgba(200,160,80,.2);
+  color: var(--gold);
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mochila-qty-btn:hover { background: rgba(200,160,80,.25); }
+.mochila-add {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  border-top: 1px solid rgba(200,160,80,.12);
+}
+.mochila-add input[type="text"] {
+  flex: 1;
+  background: rgba(20,24,40,.6);
+  border: 1px solid rgba(200,160,80,.2);
+  border-radius: 5px;
+  color: #d8cca8;
+  font-size: 12px;
+  padding: 5px 8px;
+}
+.mochila-add input[type="number"] {
+  width: 44px;
+  background: rgba(20,24,40,.6);
+  border: 1px solid rgba(200,160,80,.2);
+  border-radius: 5px;
+  color: #d8cca8;
+  font-size: 12px;
+  padding: 5px 4px;
+  text-align: center;
+}
+.mochila-add-btn {
+  background: rgba(200,160,80,.15);
+  border: 1px solid rgba(200,160,80,.3);
+  color: var(--gold);
+  border-radius: 5px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.mochila-add-btn:hover { background: rgba(200,160,80,.28); }
