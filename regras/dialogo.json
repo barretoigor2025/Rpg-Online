@@ -1,15 +1,29 @@
 {
-  "nome": "Sistema de Diálogo Inline",
-  "versao": "1.0",
-  "descricao": "Falas de NPCs aparecem como bolhas visuais permanentes na cronologia da história. Regras OBRIGATÓRIAS para todas as campanhas.",
-  "formato": "FALA: [NomeExato|\"frase completa do NPC\"]",
+  "nome": "Sistema de Diálogo Inline — PADRÃO OFICIAL INALTERÁVEL",
+  "versao": "2.0",
+  "descricao": "SISTEMA OFICIAL E DEFINITIVO. Toda fala de NPC gera uma bolha visual com dois retratos: o FALANTE à esquerda (espelhado, olhando para o ouvinte) e o OUVINTE à direita (orientação normal). Este formato é IMUTÁVEL e representa a identidade visual do jogo.",
+  "formato": "FALA: [NomeExatoDoNPC|\"frase completa, nunca resumo\"]",
+  "visual": {
+    "descricao": "Bolha dual-retrato — falante ESQ espelhado → ouvinte DIR normal",
+    "falante_esquerda": "Retrato do NPC espelhado horizontalmente, olhando para dentro da cena (em direção ao ouvinte)",
+    "ouvinte_direita": "Retrato do personagem ouvinte em orientação normal, olhando para o falante",
+    "efeito": "Os olhares dos dois retratos convergem para o centro — ilusão visual de contato direto entre os personagens"
+  },
   "regras": [
-    "Quando um NPC fala, descreva a ação de falar terminando com dois-pontos e coloque FALA na linha seguinte.",
+    "Use FALA APENAS para NPCs — nunca para o jogador (a voz do jogador é a própria ação que ele digitou).",
+    "Quando um NPC fala, termine a narração da ação com dois-pontos e coloque FALA na linha seguinte.",
     "Uma cena de conversa gera múltiplas trocas: narração + FALA até o diálogo se encerrar naturalmente.",
     "Se um jogador declara uma fala direta, o NPC DEVE responder com FALA.",
     "Nunca interrompa um diálogo no meio — complete o pensamento antes de ceder a vez.",
-    "A fala dentro da tag deve ser COMPLETA — nunca um resumo.",
+    "A fala dentro da tag deve ser COMPLETA e fiel ao tom do personagem — nunca um resumo.",
     "Múltiplas FALAs de NPCs diferentes na mesma cena são permitidas e encorajadas.",
-    "Tags FALA NÃO contam para o limite de palavras de narração."
+    "Tags FALA NÃO contam para o limite de palavras de narração.",
+    "O NomeExato deve corresponder exatamente ao nome registrado do NPC — erros de nome quebram o retrato visual.",
+    "NUNCA omitir a tag FALA quando um NPC tem uma fala direta relevante para a cena."
+  ],
+  "exemplos": [
+    "Gregoras se apoia no batente da porta e observa o grupo:\nFALA: [Gregoras Pellos|\"As Blackwoods começam a poucas milhas daqui. Quem entrar sem guia não volta.\"]",
+    "Mutter Grimmhaar inclina a cabeça sobre as brasas:\nFALA: [Mutter Grimmhaar|\"Sangue por sangue, criança. Não há outra moeda que o Pântano aceite.\"]",
+    "Dois NPCs em conversa:\nFALA: [Hobbleboot Sam|\"Já perdi três clientes boa gente lá dentro esse mês.\"]\nFALA: [Gregoras Pellos|\"Coragem. Ou loucura. Ainda não sei qual dos dois eles têm.\"]"
   ]
 }
