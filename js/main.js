@@ -1066,14 +1066,19 @@ window.criarSala = async function() {
   };
   if (charData?.hp != null) jogData.hp = Math.min(charData.hp, p.maxHp);
 
-  // Aplicar kit iniciante se não tem equipamento nem mochila ainda
-  const semKit = Object.keys(jogData.equipamento).length === 0 && Object.keys(jogData.mochila).length === 0;
-  if (semKit) {
-    const kit = STARTER_KITS[p.classe];
-    if (kit) {
-      jogData.equipamento = kit.equipamento || {};
-      jogData.mochila = Object.fromEntries(Object.entries(kit.mochila || {}).map(([k,v]) => [k, { ...v }]));
-    }
+  // Preencher slots vazios com o kit iniciante
+  const kit = STARTER_KITS[p.classe];
+  if (kit) {
+    Object.entries(kit.equipamento || {}).forEach(([slot, item]) => {
+      if (item && !jogData.equipamento[slot]) jogData.equipamento[slot] = item;
+    });
+    const mochilaKeys = Object.keys(jogData.mochila);
+    Object.entries(kit.mochila || {}).forEach(([key, item]) => {
+      if (!jogData.mochila[key] && mochilaKeys.length < MOCHILA_MAX) {
+        jogData.mochila[key] = { ...item };
+        mochilaKeys.push(key);
+      }
+    });
   }
 
   // Criar ou atualizar perfil persistente
@@ -1138,14 +1143,19 @@ window.entrarSala = async function() {
   };
   if (charData?.hp != null) jogData.hp = Math.min(charData.hp, p.maxHp);
 
-  // Aplicar kit iniciante se não tem equipamento nem mochila ainda
-  const semKit = Object.keys(jogData.equipamento).length === 0 && Object.keys(jogData.mochila).length === 0;
-  if (semKit) {
-    const kit = STARTER_KITS[p.classe];
-    if (kit) {
-      jogData.equipamento = kit.equipamento || {};
-      jogData.mochila = Object.fromEntries(Object.entries(kit.mochila || {}).map(([k,v]) => [k, { ...v }]));
-    }
+  // Preencher slots vazios com o kit iniciante
+  const kitE = STARTER_KITS[p.classe];
+  if (kitE) {
+    Object.entries(kitE.equipamento || {}).forEach(([slot, item]) => {
+      if (item && !jogData.equipamento[slot]) jogData.equipamento[slot] = item;
+    });
+    const mochilaKeys = Object.keys(jogData.mochila);
+    Object.entries(kitE.mochila || {}).forEach(([key, item]) => {
+      if (!jogData.mochila[key] && mochilaKeys.length < MOCHILA_MAX) {
+        jogData.mochila[key] = { ...item };
+        mochilaKeys.push(key);
+      }
+    });
   }
 
   if (!charSnap.exists()) {
@@ -1207,25 +1217,34 @@ function irParaJogo(codigo) {
 
     _jogadoresCache = jogadores;
 
-    // Migração: aplicar kit iniciante se jogador não tem equipamento nem mochila no Firebase
+    // Migração: preencher slots/mochila vazios com o kit iniciante
     const eu = jogadores[myUid];
     if (eu && !_kitMigrado) {
-      const semEquip  = Object.keys(eu.equipamento || {}).length === 0;
-      const semMochila = Object.keys(eu.mochila    || {}).length === 0;
-      if (semEquip && semMochila) {
-        const kit = STARTER_KITS[eu.classe];
-        if (kit) {
-          _kitMigrado = true;
-          const kitMochila = Object.fromEntries(Object.entries(kit.mochila || {}).map(([k,v]) => [k, { ...v }]));
-          const ups = {};
-          ups[`salas/${codigo}/jogadores/${myUid}/equipamento`] = kit.equipamento || {};
-          ups[`salas/${codigo}/jogadores/${myUid}/mochila`]     = kitMochila;
-          ups[`personagens/${myUid}/equipamento`]               = kit.equipamento || {};
-          ups[`personagens/${myUid}/mochila`]                   = kitMochila;
-          update(ref(db), ups).then(() => toast('Kit inicial equipado! Abra sua ficha.', 2500));
+      _kitMigrado = true;
+      const kit = STARTER_KITS[eu.classe];
+      if (kit) {
+        const equipAtual   = eu.equipamento || {};
+        const mochilaAtual = eu.mochila     || {};
+        const mochilaKeys  = Object.keys(mochilaAtual);
+        const ups = {};
+
+        Object.entries(kit.equipamento || {}).forEach(([slot, item]) => {
+          if (item && !equipAtual[slot]) {
+            ups[`salas/${codigo}/jogadores/${myUid}/equipamento/${slot}`] = item;
+            ups[`personagens/${myUid}/equipamento/${slot}`]               = item;
+          }
+        });
+        Object.entries(kit.mochila || {}).forEach(([key, item]) => {
+          if (!mochilaAtual[key] && mochilaKeys.length < MOCHILA_MAX) {
+            ups[`salas/${codigo}/jogadores/${myUid}/mochila/${key}`] = { ...item };
+            ups[`personagens/${myUid}/mochila/${key}`]               = { ...item };
+            mochilaKeys.push(key);
+          }
+        });
+
+        if (Object.keys(ups).length) {
+          update(ref(db), ups).then(() => toast('Kit inicial aplicado! Abra sua ficha. ⚔', 2500));
         }
-      } else {
-        _kitMigrado = true; // já tem itens, não precisa migrar
       }
     }
 
