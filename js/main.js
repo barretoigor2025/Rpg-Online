@@ -154,7 +154,7 @@ function limparTags(txt) {
   return txt
     .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV|JOGADOR|AUSENTE|PRESENTE)[^\]]*\]\s*)*/gi, '')
     .replace(/\[(?:INIMIGO|MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR):[^\]]+\]/gi, '')
-    .replace(/^FALA:\s*\[[^\]]+\]\s*$/gim, '')
+    .replace(/^\s*FALA:\s*\[[^\]]+\]\s*$/gim, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
@@ -186,7 +186,7 @@ function getNpcData(nome) {
 
 function extrairFalas(txt) {
   const falas = [];
-  const re = /^FALA:\s*\[([^\|]+)\|"([^"]+)"\]/gim;
+  const re = /^\s*FALA:\s*\[([^\|]+)\|"([^"]+)"\]/gim;
   let m;
   while ((m = re.exec(txt)) !== null) {
     falas.push({ nome: m[1].trim(), texto: m[2].trim() });
@@ -205,7 +205,7 @@ function parsearSegmentos(txt) {
   const linhas = txt.split('\n');
   let acum = [];
   linhas.forEach(linha => {
-    const m = linha.match(/^FALA:\s*\[([^\|]+)\|"([^"]+)"\]/i);
+    const m = linha.match(/^\s*FALA:\s*\[([^\|]+)\|"([^"]+)"\]/i);
     if (m) {
       const t = acum.join('\n').trim();
       if (t) segs.push({ tipo: 'texto', conteudo: t });
@@ -1208,7 +1208,7 @@ ${campCtx}
 VOZ:
 - Verbos fortes e sensoriais: "rasga", "despenca", "estala", "cheira a enxofre".
 - Foque no RESULTADO das ações, não na preparação.
-- ${iniList ? 'COMBATE ATIVO — máximo 50 palavras.' : 'EXPLORAÇÃO/DIÁLOGO — máximo 70 palavras.'}
+- ${iniList ? 'COMBATE ATIVO — máximo 50 palavras de narração.' : 'EXPLORAÇÃO/DIÁLOGO — máximo 70 palavras de narração (tags FALA não contam).'}
 - Mantenha o tom: a floresta observa, os NPCs têm segredos, nada é seguro.
 - NUNCA termine com pergunta ao jogador. Não escreva "O que você faz?", "Como reagem?", "O que fazem a seguir?" ou similar. A narração termina com a consequência da cena, não com uma pergunta.
 - Se jogadores estiverem em locais diferentes, narre apenas a cena atual. Use [AUSENTE:nome] para marcar quem saiu da cena e [PRESENTE:nome] para quem retorna.
@@ -1222,14 +1222,21 @@ STATS: [INIMIGO:nome:hp:hpMax:ícone] [HP:nome:novoHp] [MATAR:nome] [JOGADOR:nom
 Exemplo correto: "O espantalho cai em chamas.\nSTATS: [MATAR:Espantalho 1] [JOGADOR:Aldric:8]"
 NUNCA escreva tags no meio das frases narrativas.
 
-DIÁLOGOS — quando um NPC falar, termine a frase narrativa com dois-pontos e coloque FALA na linha seguinte:
-FALA: [NomeExato|"texto da fala sem aspas externas"]
-Exemplo correto:
-  Gregoras aproxima-se e murmura:
-  FALA: [Gregoras Pellos|"As Blackwoods começam a poucas milhas daqui."]
-  A velha ergueu um dedo nodoso e disse:
-  FALA: [Mutter Grimmhaar|"Sangue por sangue, criança. Não há outra moeda aqui."]
-⛔ PROIBIDO: escrever a fala entre aspas no corpo narrativo — nunca use "texto", ele disse.
-✅ OBRIGATÓRIO: narre apenas a ação de falar; a fala em si vem SOMENTE na tag FALA.
-Múltiplos NPCs: use múltiplas linhas FALA separadas.`;
+DIÁLOGOS — quando um NPC fizer uma fala, ela OBRIGATORIAMENTE deve aparecer via tag FALA.
+Regra: narre brevemente o contexto (terminar com dois-pontos), depois coloque a tag:
+FALA: [NomeExato|"frase completa do NPC"]
+
+Exemplo de resposta COMPLETA com diálogo:
+Gregoras aguarda que a multidão se afaste e então se inclina, voz baixa:
+FALA: [Gregoras Pellos|"As Blackwoods começam a poucas milhas daqui. Algo lá dentro planeja o próximo ataque — e desta vez pode ser pior."]
+
+Exemplo com dois NPCs:
+A velha ergueu um dedo nodoso e disse:
+FALA: [Mutter Grimmhaar|"Sangue por sangue, criança. Não há outra moeda aqui."]
+O guarda cruzou os braços e respondeu:
+FALA: [Gregoras Pellos|"Ela tem razão. Paguem o preço ou vão embora."]
+
+IMPORTANTE: se um NPC fala na cena, a fala DEVE aparecer na tag — nunca suprima a fala de um NPC.
+Coloque a fala completa do NPC dentro da tag, não um resumo.
+Múltiplos NPCs: use múltiplas linhas FALA separadas.`;}
 }
