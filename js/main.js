@@ -1065,13 +1065,18 @@ window.criarSala = async function() {
   };
   if (charData?.hp != null) jogData.hp = Math.min(charData.hp, p.maxHp);
 
-  // Criar ou atualizar perfil persistente
-  if (!charSnap.exists()) {
+  // Aplicar kit iniciante se não tem equipamento nem mochila ainda
+  const semKit = Object.keys(jogData.equipamento).length === 0 && Object.keys(jogData.mochila).length === 0;
+  if (semKit) {
     const kit = STARTER_KITS[p.classe];
     if (kit) {
       jogData.equipamento = kit.equipamento || {};
       jogData.mochila = Object.fromEntries(Object.entries(kit.mochila || {}).map(([k,v]) => [k, { ...v }]));
     }
+  }
+
+  // Criar ou atualizar perfil persistente
+  if (!charSnap.exists()) {
     await set(ref(db, `personagens/${myUid}`), {
       nome: p.nome, classe: p.classe, sexo: p.sexo, uid: myUid,
       STR: p.STR, DEX: p.DEX, CON: p.CON, INT: p.INT, WIS: p.WIS, CHA: p.CHA,
@@ -1083,7 +1088,8 @@ window.criarSala = async function() {
   } else {
     await update(ref(db, `personagens/${myUid}`), {
       nome: p.nome, classe: p.classe, sexo: p.sexo, maxHp: p.maxHp,
-      ac: p.ac, init: p.init, fort: p.fort, ref: p.ref, will: p.will, pericias: p.pericias
+      ac: p.ac, init: p.init, fort: p.fort, ref: p.ref, will: p.will, pericias: p.pericias,
+      equipamento: jogData.equipamento, mochila: jogData.mochila
     });
   }
 
@@ -1131,12 +1137,17 @@ window.entrarSala = async function() {
   };
   if (charData?.hp != null) jogData.hp = Math.min(charData.hp, p.maxHp);
 
-  if (!charSnap.exists()) {
+  // Aplicar kit iniciante se não tem equipamento nem mochila ainda
+  const semKit = Object.keys(jogData.equipamento).length === 0 && Object.keys(jogData.mochila).length === 0;
+  if (semKit) {
     const kit = STARTER_KITS[p.classe];
     if (kit) {
       jogData.equipamento = kit.equipamento || {};
       jogData.mochila = Object.fromEntries(Object.entries(kit.mochila || {}).map(([k,v]) => [k, { ...v }]));
     }
+  }
+
+  if (!charSnap.exists()) {
     await set(ref(db, `personagens/${myUid}`), {
       nome: p.nome, classe: p.classe, sexo: p.sexo, uid: myUid,
       STR: p.STR, DEX: p.DEX, CON: p.CON, INT: p.INT, WIS: p.WIS, CHA: p.CHA,
@@ -1148,7 +1159,8 @@ window.entrarSala = async function() {
   } else {
     await update(ref(db, `personagens/${myUid}`), {
       nome: p.nome, classe: p.classe, sexo: p.sexo, maxHp: p.maxHp,
-      ac: p.ac, init: p.init, fort: p.fort, ref: p.ref, will: p.will, pericias: p.pericias
+      ac: p.ac, init: p.init, fort: p.fort, ref: p.ref, will: p.will, pericias: p.pericias,
+      equipamento: jogData.equipamento, mochila: jogData.mochila
     });
   }
   await push(ref(db, `personagens/${myUid}/historico`), { sala: code, campanhaId: 'beast-of-black-keep', ts: Date.now() });
