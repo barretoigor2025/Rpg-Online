@@ -989,19 +989,7 @@ function getIntroSlides(nomes) {
     { icone: '🏰', titulo: 'O Reino de Mhoried',
       texto: 'O reino de Mhoried celebra a colheita de outono. Sob a Arbor Aeterna — a árvore ancestral que fertiliza as terras há milênios — o mercado fervilha com avelãs, tapeçarias e prata lavrada. A jovem Duquesa Catherine Laskaris passeia entre as barracas com seu guarda-costas, Sir Gregoras Pellos.' },
     { icone: '⚔️', titulo: 'Os Aventureiros',
-      texto: `Presentes no festival estão vocês: ${nomes}. Aventureiros de ofícios distintos, reunidos pelo acaso numa tarde de outono. O velho Bispo Methodios abençoa a colheita enquanto crianças brincam nas raízes imensas da Árvore. Uma tarde perfeita... até a primeira criança gritar.` },
-    { icone: '🪨', titulo: 'O Ataque',
-      texto: 'Espantalhos emergem dos campos ao sul — construtos de estopa podre e galhos partidos, olhos de brasa, brandindo foices enferrujadas. Eles arrancam barracas, aterrorizam cidadãos e arranham a casca da Árvore Eterna com garras de ferro. O caos explode no coração do festival.' },
-    { icone: '🗡️', titulo: 'Gregoras Fala',
-      texto: 'Com os espantalhos destruídos e os feridos atendidos, Sir Gregoras Pellos se aproxima. O guarda-costas da Duquesa é um homem de meia-idade com cicatrizes antigas e olhos cansados. Oferece cidra fria e pede que se afastem da multidão — tem algo que a cidade não pode ouvir.' },
-    { icone: '🔮', titulo: 'A Verdade Oculta',
-      texto: 'Há dois anos, o jovem Duque Oswald Laskaris partiu para estudar magia. O mestre que escolheu — Dendybar, o Manchado — o transformou em monstro como punição. Oswald vive agora nas Blackwoods, entre os Grimhollow Thools. A Duquesa proíbe ataques diretos: ainda há esperança de salvá-lo.' },
-    { icone: '📜', titulo: 'A Missão',
-      texto: 'Gregoras pede que entrem nas Blackwoods, rastreiem a toca dos Thools e encontrem Oswald — identificável por uma marca de fruto de hayberry no ombro esquerdo. Salvem-no se possível. Se não houver esperança, ponham fim à sua miséria. E descubram quem planeja os próximos ataques.' },
-    { icone: '💰', titulo: 'A Recompensa',
-      texto: '5.000 moedas de prata pagas pelos mercadores de Mhoried pelo fim dos ataques. Se Oswald voltar vivo, a Duquesa concede 100 hectares de terra fértil a cada herói. Gregoras menciona Hobbleboot Sam — um guia local por 100 pratas, ou um mapa rudimentar por apenas 10.' },
-    { icone: '🌲', titulo: 'A Partida',
-      texto: '"As Blackwoods começam a poucas milhas daqui," diz Gregoras, apontando para o sul. "Algo naquelas matas planeja o próximo ataque — e desta vez pode ser maior." Ele olha para cada um de vocês. "Oswald sofre. Mhoried sofre. Vocês são a única esperança que nos resta."' }
+      texto: `Presentes no festival estão vocês: ${nomes}. Aventureiros de ofícios distintos, reunidos pelo acaso numa tarde de outono. O velho Bispo Methodios abençoa a colheita enquanto crianças brincam nas raízes imensas da Árvore Eterna. Uma tarde perfeita... até a primeira criança gritar.` },
   ];
 }
 
