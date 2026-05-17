@@ -117,6 +117,7 @@ let _campanha   = null;
 let _introSlides = [];
 let _introIdx    = 0;
 let _introAtivo  = false;
+let _kitMigrado  = false;
 let _afterNarrationCb = null;
 let _jogadoresCache   = {};
 let _regras           = {};
@@ -1188,6 +1189,7 @@ function irParaJogo(codigo) {
   document.getElementById('screen-game').style.display  = 'flex';
   document.getElementById('room-code').textContent = codigo;
 
+  _kitMigrado = false;
   if (unsubSala) unsubSala();
   unsubSala = onValue(ref(db, `salas/${codigo}`), snap => {
     if (!snap.exists()) return;
@@ -1204,6 +1206,29 @@ function irParaJogo(codigo) {
     if (rodEl) rodEl.textContent = config.rodada ? `Rodada ${config.rodada}` : '';
 
     _jogadoresCache = jogadores;
+
+    // Migração: aplicar kit iniciante se jogador não tem equipamento nem mochila no Firebase
+    const eu = jogadores[myUid];
+    if (eu && !_kitMigrado) {
+      const semEquip  = Object.keys(eu.equipamento || {}).length === 0;
+      const semMochila = Object.keys(eu.mochila    || {}).length === 0;
+      if (semEquip && semMochila) {
+        const kit = STARTER_KITS[eu.classe];
+        if (kit) {
+          _kitMigrado = true;
+          const kitMochila = Object.fromEntries(Object.entries(kit.mochila || {}).map(([k,v]) => [k, { ...v }]));
+          const ups = {};
+          ups[`salas/${codigo}/jogadores/${myUid}/equipamento`] = kit.equipamento || {};
+          ups[`salas/${codigo}/jogadores/${myUid}/mochila`]     = kitMochila;
+          ups[`personagens/${myUid}/equipamento`]               = kit.equipamento || {};
+          ups[`personagens/${myUid}/mochila`]                   = kitMochila;
+          update(ref(db), ups).then(() => toast('Kit inicial equipado! Abra sua ficha.', 2500));
+        }
+      } else {
+        _kitMigrado = true; // já tem itens, não precisa migrar
+      }
+    }
+
     renderizarJogadores(jogadores, config);
     renderizarInimigos(inimigos);
     renderizarHistoria(historia, jogadores);
