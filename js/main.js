@@ -153,6 +153,7 @@ function limparTags(txt) {
     .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV|JOGADOR|AUSENTE|PRESENTE|LESAO|XP|TITULO|POSSE|REPUTACAO|EQUIPAR|ITEM_BAG)[^\]]*\]\s*)*/gi, '')
     .replace(/\[(?:INIMIGO|MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR|LESAO|XP|TITULO|POSSE|REPUTACAO|EQUIPAR|ITEM_BAG):[^\]]+\]/gi, '')
     .replace(/^\s*FALA:\s*\[[^\]]+\]\s*$/gim, '')
+    .replace(/^\s*TESTAR:\s*\[[^\]]+\]\s*$/gim, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
@@ -196,6 +197,104 @@ function normalizarFalas(raw) {
   if (!raw) return [];
   if (Array.isArray(raw)) return raw;
   return Object.values(raw).filter(Boolean);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SISTEMA DE TESTES SEQUENCIAIS
+// ═══════════════════════════════════════════════════════════════
+function extrairTestes(txt) {
+  const testes = [];
+  const re = /^\s*TESTAR:\s*\[([^\|]+)\|([^\|]+)\|([^\|]+)\|(\d+)\]/gim;
+  let m;
+  while ((m = re.exec(txt)) !== null) {
+    testes.push({ nomeJog: m[1].trim(), acao: m[2].trim(), attr: m[3].trim().toUpperCase(), dc: +m[4] });
+  }
+  return testes;
+}
+
+function getAttrMod(jog, attr) {
+  const map = { FOR:'STR', STR:'STR', DES:'DEX', DEX:'DEX', CON:'CON', INT:'INT', SAB:'WIS', WIS:'WIS', CAR:'CHA', CHA:'CHA' };
+  const salvas = { FORT:'fort', REF:'ref', VON:'will', WILL:'will' };
+  if (salvas[attr] !== undefined) return jog?.[salvas[attr]] ?? 0;
+  const stat = map[attr] || 'DEX';
+  return Math.floor(((jog?.[stat] ?? 10) - 10) / 2);
+}
+
+let _testeFila      = [];
+let _testeResultados = [];
+let _testeCallbackFn = null;
+
+function iniciarTestes(testes, jogadores, afterCb) {
+  if (!testes.length) { afterCb([]); return; }
+  _testeFila = testes.map(t => ({
+    ...t,
+    jog: Object.values(jogadores).find(j => j.nome === t.nomeJog) || null
+  }));
+  _testeResultados  = [];
+  _testeCallbackFn  = afterCb;
+  mostrarProximoTeste();
+}
+
+function mostrarProximoTeste() {
+  const overlay = document.getElementById('teste-overlay');
+  if (!_testeFila.length) {
+    if (overlay) overlay.style.display = 'none';
+    const cb = _testeCallbackFn;
+    _testeCallbackFn = null;
+    if (cb) cb(_testeResultados);
+    return;
+  }
+
+  const t   = _testeFila.shift();
+  const mod = getAttrMod(t.jog, t.attr);
+  const d20 = Math.floor(Math.random() * 20) + 1;
+  const total   = d20 + mod;
+  const sucesso = total >= t.dc;
+  _testeResultados.push({ ...t, d20, mod, total, sucesso });
+
+  const modStr  = mod >= 0 ? `+${mod}` : `${mod}`;
+  const cor     = sucesso ? '#5cb85c' : '#c9534f';
+  const icon    = sucesso ? '✅' : '❌';
+  const restante = _testeFila.length;
+
+  if (overlay) {
+    overlay.style.display = 'flex';
+    overlay.innerHTML = `
+      <div class="teste-card">
+        <div class="teste-card-nome">${t.nomeJog}</div>
+        <div class="teste-card-acao">${t.acao}</div>
+        <div class="teste-card-atributo">${t.attr} <span class="teste-mod">(${modStr})</span></div>
+        <div class="teste-dice-area">
+          <div class="teste-d20-face">${d20}</div>
+          <div class="teste-formula">d20 ${modStr} = <strong>${total}</strong> &nbsp;vs&nbsp; CD ${t.dc}</div>
+        </div>
+        <div class="teste-resultado" style="color:${cor}">${icon} ${sucesso ? 'SUCESSO' : 'FALHA'}</div>
+        <button class="teste-avancar-btn" onclick="avancarTeste()">
+          ${restante > 0 ? `▶ Próximo teste (${restante} restante${restante > 1 ? 's' : ''})` : '▶ Ver resultado'}
+        </button>
+      </div>`;
+  }
+}
+
+window.avancarTeste = function() { mostrarProximoTeste(); };
+
+async function narrarResultadoTestes(resultados, jogadores, inimigos, hist, rodada, ups) {
+  const resumo = resultados.map(r =>
+    `${r.nomeJog} — ${r.acao}: ${r.sucesso ? 'SUCESSO' : 'FALHA'} (rolou ${r.d20}${r.mod >= 0 ? '+' + r.mod : r.mod} = ${r.total} vs CD ${r.dc})`
+  ).join('\n');
+
+  const msg = `Resultados dos testes de ação:\n${resumo}\n\nCom base nesses resultados, narre o que DE FATO aconteceu — máximo 60 palavras, sem mencionar números, dados ou cálculos, apenas o resultado dramático.`;
+
+  const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), hist, msg, mostrarRetryUI, 250);
+  ocultarRetryUI();
+
+  if (resposta) {
+    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), falas: extrairFalas(resposta), ts: Date.now() });
+    await processarStats(resposta, jogadores, inimigos);
+  }
+  ups[`salas/${mySala}/config/estado`] = 'aguardando';
+  ups[`salas/${mySala}/config/rodada`] = rodada + 1;
+  await update(ref(db), ups);
 }
 
 function parsearSegmentos(txt) {
@@ -981,9 +1080,11 @@ function atualizarInputArea(eu, config) {
 
   if (btn) btn.disabled = jaEnviou || narrando || morto;
 
+  const totalAtivos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente).length;
+  const soloMode    = totalAtivos <= 1;
   if (morto)         setActionStatus('Seu personagem está fora de combate.');
   else if (narrando) setActionStatus('⏳ Narrando...');
-  else if (jaEnviou) setActionStatus('⏳ Aguardando os outros jogadores...');
+  else if (jaEnviou) setActionStatus(soloMode ? '⏳ Processando ação...' : '⏳ Aguardando os outros jogadores...');
   else               setActionStatus('');
 
   atualizarPromptAcao(eu, config);
@@ -1516,20 +1617,41 @@ async function chamarIA(jogadores, data) {
     const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), hist, msg, mostrarRetryUI);
     ocultarRetryUI();
 
+    // Sempre limpar acao1 (evita loop infinito em caso de falha da API)
+    const ups = {};
+    Object.keys(jogadores).forEach(uid => { ups[`salas/${mySala}/jogadores/${uid}/acao1`] = null; });
+
     if (!resposta) {
-      await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
+      ups[`salas/${mySala}/config/estado`] = 'aguardando';
+      ups[`salas/${mySala}/config/rodada`] = rodada + 1;
+      await update(ref(db), ups);
       return;
     }
 
-    // Limpar ações dos jogadores + avançar rodada
-    const ups = {};
-    Object.keys(jogadores).forEach(uid => { ups[`salas/${mySala}/jogadores/${uid}/acao1`] = null; });
-    ups[`salas/${mySala}/config/estado`] = 'aguardando';
-    ups[`salas/${mySala}/config/rodada`] = rodada + 1;
+    // Verificar se a IA pediu testes sequenciais
+    const testes = extrairTestes(resposta);
 
-    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), falas: extrairFalas(resposta), ts: Date.now() });
-    await processarStats(resposta, jogadores, inimigos);
-    await update(ref(db), ups);
+    if (testes.length && amIHost) {
+      // Empurrar preamble (texto antes dos TESTAR) para história
+      const preamble = limparTags(resposta);
+      if (preamble) {
+        await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: preamble, falas: extrairFalas(resposta), ts: Date.now() });
+      }
+      // Limpar ações agora; rodada avança após testes
+      await update(ref(db), ups);
+      // Mostrar cards de teste; segunda chamada IA narra o resultado
+      iniciarTestes(testes, jogadores, async (resultados) => {
+        const upsPos = {};
+        await narrarResultadoTestes(resultados, jogadores, inimigos, hist, rodada, upsPos);
+      });
+    } else {
+      // Fluxo normal sem testes
+      ups[`salas/${mySala}/config/estado`] = 'aguardando';
+      ups[`salas/${mySala}/config/rodada`] = rodada + 1;
+      await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), falas: extrairFalas(resposta), ts: Date.now() });
+      await processarStats(resposta, jogadores, inimigos);
+      await update(ref(db), ups);
+    }
   } finally {
     chamandoIA = false;
     ocultarRetryUI();
@@ -1580,14 +1702,27 @@ ${campCtx}
 VOZ:
 - Verbos fortes e sensoriais: "rasga", "despenca", "estala", "cheira a enxofre".
 - Foque no RESULTADO das ações, não na preparação.
-- ${iniList ? 'COMBATE ATIVO — máximo 50 palavras de narração.' : 'EXPLORAÇÃO — máximo 70 palavras por bloco narrativo (tags FALA não contam no limite).'}
+- ${iniList ? 'COMBATE ATIVO — máximo 40 palavras de narração (após testes). JAMAIS mencione dados, modificadores, CD ou cálculos no texto.' : 'EXPLORAÇÃO — máximo 70 palavras por bloco narrativo (tags FALA não contam no limite).'}
 - Mantenha o tom: a floresta observa, os NPCs têm segredos, nada é seguro.
 - NUNCA termine com pergunta ao jogador. A narração termina com a consequência da cena.
 - Se jogadores estiverem em locais diferentes, use [AUSENTE:nome] e [PRESENTE:nome].
+- AÇÕES INDIVIDUAIS: cada jogador age de forma INDEPENDENTE. Narre SOMENTE o que CADA UM declarou. NUNCA aplique a ação de um jogador ao grupo todo nem a outros jogadores.
 
 JOGADORES ATIVOS:
 ${jogList}
 ${iniList ? `\nINIMIGOS EM CENA:\n${iniList}` : ''}
+
+TESTES DE AÇÃO — quando a ação de um jogador for complexa ou arriscada (correr, saltar, sacar em movimento, atacar pelas costas, etc.), determine quais testes são necessários e liste-os ANTES de narrar qualquer resultado. O sistema rola os dados e você narra depois.
+Formato obrigatório (uma linha por teste, na ordem em que ocorrem):
+  TESTAR: [NomeExato|Descrição curta da ação|Atributo|CD]
+Atributos válidos: FOR, DES, CON, INT, SAB, CAR, FORT, REF, VON
+CD típicas: fácil=8, médio=12, difícil=15, muito difícil=18, heróico=22
+Exemplo — "Carne quer correr, sacar a faca e arremessá-la nas costas do goblin":
+  TESTAR: [Carne|Corrida pelas barracas|DES|10]
+  TESTAR: [Carne|Saque da faca em movimento|DES|13]
+  TESTAR: [Carne|Arremesso nas costas|DES|15]
+Após listar os TESTAR, escreva apenas uma frase curtíssima de suspense (sem revelar o resultado). NÃO narre o desfecho — ele depende dos dados.
+Se a ação for simples (atacar de frente, falar com NPC, mover-se para adjacente), não use TESTAR — narre diretamente.
 
 TAGS MECÂNICAS — SOMENTE na última linha da resposta:
 STATS: [INIMIGO:nome:hp:hpMax:ícone] [HP:nome:novoHp] [MATAR:nome] [JOGADOR:nome:novoHp] [AUSENTE:nome] [PRESENTE:nome] [LESAO:nome:descrição] [XP:nome:pontos] [TITULO:nome:título] [POSSE:nome:descrição] [REPUTACAO:nome:local:valor] [EQUIPAR:nome:slot:item] [ITEM_BAG:nome:item:qtd]
