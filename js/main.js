@@ -1097,7 +1097,16 @@ function buildRegrasContext() {
   if (narrativa?.voz) linhas.push('VOZ: ' + narrativa.voz.slice(0, 4).join(' | '));
 
   const dialogo = _regras.dialogo;
-  if (dialogo?.regras) linhas.push('DIÁLOGO OBRIGATÓRIO:\n' + dialogo.regras.map(r => '• ' + r).join('\n'));
+  if (dialogo) {
+    const bloco = [`DIÁLOGO — PADRÃO OFICIAL OBRIGATÓRIO (${dialogo.versao || ''})`];
+    bloco.push(`Formato: ${dialogo.formato}`);
+    if (dialogo.regras) dialogo.regras.forEach(r => bloco.push('• ' + r));
+    if (dialogo.exemplos?.length) {
+      bloco.push('Exemplos corretos:');
+      dialogo.exemplos.forEach(e => bloco.push(e));
+    }
+    linhas.push(bloco.join('\n'));
+  }
 
   const personagem = _regras.personagem;
   if (personagem?.tags) linhas.push('TAGS PERSONAGEM:\n' + personagem.tags.map(t => '• ' + t).join('\n'));
