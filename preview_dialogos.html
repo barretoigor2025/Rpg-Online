@@ -3,14 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Preview — Sistema de Diálogos RPG Online</title>
+<title>Preview — Diálogos RPG Online</title>
 <style>
   :root {
-    --bg:      #06080f;
-    --surface: #0d1120;
-    --border:  rgba(88,104,160,.25);
-    --text:    #c8d0e0;
-    --gold:    #c8a050;
+    --bg:   #06080f;
+    --text: #c8d0e0;
+    --gold: #c8a050;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -21,29 +19,25 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 24px 16px 48px;
+    padding: 28px 16px 56px;
   }
-
-  /* ── Título ── */
   .preview-title {
-    font-size: 11px;
+    font-size: 10px;
     letter-spacing: 3px;
     text-transform: uppercase;
     color: var(--gold);
-    opacity: .6;
-    margin-bottom: 6px;
+    opacity: .55;
+    margin-bottom: 4px;
   }
   .preview-subtitle {
-    font-size: 13px;
-    color: rgba(200,160,80,.35);
-    margin-bottom: 32px;
+    font-size: 12px;
+    color: rgba(200,160,80,.3);
+    margin-bottom: 36px;
     letter-spacing: .5px;
   }
-
-  /* ── Story area ── */
   .story-area {
     width: 100%;
-    max-width: 640px;
+    max-width: 620px;
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -54,78 +48,56 @@
     background: rgba(12,16,28,.7);
     border-left: 3px solid var(--gold);
     color: #d8c8a8;
-    padding: 10px 13px;
+    padding: 10px 14px;
     border-radius: 8px;
-    line-height: 1.65;
-    font-size: 14px;
-    animation: fade-in .3s ease both;
-  }
-  .narr-chunk {
-    margin: 0 0 6px;
     line-height: 1.7;
-    color: var(--text);
+    font-size: 14px;
+    animation: fi .35s ease both;
   }
-  .msg-player {
-    background: rgba(20,30,20,.5);
-    border-left: 2px solid rgba(76,175,80,.4);
-    border-radius: 0 6px 6px 0;
-    padding: 8px 12px;
-    font-size: 13px;
-    animation: fade-in .3s ease both;
-  }
-  .player-bubble-header {
+
+  /* ── Separador de cena ── */
+  .sep {
     display: flex;
     align-items: center;
-    gap: 6px;
-    margin-bottom: 4px;
-  }
-  .player-bubble-icon { font-size: 14px; }
-  .player-bubble-nome {
-    font-size: 9px;
-    color: rgba(76,175,80,.8);
-    letter-spacing: 1.2px;
+    gap: 10px;
+    margin: 28px 0 8px;
+    color: rgba(200,160,80,.3);
+    font-size: 10px;
+    letter-spacing: 2px;
     text-transform: uppercase;
   }
-  .player-bubble-acao {
-    color: var(--text);
-    line-height: 1.6;
-    font-style: italic;
+  .sep::before, .sep::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(200,160,80,.12);
   }
 
-  /* ── Diálogos NPC / Jogador ── */
+  /* ══ BOLHA DE DIÁLOGO ══ */
   .dialogo-inline {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 10px;
-    margin: 6px 0 4px;
-    padding: 10px 12px;
-    background: rgba(8,12,24,.7);
-    border-radius: 6px;
-    animation: fade-in .35s ease both;
-  }
-  .dialogo-inline.esquerda {
-    border-left: 2px solid rgba(200,160,80,.5);
+    margin: 5px 0;
+    padding: 8px 10px;
+    background: rgba(8,12,24,.75);
+    border-left: 2px solid rgba(200,160,80,.35);
     border-radius: 0 6px 6px 0;
-    margin-right: 20%;
+    animation: fi .35s ease both;
   }
-  .dialogo-inline.direita {
-    flex-direction: row-reverse;
-    border-right: 2px solid rgba(80,140,200,.5);
-    border-radius: 6px 0 0 6px;
-    margin-left: 20%;
-  }
-  .dialogo-inline.direita .dialogo-inline-nome { text-align: right; }
-  .dialogo-inline.direita .dialogo-inline-texto { text-align: right; }
 
+  /* Retrato */
   .dialogo-inline-portrait {
     flex-shrink: 0;
-    width: 52px; height: 70px;
+    width: 52px;
+    height: 70px;
     border-radius: 5px;
     border: 1px solid rgba(200,160,80,.2);
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 24px;
   }
   .dialogo-inline-portrait img {
     width: 100%;
@@ -134,19 +106,22 @@
     object-position: top center;
     display: block;
   }
-  .dialogo-inline-icon-fb {
-    font-size: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  /* Falante: espelhado para olhar em direção ao ouvinte */
+  .dialogo-inline-portrait img.espelhado {
+    transform: scaleX(-1);
   }
-  .dialogo-inline-body { flex: 1; }
+
+  /* Corpo */
+  .dialogo-inline-body {
+    flex: 1;
+    min-width: 0;
+  }
   .dialogo-inline-nome {
     font-size: 9px;
     color: var(--gold);
     letter-spacing: 1.5px;
     text-transform: uppercase;
-    margin-bottom: 3px;
+    margin-bottom: 4px;
   }
   .dialogo-inline-texto {
     font-size: 13px;
@@ -155,308 +130,339 @@
     line-height: 1.6;
   }
 
-  /* ── Separador de cena ── */
-  .cena-sep {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 28px 0 10px;
-    color: rgba(200,160,80,.3);
-    font-size: 10px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-  .cena-sep::before, .cena-sep::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: rgba(200,160,80,.15);
-  }
-
-  /* ── Animação ── */
-  @keyframes fade-in {
-    from { opacity: 0; transform: translateY(5px); }
-    to   { opacity: 1; transform: none; }
-  }
-
-  /* delays escalonados pra sentir cinematográfico */
+  /* ── Animações com delays ── */
+  @keyframes fi { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:none; } }
   .story-area > *:nth-child(1)  { animation-delay: .05s }
-  .story-area > *:nth-child(2)  { animation-delay: .18s }
-  .story-area > *:nth-child(3)  { animation-delay: .32s }
-  .story-area > *:nth-child(4)  { animation-delay: .46s }
-  .story-area > *:nth-child(5)  { animation-delay: .60s }
-  .story-area > *:nth-child(6)  { animation-delay: .74s }
-  .story-area > *:nth-child(7)  { animation-delay: .88s }
-  .story-area > *:nth-child(8)  { animation-delay: 1.02s }
-  .story-area > *:nth-child(9)  { animation-delay: 1.16s }
-  .story-area > *:nth-child(10) { animation-delay: 1.30s }
-  .story-area > *:nth-child(11) { animation-delay: 1.44s }
-  .story-area > *:nth-child(12) { animation-delay: 1.58s }
-  .story-area > *:nth-child(13) { animation-delay: 1.72s }
-  .story-area > *:nth-child(14) { animation-delay: 1.86s }
-  .story-area > *:nth-child(15) { animation-delay: 2.00s }
-  .story-area > *:nth-child(16) { animation-delay: 2.14s }
-  .story-area > *:nth-child(17) { animation-delay: 2.28s }
-  .story-area > *:nth-child(18) { animation-delay: 2.42s }
-  .story-area > *:nth-child(19) { animation-delay: 2.56s }
-  .story-area > *:nth-child(20) { animation-delay: 2.70s }
-  .story-area > *:nth-child(n+21) { animation-delay: 2.84s }
+  .story-area > *:nth-child(2)  { animation-delay: .20s }
+  .story-area > *:nth-child(3)  { animation-delay: .36s }
+  .story-area > *:nth-child(4)  { animation-delay: .52s }
+  .story-area > *:nth-child(5)  { animation-delay: .68s }
+  .story-area > *:nth-child(6)  { animation-delay: .84s }
+  .story-area > *:nth-child(7)  { animation-delay: 1.00s }
+  .story-area > *:nth-child(8)  { animation-delay: 1.16s }
+  .story-area > *:nth-child(9)  { animation-delay: 1.32s }
+  .story-area > *:nth-child(10) { animation-delay: 1.48s }
+  .story-area > *:nth-child(11) { animation-delay: 1.64s }
+  .story-area > *:nth-child(12) { animation-delay: 1.80s }
+  .story-area > *:nth-child(13) { animation-delay: 1.96s }
+  .story-area > *:nth-child(14) { animation-delay: 2.12s }
+  .story-area > *:nth-child(15) { animation-delay: 2.28s }
+  .story-area > *:nth-child(16) { animation-delay: 2.44s }
+  .story-area > *:nth-child(17) { animation-delay: 2.60s }
+  .story-area > *:nth-child(18) { animation-delay: 2.76s }
+  .story-area > *:nth-child(19) { animation-delay: 2.92s }
+  .story-area > *:nth-child(20) { animation-delay: 3.08s }
+  .story-area > *:nth-child(n+21) { animation-delay: 3.24s }
 </style>
 </head>
 <body>
 
-<p class="preview-title">RPG Online — Preview</p>
-<p class="preview-subtitle">Sistema de Diálogos · NPCs à esquerda · Jogador à direita</p>
+<p class="preview-title">RPG Online — Preview Visual</p>
+<p class="preview-subtitle">Falante à esquerda (espelhado) · Ouvinte à direita · Olhares se encontram</p>
 
 <div class="story-area">
 
-  <!-- ══ CENA 1 ══ -->
-  <div class="cena-sep">Cena I — A Estalagem da Beira do Pântano</div>
+<!-- ══ CENA I ══ -->
+<div class="sep">Cena I — A Estalagem da Beira do Pântano</div>
 
-  <div class="msg-gm">
-    A estalagem range em cada rajada de vento que varre o pântano. A luz das velas vacila, projetando sombras longas sobre as paredes cobertas de musgo. Hobbleboot Sam seca um cálice sujo atrás do balcão enquanto Gregoras Pellos se apoia no batente da porta, os olhos varrendo a sala com cuidado de veterano.
+<div class="msg-gm">
+  A estalagem range com cada rajada de vento que varre o pântano. A luz das velas vacila, projetando sombras longas. Gregoras Pellos se apoia no batente da porta com os olhos de veterano varrendo a sala. Hobbleboot Sam seca um cálice atrás do balcão sem pressa.
+</div>
+
+<!-- Gregoras fala → Gregoras ESQ espelhado | Theron DIR normal -->
+<div class="dialogo-inline">
+  <div class="dialogo-inline-portrait" style="background:#60708022;border-color:#60708055">
+    <img src="sprites/npc_gregoras_pellos.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🗡️</span>
   </div>
-
-  <!-- Gregoras Pellos — NPC, ESQUERDA -->
-  <div class="dialogo-inline esquerda">
-    <div class="dialogo-inline-portrait" style="background:#60708022;border-color:#60708055">
-      <img src="sprites/npc_gregoras_pellos.png" alt="Gregoras Pellos"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <span class="dialogo-inline-icon-fb" style="display:none">🗡️</span>
-    </div>
-    <div class="dialogo-inline-body">
-      <div class="dialogo-inline-nome">Gregoras Pellos</div>
-      <div class="dialogo-inline-texto">"As Blackwoods começam a poucas milhas daqui. Quem entrar sem guia não volta. Simples assim."</div>
-    </div>
+  <div class="dialogo-inline-body">
+    <div class="dialogo-inline-nome">Gregoras Pellos</div>
+    <div class="dialogo-inline-texto">"As Blackwoods começam a poucas milhas daqui. Quem entrar sem guia não volta. Simples assim."</div>
   </div>
-
-  <!-- Hobbleboot Sam — NPC, ESQUERDA -->
-  <div class="dialogo-inline esquerda">
-    <div class="dialogo-inline-portrait" style="background:#5a7a4a22;border-color:#5a7a4a55">
-      <img src="sprites/npc_hobbleboot_sam.png" alt="Hobbleboot Sam"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <span class="dialogo-inline-icon-fb" style="display:none">🥾</span>
-    </div>
-    <div class="dialogo-inline-body">
-      <div class="dialogo-inline-nome">Hobbleboot Sam</div>
-      <div class="dialogo-inline-texto">"Já perdi três clientes boa gente lá dentro esse mês. Deixa eu servir uma bebida antes de vocês tomarem qualquer decisão estúpida."</div>
-    </div>
+  <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🧑</span>
   </div>
+</div>
 
-  <!-- Jogador — DIREITA -->
-  <div class="dialogo-inline direita">
-    <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
-      <img src="sprites/guerreiro_m.png" alt="Theron"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <span class="dialogo-inline-icon-fb" style="display:none">🧑</span>
-    </div>
-    <div class="dialogo-inline-body">
-      <div class="dialogo-inline-nome">Theron</div>
-      <div class="dialogo-inline-texto">"Não viemos até aqui para recuar, Sam. Diz o que sabe sobre as Blackwoods e nós te pagamos bem."</div>
-    </div>
+<!-- Theron responde → Theron ESQ espelhado | Gregoras DIR normal -->
+<div class="dialogo-inline">
+  <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🧑</span>
   </div>
-
-  <div class="msg-gm">
-    Gregoras solta um riso curto e seco. Hobbleboot Sam pousa o cálice devagar, como se avaliasse cada palavra que está prestes a dizer.
+  <div class="dialogo-inline-body">
+    <div class="dialogo-inline-nome">Theron</div>
+    <div class="dialogo-inline-texto">"Não viemos até aqui para recuar. Diz o que sabe e nós te pagamos bem."</div>
   </div>
-
-  <!-- Gregoras novamente -->
-  <div class="dialogo-inline esquerda">
-    <div class="dialogo-inline-portrait" style="background:#60708022;border-color:#60708055">
-      <img src="sprites/npc_gregoras_pellos.png" alt="Gregoras Pellos"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <span class="dialogo-inline-icon-fb" style="display:none">🗡️</span>
-    </div>
-    <div class="dialogo-inline-body">
-      <div class="dialogo-inline-nome">Gregoras Pellos</div>
-      <div class="dialogo-inline-texto">"Coragem. Ou loucura. Ainda não sei qual dos dois você tem. Vamos esperar chegar lá para descobrir."</div>
-    </div>
+  <div class="dialogo-inline-portrait" style="background:#60708022;border-color:#60708055">
+    <img src="sprites/npc_gregoras_pellos.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🗡️</span>
   </div>
+</div>
 
-  <!-- ══ CENA 2 ══ -->
-  <div class="cena-sep">Cena II — O Acampamento de Mutter Grimmhaar</div>
-
-  <div class="msg-gm">
-    Além das árvores torcidas, um fogo baixo ilumina a silhueta curvada de Mutter Grimmhaar. A bruxa olha para as brasas como se lesse o futuro nelas — e talvez realmente o faça. Mac Rónán permanece de costas, ocupado com seus ervas e poções silenciosamente.
+<!-- Hobbleboot Sam fala → Sam ESQ espelhado | Theron DIR normal -->
+<div class="dialogo-inline">
+  <div class="dialogo-inline-portrait" style="background:#5a7a4a22;border-color:#5a7a4a55">
+    <img src="sprites/npc_hobbleboot_sam.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🥾</span>
   </div>
-
-  <!-- Mutter Grimmhaar — NPC, ESQUERDA -->
-  <div class="dialogo-inline esquerda">
-    <div class="dialogo-inline-portrait" style="background:#6a3a6a22;border-color:#6a3a6a55">
-      <img src="sprites/npc_mutter_grimmhaar.png" alt="Mutter Grimmhaar"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <span class="dialogo-inline-icon-fb" style="display:none">🧙</span>
-    </div>
-    <div class="dialogo-inline-body">
-      <div class="dialogo-inline-nome">Mutter Grimmhaar</div>
-      <div class="dialogo-inline-texto">"Sangue por sangue, criança. Não há outra moeda que o Pântano aceite. Você tem o que pagar?"</div>
-    </div>
+  <div class="dialogo-inline-body">
+    <div class="dialogo-inline-nome">Hobbleboot Sam</div>
+    <div class="dialogo-inline-texto">"Já perdi três clientes boa gente lá dentro esse mês. Deixa eu servir uma bebida antes de vocês tomarem qualquer decisão estúpida."</div>
   </div>
-
-  <!-- Jogador — DIREITA -->
-  <div class="dialogo-inline direita">
-    <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
-      <img src="sprites/guerreiro_m.png" alt="Theron"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <span class="dialogo-inline-icon-fb" style="display:none">🧑</span>
-    </div>
-    <div class="dialogo-inline-body">
-      <div class="dialogo-inline-nome">Theron</div>
-      <div class="dialogo-inline-texto">"Depende do que você precisa. Fala logo, bruxa, não temos a noite toda."</div>
-    </div>
+  <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🧑</span>
   </div>
+</div>
 
-  <!-- Mac Rónán — NPC, ESQUERDA -->
-  <div class="dialogo-inline esquerda">
-    <div class="dialogo-inline-portrait" style="background:#3a6a3a22;border-color:#3a6a3a55">
-      <img src="sprites/npc_mac_ronan.png" alt="Mac Rónán"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <span class="dialogo-inline-icon-fb" style="display:none">🌿</span>
-    </div>
-    <div class="dialogo-inline-body">
-      <div class="dialogo-inline-nome">Mac Rónán</div>
-      <div class="dialogo-inline-texto">"Cuidado com o tom, guerreiro. Ela já transformou homens mais arrogantes do que você em coisas muito menos eloquentes."</div>
-    </div>
+<!-- Gregoras corta → Gregoras ESQ espelhado | Sam DIR normal -->
+<div class="dialogo-inline">
+  <div class="dialogo-inline-portrait" style="background:#60708022;border-color:#60708055">
+    <img src="sprites/npc_gregoras_pellos.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🗡️</span>
   </div>
-
-  <!-- ══ CENA 3 ══ -->
-  <div class="cena-sep">Cena III — O Salão do Duque Oswald</div>
-
-  <div class="msg-gm">
-    O Duque Oswald Thool observa os aventureiros com aquele olhar calculista que parece enxergar além da carne. Ao seu lado, Aelar Eisenlí mantém a postura impecável de quem passou anos em serviço de corte, enquanto Finn Willowheel circula pela sala fingindo examinar os tapetes.
+  <div class="dialogo-inline-body">
+    <div class="dialogo-inline-nome">Gregoras Pellos</div>
+    <div class="dialogo-inline-texto">"Coragem. Ou loucura. Ainda não sei qual dos dois ele tem. Vamos esperar chegar lá para descobrir."</div>
   </div>
-
-  <!-- Duque Oswald — NPC, ESQUERDA -->
-  <div class="dialogo-inline esquerda">
-    <div class="dialogo-inline-portrait" style="background:#5a6a7022;border-color:#5a6a7055">
-      <img src="sprites/npc_duque_oswald_thool.png" alt="Duque Oswald"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <span class="dialogo-inline-icon-fb" style="display:none">👁️</span>
-    </div>
-    <div class="dialogo-inline-body">
-      <div class="dialogo-inline-nome">Duque Oswald Thool</div>
-      <div class="dialogo-inline-texto">"Impressionante. Vocês chegaram até aqui. A maioria morre no segundo corredor. Talvez sejam realmente úteis."</div>
-    </div>
+  <div class="dialogo-inline-portrait" style="background:#5a7a4a22;border-color:#5a7a4a55">
+    <img src="sprites/npc_hobbleboot_sam.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🥾</span>
   </div>
+</div>
 
-  <!-- Aelar — NPC, ESQUERDA -->
-  <div class="dialogo-inline esquerda">
-    <div class="dialogo-inline-portrait" style="background:#3a5a4022;border-color:#3a5a4055">
-      <img src="sprites/npc_aelar_eisenli.png" alt="Aelar Eisenlí"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <span class="dialogo-inline-icon-fb" style="display:none">🏹</span>
-    </div>
-    <div class="dialogo-inline-body">
-      <div class="dialogo-inline-nome">Aelar Eisenlí</div>
-      <div class="dialogo-inline-texto">"Milorde, talvez devêssemos verificar as credenciais antes de fazer promessas. Aventureiros são... variáveis."</div>
-    </div>
+<!-- ══ CENA II ══ -->
+<div class="sep">Cena II — O Acampamento de Mutter Grimmhaar</div>
+
+<div class="msg-gm">
+  Um fogo baixo ilumina a silhueta curvada de Mutter Grimmhaar. Ela olha para as brasas como se lesse o futuro nelas. Mac Rónán permanece de costas, ocupado com suas ervas em silêncio — mas os ouvidos bem abertos.
+</div>
+
+<!-- Mutter fala → Mutter ESQ espelhado | Theron DIR normal -->
+<div class="dialogo-inline">
+  <div class="dialogo-inline-portrait" style="background:#6a3a6a22;border-color:#6a3a6a55">
+    <img src="sprites/npc_mutter_grimmhaar.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🧙</span>
   </div>
-
-  <!-- Jogador — DIREITA -->
-  <div class="dialogo-inline direita">
-    <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
-      <img src="sprites/guerreiro_m.png" alt="Theron"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <span class="dialogo-inline-icon-fb" style="display:none">🧑</span>
-    </div>
-    <div class="dialogo-inline-body">
-      <div class="dialogo-inline-nome">Theron</div>
-      <div class="dialogo-inline-texto">"Nossas credenciais estão no fio da espada. Com todo o respeito, Milorde, diz o que precisa de nós."</div>
-    </div>
+  <div class="dialogo-inline-body">
+    <div class="dialogo-inline-nome">Mutter Grimmhaar</div>
+    <div class="dialogo-inline-texto">"Sangue por sangue, criança. Não há outra moeda que o Pântano aceite. Você tem o que pagar?"</div>
   </div>
-
-  <!-- Finn Willowheel — NPC, ESQUERDA -->
-  <div class="dialogo-inline esquerda">
-    <div class="dialogo-inline-portrait" style="background:#6a5a3022;border-color:#6a5a3055">
-      <img src="sprites/npc_finn_willowheel.png" alt="Finn Willowheel"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <span class="dialogo-inline-icon-fb" style="display:none">👟</span>
-    </div>
-    <div class="dialogo-inline-body">
-      <div class="dialogo-inline-nome">Finn Willowheel</div>
-      <div class="dialogo-inline-texto">"Gosto desse. Direto ao assunto. Sabe o que isso significa, Oswald? Significa que ele ou é muito corajoso ou é muito burro. De qualquer forma, perfeito pra missão."</div>
-    </div>
+  <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🧑</span>
   </div>
+</div>
 
-  <!-- ══ CENA 4 ══ -->
-  <div class="cena-sep">Cena IV — As Ruínas de Choir</div>
-
-  <div class="msg-gm">
-    A névoa se adensar entre as pedras negras. Choir, o necromante, materializa-se da escuridão como se fosse parte dela. Ruzalka emerge do poço próximo, a água escorrendo de seus cabelos sem que ela pareça notar o frio.
+<!-- Theron responde → Theron ESQ espelhado | Mutter DIR normal -->
+<div class="dialogo-inline">
+  <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🧑</span>
   </div>
-
-  <!-- Choir — NPC, ESQUERDA -->
-  <div class="dialogo-inline esquerda">
-    <div class="dialogo-inline-portrait" style="background:#2a1a3a22;border-color:#2a1a3a55">
-      <img src="sprites/npc_choir_necromante.png" alt="Choir"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <span class="dialogo-inline-icon-fb" style="display:none">💀</span>
-    </div>
-    <div class="dialogo-inline-body">
-      <div class="dialogo-inline-nome">Choir</div>
-      <div class="dialogo-inline-texto">"Os mortos aqui me contaram sobre vocês. É curioso... eles ficaram com muito mais medo de você do que você deveria ter deles."</div>
-    </div>
+  <div class="dialogo-inline-body">
+    <div class="dialogo-inline-nome">Theron</div>
+    <div class="dialogo-inline-texto">"Depende do que você precisa. Fala logo, bruxa, não temos a noite toda."</div>
   </div>
-
-  <!-- Ruzalka — NPC, ESQUERDA -->
-  <div class="dialogo-inline esquerda">
-    <div class="dialogo-inline-portrait" style="background:#306a8a22;border-color:#306a8a55">
-      <img src="sprites/npc_ruzalka.png" alt="Ruzalka"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <span class="dialogo-inline-icon-fb" style="display:none">💧</span>
-    </div>
-    <div class="dialogo-inline-body">
-      <div class="dialogo-inline-nome">Ruzalka</div>
-      <div class="dialogo-inline-texto">"As águas falam também. Dizem que você carrega um peso que não é seu. Isso pode te afogar antes de qualquer lâmina."</div>
-    </div>
+  <div class="dialogo-inline-portrait" style="background:#6a3a6a22;border-color:#6a3a6a55">
+    <img src="sprites/npc_mutter_grimmhaar.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🧙</span>
   </div>
+</div>
 
-  <!-- Jogador — DIREITA -->
-  <div class="dialogo-inline direita">
-    <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
-      <img src="sprites/guerreiro_m.png" alt="Theron"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <span class="dialogo-inline-icon-fb" style="display:none">🧑</span>
-    </div>
-    <div class="dialogo-inline-body">
-      <div class="dialogo-inline-nome">Theron</div>
-      <div class="dialogo-inline-texto">"Não sou afogado facilmente. E prefiro que os mortos fiquem quietos."</div>
-    </div>
+<!-- Mac Rónán avisa Theron → Mac ESQ espelhado | Theron DIR normal -->
+<div class="dialogo-inline">
+  <div class="dialogo-inline-portrait" style="background:#3a6a3a22;border-color:#3a6a3a55">
+    <img src="sprites/npc_mac_ronan.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🌿</span>
   </div>
+  <div class="dialogo-inline-body">
+    <div class="dialogo-inline-nome">Mac Rónán</div>
+    <div class="dialogo-inline-texto">"Cuidado com o tom, guerreiro. Ela já transformou homens mais arrogantes do que você em coisas muito menos eloquentes."</div>
+  </div>
+  <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🧑</span>
+  </div>
+</div>
 
-  <div class="msg-gm">
-    Choir inclina a cabeça num ângulo impossível para um ser vivo e sorri. Fariborz aparece das sombras à direita, as chamas nos nós dos dedos pulsando com a intensidade de sua atenção.
-  </div>
+<!-- ══ CENA III ══ -->
+<div class="sep">Cena III — O Salão do Duque Oswald</div>
 
-  <!-- Fariborz — NPC, ESQUERDA -->
-  <div class="dialogo-inline esquerda">
-    <div class="dialogo-inline-portrait" style="background:#7a3a1022;border-color:#7a3a1055">
-      <img src="sprites/npc_fariborz_piromante.png" alt="Fariborz"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <span class="dialogo-inline-icon-fb" style="display:none">🔥</span>
-    </div>
-    <div class="dialogo-inline-body">
-      <div class="dialogo-inline-nome">Fariborz</div>
-      <div class="dialogo-inline-texto">"O fogo que carrego queimou cidades inteiras. O que você carrega, guerreiro? Só aço? Então você não tem o suficiente para o que vem aí."</div>
-    </div>
-  </div>
+<div class="msg-gm">
+  O Duque Oswald Thool observa os aventureiros com aquele olhar calculista que parece enxergar além da carne. Aelar Eisenlí mantém postura de corte enquanto Finn Willowheel circula pela sala fingindo examinar os tapetes.
+</div>
 
-  <!-- Jogador — DIREITA, resposta final -->
-  <div class="dialogo-inline direita">
-    <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
-      <img src="sprites/guerreiro_m.png" alt="Theron"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <span class="dialogo-inline-icon-fb" style="display:none">🧑</span>
-    </div>
-    <div class="dialogo-inline-body">
-      <div class="dialogo-inline-nome">Theron</div>
-      <div class="dialogo-inline-texto">"Então é melhor eu descobrir o que tenho antes de virar cinzas. Onde está o que viemos buscar?"</div>
-    </div>
+<!-- Oswald fala → Oswald ESQ espelhado | Theron DIR normal -->
+<div class="dialogo-inline">
+  <div class="dialogo-inline-portrait" style="background:#5a6a7022;border-color:#5a6a7055">
+    <img src="sprites/npc_duque_oswald_thool.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">👁️</span>
   </div>
+  <div class="dialogo-inline-body">
+    <div class="dialogo-inline-nome">Duque Oswald Thool</div>
+    <div class="dialogo-inline-texto">"Impressionante. Vocês chegaram até aqui. A maioria morre no segundo corredor. Talvez sejam realmente úteis."</div>
+  </div>
+  <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🧑</span>
+  </div>
+</div>
 
-  <div class="msg-gm">
-    O silêncio que se segue é pesado. Depois, Fariborz aponta para o corredor mais escuro das ruínas, onde nem a luz de suas chamas parece alcançar.
+<!-- Aelar interrompe → Aelar ESQ espelhado | Oswald DIR normal -->
+<div class="dialogo-inline">
+  <div class="dialogo-inline-portrait" style="background:#3a5a4022;border-color:#3a5a4055">
+    <img src="sprites/npc_aelar_eisenli.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🏹</span>
   </div>
+  <div class="dialogo-inline-body">
+    <div class="dialogo-inline-nome">Aelar Eisenlí</div>
+    <div class="dialogo-inline-texto">"Milorde, talvez devêssemos verificar as credenciais antes de fazer promessas. Aventureiros são... variáveis."</div>
+  </div>
+  <div class="dialogo-inline-portrait" style="background:#5a6a7022;border-color:#5a6a7055">
+    <img src="sprites/npc_duque_oswald_thool.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">👁️</span>
+  </div>
+</div>
+
+<!-- Theron responde a Oswald → Theron ESQ espelhado | Oswald DIR normal -->
+<div class="dialogo-inline">
+  <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🧑</span>
+  </div>
+  <div class="dialogo-inline-body">
+    <div class="dialogo-inline-nome">Theron</div>
+    <div class="dialogo-inline-texto">"Nossas credenciais estão no fio da espada, Milorde. Diz o que precisa de nós."</div>
+  </div>
+  <div class="dialogo-inline-portrait" style="background:#5a6a7022;border-color:#5a6a7055">
+    <img src="sprites/npc_duque_oswald_thool.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">👁️</span>
+  </div>
+</div>
+
+<!-- Finn cutuca → Finn ESQ espelhado | Oswald DIR normal -->
+<div class="dialogo-inline">
+  <div class="dialogo-inline-portrait" style="background:#6a5a3022;border-color:#6a5a3055">
+    <img src="sprites/npc_finn_willowheel.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">👟</span>
+  </div>
+  <div class="dialogo-inline-body">
+    <div class="dialogo-inline-nome">Finn Willowheel</div>
+    <div class="dialogo-inline-texto">"Gosto desse. Direto ao assunto. Sabe o que isso significa? Ou muito corajoso ou muito burro. Perfeito pro que você precisa, Oswald."</div>
+  </div>
+  <div class="dialogo-inline-portrait" style="background:#5a6a7022;border-color:#5a6a7055">
+    <img src="sprites/npc_duque_oswald_thool.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">👁️</span>
+  </div>
+</div>
+
+<!-- ══ CENA IV ══ -->
+<div class="sep">Cena IV — As Ruínas de Choir</div>
+
+<div class="msg-gm">
+  A névoa se adensa entre pedras negras. Choir materializa-se da escuridão. Ruzalka emerge do poço próximo, a água escorrendo de seus cabelos. Fariborz aparece das sombras, as chamas nos nós dos dedos pulsando.
+</div>
+
+<!-- Choir fala → Choir ESQ espelhado | Theron DIR normal -->
+<div class="dialogo-inline">
+  <div class="dialogo-inline-portrait" style="background:#2a1a3a22;border-color:#2a1a3a55">
+    <img src="sprites/npc_choir_necromante.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">💀</span>
+  </div>
+  <div class="dialogo-inline-body">
+    <div class="dialogo-inline-nome">Choir</div>
+    <div class="dialogo-inline-texto">"Os mortos aqui me contaram sobre vocês. Curioso... ficaram com muito mais medo de você do que você deveria ter deles."</div>
+  </div>
+  <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🧑</span>
+  </div>
+</div>
+
+<!-- Ruzalka para Theron → Ruzalka ESQ espelhado | Theron DIR normal -->
+<div class="dialogo-inline">
+  <div class="dialogo-inline-portrait" style="background:#306a8a22;border-color:#306a8a55">
+    <img src="sprites/npc_ruzalka.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">💧</span>
+  </div>
+  <div class="dialogo-inline-body">
+    <div class="dialogo-inline-nome">Ruzalka</div>
+    <div class="dialogo-inline-texto">"As águas falam também. Você carrega um peso que não é seu. Isso pode te afogar antes de qualquer lâmina."</div>
+  </div>
+  <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🧑</span>
+  </div>
+</div>
+
+<!-- Theron responde a Choir → Theron ESQ espelhado | Choir DIR normal -->
+<div class="dialogo-inline">
+  <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🧑</span>
+  </div>
+  <div class="dialogo-inline-body">
+    <div class="dialogo-inline-nome">Theron</div>
+    <div class="dialogo-inline-texto">"Não sou afogado facilmente. E prefiro que os mortos fiquem quietos. Onde está o que viemos buscar?"</div>
+  </div>
+  <div class="dialogo-inline-portrait" style="background:#2a1a3a22;border-color:#2a1a3a55">
+    <img src="sprites/npc_choir_necromante.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">💀</span>
+  </div>
+</div>
+
+<!-- Fariborz ameaça → Fariborz ESQ espelhado | Theron DIR normal -->
+<div class="dialogo-inline">
+  <div class="dialogo-inline-portrait" style="background:#7a3a1022;border-color:#7a3a1055">
+    <img src="sprites/npc_fariborz_piromante.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🔥</span>
+  </div>
+  <div class="dialogo-inline-body">
+    <div class="dialogo-inline-nome">Fariborz</div>
+    <div class="dialogo-inline-texto">"O fogo que carrego queimou cidades inteiras. Só aço não é o suficiente para o que vem aí, guerreiro."</div>
+  </div>
+  <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🧑</span>
+  </div>
+</div>
+
+<div class="msg-gm">
+  Choir inclina a cabeça num ângulo impossível para um ser vivo. Em silêncio, aponta para o corredor mais escuro das ruínas — onde nem a luz das chamas de Fariborz parece alcançar.
+</div>
 
 </div><!-- /story-area -->
 </body>
