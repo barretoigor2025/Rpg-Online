@@ -120,6 +120,7 @@ let _introAtivo  = false;
 let _kitMigrado  = false;
 let _afterNarrationCb = null;
 let _jogadoresCache   = {};
+let _ultimoNpc        = null; // último NPC que falou, usado como ouvinte quando jogador responde
 let _regras           = {};
 
 // ═══════════════════════════════════════════════════════════════
@@ -462,37 +463,43 @@ function renderizarSegmentos(container, segs, falas) {
         narrarTexto(it.texto);
       }
     } else {
-      // Bolha inline permanente na história (para releitura cronológica)
-      // Personagem jogador → bolha à DIREITA; NPC → à ESQUERDA
+      // Bolha inline: FALANTE à esquerda (espelhado → olha pra direita) | OUVINTE à direita (normal → olha pra esquerda)
+      const _ph = (src, icon, cor, espelhar) =>
+        `<div class="dialogo-inline-portrait" style="background:${cor}22;border-color:${cor}55">
+          ${src ? `<img src="${src}" alt=""${espelhar ? ' class="espelhado"' : ''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+          <span class="dialogo-inline-icon-fb"${src ? ' style="display:none"' : ''}>${icon}</span>
+        </div>`;
+
       const jogEntry = Object.values(_jogadoresCache).find(j =>
         j.nome && it.nome.toLowerCase().includes(j.nome.toLowerCase())
       );
-      const isDireita = !!jogEntry;
-      let cor, portraitSrc, icon;
-      if (isDireita) {
+
+      let htmlEsq, htmlDir;
+      if (jogEntry) {
+        // Jogador fala → Jogador ESQUERDA (espelhado), último NPC DIREITA (normal)
         const sexo = jogEntry.sexo || 'm';
-        cor        = '#4a7090';
-        portraitSrc = `sprites/${jogEntry.classe}_${sexo}.png`;
-        icon       = '🧑';
+        htmlEsq = _ph(`sprites/${jogEntry.classe}_${sexo}.png`, '🧑', '#4a7090', true);
+        const npcOuv = _ultimoNpc || { icon: '👤', cor: '#4a5a70', portrait: null };
+        htmlDir = _ph(npcOuv.portrait ? `sprites/${npcOuv.portrait}.png` : '', npcOuv.icon, npcOuv.cor, false);
       } else {
+        // NPC fala → NPC ESQUERDA (espelhado), Jogador atual DIREITA (normal)
         const npc = getNpcData(it.nome);
-        cor        = npc.cor;
-        portraitSrc = npc.portrait ? `sprites/${npc.portrait}.png` : '';
-        icon       = npc.icon;
+        _ultimoNpc = npc;
+        htmlEsq = _ph(npc.portrait ? `sprites/${npc.portrait}.png` : '', npc.icon, npc.cor, true);
+        const eu = _jogadoresCache[myUid];
+        const src = eu ? `sprites/${eu.classe}_${eu.sexo || 'm'}.png` : '';
+        htmlDir = _ph(src, '🧑', '#4a7090', false);
       }
+
       const bubble = document.createElement('div');
-      bubble.className = `dialogo-inline ${isDireita ? 'direita' : 'esquerda'}`;
+      bubble.className = 'dialogo-inline';
       bubble.innerHTML = `
-        <div class="dialogo-inline-portrait" style="background:${cor}22;border-color:${cor}55">
-          ${portraitSrc
-            ? `<img src="${portraitSrc}" alt="${it.nome}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
-            : ''}
-          <span class="dialogo-inline-icon-fb" style="${portraitSrc ? 'display:none' : ''}">${icon}</span>
-        </div>
+        ${htmlEsq}
         <div class="dialogo-inline-body">
           <div class="dialogo-inline-nome">${it.nome}</div>
           <div class="dialogo-inline-texto">"${it.texto}"</div>
-        </div>`;
+        </div>
+        ${htmlDir}`;
       container.appendChild(bubble);
       scrollDown();
       // Narra a fala (sem bloquear — usuário clica para continuar)
