@@ -119,6 +119,7 @@ let _introIdx    = 0;
 let _introAtivo  = false;
 let _afterNarrationCb = null;
 let _jogadoresCache   = {};
+let _regras           = {};
 
 // ═══════════════════════════════════════════════════════════════
 //  HELPERS
@@ -149,9 +150,10 @@ function setActionStatus(msg) {
 
 function limparTags(txt) {
   return txt
-    .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV|JOGADOR|AUSENTE|PRESENTE)[^\]]*\]\s*)*/gi, '')
-    .replace(/\[(?:INIMIGO|MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR):[^\]]+\]/gi, '')
+    .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV|JOGADOR|AUSENTE|PRESENTE|LESAO|XP|TITULO|POSSE|REPUTACAO|EQUIPAR|ITEM_BAG)[^\]]*\]\s*)*/gi, '')
+    .replace(/\[(?:INIMIGO|MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR|LESAO|XP|TITULO|POSSE|REPUTACAO|EQUIPAR|ITEM_BAG):[^\]]+\]/gi, '')
     .replace(/^\s*FALA:\s*\[[^\]]+\]\s*$/gim, '')
+    .replace(/^\s*TESTAR:\s*\[[^\]]+\]\s*$/gim, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
@@ -195,6 +197,104 @@ function normalizarFalas(raw) {
   if (!raw) return [];
   if (Array.isArray(raw)) return raw;
   return Object.values(raw).filter(Boolean);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SISTEMA DE TESTES SEQUENCIAIS
+// ═══════════════════════════════════════════════════════════════
+function extrairTestes(txt) {
+  const testes = [];
+  const re = /^\s*TESTAR:\s*\[([^\|]+)\|([^\|]+)\|([^\|]+)\|(\d+)\]/gim;
+  let m;
+  while ((m = re.exec(txt)) !== null) {
+    testes.push({ nomeJog: m[1].trim(), acao: m[2].trim(), attr: m[3].trim().toUpperCase(), dc: +m[4] });
+  }
+  return testes;
+}
+
+function getAttrMod(jog, attr) {
+  const map = { FOR:'STR', STR:'STR', DES:'DEX', DEX:'DEX', CON:'CON', INT:'INT', SAB:'WIS', WIS:'WIS', CAR:'CHA', CHA:'CHA' };
+  const salvas = { FORT:'fort', REF:'ref', VON:'will', WILL:'will' };
+  if (salvas[attr] !== undefined) return jog?.[salvas[attr]] ?? 0;
+  const stat = map[attr] || 'DEX';
+  return Math.floor(((jog?.[stat] ?? 10) - 10) / 2);
+}
+
+let _testeFila      = [];
+let _testeResultados = [];
+let _testeCallbackFn = null;
+
+function iniciarTestes(testes, jogadores, afterCb) {
+  if (!testes.length) { afterCb([]); return; }
+  _testeFila = testes.map(t => ({
+    ...t,
+    jog: Object.values(jogadores).find(j => j.nome === t.nomeJog) || null
+  }));
+  _testeResultados  = [];
+  _testeCallbackFn  = afterCb;
+  mostrarProximoTeste();
+}
+
+function mostrarProximoTeste() {
+  const overlay = document.getElementById('teste-overlay');
+  if (!_testeFila.length) {
+    if (overlay) overlay.style.display = 'none';
+    const cb = _testeCallbackFn;
+    _testeCallbackFn = null;
+    if (cb) cb(_testeResultados);
+    return;
+  }
+
+  const t   = _testeFila.shift();
+  const mod = getAttrMod(t.jog, t.attr);
+  const d20 = Math.floor(Math.random() * 20) + 1;
+  const total   = d20 + mod;
+  const sucesso = total >= t.dc;
+  _testeResultados.push({ ...t, d20, mod, total, sucesso });
+
+  const modStr  = mod >= 0 ? `+${mod}` : `${mod}`;
+  const cor     = sucesso ? '#5cb85c' : '#c9534f';
+  const icon    = sucesso ? '✅' : '❌';
+  const restante = _testeFila.length;
+
+  if (overlay) {
+    overlay.style.display = 'flex';
+    overlay.innerHTML = `
+      <div class="teste-card">
+        <div class="teste-card-nome">${t.nomeJog}</div>
+        <div class="teste-card-acao">${t.acao}</div>
+        <div class="teste-card-atributo">${t.attr} <span class="teste-mod">(${modStr})</span></div>
+        <div class="teste-dice-area">
+          <div class="teste-d20-face">${d20}</div>
+          <div class="teste-formula">d20 ${modStr} = <strong>${total}</strong> &nbsp;vs&nbsp; CD ${t.dc}</div>
+        </div>
+        <div class="teste-resultado" style="color:${cor}">${icon} ${sucesso ? 'SUCESSO' : 'FALHA'}</div>
+        <button class="teste-avancar-btn" onclick="avancarTeste()">
+          ${restante > 0 ? `▶ Próximo teste (${restante} restante${restante > 1 ? 's' : ''})` : '▶ Ver resultado'}
+        </button>
+      </div>`;
+  }
+}
+
+window.avancarTeste = function() { mostrarProximoTeste(); };
+
+async function narrarResultadoTestes(resultados, jogadores, inimigos, hist, rodada, ups) {
+  const resumo = resultados.map(r =>
+    `${r.nomeJog} — ${r.acao}: ${r.sucesso ? 'SUCESSO' : 'FALHA'} (rolou ${r.d20}${r.mod >= 0 ? '+' + r.mod : r.mod} = ${r.total} vs CD ${r.dc})`
+  ).join('\n');
+
+  const msg = `Resultados dos testes de ação:\n${resumo}\n\nCom base nesses resultados, narre o que DE FATO aconteceu — máximo 60 palavras, sem mencionar números, dados ou cálculos, apenas o resultado dramático.`;
+
+  const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), hist, msg, mostrarRetryUI, 250);
+  ocultarRetryUI();
+
+  if (resposta) {
+    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), falas: extrairFalas(resposta), ts: Date.now() });
+    await processarStats(resposta, jogadores, inimigos);
+  }
+  ups[`salas/${mySala}/config/estado`] = 'aguardando';
+  ups[`salas/${mySala}/config/rodada`] = rodada + 1;
+  await update(ref(db), ups);
 }
 
 function parsearSegmentos(txt) {
@@ -296,6 +396,103 @@ function renderizarSegmentos(container, segs, falas) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  EQUIPAMENTO — SLOTS E MOCHILA
+// ═══════════════════════════════════════════════════════════════
+const EQUIP_SLOTS = [
+  { key: 'cabeca', label: 'Cabeça',      icon: '🪖', hint: 'Elmo, tiara...' },
+  { key: 'tronco', label: 'Tronco',      icon: '🛡️', hint: 'Armadura, túnica...' },
+  { key: 'mao_d',  label: 'Mão Direita', icon: '⚔️', hint: 'Arma, grimório...' },
+  { key: 'mao_e',  label: 'Mão Esq.',    icon: '🫲',  hint: 'Escudo, 2ª arma...' },
+  { key: 'pes',    label: 'Pés',         icon: '👢', hint: 'Botas, sandálias...' },
+  { key: 'mochila',label: 'Mochila',     icon: '🎒', hint: 'Clique para abrir' },
+];
+const SLOT_LABELS = { cabeca:'Cabeça', tronco:'Tronco', mao_d:'Mão Direita', mao_e:'Mão Esquerda', pes:'Pés' };
+
+window.equiparSlotPrompt = function(slot) {
+  const eu = _jogadoresCache[myUid];
+  if (!eu || !mySala) return;
+  const atual = (eu.equipamento || {})[slot] || '';
+  const label = SLOT_LABELS[slot] || slot;
+  const novoItem = prompt(`${label} — O que está equipando?\n(deixe vazio para desequipar)`, atual);
+  if (novoItem === null) return;
+  const item = novoItem.trim() || null;
+  const ups = {};
+  ups[`salas/${mySala}/jogadores/${myUid}/equipamento/${slot}`] = item;
+  ups[`personagens/${myUid}/equipamento/${slot}`] = item;
+  update(ref(db), ups).then(() => toast(item ? `${label}: ${item}` : `${label} desequipado`, 2000));
+};
+
+window.toggleMochila = function() {
+  const el = document.getElementById('mochila-overlay');
+  if (!el) return;
+  if (el.style.display !== 'none' && el.style.display !== '') {
+    el.style.display = 'none'; return;
+  }
+  renderizarMochila();
+  el.style.display = 'flex';
+};
+
+function renderizarMochila() {
+  const el = document.getElementById('mochila-overlay');
+  if (!el) return;
+  const eu = _jogadoresCache[myUid];
+  const mochila = eu?.mochila || {};
+  const items = Object.entries(mochila).sort(([,a],[,b]) => (a.nome||'').localeCompare(b.nome||''));
+  let h = `<div class="mochila-header"><span>🎒 Mochila</span><button class="mochila-close" onclick="toggleMochila()">✕</button></div>`;
+  h += `<div class="mochila-items">`;
+  if (!items.length) h += `<div class="mochila-vazia">Mochila vazia</div>`;
+  items.forEach(([key, it]) => {
+    h += `<div class="mochila-item">
+      <span class="mochila-item-nome">${it.nome}</span>
+      <div class="mochila-item-qtd">
+        <button class="mochila-qty-btn" onclick="ajustarMochila('${key}',${(it.qtd||1)-1})">−</button>
+        <span>${it.qtd||1}</span>
+        <button class="mochila-qty-btn" onclick="ajustarMochila('${key}',${(it.qtd||1)+1})">+</button>
+      </div>
+    </div>`;
+  });
+  h += `</div>`;
+  h += `<div class="mochila-add">
+    <input type="text" id="mochila-new-item" placeholder="Adicionar item..." maxlength="50" onkeydown="if(event.key==='Enter')adicionarMochila()">
+    <input type="number" id="mochila-new-qtd" value="1" min="1" max="99">
+    <button class="btn-sm" onclick="adicionarMochila()">+</button>
+  </div>`;
+  el.innerHTML = h;
+}
+
+window.ajustarMochila = async function(key, novaQtd) {
+  if (!mySala) return;
+  const ups = {};
+  if (novaQtd <= 0) {
+    ups[`salas/${mySala}/jogadores/${myUid}/mochila/${key}`] = null;
+    ups[`personagens/${myUid}/mochila/${key}`] = null;
+  } else {
+    ups[`salas/${mySala}/jogadores/${myUid}/mochila/${key}/qtd`] = novaQtd;
+    ups[`personagens/${myUid}/mochila/${key}/qtd`] = novaQtd;
+  }
+  await update(ref(db), ups);
+  setTimeout(() => renderizarMochila(), 200);
+};
+
+window.adicionarMochila = async function() {
+  const nomeEl = document.getElementById('mochila-new-item');
+  const qtdEl  = document.getElementById('mochila-new-qtd');
+  const nome = nomeEl?.value?.trim();
+  if (!nome || !mySala) return;
+  const qtd = Math.max(1, Math.min(99, +(qtdEl?.value) || 1));
+  const slug = nome.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') || `item_${Date.now()}`;
+  const snap = await get(ref(db, `salas/${mySala}/jogadores/${myUid}/mochila/${slug}`));
+  const qtdAtual = snap.exists() ? (snap.val().qtd || 0) : 0;
+  const ups = {};
+  ups[`salas/${mySala}/jogadores/${myUid}/mochila/${slug}`] = { nome, qtd: qtdAtual + qtd };
+  ups[`personagens/${myUid}/mochila/${slug}`] = { nome, qtd: qtdAtual + qtd };
+  await update(ref(db), ups);
+  if (nomeEl) nomeEl.value = '';
+  if (qtdEl)  qtdEl.value = '1';
+  setTimeout(() => renderizarMochila(), 200);
+};
+
+// ═══════════════════════════════════════════════════════════════
 //  PAINEL DE PERÍCIAS
 // ═══════════════════════════════════════════════════════════════
 window.toggleSkillsPanel = function() {
@@ -314,7 +511,10 @@ window.toggleSkillsPanel = function() {
     html += `<span>${lbl} <strong>${eu[a]}</strong> <small>${fmt(Math.floor((eu[a]-10)/2))}</small></span>`;
   });
   html += `</div>`;
+  const nivelStr = eu.nivel > 1 ? ` · Nível ${eu.nivel}` : '';
+  const xpStr    = eu.xp != null ? ` · ⭐ ${eu.xp} XP` : '';
   html += `<div class="skills-derived"><span>❤️ PV ${eu.hp}/${eu.maxHp}</span><span>🛡️ CA ${eu.ac}</span><span>⚡ ${fmt(eu.init)}</span><span>Fort ${fmt(eu.fort)}</span><span>Ref ${fmt(eu.ref)}</span><span>Von ${fmt(eu.will)}</span></div>`;
+  if (nivelStr || xpStr) html += `<div class="skills-xp">${nivelStr}${xpStr}</div>`;
   if (hab) html += `<div class="skills-feat"><div class="skills-feat-nome">⚡ ${hab.nome}</div><div class="skills-feat-desc">${hab.desc}</div></div>`;
   if (eu.pericias?.length) {
     html += `<div class="skills-pericia-list">`;
@@ -324,6 +524,58 @@ window.toggleSkillsPanel = function() {
     });
     html += `</div>`;
   }
+  const lesoesArr = Object.values(eu.lesoes || {});
+  if (lesoesArr.length) {
+    html += `<div class="skills-lesoes-header">⚠️ Lesões Permanentes</div><div class="skills-lesao-list">`;
+    lesoesArr.forEach(l => { html += `<div class="skills-lesao">${l.descricao}</div>`; });
+    html += `</div>`;
+  }
+  const titulosArr = Object.values(eu.titulos || {});
+  if (titulosArr.length) {
+    html += `<div class="skills-lesoes-header" style="color:var(--gold);border-color:rgba(200,160,80,.2)">👑 Títulos</div><div class="skills-lesao-list">`;
+    titulosArr.forEach(t => { html += `<div class="skills-lesao" style="border-left-color:rgba(200,160,80,.5);color:#d4b060">${t.titulo}</div>`; });
+    html += `</div>`;
+  }
+  const possesArr = Object.values(eu.posses || {});
+  if (possesArr.length) {
+    html += `<div class="skills-lesoes-header" style="color:#70a060;border-color:rgba(112,160,96,.2)">📦 Posses & Terras</div><div class="skills-lesao-list">`;
+    possesArr.forEach(p => { html += `<div class="skills-lesao" style="border-left-color:rgba(112,160,96,.5);color:#90c080">${p.descricao}</div>`; });
+    html += `</div>`;
+  }
+  const repsArr = Object.entries(eu.reputacoes || {});
+  if (repsArr.length) {
+    html += `<div class="skills-lesoes-header" style="color:#7090b0;border-color:rgba(112,144,176,.2)">🏛️ Reputação</div><div class="skills-lesao-list">`;
+    repsArr.forEach(([, r]) => {
+      const cor = r.valor > 0 ? '#70b070' : '#b07070';
+      const sinal = r.valor > 0 ? '+' : '';
+      html += `<div class="skills-lesao" style="border-left-color:${cor}44;color:${cor}">${r.local || ''}: ${sinal}${r.valor}</div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Equipamento
+  const equip = eu.equipamento || {};
+  const mochila = eu.mochila || {};
+  const qtdMochila = Object.values(mochila).reduce((s, it) => s + (it.qtd || 1), 0);
+  html += `<div class="equip-section-header">⚙️ Equipamento</div><div class="equip-grid">`;
+  EQUIP_SLOTS.forEach(s => {
+    if (s.key === 'mochila') {
+      html += `<div class="equip-slot mochila-slot" onclick="toggleMochila()" title="Abrir mochila">
+        <div class="equip-slot-icon">${s.icon}</div>
+        <div class="equip-slot-label">${s.label}</div>
+        <div class="equip-slot-item">${qtdMochila ? qtdMochila + ' item(s)' : '— vazia —'}</div>
+      </div>`;
+    } else {
+      const item = equip[s.key] || null;
+      html += `<div class="equip-slot ${item ? 'ocupado' : ''}" onclick="equiparSlotPrompt('${s.key}')" title="${s.hint}">
+        <div class="equip-slot-icon">${s.icon}</div>
+        <div class="equip-slot-label">${s.label}</div>
+        <div class="equip-slot-item">${item || '— vazio —'}</div>
+      </div>`;
+    }
+  });
+  html += `</div>`;
+
   panel.innerHTML = html;
   panel.style.display = 'flex';
 };
@@ -441,6 +693,16 @@ async function carregarCampanha() {
   }
 }
 
+async function carregarRegras() {
+  const arquivos = ['sistema', 'personagem', 'dialogo', 'narrativa', 'recompensas'];
+  await Promise.all(arquivos.map(async nome => {
+    try {
+      const res = await fetch(`regras/${nome}.json`);
+      if (res.ok) _regras[nome] = await res.json();
+    } catch(e) {}
+  }));
+}
+
 function buildCampaignContext() {
   if (!_campanha) return '';
 
@@ -479,6 +741,32 @@ ESTADO INICIAL DA CAMPANHA: ${_campanha.estado_inicial.localizacao} — ${_campa
 `;
 }
 
+function buildRegrasContext() {
+  if (!_regras || !Object.keys(_regras).length) return '';
+  const linhas = [];
+
+  const narrativa = _regras.narrativa;
+  if (narrativa?.voz) linhas.push('VOZ: ' + narrativa.voz.slice(0, 4).join(' | '));
+
+  const dialogo = _regras.dialogo;
+  if (dialogo?.regras) linhas.push('DIÁLOGO OBRIGATÓRIO:\n' + dialogo.regras.map(r => '• ' + r).join('\n'));
+
+  const personagem = _regras.personagem;
+  if (personagem?.tags) linhas.push('TAGS PERSONAGEM:\n' + personagem.tags.map(t => '• ' + t).join('\n'));
+
+  const recompensas = _regras.recompensas;
+  if (recompensas?.categorias) {
+    const c = recompensas.categorias;
+    linhas.push('TAGS RECOMPENSAS:\n' +
+      `• ${c.titulos.tag} — ${c.titulos.regra}\n` +
+      `• ${c.posses.tag} — ${c.posses.regra}\n` +
+      `• ${c.reputacao.tag} — ${c.reputacao.regra}`
+    );
+  }
+
+  return linhas.length ? `\n═══ REGRAS DO SISTEMA ═══\n${linhas.join('\n\n')}\n` : '';
+}
+
 // Preenche input se já tiver chave
 window.addEventListener('DOMContentLoaded', () => {
   const k = getApiKey();
@@ -492,7 +780,7 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   renderFeatGrid();
-  carregarCampanha();
+  carregarCampanha(); carregarRegras();
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -519,15 +807,52 @@ function getDadosPersonagem() {
 window.criarSala = async function() {
   const p = getDadosPersonagem();
   if (!p) return;
+
+  // Carregar perfil persistente (se existe)
+  const charSnap = await get(ref(db, `personagens/${myUid}`));
+  const charData = charSnap.exists() ? charSnap.val() : null;
+
+  // Montar dados do jogador para esta sala (com persistência)
+  const jogData = {
+    ...p, uid: myUid, ativo: true,
+    xp:         charData?.xp         ?? 0,
+    nivel:      charData?.nivel      ?? 1,
+    lesoes:     charData?.lesoes     || {},
+    titulos:    charData?.titulos    || {},
+    posses:     charData?.posses     || {},
+    reputacoes: charData?.reputacoes || {},
+    equipamento: charData?.equipamento || {},
+    mochila:    charData?.mochila    || {},
+  };
+  if (charData?.hp != null) jogData.hp = Math.min(charData.hp, p.maxHp);
+
+  // Criar ou atualizar perfil persistente
+  if (!charSnap.exists()) {
+    await set(ref(db, `personagens/${myUid}`), {
+      nome: p.nome, classe: p.classe, sexo: p.sexo, uid: myUid,
+      STR: p.STR, DEX: p.DEX, CON: p.CON, INT: p.INT, WIS: p.WIS, CHA: p.CHA,
+      hp: jogData.hp, maxHp: p.maxHp, ac: p.ac, init: p.init,
+      fort: p.fort, ref: p.ref, will: p.will,
+      pericias: p.pericias, vivo: true, xp: 0, nivel: 1
+    });
+  } else {
+    await update(ref(db, `personagens/${myUid}`), {
+      nome: p.nome, classe: p.classe, sexo: p.sexo, maxHp: p.maxHp,
+      ac: p.ac, init: p.init, fort: p.fort, ref: p.ref, will: p.will, pericias: p.pericias
+    });
+  }
+
   const codigo = codigoAleatorio();
-  myNome  = p.nome;
+  await push(ref(db, `personagens/${myUid}/historico`), { sala: codigo, campanhaId: 'beast-of-black-keep', ts: Date.now() });
+
+  myNome   = p.nome;
   myClasse = p.classe;
-  mySala  = codigo;
-  amIHost = true;
+  mySala   = codigo;
+  amIHost  = true;
 
   await set(ref(db, `salas/${codigo}`), {
     config: { host: myUid, estado: 'lobby', rodada: 0, criadoEm: serverTimestamp() },
-    jogadores: { [myUid]: { ...p, uid: myUid, ativo: true } }
+    jogadores: { [myUid]: jogData }
   });
   onDisconnect(ref(db, `salas/${codigo}/jogadores/${myUid}/ativo`)).set(false);
   irParaJogo(codigo);
@@ -543,16 +868,50 @@ window.entrarSala = async function() {
   if (!snap.exists()) { document.getElementById('lobby-error').textContent = 'Sala não encontrada.'; return; }
 
   const data = snap.val();
-  myNome  = p.nome;
+
+  // Carregar perfil persistente
+  const charSnap = await get(ref(db, `personagens/${myUid}`));
+  const charData = charSnap.exists() ? charSnap.val() : null;
+
+  const jogData = {
+    ...p, uid: myUid, ativo: true,
+    xp:          charData?.xp          ?? 0,
+    nivel:       charData?.nivel       ?? 1,
+    lesoes:      charData?.lesoes      || {},
+    titulos:     charData?.titulos     || {},
+    posses:      charData?.posses      || {},
+    reputacoes:  charData?.reputacoes  || {},
+    equipamento: charData?.equipamento || {},
+    mochila:     charData?.mochila     || {},
+  };
+  if (charData?.hp != null) jogData.hp = Math.min(charData.hp, p.maxHp);
+
+  if (!charSnap.exists()) {
+    await set(ref(db, `personagens/${myUid}`), {
+      nome: p.nome, classe: p.classe, sexo: p.sexo, uid: myUid,
+      STR: p.STR, DEX: p.DEX, CON: p.CON, INT: p.INT, WIS: p.WIS, CHA: p.CHA,
+      hp: jogData.hp, maxHp: p.maxHp, ac: p.ac, init: p.init,
+      fort: p.fort, ref: p.ref, will: p.will,
+      pericias: p.pericias, vivo: true, xp: 0, nivel: 1
+    });
+  } else {
+    await update(ref(db, `personagens/${myUid}`), {
+      nome: p.nome, classe: p.classe, sexo: p.sexo, maxHp: p.maxHp,
+      ac: p.ac, init: p.init, fort: p.fort, ref: p.ref, will: p.will, pericias: p.pericias
+    });
+  }
+  await push(ref(db, `personagens/${myUid}/historico`), { sala: code, campanhaId: 'beast-of-black-keep', ts: Date.now() });
+
+  myNome   = p.nome;
   myClasse = p.classe;
-  mySala  = code;
-  amIHost = data.config?.host === myUid;
+  mySala   = code;
+  amIHost  = data.config?.host === myUid;
 
   const existing = data.jogadores?.[myUid];
   if (existing) {
-    await update(ref(db, `salas/${code}/jogadores/${myUid}`), { ativo: true, nome: p.nome, classe: p.classe, sexo: p.sexo });
+    await update(ref(db, `salas/${code}/jogadores/${myUid}`), { ativo: true, ...jogData });
   } else {
-    await set(ref(db, `salas/${code}/jogadores/${myUid}`), { ...p, uid: myUid, ativo: true });
+    await set(ref(db, `salas/${code}/jogadores/${myUid}`), jogData);
   }
   onDisconnect(ref(db, `salas/${code}/jogadores/${myUid}/ativo`)).set(false);
   irParaJogo(code);
@@ -624,12 +983,17 @@ function renderizarJogadores(jogadores, config) {
     const cls   = CLASSES[j.classe];
     const icon  = cls?.icon || '⚔️';
     const perIcons = (j.pericias||[]).map(k => PERICIAS[k]?.icon || '').join('');
+    const lesoesArr = Object.values(j.lesoes || {});
+    const lesaoBadge = lesoesArr.length
+      ? `<span class="chip-lesao" title="${lesoesArr.map(l=>l.descricao).join(' | ')}">⚠</span>` : '';
+    const nivelBadge = j.nivel > 1 ? `<span class="chip-nivel">Nv${j.nivel}</span>` : '';
     return `<div class="player-chip ${isMe ? 'me' : ''} ${j.ativo === false ? 'offline' : ''} ${j.ausente ? 'ausente' : ''}">
       <span>${icon}</span>
       <span class="chip-name">${j.nome}</span>
       ${j.ausente ? '<span class="chip-ausente">outra cena</span>' : `<span class="chip-hp ${hpCls}">PV ${j.hp}/${j.maxHp}</span>`}
       ${!j.ausente && j.ac != null ? `<span class="chip-hp" style="color:var(--blue)">CA ${j.ac}</span>` : ''}
       ${perIcons ? `<span class="chip-adv">${perIcons}</span>` : ''}
+      ${nivelBadge}${lesaoBadge}
     </div>`;
   }).join('');
 }
@@ -716,9 +1080,11 @@ function atualizarInputArea(eu, config) {
 
   if (btn) btn.disabled = jaEnviou || narrando || morto;
 
+  const totalAtivos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente).length;
+  const soloMode    = totalAtivos <= 1;
   if (morto)         setActionStatus('Seu personagem está fora de combate.');
   else if (narrando) setActionStatus('⏳ Narrando...');
-  else if (jaEnviou) setActionStatus('⏳ Aguardando os outros jogadores...');
+  else if (jaEnviou) setActionStatus(soloMode ? '⏳ Processando ação...' : '⏳ Aguardando os outros jogadores...');
   else               setActionStatus('');
 
   atualizarPromptAcao(eu, config);
@@ -889,53 +1255,167 @@ function ocultarRetryUI() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  PARSEAR STATS (inimigos / HP)
+//  XP → NÍVEL
+// ═══════════════════════════════════════════════════════════════
+function calcularNivel(xp) {
+  const limites = [0, 100, 300, 600, 1000, 1500, 2100, 2800, 3600, 4500];
+  for (let i = limites.length - 1; i >= 0; i--) {
+    if (xp >= limites[i]) return i + 1;
+  }
+  return 1;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  PARSEAR STATS (inimigos / HP / lesões / XP)
 // ═══════════════════════════════════════════════════════════════
 async function processarStats(resposta, jogadores, inimigos) {
   const ups = {};
-  const statsLine = resposta.match(/STATS:\s*([^\n]+)/i)?.[1] || '';
 
   // Criar/atualizar inimigos
-  [...statsLine.matchAll(/\[INIMIGO:([^:]+):(\d+):(\d+):([^\]]+)\]/gi)].forEach(([,nome,hp,maxHp,icon]) => {
+  for (const [, nome, hp, maxHp, icon] of resposta.matchAll(/\[INIMIGO:([^:]+):(\d+):(\d+):([^\]]+)\]/gi)) {
     const key = nome.trim().replace(/\W/g,'_');
-    ups[`salas/${mySala}/inimigos/${key}`] = {
-      nome: nome.trim(), hp: +hp, maxHp: +maxHp, icon: icon.trim()
-    };
-  });
+    ups[`salas/${mySala}/inimigos/${key}`] = { nome: nome.trim(), hp: +hp, maxHp: +maxHp, icon: icon.trim() };
+  }
 
   // Atualizar HP inimigo
-  [...resposta.matchAll(/\[HP:([^:]+):(\d+)\]/gi)].forEach(([,nome,hp]) => {
+  for (const [, nome, hp] of resposta.matchAll(/\[HP:([^:]+):(\d+)\]/gi)) {
     const key = nome.trim().replace(/\W/g,'_');
     const ini = inimigos[key] || Object.values(inimigos).find(i => i.nome === nome.trim());
     if (ini) {
       const k = Object.entries(inimigos).find(([,v]) => v === ini)?.[0] || key;
       ups[`salas/${mySala}/inimigos/${k}/hp`] = +hp;
     }
-  });
+  }
 
   // Matar inimigo
-  [...resposta.matchAll(/\[MATAR:([^\]]+)\]/gi)].forEach(([,nome]) => {
+  for (const [, nome] of resposta.matchAll(/\[MATAR:([^\]]+)\]/gi)) {
     const ini = Object.entries(inimigos).find(([,v]) => v.nome === nome.trim());
     if (ini) ups[`salas/${mySala}/inimigos/${ini[0]}/hp`] = 0;
-  });
+  }
 
-  // Atualizar HP jogador
-  [...resposta.matchAll(/\[JOGADOR:([^:]+):(\d+)\]/gi)].forEach(([,nome,hp]) => {
+  // Atualizar HP jogador + persistir no perfil
+  for (const [, nome, hp] of resposta.matchAll(/\[JOGADOR:([^:]+):(\d+)\]/gi)) {
     const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
-    if (entry) ups[`salas/${mySala}/jogadores/${entry[0]}/hp`] = Math.max(0, +hp);
-  });
+    if (entry) {
+      const [uid] = entry;
+      const novoHp = Math.max(0, +hp);
+      ups[`salas/${mySala}/jogadores/${uid}/hp`] = novoHp;
+      ups[`personagens/${uid}/hp`] = novoHp;
+    }
+  }
 
   // Marcar jogador como ausente da cena atual
-  [...resposta.matchAll(/\[AUSENTE:([^\]]+)\]/gi)].forEach(([,nome]) => {
+  for (const [, nome] of resposta.matchAll(/\[AUSENTE:([^\]]+)\]/gi)) {
     const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
     if (entry) ups[`salas/${mySala}/jogadores/${entry[0]}/ausente`] = true;
-  });
+  }
 
   // Marcar jogador como presente novamente
-  [...resposta.matchAll(/\[PRESENTE:([^\]]+)\]/gi)].forEach(([,nome]) => {
+  for (const [, nome] of resposta.matchAll(/\[PRESENTE:([^\]]+)\]/gi)) {
     const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
     if (entry) ups[`salas/${mySala}/jogadores/${entry[0]}/ausente`] = false;
-  });
+  }
+
+  // Lesão permanente — grava no perfil e espelha na sala
+  for (const [, nome, desc] of resposta.matchAll(/\[LESAO:([^:]+):([^\]]+)\]/gi)) {
+    const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
+    if (entry) {
+      const [uid] = entry;
+      const lesaoId = push(ref(db, `personagens/${uid}/lesoes`)).key;
+      const lesaoData = { descricao: desc.trim(), ts: Date.now() };
+      ups[`personagens/${uid}/lesoes/${lesaoId}`] = lesaoData;
+      ups[`salas/${mySala}/jogadores/${uid}/lesoes/${lesaoId}`] = lesaoData;
+    }
+  }
+
+  // XP — acumula no perfil e espelha na sala
+  for (const [, nome, pts] of resposta.matchAll(/\[XP:([^:]+):(\d+)\]/gi)) {
+    const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
+    if (entry) {
+      const [uid] = entry;
+      const charSnap = await get(ref(db, `personagens/${uid}`));
+      const xpAtual  = charSnap.exists() ? (charSnap.val().xp || 0) : 0;
+      const novoXp   = xpAtual + (+pts);
+      const novoNivel = calcularNivel(novoXp);
+      ups[`personagens/${uid}/xp`]    = novoXp;
+      ups[`personagens/${uid}/nivel`] = novoNivel;
+      ups[`salas/${mySala}/jogadores/${uid}/xp`]    = novoXp;
+      ups[`salas/${mySala}/jogadores/${uid}/nivel`]  = novoNivel;
+    }
+  }
+
+  // Título permanente
+  for (const [, nome, titulo] of resposta.matchAll(/\[TITULO:([^:]+):([^\]]+)\]/gi)) {
+    const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
+    if (entry) {
+      const [uid] = entry;
+      const tituloId = push(ref(db, `personagens/${uid}/titulos`)).key;
+      const tituloData = { titulo: titulo.trim(), campanhaId: 'beast-of-black-keep', ts: Date.now() };
+      ups[`personagens/${uid}/titulos/${tituloId}`] = tituloData;
+      ups[`salas/${mySala}/jogadores/${uid}/titulos/${tituloId}`] = tituloData;
+    }
+  }
+
+  // Posse permanente
+  for (const [, nome, desc] of resposta.matchAll(/\[POSSE:([^:]+):([^\]]+)\]/gi)) {
+    const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
+    if (entry) {
+      const [uid] = entry;
+      const posseId = push(ref(db, `personagens/${uid}/posses`)).key;
+      const posseData = { descricao: desc.trim(), campanhaId: 'beast-of-black-keep', ts: Date.now() };
+      ups[`personagens/${uid}/posses/${posseId}`] = posseData;
+      ups[`salas/${mySala}/jogadores/${uid}/posses/${posseId}`] = posseData;
+    }
+  }
+
+  // Reputação em cidade/facção
+  for (const [, nome, local, val] of resposta.matchAll(/\[REPUTACAO:([^:]+):([^:]+):(-?\d+)\]/gi)) {
+    const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
+    if (entry) {
+      const [uid] = entry;
+      const localKey = local.trim().replace(/\s+/g, '_');
+      const repSnap = await get(ref(db, `personagens/${uid}/reputacoes/${localKey}`));
+      const repAtual = repSnap.exists() ? (repSnap.val().valor || 0) : 0;
+      const novoValor = repAtual + (+val);
+      const repData = { valor: novoValor, local: local.trim(), ts: Date.now() };
+      ups[`personagens/${uid}/reputacoes/${localKey}`] = repData;
+      ups[`salas/${mySala}/jogadores/${uid}/reputacoes/${localKey}`] = repData;
+    }
+  }
+
+  // Equipar item em slot
+  const validSlots = ['cabeca','tronco','mao_d','mao_e','pes'];
+  for (const [, nome, slot, item] of resposta.matchAll(/\[EQUIPAR:([^:]+):([^:]+):([^\]]*)\]/gi)) {
+    const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
+    const slotKey = slot.trim().toLowerCase();
+    if (entry && validSlots.includes(slotKey)) {
+      const [uid] = entry;
+      const itemVal = item.trim() || null;
+      ups[`personagens/${uid}/equipamento/${slotKey}`] = itemVal;
+      ups[`salas/${mySala}/jogadores/${uid}/equipamento/${slotKey}`] = itemVal;
+    }
+  }
+
+  // Item na mochila (qtd positiva = adicionar, negativa = remover)
+  for (const [, nome, itemNome, qtdStr] of resposta.matchAll(/\[ITEM_BAG:([^:]+):([^:]+):(-?\d+)\]/gi)) {
+    const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
+    if (entry) {
+      const [uid] = entry;
+      const qtd  = +qtdStr;
+      const slug = itemNome.trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') || `item_${Date.now()}`;
+      const snap = await get(ref(db, `personagens/${uid}/mochila/${slug}`));
+      const qtdAtual = snap.exists() ? (snap.val().qtd || 0) : 0;
+      const novaQtd  = qtdAtual + qtd;
+      if (novaQtd <= 0) {
+        ups[`personagens/${uid}/mochila/${slug}`] = null;
+        ups[`salas/${mySala}/jogadores/${uid}/mochila/${slug}`] = null;
+      } else {
+        const mochilaData = { nome: itemNome.trim(), qtd: novaQtd };
+        ups[`personagens/${uid}/mochila/${slug}`] = mochilaData;
+        ups[`salas/${mySala}/jogadores/${uid}/mochila/${slug}`] = mochilaData;
+      }
+    }
+  }
 
   if (Object.keys(ups).length) await update(ref(db), ups);
 }
@@ -1137,20 +1617,41 @@ async function chamarIA(jogadores, data) {
     const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), hist, msg, mostrarRetryUI);
     ocultarRetryUI();
 
+    // Sempre limpar acao1 (evita loop infinito em caso de falha da API)
+    const ups = {};
+    Object.keys(jogadores).forEach(uid => { ups[`salas/${mySala}/jogadores/${uid}/acao1`] = null; });
+
     if (!resposta) {
-      await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
+      ups[`salas/${mySala}/config/estado`] = 'aguardando';
+      ups[`salas/${mySala}/config/rodada`] = rodada + 1;
+      await update(ref(db), ups);
       return;
     }
 
-    // Limpar ações dos jogadores + avançar rodada
-    const ups = {};
-    Object.keys(jogadores).forEach(uid => { ups[`salas/${mySala}/jogadores/${uid}/acao1`] = null; });
-    ups[`salas/${mySala}/config/estado`] = 'aguardando';
-    ups[`salas/${mySala}/config/rodada`] = rodada + 1;
+    // Verificar se a IA pediu testes sequenciais
+    const testes = extrairTestes(resposta);
 
-    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), falas: extrairFalas(resposta), ts: Date.now() });
-    await processarStats(resposta, jogadores, inimigos);
-    await update(ref(db), ups);
+    if (testes.length && amIHost) {
+      // Empurrar preamble (texto antes dos TESTAR) para história
+      const preamble = limparTags(resposta);
+      if (preamble) {
+        await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: preamble, falas: extrairFalas(resposta), ts: Date.now() });
+      }
+      // Limpar ações agora; rodada avança após testes
+      await update(ref(db), ups);
+      // Mostrar cards de teste; segunda chamada IA narra o resultado
+      iniciarTestes(testes, jogadores, async (resultados) => {
+        const upsPos = {};
+        await narrarResultadoTestes(resultados, jogadores, inimigos, hist, rodada, upsPos);
+      });
+    } else {
+      // Fluxo normal sem testes
+      ups[`salas/${mySala}/config/estado`] = 'aguardando';
+      ups[`salas/${mySala}/config/rodada`] = rodada + 1;
+      await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), falas: extrairFalas(resposta), ts: Date.now() });
+      await processarStats(resposta, jogadores, inimigos);
+      await update(ref(db), ups);
+    }
   } finally {
     chamandoIA = false;
     ocultarRetryUI();
@@ -1166,7 +1667,27 @@ function buildSystemPrompt(jogadores, inimigos) {
     const perStr = (j.pericias||[]).map(k => PERICIAS[k]?.nome).filter(Boolean).join(', ');
     const hab  = cls?.habilidade?.nome || '';
     const fmt  = v => (v >= 0 ? '+' : '') + v;
-    return `${j.nome} (${cls?.nome||j.classe}) — FOR:${j.STR} DES:${j.DEX} CON:${j.CON} INT:${j.INT} SAB:${j.WIS} CAR:${j.CHA} | PV:${j.hp}/${j.maxHp} CA:${j.ac} Init:${fmt(j.init)}${hab ? ` | Hab:${hab}` : ''}${perStr ? ` | Perícias:${perStr}` : ''}`;
+    const lesoesArr  = Object.values(j.lesoes  || {});
+    const titulosArr = Object.values(j.titulos || {});
+    const possesArr  = Object.values(j.posses  || {});
+    const repsArr    = Object.entries(j.reputacoes || {});
+    const equip      = j.equipamento || {};
+    const mochila    = j.mochila || {};
+    const lesoesStr  = lesoesArr.length  ? ` | LESÕES:${lesoesArr.map(l=>l.descricao).join('; ')}` : '';
+    const titulosStr = titulosArr.length ? ` | TÍTULOS:${titulosArr.map(t=>t.titulo).join(', ')}` : '';
+    const possesStr  = possesArr.length  ? ` | POSSES:${possesArr.map(p=>p.descricao).join(', ')}` : '';
+    const repStr     = repsArr.length    ? ` | REP:${repsArr.map(([,r]) => `${r.local||''}${r.valor > 0 ? '+' : ''}${r.valor}`).join(', ')}` : '';
+    const nivelStr   = j.nivel > 1 ? ` Nv${j.nivel}` : '';
+    const equipParts = [];
+    if (equip.cabeca) equipParts.push(`Cabeça:${equip.cabeca}`);
+    if (equip.tronco) equipParts.push(`Tronco:${equip.tronco}`);
+    if (equip.mao_d)  equipParts.push(`MãoD:${equip.mao_d}`);
+    if (equip.mao_e)  equipParts.push(`MãoE:${equip.mao_e}`);
+    if (equip.pes)    equipParts.push(`Pés:${equip.pes}`);
+    const mochilaItems = Object.values(mochila).map(it => `${it.nome}×${it.qtd||1}`);
+    const equipStr   = equipParts.length ? ` | EQUIP:${equipParts.join(', ')}` : '';
+    const mochilaStr = mochilaItems.length ? ` | MOCHILA:${mochilaItems.join(', ')}` : '';
+    return `${j.nome} (${cls?.nome||j.classe}${nivelStr}) — FOR:${j.STR} DES:${j.DEX} CON:${j.CON} INT:${j.INT} SAB:${j.WIS} CAR:${j.CHA} | PV:${j.hp}/${j.maxHp} CA:${j.ac} Init:${fmt(j.init)}${hab ? ` | Hab:${hab}` : ''}${perStr ? ` | Perícias:${perStr}` : ''}${lesoesStr}${titulosStr}${possesStr}${repStr}${equipStr}${mochilaStr}`;
   }).join('\n');
 
   const iniList = Object.values(inimigos).filter(i => i.hp > 0).map(i =>
@@ -1176,22 +1697,46 @@ function buildSystemPrompt(jogadores, inimigos) {
   const campCtx = buildCampaignContext();
 
   return `Você é o Narrador. Escreva em português do Brasil com drama, impacto e tom de folclore sombrio. Seja DIRETO — cada palavra conta.
+${buildRegrasContext()}
 ${campCtx}
 VOZ:
 - Verbos fortes e sensoriais: "rasga", "despenca", "estala", "cheira a enxofre".
 - Foque no RESULTADO das ações, não na preparação.
-- ${iniList ? 'COMBATE ATIVO — máximo 50 palavras de narração.' : 'EXPLORAÇÃO — máximo 70 palavras por bloco narrativo (tags FALA não contam no limite).'}
+- ${iniList ? 'COMBATE ATIVO — máximo 40 palavras de narração (após testes). JAMAIS mencione dados, modificadores, CD ou cálculos no texto.' : 'EXPLORAÇÃO — máximo 70 palavras por bloco narrativo (tags FALA não contam no limite).'}
 - Mantenha o tom: a floresta observa, os NPCs têm segredos, nada é seguro.
 - NUNCA termine com pergunta ao jogador. A narração termina com a consequência da cena.
 - Se jogadores estiverem em locais diferentes, use [AUSENTE:nome] e [PRESENTE:nome].
+- AÇÕES INDIVIDUAIS: cada jogador age de forma INDEPENDENTE. Narre SOMENTE o que CADA UM declarou. NUNCA aplique a ação de um jogador ao grupo todo nem a outros jogadores.
 
 JOGADORES ATIVOS:
 ${jogList}
 ${iniList ? `\nINIMIGOS EM CENA:\n${iniList}` : ''}
 
+TESTES DE AÇÃO — quando a ação de um jogador for complexa ou arriscada (correr, saltar, sacar em movimento, atacar pelas costas, etc.), determine quais testes são necessários e liste-os ANTES de narrar qualquer resultado. O sistema rola os dados e você narra depois.
+Formato obrigatório (uma linha por teste, na ordem em que ocorrem):
+  TESTAR: [NomeExato|Descrição curta da ação|Atributo|CD]
+Atributos válidos: FOR, DES, CON, INT, SAB, CAR, FORT, REF, VON
+CD típicas: fácil=8, médio=12, difícil=15, muito difícil=18, heróico=22
+Exemplo — "Carne quer correr, sacar a faca e arremessá-la nas costas do goblin":
+  TESTAR: [Carne|Corrida pelas barracas|DES|10]
+  TESTAR: [Carne|Saque da faca em movimento|DES|13]
+  TESTAR: [Carne|Arremesso nas costas|DES|15]
+Após listar os TESTAR, escreva apenas uma frase curtíssima de suspense (sem revelar o resultado). NÃO narre o desfecho — ele depende dos dados.
+Se a ação for simples (atacar de frente, falar com NPC, mover-se para adjacente), não use TESTAR — narre diretamente.
+
 TAGS MECÂNICAS — SOMENTE na última linha da resposta:
-STATS: [INIMIGO:nome:hp:hpMax:ícone] [HP:nome:novoHp] [MATAR:nome] [JOGADOR:nome:novoHp] [AUSENTE:nome] [PRESENTE:nome]
-Exemplo: "O espantalho cai.\nSTATS: [MATAR:Espantalho 1] [JOGADOR:Aldric:8]"
+STATS: [INIMIGO:nome:hp:hpMax:ícone] [HP:nome:novoHp] [MATAR:nome] [JOGADOR:nome:novoHp] [AUSENTE:nome] [PRESENTE:nome] [LESAO:nome:descrição] [XP:nome:pontos] [TITULO:nome:título] [POSSE:nome:descrição] [REPUTACAO:nome:local:valor] [EQUIPAR:nome:slot:item] [ITEM_BAG:nome:item:qtd]
+Exemplos:
+  Fim de combate: "STATS: [MATAR:Espantalho 1] [JOGADOR:Aldric:8] [XP:Aldric:25]"
+  Recompensa: "STATS: [TITULO:Carne:Cavaleiro de Mhoried] [POSSE:Carne:100 hectares em Mhoried] [REPUTACAO:Carne:Mhoried:3]"
+  Lesão: "STATS: [LESAO:Carne:braço direito decepado]"
+  Equipar: "STATS: [EQUIPAR:Carne:mao_d:Espada Longa] [EQUIPAR:Carne:tronco:Cota de Malha]"
+  Mochila: "STATS: [ITEM_BAG:Carne:Poção de Cura:2] [ITEM_BAG:Carne:Tocha:-1]"
+LESAO: somente lesões PERMANENTES irreversíveis. Persiste entre campanhas.
+XP: conceda 10-50 pts por vitória ou feito relevante.
+TITULO/POSSE/REPUTACAO: use quando a narrativa conferir recompensas concretas ou reconhecimento formal.
+EQUIPAR: slots válidos — cabeca, tronco, mao_d, mao_e, pes. Item vazio = desequipar.
+ITEM_BAG: qtd positiva = adicionar, negativa = remover da mochila.
 
 DIÁLOGOS — sistema de bolhas inline. Regras OBRIGATÓRIAS:
 1. Quando um NPC fala, descreva a ação de falar (terminando em dois-pontos) e coloque a tag na linha seguinte:

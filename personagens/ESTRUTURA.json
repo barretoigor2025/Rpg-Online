@@ -1,0 +1,32 @@
+{
+  "descricao": "Pasta de registros canônicos dos personagens. O sistema Firebase em personagens/{uid} mantém os dados ao vivo; esta pasta serve como registro histórico permanente e backup canônico.",
+  "firebase_path_principal": "personagens/{uid}",
+  "estrutura_firebase": {
+    "perfil_base": {
+      "nome": "string", "classe": "string", "sexo": "m|f", "uid": "string",
+      "STR": "number", "DEX": "number", "CON": "number", "INT": "number", "WIS": "number", "CHA": "number",
+      "hp": "number — PV atual", "maxHp": "number", "ac": "number", "init": "number",
+      "fort": "number", "ref": "number", "will": "number",
+      "pericias": "string[]",
+      "vivo": "boolean",
+      "xp": "number — total acumulado em todas as campanhas",
+      "nivel": "number — 1 a 10"
+    },
+    "lesoes": {
+      "{pushKey}": { "descricao": "string", "ts": "timestamp UNIX" }
+    },
+    "titulos": {
+      "{pushKey}": { "titulo": "string", "campanhaId": "string", "ts": "timestamp UNIX" }
+    },
+    "posses": {
+      "{pushKey}": { "descricao": "string", "campanhaId": "string", "ts": "timestamp UNIX" }
+    },
+    "reputacoes": {
+      "{nome_do_local}": { "valor": "number", "ts": "timestamp UNIX" }
+    },
+    "historico": {
+      "{pushKey}": { "sala": "string", "campanhaId": "string", "ts": "timestamp UNIX" }
+    }
+  },
+  "instrucao": "Para criar um registro canônico de personagem, crie uma subpasta com o nome do personagem e use os templates em personagens/template/ como base."
+}

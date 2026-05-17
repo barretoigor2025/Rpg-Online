@@ -1,0 +1,18 @@
+{
+  "_instrucao": "Template de perfil canônico. Copie esta pasta, renomeie para o nome do personagem e preencha os campos.",
+  "nome": "Nome do Personagem",
+  "classe": "guerreiro",
+  "sexo": "m",
+  "nivel": 1,
+  "xp": 0,
+  "atributos": {
+    "FOR": 16, "DEX": 14, "CON": 15, "INT": 10, "WIS": 10, "CHA": 10
+  },
+  "derivados": {
+    "hp_atual": 14, "hp_maximo": 14, "ca": 17,
+    "iniciativa": 2, "fortitude": 4, "reflexo": 2, "vontade": 0
+  },
+  "pericias": [],
+  "vivo": true,
+  "notas": ""
+}

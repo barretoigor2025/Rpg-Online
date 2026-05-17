@@ -1,0 +1,15 @@
+{
+  "nome": "Sistema de Diálogo Inline",
+  "versao": "1.0",
+  "descricao": "Falas de NPCs aparecem como bolhas visuais permanentes na cronologia da história. Regras OBRIGATÓRIAS para todas as campanhas.",
+  "formato": "FALA: [NomeExato|\"frase completa do NPC\"]",
+  "regras": [
+    "Quando um NPC fala, descreva a ação de falar terminando com dois-pontos e coloque FALA na linha seguinte.",
+    "Uma cena de conversa gera múltiplas trocas: narração + FALA até o diálogo se encerrar naturalmente.",
+    "Se um jogador declara uma fala direta, o NPC DEVE responder com FALA.",
+    "Nunca interrompa um diálogo no meio — complete o pensamento antes de ceder a vez.",
+    "A fala dentro da tag deve ser COMPLETA — nunca um resumo.",
+    "Múltiplas FALAs de NPCs diferentes na mesma cena são permitidas e encorajadas.",
+    "Tags FALA NÃO contam para o limite de palavras de narração."
+  ]
+}
