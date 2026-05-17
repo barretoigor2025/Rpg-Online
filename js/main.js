@@ -1238,5 +1238,5 @@ FALA: [Gregoras Pellos|"Ela tem razão. Paguem o preço ou vão embora."]
 
 IMPORTANTE: se um NPC fala na cena, a fala DEVE aparecer na tag — nunca suprima a fala de um NPC.
 Coloque a fala completa do NPC dentro da tag, não um resumo.
-Múltiplos NPCs: use múltiplas linhas FALA separadas.`;}
+Múltiplos NPCs: use múltiplas linhas FALA separadas.`;
 }
