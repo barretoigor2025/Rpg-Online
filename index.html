@@ -130,6 +130,9 @@
 
   <!-- Input de ação -->
   <div id="action-bar">
+    <div id="action-top-btns">
+      <button id="btn-falar" onclick="abrirFalar()" title="Falar como personagem">💬 Falar</button>
+    </div>
     <div id="action-wrap">
       <textarea id="action-input" rows="2" placeholder="Declare a ação do seu personagem..."></textarea>
       <button id="btn-send" onclick="enviarAcao()">
@@ -179,6 +182,9 @@
 
 <!-- ══ TESTE SEQUENCIAL ══ -->
 <div id="teste-overlay" style="display:none"></div>
+
+<!-- ══ FALAR OVERLAY ══ -->
+<div id="falar-overlay" style="display:none"></div>
 
 <script type="module" src="js/main.js"></script>
 </body>
