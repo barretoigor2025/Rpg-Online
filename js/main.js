@@ -162,18 +162,26 @@ function limparTags(txt) {
 //  NPC — DADOS DE DIÁLOGO
 // ═══════════════════════════════════════════════════════════════
 const NPC_DATA = {
-  'Gregoras Pellos':  { icon: '🗡️', cor: '#607080', voz: 'Fritz-PlayAI'   },
-  'Catherine':        { icon: '👑', cor: '#b08030', voz: 'Val-PlayAI'      },
-  'Hobbleboot Sam':   { icon: '🥾', cor: '#5a7a4a', voz: 'Briggs-PlayAI'  },
-  'Mutter Grimmhaar': { icon: '🧙', cor: '#6a3a6a', voz: 'Deedee-PlayAI'  },
-  'Wulfram':          { icon: '🦌', cor: '#6a5a30', voz: 'Orion-PlayAI'   },
-  'Príncipe Kalos':   { icon: '🧝', cor: '#305070', voz: 'Gideon-PlayAI'  },
-  'Rei Chutter':      { icon: '👹', cor: '#7a1a1a', voz: 'Thunder-PlayAI' },
-  'Mac Rónán':        { icon: '🌿', cor: '#3a6a3a', voz: 'Briggs-PlayAI'  },
-  'Ruzalka':          { icon: '💧', cor: '#306a8a', voz: 'Nova-PlayAI'    },
-  'Blunkin':          { icon: '🦎', cor: '#4a5a2a', voz: 'Fritz-PlayAI'   },
-  'Drizzle':          { icon: '🦎', cor: '#5a6a3a', voz: 'Fritz-PlayAI'   },
-  'Rootflayer':       { icon: '🌳', cor: '#3a2a1a', voz: 'Thunder-PlayAI' },
+  'Gregoras Pellos':  { icon: '🗡️', cor: '#607080', voz: 'Fritz-PlayAI',   portrait: 'npc_gregoras_pellos'         },
+  'Catherine':        { icon: '👑', cor: '#b08030', voz: 'Val-PlayAI',      portrait: 'npc_catherine_laskaris'      },
+  'Hobbleboot Sam':   { icon: '🥾', cor: '#5a7a4a', voz: 'Briggs-PlayAI',  portrait: 'npc_hobbleboot_sam'          },
+  'Mutter Grimmhaar': { icon: '🧙', cor: '#6a3a6a', voz: 'Deedee-PlayAI',  portrait: 'npc_mutter_grimmhaar'        },
+  'Wulfram':          { icon: '🦌', cor: '#6a5a30', voz: 'Orion-PlayAI',   portrait: 'npc_wulfram_chifrado'        },
+  'Príncipe Kalos':   { icon: '🧝', cor: '#305070', voz: 'Gideon-PlayAI',  portrait: 'npc_principe_kalos'          },
+  'Rei Chutter':      { icon: '👹', cor: '#7a1a1a', voz: 'Thunder-PlayAI', portrait: 'npc_rei_chutter'             },
+  'Mac Rónán':        { icon: '🌿', cor: '#3a6a3a', voz: 'Briggs-PlayAI',  portrait: 'npc_mac_ronan'               },
+  'Muirenn':          { icon: '🌱', cor: '#3a5a40', voz: 'Nova-PlayAI',    portrait: 'npc_muirenn'                 },
+  'Ruzalka':          { icon: '💧', cor: '#306a8a', voz: 'Nova-PlayAI',    portrait: 'npc_ruzalka'                 },
+  'Blunkin':          { icon: '🦎', cor: '#4a5a2a', voz: 'Fritz-PlayAI',   portrait: 'npc_blunkin_esmaga_cranios'  },
+  'Drizzle':          { icon: '🦎', cor: '#5a6a3a', voz: 'Fritz-PlayAI',   portrait: 'npc_drizzle'                 },
+  'Oswald':           { icon: '👁️', cor: '#5a6a70', voz: 'Thunder-PlayAI', portrait: 'npc_duque_oswald_thool'      },
+  'Choir':            { icon: '💀', cor: '#2a1a3a', voz: 'Gideon-PlayAI',  portrait: 'npc_choir_necromante'        },
+  'Fariborz':         { icon: '🔥', cor: '#7a3a10', voz: 'Orion-PlayAI',   portrait: 'npc_fariborz_piromante'      },
+  'Aelar':            { icon: '🏹', cor: '#3a5a40', voz: 'Val-PlayAI',     portrait: 'npc_aelar_eisenli'           },
+  'Finn Willowheel':  { icon: '👟', cor: '#6a5a30', voz: 'Briggs-PlayAI',  portrait: 'npc_finn_willowheel'         },
+  'Dvalinn':          { icon: '⛏️', cor: '#5a4a30', voz: 'Thunder-PlayAI', portrait: 'npc_dvalinn_anao'            },
+  'Valmorien':        { icon: '🎯', cor: '#4a5a3a', voz: 'Fritz-PlayAI',   portrait: 'npc_valmorien_ysoria'        },
+  'Rootflayer':       { icon: '🌳', cor: '#3a2a1a', voz: 'Thunder-PlayAI'                                          },
 };
 
 function getNpcData(nome) {
@@ -456,8 +464,14 @@ function renderizarSegmentos(container, segs, falas) {
       const npc    = getNpcData(it.nome);
       const bubble = document.createElement('div');
       bubble.className = 'dialogo-inline';
+      const portraitSrc = npc.portrait ? `sprites/${npc.portrait}.png` : '';
       bubble.innerHTML = `
-        <div class="dialogo-inline-icon" style="background:${npc.cor}22">${npc.icon}</div>
+        <div class="dialogo-inline-portrait" style="background:${npc.cor}22;border-color:${npc.cor}55">
+          ${portraitSrc
+            ? `<img src="${portraitSrc}" alt="${it.nome}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+            : ''}
+          <span class="dialogo-inline-icon-fb" style="${portraitSrc ? 'display:none' : ''}">${npc.icon}</span>
+        </div>
         <div class="dialogo-inline-body">
           <div class="dialogo-inline-nome">${it.nome}</div>
           <div class="dialogo-inline-texto">"${it.texto}"</div>
