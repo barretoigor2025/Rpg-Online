@@ -1632,12 +1632,15 @@ async function chamarIA(jogadores, data) {
     const testes = extrairTestes(resposta);
 
     if (testes.length && amIHost) {
-      // Empurrar preamble (texto antes dos TESTAR) para história
-      const preamble = limparTags(resposta);
+      // Apenas o texto ANTES da primeira linha TESTAR vai para a história agora
+      // (tudo depois é descartado — a narrativa real vem da segunda chamada IA)
+      const primeiroTestar = resposta.search(/^\s*TESTAR:/im);
+      const textoAntes = primeiroTestar >= 0 ? resposta.substring(0, primeiroTestar) : '';
+      const preamble = limparTags(textoAntes);
       if (preamble) {
-        await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: preamble, falas: extrairFalas(resposta), ts: Date.now() });
+        await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: preamble, falas: extrairFalas(textoAntes), ts: Date.now() });
       }
-      // Limpar ações agora; rodada avança após testes
+      // Limpar ações agora; estado/rodada avançam após todos os testes
       await update(ref(db), ups);
       // Mostrar cards de teste; segunda chamada IA narra o resultado
       iniciarTestes(testes, jogadores, async (resultados) => {
