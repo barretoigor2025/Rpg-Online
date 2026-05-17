@@ -806,6 +806,75 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   line-height: 1.6;
 }
 
+/* ══ CARD DE BATALHA INLINE ══ */
+.batalha-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 4px;
+  padding: 8px 10px;
+  background: rgba(24,6,6,.78);
+  border-left: 2px solid rgba(200,70,50,.55);
+  border-radius: 0 6px 6px 0;
+}
+.batalha-inline-portrait {
+  flex-shrink: 0;
+  width: 52px; height: 70px;
+  border-radius: 5px;
+  border: 1px solid rgba(200,70,50,.3);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.batalha-inline-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+}
+.batalha-inline-portrait img.espelhado { transform: scaleX(-1); }
+.batalha-inline-icon-fb {
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.batalha-inline-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.batalha-inline-label {
+  font-size: 9px;
+  color: #e05040;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.batalha-inline-texto {
+  font-size: 13px;
+  color: #ded0c0;
+  font-style: italic;
+  line-height: 1.55;
+}
+.batalha-surpresa {
+  display: inline-block;
+  background: rgba(200,50,30,.35);
+  color: #ff7a60;
+  padding: 0 5px;
+  border-radius: 3px;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
 /* ══ CARD DE AÇÃO DO JOGADOR ══ */
 .action-prompt-card {
   display: flex;

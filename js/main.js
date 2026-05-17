@@ -154,8 +154,7 @@ function limparTags(txt) {
   return txt
     .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV|JOGADOR|AUSENTE|PRESENTE|LESAO|XP|TITULO|POSSE|REPUTACAO|EQUIPAR|ITEM_BAG)[^\]]*\]\s*)*/gi, '')
     .replace(/\[(?:INIMIGO|MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR|LESAO|XP|TITULO|POSSE|REPUTACAO|EQUIPAR|ITEM_BAG):[^\]]+\]/gi, '')
-    .replace(/^\s*FALA:\s*\[[^\]]+\]\s*$/gim, '')
-    .replace(/^\s*TESTAR:\s*\[[^\]]+\]\s*$/gim, '')
+    .replace(/^\s*TESTAR:\s*\[.*\]\s*$/gim, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
@@ -165,12 +164,44 @@ function limparTags(txt) {
 // ═══════════════════════════════════════════════════════════════
 // NPC_DATA é carregado dinamicamente de campanhas/<id>/npcs_visual.json em carregarCampanha()
 let NPC_DATA = {};
+// _inimigos é carregado dinamicamente de campanhas/<id>/inimigos.json em carregarCampanha()
+let _inimigos = null;
 
 function getNpcData(nome) {
   const key = Object.keys(NPC_DATA).find(
     k => nome.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(nome.toLowerCase())
   );
   return key ? NPC_DATA[key] : { icon: '👤', cor: '#4a5a70', voz: 'Fritz-PlayAI' };
+}
+
+function getInimigo(nome) {
+  if (!_inimigos) return null;
+  const todos = [...(_inimigos.essenciais || []), ...(_inimigos.encontros || [])];
+  return todos.find(e =>
+    nome.toLowerCase().includes(e.nome.toLowerCase()) || e.nome.toLowerCase().includes(nome.toLowerCase())
+  ) || null;
+}
+
+function getPortraitAtaque(nome, costas = false) {
+  const jog = Object.values(_jogadoresCache).find(j =>
+    j.nome && (nome.toLowerCase().includes(j.nome.toLowerCase()) || j.nome.toLowerCase().includes(nome.toLowerCase()))
+  );
+  if (jog) return { src: `sprites/${jog.classe}_${jog.sexo || 'm'}.png`, icon: '🧑', cor: '#4a7090' };
+
+  const ini = getInimigo(nome);
+  if (ini) {
+    const suf = costas ? '_costas' : '';
+    return { src: `sprites/inimigo_${ini.id}${suf}.png`, icon: ini.icon || '💀', cor: ini.cor_hp || '#7a1a1a' };
+  }
+
+  const npcKey = Object.keys(NPC_DATA).find(
+    k => nome.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(nome.toLowerCase())
+  );
+  if (npcKey) {
+    const npc = NPC_DATA[npcKey];
+    return { src: npc.portrait ? `sprites/${npc.portrait}.png` : '', icon: npc.icon || '👤', cor: npc.cor || '#4a5a70' };
+  }
+  return { src: '', icon: '💀', cor: '#7a1a1a' };
 }
 
 function extrairFalas(txt) {
@@ -181,6 +212,16 @@ function extrairFalas(txt) {
     falas.push({ nome: m[1].trim(), texto: m[2].trim() });
   }
   return falas;
+}
+
+function extrairAtaques(txt) {
+  const ataques = [];
+  const re = /^\s*ATAQUE:\s*\[([^\|]+)\|([^\|]+)\|"([^"]+)"\|(sim|nao)\]/gim;
+  let m;
+  while ((m = re.exec(txt)) !== null) {
+    ataques.push({ atacante: m[1].trim(), alvo: m[2].trim(), resultado: m[3].trim(), surpresa: m[4].trim().toLowerCase() === 'sim' });
+  }
+  return ataques;
 }
 
 function normalizarFalas(raw) {
@@ -361,7 +402,7 @@ async function narrarResultadoTestes(resultados, jogadores, inimigos, hist, roda
   ocultarRetryUI();
 
   if (resposta) {
-    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), falas: extrairFalas(resposta), ts: Date.now() });
+    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), falas: extrairFalas(resposta), ataques: extrairAtaques(resposta), ts: Date.now() });
     await processarStats(resposta, jogadores, inimigos);
   }
   ups[`salas/${mySala}/config/estado`] = 'aguardando';
@@ -374,12 +415,18 @@ function parsearSegmentos(txt) {
   const linhas = txt.split('\n');
   let acum = [];
   linhas.forEach(linha => {
-    const m = linha.match(/^\s*FALA:\s*\[([^\|]+)\|"([^"]+)"\]/i);
-    if (m) {
+    const mFala = linha.match(/^\s*FALA:\s*\[([^\|]+)\|"([^"]+)"\]/i);
+    const mAtaque = linha.match(/^\s*ATAQUE:\s*\[([^\|]+)\|([^\|]+)\|"([^"]+)"\|(sim|nao)\]/i);
+    if (mFala) {
       const t = acum.join('\n').trim();
       if (t) segs.push({ tipo: 'texto', conteudo: t });
       acum = [];
-      segs.push({ tipo: 'fala', nome: m[1].trim(), texto: m[2].trim() });
+      segs.push({ tipo: 'fala', nome: mFala[1].trim(), texto: mFala[2].trim() });
+    } else if (mAtaque) {
+      const t = acum.join('\n').trim();
+      if (t) segs.push({ tipo: 'texto', conteudo: t });
+      acum = [];
+      segs.push({ tipo: 'ataque', atacante: mAtaque[1].trim(), alvo: mAtaque[2].trim(), resultado: mAtaque[3].trim(), surpresa: mAtaque[4].toLowerCase() === 'sim' });
     } else {
       acum.push(linha);
     }
@@ -404,6 +451,8 @@ function renderizarSegmentos(container, segs, falas) {
   segs.forEach(s => {
     if (s.tipo === 'texto') {
       chuncarTexto(s.conteudo, 50).forEach(c => { if (c.trim()) items.push({ tipo:'chunk', texto:c }); });
+    } else if (s.tipo === 'ataque') {
+      items.push({ tipo:'ataque', atacante: s.atacante, alvo: s.alvo, resultado: s.resultado, surpresa: s.surpresa });
     } else {
       items.push({ tipo:'fala', nome: s.nome, texto: s.texto });
     }
@@ -488,6 +537,35 @@ function renderizarSegmentos(container, segs, falas) {
       btn.textContent = '▶ Continuar';
       btn.onclick = () => { btn.remove(); proxItem(); };
       container.appendChild(btn);
+      scrollDown();
+    } else if (it.tipo === 'ataque') {
+      // Card de batalha: ATACANTE à esquerda (espelhado), ALVO à direita (normal ou costas se surpresa)
+      const pAtac = getPortraitAtaque(it.atacante, false);
+      const pAlvo = getPortraitAtaque(it.alvo, it.surpresa);
+
+      const _phb = (p, espelhar) =>
+        `<div class="batalha-inline-portrait" style="background:${p.cor}22;border-color:${p.cor}55">
+          ${p.src ? `<img src="${p.src}" alt=""${espelhar ? ' class="espelhado"' : ''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+          <span class="batalha-inline-icon-fb"${p.src ? ' style="display:none"' : ''}>${p.icon}</span>
+        </div>`;
+
+      const card = document.createElement('div');
+      card.className = 'batalha-inline';
+      card.innerHTML = `
+        ${_phb(pAtac, true)}
+        <div class="batalha-inline-body">
+          <div class="batalha-inline-label">${it.atacante} → ${it.alvo}${it.surpresa ? ' <span class="batalha-surpresa">SURPRESA!</span>' : ''}</div>
+          <div class="batalha-inline-texto">${it.resultado}</div>
+        </div>
+        ${_phb(pAlvo, false)}`;
+      container.appendChild(card);
+      scrollDown();
+      narrarTexto(it.resultado);
+      const btnA = document.createElement('button');
+      btnA.className = 'btn-continuar-narr';
+      btnA.textContent = '▶ Continuar';
+      btnA.onclick = () => { btnA.remove(); proxItem(); };
+      container.appendChild(btnA);
       scrollDown();
     }
   }
@@ -1010,9 +1088,10 @@ window.confirmarApiKeyModal = function() {
 // ═══════════════════════════════════════════════════════════════
 async function carregarCampanha() {
   try {
-    const [resCamp, resNpcs] = await Promise.all([
+    const [resCamp, resNpcs, resIni] = await Promise.all([
       fetch('campanhas/beast-of-black-keep/campanha.json'),
       fetch('campanhas/beast-of-black-keep/npcs_visual.json'),
+      fetch('campanhas/beast-of-black-keep/inimigos.json'),
     ]);
     if (resCamp.ok) {
       _campanha = await resCamp.json();
@@ -1023,13 +1102,16 @@ async function carregarCampanha() {
       const data = await resNpcs.json();
       NPC_DATA = data.npcs || {};
     }
+    if (resIni.ok) {
+      _inimigos = await resIni.json();
+    }
   } catch(e) {
     console.warn('Campanha não carregada:', e);
   }
 }
 
 async function carregarRegras() {
-  const arquivos = ['sistema', 'personagem', 'dialogo', 'narrativa', 'recompensas'];
+  const arquivos = ['sistema', 'personagem', 'dialogo', 'batalha', 'narrativa', 'recompensas'];
   await Promise.all(arquivos.map(async nome => {
     try {
       const res = await fetch(`regras/${nome}.json`);
@@ -1091,6 +1173,19 @@ function buildRegrasContext() {
     if (dialogo.exemplos?.length) {
       bloco.push('Exemplos corretos:');
       dialogo.exemplos.forEach(e => bloco.push(e));
+    }
+    linhas.push(bloco.join('\n'));
+  }
+
+  const batalha = _regras.batalha;
+  if (batalha) {
+    const bloco = [`BATALHA — PADRÃO OFICIAL OBRIGATÓRIO (${batalha.versao || ''})`];
+    bloco.push(`Formato: ${batalha.formato}`);
+    bloco.push(`Surpresa: ${batalha.surpresa_valores}`);
+    if (batalha.regras) batalha.regras.forEach(r => bloco.push('• ' + r));
+    if (batalha.exemplos?.length) {
+      bloco.push('Exemplos corretos:');
+      batalha.exemplos.forEach(e => bloco.push(e));
     }
     linhas.push(bloco.join('\n'));
   }
@@ -1964,7 +2059,7 @@ STATS: ${Array.from({length: totalEsp}, (_,i) => `[INIMIGO:Espantalho ${i+1}:10:
     ocultarRetryUI();
 
     if (resposta) {
-      await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), falas: extrairFalas(resposta), ts: Date.now() });
+      await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), falas: extrairFalas(resposta), ataques: extrairAtaques(resposta), ts: Date.now() });
       await processarStats(resposta, jogadores, {});
     }
     await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando', rodada: 1 });
@@ -2049,7 +2144,7 @@ async function chamarIA(jogadores, data) {
       const textoAntes = primeiroTestar >= 0 ? resposta.substring(0, primeiroTestar) : '';
       const preamble = limparTags(textoAntes);
       if (preamble) {
-        await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: preamble, falas: extrairFalas(textoAntes), ts: Date.now() });
+        await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: preamble, falas: extrairFalas(textoAntes), ataques: extrairAtaques(textoAntes), ts: Date.now() });
       }
       // Limpar ações agora; estado/rodada avançam após todos os testes
       await update(ref(db), ups);
@@ -2062,7 +2157,7 @@ async function chamarIA(jogadores, data) {
       // Fluxo normal sem testes
       ups[`salas/${mySala}/config/estado`] = 'aguardando';
       ups[`salas/${mySala}/config/rodada`] = rodada + 1;
-      await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), falas: extrairFalas(resposta), ts: Date.now() });
+      await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), falas: extrairFalas(resposta), ataques: extrairAtaques(resposta), ts: Date.now() });
       await processarStats(resposta, jogadores, inimigos);
       await update(ref(db), ups);
     }
