@@ -764,10 +764,40 @@ function atualizarInputArea(eu, config) {
 
   if (morto)         setActionStatus('Seu personagem está fora de combate.');
   else if (narrando) setActionStatus('⏳ Narrando...');
-  else if (jaEnviou) setActionStatus('⏳ Aguardando ação dos jogadores...');
-  else               setActionStatus('Aguardando ação dos jogadores...');
+  else if (jaEnviou) setActionStatus('⏳ Aguardando os outros jogadores...');
+  else               setActionStatus('');
+
+  atualizarPromptAcao(eu, config);
 
   if (iniciarWrap && config.estado !== 'lobby') iniciarWrap.style.display = 'none';
+}
+
+function atualizarPromptAcao(eu, config) {
+  const storyContent = document.getElementById('story-content');
+  if (!storyContent) return;
+
+  let card = document.getElementById('action-prompt-card');
+  const deveExibir = eu && config.estado === 'aguardando' && eu.acao1 == null && eu.vivo && eu.consciente;
+
+  if (!deveExibir) {
+    if (card) card.remove();
+    return;
+  }
+
+  if (!card) {
+    card = document.createElement('div');
+    card.id = 'action-prompt-card';
+    card.className = 'action-prompt-card';
+    card.innerHTML = `
+      <div class="apc-icon">⚔</div>
+      <div class="apc-body">
+        <div class="apc-title">Declare sua ação</div>
+        <div class="apc-sub">O que o seu personagem faz agora?</div>
+      </div>
+      <div class="apc-arrow">↓</div>`;
+    storyContent.appendChild(card);
+    scrollDown();
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════

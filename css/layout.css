@@ -791,3 +791,47 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 .skills-pericia strong { color: var(--text); display: block; margin-bottom: 2px; }
 .per-desc { color: var(--text2); line-height: 1.4; }
 .chip-adv { font-size: 11px; }
+
+/* ══ CARD DE AÇÃO DO JOGADOR ══ */
+.action-prompt-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 8px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(200,160,80,.35);
+  border-left: 3px solid var(--gold);
+  background: rgba(200,160,80,.07);
+  animation: apc-pulse 2.4s ease-in-out infinite;
+}
+@keyframes apc-pulse {
+  0%, 100% { border-left-color: rgba(200,160,80,.4); background: rgba(200,160,80,.05); }
+  50%       { border-left-color: var(--gold);         background: rgba(200,160,80,.12); }
+}
+.apc-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.apc-body { flex: 1; }
+.apc-title {
+  font-size: 12px;
+  color: var(--gold);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+.apc-sub {
+  font-size: 11px;
+  color: var(--text2);
+  margin-top: 2px;
+}
+.apc-arrow {
+  color: var(--gold);
+  font-size: 18px;
+  animation: apc-bounce .9s ease-in-out infinite;
+}
+@keyframes apc-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(4px); }
+}
