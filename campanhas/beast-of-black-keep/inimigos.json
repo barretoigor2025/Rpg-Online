@@ -1,0 +1,227 @@
+{
+  "_campanha": "beast-of-black-keep",
+  "_comentario": "Roster completo de inimigos e criaturas hostis. Usado para referência de arte e para o narrador.",
+
+  "essenciais": [
+    {
+      "id": "espantalho_assombrado",
+      "nome": "Espantalho Assombrado",
+      "nome_original": "Harrowed Scarecrow",
+      "tipo": "construto",
+      "onde_aparece": "Parte 1 — ataque à Arbor Aeterna; encontros aleatórios nas Blackwoods",
+      "criador": "Choir o Necromante",
+      "descricao_arte": "Espantalho de tamanho humano feito de palha, trapos surrados e ossos presos com arame enferrujado. Vestido com roupas de fazendeiro podres. Cabeça de saco de estopa costurado com um rosto grosseiro. Olhos brilhando como brasas vermelhas. Uma mão segura uma foice enferrujada; a outra tem dedos de gravetos afiados. Postura rígida e ameaçadora, como se estivesse plantado num campo mas pronto para matar.",
+      "icon": "🪨",
+      "cor_hp": "#8a6a20",
+      "stats": { "ST": 10, "DX": 12, "IQ": 7, "HT": 10, "HP": 10 }
+    },
+    {
+      "id": "grimhollow_thool",
+      "nome": "Grimhollow Thool",
+      "tipo": "humanoide_transformado",
+      "onde_aparece": "Gloamreach (Parte 2) — 3 indivíduos: Oswald, Warin, Samir",
+      "criador": "Dendybar o Manchado (magia de transformação)",
+      "descricao_arte": "Humano transformado em criatura ogrina, tamanho grande (SM+1). Pele espessa e acinzentada com textura de couro seco, enrugada nos cotovelos e joelhos. Traços faciais ainda reconhecivelmente humanos mas distorcidos — maxilar projetado, testa protuberante, olhos turvos com irises desbotadas. Chifres vestigiais pequenos na testa. Usa couro em camadas improvisado como armadura. Carrega uma lança longa e uma faca de reserva na cinta. Há uma melancolia estranha nos gestos, como se algo humano ainda vivesse dentro.",
+      "icon": "👹",
+      "cor_hp": "#5a4a30",
+      "stats": { "ST": 15, "DX": 12, "IQ": 11, "HT": 12, "HP": 15, "SM": "+1" }
+    },
+    {
+      "id": "rei_chutter",
+      "nome": "Rei Chutter",
+      "tipo": "ettin_feiticeiro",
+      "onde_aparece": "Torre das Estrelas de Limm (Parte 3) — chefe final",
+      "descricao_arte": "Ettin de duas cabeças, massivo e imponente. Pele marrom-esverdeada áspera como casca de árvore velha. Duas cabeças numa só cerviz grossa: a cabeça esquerda tem expressão calculista e fala pausada; a direita tem olhar paranoico e fareja o ar constantemente. Usa uma capa negra encardida sobre ombros enormes. Carrega o Cajado de Limm — um báculo de pedra enegrecida com glifos élficos incandescentes gravados em espiral. Altura intimidadora, mesmo sem ser SM+1 na ficha. As duas cabeças nunca olham na mesma direção ao mesmo tempo.",
+      "icon": "👹",
+      "cor_hp": "#7a1a1a",
+      "stats": { "ST": 21, "DX": 11, "IQ": 12, "HT": 13, "HP": 21 }
+    },
+    {
+      "id": "golem_de_pergaminho",
+      "nome": "Golem de Pergaminho",
+      "tipo": "construto_voador",
+      "onde_aparece": "Torre das Estrelas de Limm — criado por Rei Chutter durante o combate (2 unidades)",
+      "criador": "Rei Chutter via Cajado de Limm",
+      "descricao_arte": "Figura humanoide feita inteiramente de livros antigos e pergaminhos dobrados e entrelaçados. Corpo sem rosto definido — apenas páginas comprimidas onde deveria haver uma cabeça, com letras élficas visíveis. Os braços terminam em páginas dobradas como garras. Flutua levemente acima do chão, as folhas na borda do corpo tremulando como asas. Quando pegam fogo, as páginas se acendem e a criatura corre desesperadamente para abraçar o inimigo mais próximo.",
+      "icon": "📜",
+      "cor_hp": "#6a5a20",
+      "stats": { "ST": 13, "DX": 12, "IQ": 8, "HT": 12, "HP": 13 }
+    },
+    {
+      "id": "mother_clutch",
+      "nome": "Mother Clutch",
+      "tipo": "horror_necrotico",
+      "onde_aparece": "Ataque ao Cnoc na Ríthe (aguarda fora enquanto esqueletos atacam); encontro noturno aleatório",
+      "criador": "Choir o Necromante",
+      "descricao_arte": "Horror de tamanho grande (SM+2) feito de membros humanos roubados de vítimas. Corpo central deformado e inchado, de onde emergem 10 braços humanos extras de tamanhos e cores diferentes, alguns com mãos ainda intactas, outros terminando em ossos expostos. Rola pelo chão usando os braços como pernas de aranha. Sem olhos visíveis — detecta por cheiro. Os braços em torno do corpo ondulam independentemente, criando a impressão de uma criatura sempre em movimento, sempre alcançando.",
+      "icon": "🕷️",
+      "cor_hp": "#3a1a3a",
+      "stats": { "ST": 13, "DX": 13, "IQ": 8, "HT": 12, "HP": 16, "SM": "+2" }
+    },
+    {
+      "id": "marrowwither",
+      "nome": "Marrowwither",
+      "nome_alternativo": "Larva de Carne",
+      "tipo": "construto_larval",
+      "onde_aparece": "Ruínas de Simithari (local 7) — 2 unidades na despensa subterrânea",
+      "criador": "Choir o Necromante",
+      "descricao_arte": "Larva de tamanho médio, corpo mole e translúcido como gelatina podre. A pele fina deixa ver ossos de outras criaturas absorvidos no interior, como se a larva os estivesse digerindo lentamente. Sem olhos nem orelhas — detecta vibração. Na pele externa, tatuagem de uma única palavra em rúnico: 'CHOIR'. Babão e lento, mas forte. Deixa rastro de líquido âmbar pútrido.",
+      "icon": "🐛",
+      "cor_hp": "#4a3a10",
+      "stats": { "ST": 11, "DX": 9, "IQ": 2, "HT": 12, "HP": 14 }
+    },
+    {
+      "id": "larva_gigante",
+      "nome": "Larva Gigante",
+      "tipo": "besta_larval",
+      "onde_aparece": "Encontros aleatórios (sul das Blackwoods); Carcaça da Larva (local 15)",
+      "descricao_arte": "Minhoca ou larva do tamanho de uma carroça (SM+2). Pele pálida-amarelada, inchada e úmida, com segmentos marcados. Baba líquido âmbar espesso em abundância. Sem membros. Mandíbulas grandes no extremo anterior com dentes voltados para dentro como anzóis. Runas necromânticas entalhadas na pele por Choir — símbolos em espiral ao longo do corpo inteiro, como se a criatura fosse uma tatuagem viva. Cheiro nauseante.",
+      "icon": "🐛",
+      "cor_hp": "#6a5a10",
+      "stats": { "ST": 18, "DX": 8, "IQ": 2, "HT": 13, "HP": 22, "SM": "+2" }
+    },
+    {
+      "id": "wraithweaver_spider",
+      "nome": "Aranha Especral",
+      "nome_original": "Wraithweaver Spider",
+      "tipo": "besta_magica",
+      "onde_aparece": "Área de Caça — norte das Blackwoods (local 8); encontros aleatórios no norte",
+      "descricao_arte": "Aranha de tamanho médio (SM 0), pele branca como osso polido sem nenhum pigmento. Oito olhos como brasas congeladas — azul gelado luminescente no escuro. Em vez de teia de seda, produz fios espectrais quase invisíveis (translúcidos como névoa) que causam visões paralisantes de morte ao toque. Patas longas e articuladas, silenciosas. Não tem mandíbulas proeminentes mas a mordida injeta veneno que causa terror. Aparência gélida e silenciosa.",
+      "icon": "🕷️",
+      "cor_hp": "#4a4a6a",
+      "stats": { "ST": 12, "DX": 13, "IQ": 3, "HT": 11, "HP": 12 }
+    },
+    {
+      "id": "manticora_albina",
+      "nome": "Manticora Albina",
+      "tipo": "besta_magica",
+      "onde_aparece": "Área de Caça — norte das Blackwoods (local 8); Mutter Grimmhaar teme e quer que os PJs matem",
+      "descricao_arte": "Manticora rara de pelagem inteiramente branca (albina). Corpo leonino grande (SM+1) com músculos proeminentes sob pelagem creme-branca. Face vagamente humanoide mas deformada — nariz achatado, boca com fileiras de dentes, olhos vermelhos de albino. Cauda longa com cluster de espinhos negros na ponta, contrastando com o branco do corpo. Asas de morcego vestigiais na espalda (pequenas demais para voar, mas ameaçadoras). A mordida deixa feridas que não curam naturalmente.",
+      "icon": "🦁",
+      "cor_hp": "#8a4a20",
+      "stats": { "ST": 18, "DX": 12, "IQ": 7, "HT": 12, "HP": 18, "SM": "+1" }
+    },
+    {
+      "id": "barkthresher",
+      "nome": "Barkthresher",
+      "nome_alternativo": "Árvore Andante",
+      "tipo": "planta_senciente",
+      "onde_aparece": "Twinfold Hollow (local 10) — enviados por Rootflayer; pedido de Brish Lorr (destruir 3)",
+      "descricao_arte": "Árvore de carvalho de tamanho médio-grande que ganhou consciência maligna. Raízes grossas usadas como pernas para movimentação lenta mas implacável. Galhos retorcidos como braços, terminando em pontas de madeira afiadas como garras. Casca enegrecida e retorcida, com padrão de veias vermelhas pulsando levemente (sangue vegetal mágico). Dois nós na casca formam olhos de âmbar avermelhado. Postura de predador vegetativo.",
+      "icon": "🌳",
+      "cor_hp": "#3a5a1a",
+      "stats": { "ST": 16, "DX": 8, "IQ": 4, "HT": 14, "HP": 20 }
+    },
+    {
+      "id": "esqueleto_lanceiro",
+      "nome": "Esqueleto Lanceiro",
+      "nome_original": "Skeleton Spearman",
+      "tipo": "morto_vivo",
+      "onde_aparece": "Ataque ao Cnoc na Ríthe (12 unidades); Gloamreach (2 unidades élfica-animadas)",
+      "criador": "Choir o Necromante",
+      "descricao_arte": "Esqueleto humano completamente reanimado. Ossos tingidos de cinza-esverdeado por magia necromântica de Choir — não são brancos, têm uma patina verde-podre. Olhos com chama verde fria nos soquetes. Armado com uma lança élfica negra (comprida, fina, com ponta de metal escurecido). Nenhuma armadura. Movimentos mecânicos e silenciosos. Alguns ainda têm fragmentos de roupa esfarrapada presa entre os ossos.",
+      "icon": "💀",
+      "cor_hp": "#3a4a2a",
+      "stats": { "ST": 11, "DX": 11, "IQ": 8, "HT": 12, "HP": 11 }
+    },
+    {
+      "id": "kobold_azul",
+      "nome": "Kobold de Pele Azul",
+      "tipo": "humanoide",
+      "onde_aparece": "Kobold-Town (local 14) e redondezas — centenas disponíveis",
+      "descricao_arte": "Humanoide pequeno (SM-1), pele azul-ardósia escura quase azul-marinho. Orelhas longas e pontiagudas que tremem com emoção. Olhos amarelo-âmbar com pupila vertical. Nariz aguçado. Dentes pequenos e afiados. Armados com arcos curtos primitivos, lanças de bambu e adagas de sílex. Vestem pedaços de couro mal curtido e trapos capturados de viajantes. Expressão variável: covarde quando em minoria, arrogante em bando.",
+      "icon": "🐊",
+      "cor_hp": "#2a4a6a",
+      "stats": { "ST": 8, "DX": 12, "IQ": 8, "HT": 10, "HP": 8 }
+    },
+    {
+      "id": "elfo_sombrio",
+      "nome": "Elfo Sombrio",
+      "nome_original": "Dark Elf of Kalos",
+      "tipo": "humanoide",
+      "onde_aparece": "Acampamento Élfico (local 5); encontros aleatórios no norte; carroça tombada (local 2)",
+      "descricao_arte": "Élfico de estatura média, traços afiados e angulosos. Pele cinza-esverdeada escura, não negra — mais como pedra de ardósia. Cabelo branco ou prateado, geralmente preso. Olhos sem íris visível — toda a esclera é cinza-prata. Armadura de couro élfica negra, bem articulada e silenciosa. Arco longo com flechas de ponta preta. Expressão permanentemente hostil e superior. Porte altivo e furtivo ao mesmo tempo.",
+      "icon": "🏹",
+      "cor_hp": "#2a3a4a",
+      "stats": { "ST": 11, "DX": 13, "IQ": 11, "HT": 11, "HP": 11 }
+    }
+  ],
+
+  "encontros": [
+    {
+      "id": "javali_ensandecido",
+      "nome": "Javali Ensandecido",
+      "tipo": "besta",
+      "onde_aparece": "Encruzilhada (local 3) — único encontro de história",
+      "descricao_arte": "Javali macho adulto enorme, espumando pela boca com olhos completamente vermelhos de raiva e dor. Uma lança de caçador está fincada profundamente nas costas, partida pela metade — e ainda há um braço humano decepado agarrado à lança, a mão fechada numa garra de agonia. A criatura corre sem direção, ferida e desesperada.",
+      "icon": "🐗",
+      "stats": { "ST": 14, "DX": 11, "IQ": 3, "HT": 12, "HP": 14 }
+    },
+    {
+      "id": "quay_grabber",
+      "nome": "Quay Grabber",
+      "nome_alternativo": "Half-troll de Ruzalka",
+      "tipo": "meio_troll",
+      "onde_aparece": "Gruta Afogada — Wane Deep, sala 3 (submersa)",
+      "descricao_arte": "Meio-troll aquático, servidor pessoal de Ruzalka. Corpo grande e curvado de troll, pele esverdeada coberta de algas lacustres e conchas presas na pele como parasitas. Olhos amarelos adaptados à escuridão submersa. Mãos enormes com dedos membranosos. Coleciona itens roubados que carrega presos ao cinto de couro putrefato. Vive no fundo da ruína submersa e ataca qualquer intruso.",
+      "icon": "🧌",
+      "stats": { "ST": 15, "DX": 10, "IQ": 6, "HT": 13, "HP": 17 }
+    },
+    {
+      "id": "caranguejo_gigante",
+      "nome": "Caranguejo Gigante",
+      "tipo": "besta",
+      "onde_aparece": "Gruta Afogada — Wane Deep, sala 4 (1d unidades)",
+      "descricao_arte": "Caranguejo de água doce de tamanho médio a grande (SM 0 a +1). Carapaça azul-negra com reflexos roxos iridescentes. Pinças enormes e simétricas, a da direita levemente maior. Olhos em pedúnculo. Mandíbulas laterais. Rápido debaixo d'água, mais lento em terra. Servem Ruzalka como guardas do corredor submerso.",
+      "icon": "🦀",
+      "stats": { "ST": 14, "DX": 12, "IQ": 1, "HT": 12, "HP": 14 }
+    },
+    {
+      "id": "log_wife",
+      "nome": "Log-Wife",
+      "tipo": "espirito_vegetal",
+      "onde_aparece": "Carcaça da Larva (local 15) — espírito da árvore; persegue quem colher os cogumelos",
+      "descricao_arte": "Espírito feminino de uma árvore morta. Corpo superior humanoide: mulher anciã de aparência etérea, semitranslúcida, cabelos de fibras de árvore brancas. Corpo inferior funde-se diretamente com o tronco podre e raízes de onde ela habita — não tem pernas, apenas raízes que se movem como tentáculos. Chora suavemente com um som de galhos estralando. Quando ameaçada, as raízes se esticam para agarrar tornozelos.",
+      "icon": "🌿",
+      "stats": { "ST": 12, "DX": 10, "IQ": 7, "HT": 11, "HP": 14 }
+    },
+    {
+      "id": "ankle_snapper",
+      "nome": "Leguminosa-Tornozelo",
+      "nome_original": "Ankle Snapper",
+      "tipo": "planta_carnivora",
+      "onde_aparece": "Encontros aleatórios — norte das Blackwoods",
+      "descricao_arte": "Raízes carnívoras que saem do solo da floresta. Visualmente indetectáveis até o momento do ataque — parecem raízes comuns até se moverem. Marrom-avermelhadas com pontas endurecidas como garra vegetal. Emergem em grupos de 3-5 do chão ao detectar vibração de passos. Enrolam no tornozelo da vítima e tentam puxá-la para baixo. Quando sem vítima, movem-se suavemente como tentáculos subaquáticos.",
+      "icon": "🌿",
+      "stats": { "ST": 10, "DX": 14, "IQ": 0, "HT": 10, "HP": 8 }
+    },
+    {
+      "id": "troll_moss_belly",
+      "nome": "Moss-Belly",
+      "nome_alternativo": "Troll das Blackwoods",
+      "tipo": "troll",
+      "onde_aparece": "Encontros aleatórios — sul das Blackwoods; sequestra pessoas para assar",
+      "descricao_arte": "Troll de floresta alto (SM+1), pele esverdeada e áspera. A característica marcante: ventre e espalda cobertos de musgo vivo denso — o musgo é real, cresceu na pele espessa do troll como jardim parasita, daí o apelido Moss-Belly. Olhos pequenos e amarelados. Boca larga com dentes irregulares. Carrega uma clava feita de tronco de árvore jovem, ainda com galhos presos. Fome insaciável; cheira a terra úmida e matéria orgânica.",
+      "icon": "🧌",
+      "stats": { "ST": 17, "DX": 10, "IQ": 5, "HT": 13, "HP": 22 }
+    },
+    {
+      "id": "bugbear_assassino",
+      "nome": "Bugbear Assassino",
+      "tipo": "humanoide",
+      "onde_aparece": "Encontros aleatórios — sul das Blackwoods; procurados, conhecem pouco da floresta",
+      "descricao_arte": "Bugbear de pelagem marrom-escura quase negra nos ombros, mais clara no ventre. Musculoso e surpreendentemente furtivo para o tamanho — patas acolchoadas. Cara de urso com focinho curto e orelhas arredondadas. Olhos vermelhos cansados. Carrega adagas de faca de qualidade razoável e um arco curto. Expressão permanentemente irritada e ameaçadora, mas visivelmente exausta — são foragidos, não guerreiros em campanha.",
+      "icon": "🐻",
+      "stats": { "ST": 14, "DX": 12, "IQ": 8, "HT": 11, "HP": 14 }
+    },
+    {
+      "id": "orc_bandido",
+      "nome": "Orc Bandido",
+      "tipo": "humanoide",
+      "onde_aparece": "Encontros noturnos aleatórios — emboscada com flechas",
+      "descricao_arte": "Orc de estatura média, pele esverdeada de tom oliva escuro. Presas inferiores discretas mas visíveis. Olhos amarelos adaptados ao escuro. Usa armadura de couro remendada com peças roubadas de viajantes — mistura desigual de estilos. Arco curto para emboscada, espada curta para o combate próximo. Exausto e irritado, sinais de que são uma tropa derrotada tentando sobreviver.",
+      "icon": "⚔️",
+      "stats": { "ST": 12, "DX": 11, "IQ": 8, "HT": 11, "HP": 12 }
+    }
+  ]
+}
