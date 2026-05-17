@@ -180,7 +180,8 @@ const NPC_DATA = {
   'Aelar':            { icon: '🏹', cor: '#3a5a40', voz: 'Val-PlayAI',     portrait: 'npc_aelar_eisenli'           },
   'Finn Willowheel':  { icon: '👟', cor: '#6a5a30', voz: 'Briggs-PlayAI',  portrait: 'npc_finn_willowheel'         },
   'Dvalinn':          { icon: '⛏️', cor: '#5a4a30', voz: 'Thunder-PlayAI', portrait: 'npc_dvalinn_anao'            },
-  'Valmorien':        { icon: '🎯', cor: '#4a5a3a', voz: 'Fritz-PlayAI',   portrait: 'npc_valmorien_ysoria'        },
+  'Valmorien':        { icon: '🎯', cor: '#4a5a3a', voz: 'Fritz-PlayAI',   portrait: 'npc_valmorien'               },
+  'Ysoria':           { icon: '🏹', cor: '#4a6a3a', voz: 'Nova-PlayAI',    portrait: 'npc_ysoria'                  },
   'Rootflayer':       { icon: '🌳', cor: '#3a2a1a', voz: 'Thunder-PlayAI'                                          },
 };
 
