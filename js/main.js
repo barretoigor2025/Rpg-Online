@@ -463,16 +463,31 @@ function renderizarSegmentos(container, segs, falas) {
       }
     } else {
       // Bolha inline permanente na história (para releitura cronológica)
-      const npc    = getNpcData(it.nome);
+      // Personagem jogador → bolha à DIREITA; NPC → à ESQUERDA
+      const jogEntry = Object.values(_jogadoresCache).find(j =>
+        j.nome && it.nome.toLowerCase().includes(j.nome.toLowerCase())
+      );
+      const isDireita = !!jogEntry;
+      let cor, portraitSrc, icon;
+      if (isDireita) {
+        const sexo = jogEntry.sexo || 'm';
+        cor        = '#4a7090';
+        portraitSrc = `sprites/${jogEntry.classe}_${sexo}.png`;
+        icon       = '🧑';
+      } else {
+        const npc = getNpcData(it.nome);
+        cor        = npc.cor;
+        portraitSrc = npc.portrait ? `sprites/${npc.portrait}.png` : '';
+        icon       = npc.icon;
+      }
       const bubble = document.createElement('div');
-      bubble.className = 'dialogo-inline';
-      const portraitSrc = npc.portrait ? `sprites/${npc.portrait}.png` : '';
+      bubble.className = `dialogo-inline ${isDireita ? 'direita' : 'esquerda'}`;
       bubble.innerHTML = `
-        <div class="dialogo-inline-portrait" style="background:${npc.cor}22;border-color:${npc.cor}55">
+        <div class="dialogo-inline-portrait" style="background:${cor}22;border-color:${cor}55">
           ${portraitSrc
             ? `<img src="${portraitSrc}" alt="${it.nome}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
             : ''}
-          <span class="dialogo-inline-icon-fb" style="${portraitSrc ? 'display:none' : ''}">${npc.icon}</span>
+          <span class="dialogo-inline-icon-fb" style="${portraitSrc ? 'display:none' : ''}">${icon}</span>
         </div>
         <div class="dialogo-inline-body">
           <div class="dialogo-inline-nome">${it.nome}</div>
