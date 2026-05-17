@@ -490,6 +490,35 @@ const EQUIP_SLOTS = [
 ];
 const SLOT_LABELS = { cabeca:'Cabeça', tronco:'Tronco', mao_d:'Mão Direita', mao_e:'Mão Esquerda', pes:'Pés' };
 
+const MOCHILA_MAX = 6;
+
+const STARTER_KITS = {
+  guerreiro: {
+    equipamento: { cabeca:'Elmo de Ferro', tronco:'Cota de Malha', mao_d:'Espada Longa', mao_e:'Escudo de Madeira', pes:'Botas de Couro' },
+    mochila: { pocao_de_cura:{ nome:'Poção de Cura', qtd:1 }, tocha:{ nome:'Tocha', qtd:2 } }
+  },
+  mago: {
+    equipamento: { cabeca:'Chapéu do Aprendiz', tronco:'Manto Arcano', mao_d:'Cajado de Madeira', mao_e:null, pes:'Sandálias de Couro' },
+    mochila: { componentes:{ nome:'Componentes de Feitiço', qtd:5 }, tocha:{ nome:'Tocha', qtd:1 } }
+  },
+  ladino: {
+    equipamento: { cabeca:'Capuz de Sombra', tronco:'Colete de Couro', mao_d:'Adaga', mao_e:'Adaga Curta', pes:'Botas Silenciosas' },
+    mochila: { ferramentas:{ nome:'Ferramentas de Ladrão', qtd:1 }, corda:{ nome:'Corda', qtd:1 }, pocao:{ nome:'Poção de Cura', qtd:1 } }
+  },
+  arqueiro: {
+    equipamento: { cabeca:'Capuz de Caçador', tronco:'Gibão de Couro', mao_d:'Arco Curto', mao_e:'Aljava de Flechas', pes:'Botas de Trilha' },
+    mochila: { flechas:{ nome:'Flechas', qtd:20 }, faca_de_caca:{ nome:'Faca de Caça', qtd:1 } }
+  },
+  barbaro: {
+    equipamento: { cabeca:'Tiara de Ossos', tronco:'Pelagem de Urso', mao_d:'Machado de Batalha', mao_e:null, pes:'Botas de Couro Grossa' },
+    mochila: { pedra_amolar:{ nome:'Pedra de Amolar', qtd:1 }, racao:{ nome:'Ração de Viagem', qtd:3 } }
+  },
+  clerigo: {
+    equipamento: { cabeca:'Elmo Abençoado', tronco:'Armadura Acolchoada', mao_d:'Mangual Sagrado', mao_e:'Escudo com Símbolo Sagrado', pes:'Sandálias Consagradas' },
+    mochila: { agua_benta:{ nome:'Água Benta', qtd:2 }, ervas:{ nome:'Ervas Medicinais', qtd:2 } }
+  },
+};
+
 window.equiparSlotPrompt = function(slot) {
   const eu = _jogadoresCache[myUid];
   if (!eu || !mySala) return;
@@ -497,11 +526,101 @@ window.equiparSlotPrompt = function(slot) {
   const label = SLOT_LABELS[slot] || slot;
   const novoItem = prompt(`${label} — O que está equipando?\n(deixe vazio para desequipar)`, atual);
   if (novoItem === null) return;
-  const item = novoItem.trim() || null;
+  const nome = novoItem.trim();
+  if (!nome && atual) { window.desequiparParaMochila(slot); return; }
+  const item = nome || null;
   const ups = {};
   ups[`salas/${mySala}/jogadores/${myUid}/equipamento/${slot}`] = item;
   ups[`personagens/${myUid}/equipamento/${slot}`] = item;
-  update(ref(db), ups).then(() => toast(item ? `${label}: ${item}` : `${label} desequipado`, 2000));
+  update(ref(db), ups).then(() => {
+    toast(item ? `${label}: ${item}` : `${label} desequipado`, 2000);
+    const panel = document.getElementById('skills-panel');
+    if (panel?.style.display === 'flex') { toggleSkillsPanel(); toggleSkillsPanel(); }
+  });
+};
+
+window.desequiparParaMochila = async function(slot) {
+  const eu = _jogadoresCache[myUid];
+  if (!eu || !mySala) return;
+  const item = (eu.equipamento || {})[slot];
+  if (!item) return;
+  const mochila = eu.mochila || {};
+  const slug = item.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') || `item_${Date.now()}`;
+  const jaExiste = !!mochila[slug];
+  if (!jaExiste && Object.keys(mochila).length >= MOCHILA_MAX) {
+    toast(`Mochila cheia! Desequipe algo antes.`, 2500); return;
+  }
+  const ups = {};
+  ups[`salas/${mySala}/jogadores/${myUid}/equipamento/${slot}`] = null;
+  ups[`personagens/${myUid}/equipamento/${slot}`] = null;
+  if (jaExiste) {
+    const qtdAtual = mochila[slug].qtd || 1;
+    ups[`salas/${mySala}/jogadores/${myUid}/mochila/${slug}/qtd`] = qtdAtual + 1;
+    ups[`personagens/${myUid}/mochila/${slug}/qtd`] = qtdAtual + 1;
+  } else {
+    ups[`salas/${mySala}/jogadores/${myUid}/mochila/${slug}`] = { nome: item, qtd: 1, slot };
+    ups[`personagens/${myUid}/mochila/${slug}`] = { nome: item, qtd: 1, slot };
+  }
+  await update(ref(db), ups);
+  toast(`${item} movido para mochila`, 2000);
+  const panel = document.getElementById('skills-panel');
+  if (panel?.style.display === 'flex') { toggleSkillsPanel(); toggleSkillsPanel(); }
+};
+
+window.equiparDaMochila = function(key) {
+  const eu = _jogadoresCache[myUid];
+  if (!eu) return;
+  const item = (eu.mochila || {})[key];
+  if (!item) return;
+  const existente = document.getElementById('slot-picker');
+  if (existente) existente.remove();
+  const slotKeys = Object.keys(SLOT_LABELS);
+  const equip = eu.equipamento || {};
+  let html = `<div id="slot-picker" class="slot-picker">`;
+  html += `<div class="slot-picker-title">Equipar "${item.nome}" em:</div>`;
+  html += `<div class="slot-picker-btns">`;
+  slotKeys.forEach(k => {
+    const ocupado = equip[k] ? ` (${equip[k]})` : '';
+    html += `<button class="slot-picker-btn" onclick="confirmarEquiparDaMochila('${key}','${k}')">${EQUIP_SLOTS.find(s=>s.key===k)?.icon||''} ${SLOT_LABELS[k]}${ocupado}</button>`;
+  });
+  html += `</div><button class="slot-picker-cancel" onclick="document.getElementById('slot-picker').remove()">Cancelar</button></div>`;
+  const el = document.getElementById('mochila-overlay');
+  if (el) el.insertAdjacentHTML('beforeend', html);
+};
+
+window.confirmarEquiparDaMochila = async function(mochilaKey, slot) {
+  const picker = document.getElementById('slot-picker');
+  if (picker) picker.remove();
+  const eu = _jogadoresCache[myUid];
+  if (!eu || !mySala) return;
+  const item = (eu.mochila || {})[mochilaKey];
+  if (!item) return;
+  const itemAnterior = (eu.equipamento || {})[slot];
+  const mochila = eu.mochila || {};
+  const ups = {};
+  ups[`salas/${mySala}/jogadores/${myUid}/equipamento/${slot}`] = item.nome;
+  ups[`personagens/${myUid}/equipamento/${slot}`] = item.nome;
+  if ((item.qtd || 1) <= 1) {
+    ups[`salas/${mySala}/jogadores/${myUid}/mochila/${mochilaKey}`] = null;
+    ups[`personagens/${myUid}/mochila/${mochilaKey}`] = null;
+  } else {
+    ups[`salas/${mySala}/jogadores/${myUid}/mochila/${mochilaKey}/qtd`] = (item.qtd || 1) - 1;
+    ups[`personagens/${myUid}/mochila/${mochilaKey}/qtd`] = (item.qtd || 1) - 1;
+  }
+  if (itemAnterior) {
+    const oldSlug = itemAnterior.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') || `item_${Date.now()}`;
+    const jaExisteOld = !!mochila[oldSlug];
+    if (jaExisteOld) {
+      ups[`salas/${mySala}/jogadores/${myUid}/mochila/${oldSlug}/qtd`] = (mochila[oldSlug].qtd || 1) + 1;
+      ups[`personagens/${myUid}/mochila/${oldSlug}/qtd`] = (mochila[oldSlug].qtd || 1) + 1;
+    } else if (Object.keys(mochila).length < MOCHILA_MAX || mochilaKey === oldSlug) {
+      ups[`salas/${mySala}/jogadores/${myUid}/mochila/${oldSlug}`] = { nome: itemAnterior, qtd: 1, slot };
+      ups[`personagens/${myUid}/mochila/${oldSlug}`] = { nome: itemAnterior, qtd: 1, slot };
+    }
+  }
+  await update(ref(db), ups);
+  toast(`${item.nome} equipado em ${SLOT_LABELS[slot]}`, 2000);
+  setTimeout(() => renderizarMochila(), 200);
 };
 
 window.toggleMochila = function() {
@@ -520,13 +639,17 @@ function renderizarMochila() {
   const eu = _jogadoresCache[myUid];
   const mochila = eu?.mochila || {};
   const items = Object.entries(mochila).sort(([,a],[,b]) => (a.nome||'').localeCompare(b.nome||''));
-  let h = `<div class="mochila-header"><span>🎒 Mochila</span><button class="mochila-close" onclick="toggleMochila()">✕</button></div>`;
+  const count = items.length;
+  const isFull = count >= MOCHILA_MAX;
+  let h = `<div class="mochila-header"><span>🎒 Mochila <small class="mochila-count">${count}/${MOCHILA_MAX}</small></span><button class="mochila-close" onclick="toggleMochila()">✕</button></div>`;
   h += `<div class="mochila-items">`;
   if (!items.length) h += `<div class="mochila-vazia">Mochila vazia</div>`;
   items.forEach(([key, it]) => {
+    const equippable = !!it.slot;
     h += `<div class="mochila-item">
       <span class="mochila-item-nome">${it.nome}</span>
       <div class="mochila-item-qtd">
+        ${equippable ? `<button class="mochila-equip-btn" onclick="equiparDaMochila('${key}')" title="Equipar">⚔</button>` : ''}
         <button class="mochila-qty-btn" onclick="ajustarMochila('${key}',${(it.qtd||1)-1})">−</button>
         <span>${it.qtd||1}</span>
         <button class="mochila-qty-btn" onclick="ajustarMochila('${key}',${(it.qtd||1)+1})">+</button>
@@ -535,9 +658,9 @@ function renderizarMochila() {
   });
   h += `</div>`;
   h += `<div class="mochila-add">
-    <input type="text" id="mochila-new-item" placeholder="Adicionar item..." maxlength="50" onkeydown="if(event.key==='Enter')adicionarMochila()">
-    <input type="number" id="mochila-new-qtd" value="1" min="1" max="99">
-    <button class="btn-sm" onclick="adicionarMochila()">+</button>
+    <input type="text" id="mochila-new-item" placeholder="${isFull ? 'Mochila cheia!' : 'Adicionar item...'}" maxlength="50" ${isFull ? 'disabled' : ''} onkeydown="if(event.key==='Enter')adicionarMochila()">
+    <input type="number" id="mochila-new-qtd" value="1" min="1" max="99" ${isFull ? 'disabled' : ''}>
+    <button class="btn-sm" onclick="adicionarMochila()" ${isFull ? 'disabled' : ''}>+</button>
   </div>`;
   el.innerHTML = h;
 }
@@ -561,10 +684,15 @@ window.adicionarMochila = async function() {
   const qtdEl  = document.getElementById('mochila-new-qtd');
   const nome = nomeEl?.value?.trim();
   if (!nome || !mySala) return;
+  const eu = _jogadoresCache[myUid];
+  const mochila = eu?.mochila || {};
   const qtd = Math.max(1, Math.min(99, +(qtdEl?.value) || 1));
   const slug = nome.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') || `item_${Date.now()}`;
-  const snap = await get(ref(db, `salas/${mySala}/jogadores/${myUid}/mochila/${slug}`));
-  const qtdAtual = snap.exists() ? (snap.val().qtd || 0) : 0;
+  const jaExiste = !!mochila[slug];
+  if (!jaExiste && Object.keys(mochila).length >= MOCHILA_MAX) {
+    toast(`Mochila cheia! Máximo de ${MOCHILA_MAX} itens.`, 2500); return;
+  }
+  const qtdAtual = mochila[slug]?.qtd || 0;
   const ups = {};
   ups[`salas/${mySala}/jogadores/${myUid}/mochila/${slug}`] = { nome, qtd: qtdAtual + qtd };
   ups[`personagens/${myUid}/mochila/${slug}`] = { nome, qtd: qtdAtual + qtd };
@@ -659,6 +787,7 @@ window.toggleSkillsPanel = function() {
     } else {
       const item = equip[s.key] || null;
       html += `<div class="equip-slot ${item ? 'ocupado' : ''}" onclick="equiparSlotPrompt('${s.key}')" title="${s.hint}">
+        ${item ? `<button class="equip-slot-remove" onclick="event.stopPropagation();desequiparParaMochila('${s.key}')" title="Mover para mochila">✕</button>` : ''}
         <div class="equip-slot-icon">${s.icon}</div>
         <div class="equip-slot-label">${s.label}</div>
         <div class="equip-slot-item">${item || '— vazio —'}</div>
@@ -923,12 +1052,18 @@ window.criarSala = async function() {
 
   // Criar ou atualizar perfil persistente
   if (!charSnap.exists()) {
+    const kit = STARTER_KITS[p.classe];
+    if (kit) {
+      jogData.equipamento = kit.equipamento || {};
+      jogData.mochila = Object.fromEntries(Object.entries(kit.mochila || {}).map(([k,v]) => [k, { ...v }]));
+    }
     await set(ref(db, `personagens/${myUid}`), {
       nome: p.nome, classe: p.classe, sexo: p.sexo, uid: myUid,
       STR: p.STR, DEX: p.DEX, CON: p.CON, INT: p.INT, WIS: p.WIS, CHA: p.CHA,
       hp: jogData.hp, maxHp: p.maxHp, ac: p.ac, init: p.init,
       fort: p.fort, ref: p.ref, will: p.will,
-      pericias: p.pericias, vivo: true, xp: 0, nivel: 1
+      pericias: p.pericias, vivo: true, xp: 0, nivel: 1,
+      equipamento: jogData.equipamento, mochila: jogData.mochila
     });
   } else {
     await update(ref(db, `personagens/${myUid}`), {
@@ -982,12 +1117,18 @@ window.entrarSala = async function() {
   if (charData?.hp != null) jogData.hp = Math.min(charData.hp, p.maxHp);
 
   if (!charSnap.exists()) {
+    const kit = STARTER_KITS[p.classe];
+    if (kit) {
+      jogData.equipamento = kit.equipamento || {};
+      jogData.mochila = Object.fromEntries(Object.entries(kit.mochila || {}).map(([k,v]) => [k, { ...v }]));
+    }
     await set(ref(db, `personagens/${myUid}`), {
       nome: p.nome, classe: p.classe, sexo: p.sexo, uid: myUid,
       STR: p.STR, DEX: p.DEX, CON: p.CON, INT: p.INT, WIS: p.WIS, CHA: p.CHA,
       hp: jogData.hp, maxHp: p.maxHp, ac: p.ac, init: p.init,
       fort: p.fort, ref: p.ref, will: p.will,
-      pericias: p.pericias, vivo: true, xp: 0, nivel: 1
+      pericias: p.pericias, vivo: true, xp: 0, nivel: 1,
+      equipamento: jogData.equipamento, mochila: jogData.mochila
     });
   } else {
     await update(ref(db, `personagens/${myUid}`), {
@@ -1835,6 +1976,7 @@ XP: conceda 10-50 pts por vitória ou feito relevante.
 TITULO/POSSE/REPUTACAO: use quando a narrativa conferir recompensas concretas ou reconhecimento formal.
 EQUIPAR: slots válidos — cabeca, tronco, mao_d, mao_e, pes. Item vazio = desequipar.
 ITEM_BAG: qtd positiva = adicionar, negativa = remover da mochila.
+VALIDAÇÃO DE EQUIPAMENTO: o jogador APENAS usa armas/itens que constam em EQUIP ou MOCHILA. Se declarar usar algo que não possui, narre o improviso ("sem espada, usa os punhos") ou falha — NUNCA invente itens nem ignore a ausência.
 
 DIÁLOGOS — sistema de bolhas inline. Regras OBRIGATÓRIAS:
 1. Quando um NPC fala, descreva a ação de falar (terminando em dois-pontos) e coloque a tag na linha seguinte:
