@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teste — Sistema de Diálogo</title>
+<style>
+:root {
+  --bg:    #06080f;
+  --surf:  #0d1120;
+  --surf2: #111828;
+  --gold:  #c8a050;
+  --text:  #c8d0e0;
+  --text2: #8090a8;
+  --border:rgba(88,104,160,.25);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:Georgia,'Times New Roman',serif;height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── topbar ── */
+#topbar{height:42px;display:flex;align-items:center;padding:0 16px;background:var(--surf);border-bottom:1px solid var(--border);font-size:12px;color:var(--gold);letter-spacing:2px;}
+
+/* ── story ── */
+#story{flex:1;overflow-y:auto;padding:16px 14px 8px;display:flex;flex-direction:column;gap:8px;scroll-behavior:smooth;}
+.msg-gm{background:rgba(12,16,28,.7);border-left:3px solid var(--gold);padding:10px 14px;border-radius:0 8px 8px 0;line-height:1.7;font-size:14px;color:#d8c8a8;animation:fadein .3s ease;}
+.msg-player{background:rgba(20,30,20,.45);border-left:2px solid rgba(76,175,80,.4);padding:8px 12px;border-radius:0 6px 6px 0;font-size:13px;font-style:italic;color:#a0c0a0;animation:fadein .3s ease;}
+.msg-player-header{font-size:9px;color:rgba(76,175,80,.7);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:3px;}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ── opções de resposta ── */
+#opcoes{padding:8px 14px 6px;display:flex;flex-direction:column;gap:6px;}
+.opcao-btn{background:rgba(14,18,32,.8);border:1px solid rgba(200,160,80,.2);color:#b0a070;border-radius:7px;padding:10px 14px;text-align:left;font-family:inherit;font-size:13px;cursor:pointer;transition:all .15s;line-height:1.4;}
+.opcao-btn:hover{border-color:rgba(200,160,80,.5);color:var(--gold);background:rgba(200,160,80,.07);}
+.opcao-btn:disabled{opacity:.35;cursor:default;}
+
+/* ── DIÁLOGO NPC (bottom card) ── */
+#dialogo{position:fixed;bottom:0;left:0;right:0;z-index:50;display:none;align-items:center;gap:12px;padding:12px 14px;background:rgba(6,8,15,.97);border-top:1px solid rgba(200,160,80,.35);box-shadow:0 -4px 28px rgba(0,0,0,.65);animation:slideup .22s ease;}
+@keyframes slideup{from{transform:translateY(100%)}to{transform:none}}
+#dialogo-portrait{flex-shrink:0;width:62px;height:70px;border-radius:7px;border:1px solid rgba(200,160,80,.22);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;}
+#dialogo-body{flex:1;display:flex;flex-direction:column;gap:4px;}
+#dialogo-nome{font-size:9px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;}
+#dialogo-texto{font-size:13px;color:#e0d8c8;line-height:1.6;font-style:italic;}
+#dialogo-ok{flex-shrink:0;background:none;border:1px solid rgba(200,160,80,.28);color:var(--gold);font-size:18px;width:34px;height:34px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;align-self:flex-end;animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:.35}50%{opacity:1}}
+
+#story-bottom{height:1px;}
+</style>
+</head>
+<body>
+
+<div id="topbar">🗡️ &nbsp;FESTIVAL DE MHORIED — CENA DE DIÁLOGO</div>
+
+<div id="story">
+  <div class="msg-gm" id="msg-intro"></div>
+  <div id="story-bottom"></div>
+</div>
+
+<div id="opcoes"></div>
+
+<!-- DIÁLOGO NPC -->
+<div id="dialogo">
+  <div id="dialogo-portrait"></div>
+  <div id="dialogo-body">
+    <div id="dialogo-nome"></div>
+    <p id="dialogo-texto"></p>
+  </div>
+  <button id="dialogo-ok" onclick="avancarDialogo()">▼</button>
+</div>
+
+<script>
+// ── DADOS DOS NPCs ──
+const NPCS = {
+  'Gregoras Pellos': { icon:'🗡️', cor:'#607080' },
+  'Duquesa Catherine': { icon:'👑', cor:'#b08030' },
+  'Hobbleboot Sam':    { icon:'🥾', cor:'#5a7a4a' },
+};
+
+// ── SCRIPT DO DIÁLOGO ──
+// Cada nó tem: narração, fala NPC (opcional), opções de resposta
+const CENAS = {
+  inicio: {
+    narracao: 'O festival de Mhoried fervilha ao redor da Arbor Aeterna. Barracas de mel, prata e seda bordejam a praça central. Entre a multidão, um homem de manto escuro se destaca — Sir Gregoras Pellos, guarda-costas pessoal da Duquesa. Ele vos reconhece e se aproxima, olhando ao redor antes de falar em voz baixa:',
+    fala: { npc:'Gregoras Pellos', texto:'As Blackwoods começam a poucas milhas daqui. Preciso de aventureiros que não façam perguntas ao Rei Chutter. Oswald ainda está lá dentro.' },
+    opcoes: [
+      { label:'🗣 "Quem é Oswald?"', proximo:'oswald' },
+      { label:'🏰 "O que acontece no castelo?"', proximo:'castelo' },
+      { label:'💰 "Qual a recompensa?"', proximo:'recompensa' },
+    ]
+  },
+
+  oswald: {
+    narracaoPlayer: '"Quem é Oswald?"',
+    narracao: 'A mandíbula de Gregoras se contrai. Por um instante ele desvia o olhar para a Arbor Aeterna antes de responder:',
+    fala: { npc:'Gregoras Pellos', texto:'Era meu companheiro de patrulha. Dez anos servindo juntos. Entrou no Castelo Negro três semanas atrás para investigar os desaparecimentos — seis aldeões sumidos em duas semanas. Nunca voltou. Mas... vi fumaça saindo de uma janela ontem à noite. Alguém ainda está lá dentro.' },
+    opcoes: [
+      { label:'🧐 "Que desaparecimentos?"', proximo:'desaparecimentos' },
+      { label:'🔥 "Fumaça de qual janela?"', proximo:'fumaca' },
+      { label:'⚠️ "Por que o Rei proibe investigações?"', proximo:'rei' },
+    ]
+  },
+
+  castelo: {
+    narracaoPlayer: '"O que acontece no castelo?"',
+    narracao: 'Gregoras puxa os dois para trás de uma barraca de especiarias. Sua voz cai ainda mais:',
+    fala: { npc:'Gregoras Pellos', texto:'Relatos de luzes nas janelas. Sons à noite — não de humanos. Aldeões que passaram perto juram ter ouvido risadas vindas dos porões. O último dono era o Barão Blackwood, morreu sem herdeiros há dois meses. O castelo deveria estar vazio.' },
+    opcoes: [
+      { label:'👻 "Sons de que tipo?"', proximo:'sons' },
+      { label:'🧐 "Quem eram os aldeões desaparecidos?"', proximo:'desaparecimentos' },
+      { label:'⚠️ "Por que o Rei proibe investigações?"', proximo:'rei' },
+    ]
+  },
+
+  recompensa: {
+    narracaoPlayer: '"Qual é a recompensa?"',
+    narracao: 'Um raro sorriso cruza o rosto seco de Gregoras:',
+    fala: { npc:'Gregoras Pellos', texto:'A Duquesa Catherine oferece cinquenta moedas de ouro por Oswald — vivo. E mais vinte pelo que quer que esteja causando os desaparecimentos. Pessoalmente, posso adicionar minha espada a qualquer causa futura que vocês abracem. Uma palavra minha abre portas em Mhoried.' },
+    opcoes: [
+      { label:'🤝 "Aceitamos o trabalho."', proximo:'aceitar' },
+      { label:'🗣 "Queremos mais informações primeiro."', proximo:'oswald' },
+      { label:'❌ "Não é negócio suficiente."', proximo:'recusa' },
+    ]
+  },
+
+  sons: {
+    narracaoPlayer: '"Sons de que tipo?"',
+    narracao: 'Gregoras hesita, como se a memória o incomodasse:',
+    fala: { npc:'Gregoras Pellos', texto:'Crianças rindo. Mas não havia crianças por quilômetros. E depois... silêncio absoluto. O tipo de silêncio que faz os cavalos recusarem a andar. Ouvi isso pessoalmente, há três noites. Não sou homem de superstição — mas tampouco sou tolo.' },
+    opcoes: [
+      { label:'🤝 "Iremos investigar."', proximo:'aceitar' },
+      { label:'🧐 "Quem eram os aldeões desaparecidos?"', proximo:'desaparecimentos' },
+    ]
+  },
+
+  desaparecimentos: {
+    narracaoPlayer: '"Que desaparecimentos? Quem sumiu?"',
+    narracao: 'Gregoras tira um pequeno pergaminho do bolso e o passa discretamente:',
+    fala: { npc:'Gregoras Pellos', texto:'Seis nomes. Um ferreiro, duas lavadeiras, um velho caçador e dois irmãos que colhiam cogumelos na borda da floresta. Todos foram vistos seguindo em direção ao castelo — ninguém sabe dizer por quê. Como se caminhassem em sonho.' },
+    opcoes: [
+      { label:'🔮 "Parecem estar enfeitiçados."', proximo:'feitico' },
+      { label:'⚠️ "O Rei sabe disso?"', proximo:'rei' },
+      { label:'🤝 "Iremos ao castelo."', proximo:'aceitar' },
+    ]
+  },
+
+  fumaca: {
+    narracaoPlayer: '"Fumaça de qual janela exatamente?"',
+    narracao: 'Gregoras traça no ar uma silhueta aproximada do castelo com o dedo:',
+    fala: { npc:'Gregoras Pellos', texto:'Torre leste, terceiro andar. Era o escritório do Barão. Oswald conhecia esse lugar — se há alguém sobrevivendo lá dentro, faz sentido que esteja em um cômodo com lareira. Mas a torre leste também tem a menor janela. Impossível entrar por ela.' },
+    opcoes: [
+      { label:'🚪 "Como entrar no castelo?"', proximo:'entrada' },
+      { label:'🤝 "Iremos buscá-lo."', proximo:'aceitar' },
+    ]
+  },
+
+  rei: {
+    narracaoPlayer: '"Por que o Rei Chutter proíbe investigações?"',
+    narracao: 'Pela primeira vez, Gregoras olha genuinamente desconfortável. Ele abaixa a voz ao mínimo:',
+    fala: { npc:'Gregoras Pellos', texto:'Porque o Barão Blackwood era credor do Rei. Documentos importantes estão naquele castelo — documentos que o Rei preferiria ver... desaparecerem. Uma investigação oficial atrairia atenção indesejada. O que significa que vocês precisam entrar sem bandeiras, sem autorização. Como fantasmas.' },
+    opcoes: [
+      { label:'🤝 "Entendido. Faremos isso."', proximo:'aceitar' },
+      { label:'⚠️ "Isso nos coloca em risco político."', proximo:'risco' },
+    ]
+  },
+
+  feitico: {
+    narracaoPlayer: '"Parecem estar enfeitiçados — caminhando como em sonho."',
+    narracao: 'Gregoras arregala os olhos por uma fração de segundo — a mesma conclusão que ele havia resistido em admitir:',
+    fala: { npc:'Gregoras Pellos', texto:'Eu... não queria pensar nisso. Mas você pode ter razão. O Barão Blackwood colecionava artefatos. A Duquesa viu a coleção uma vez, anos atrás — disse que alguns objetos a faziam se sentir enjoada só de olhar. Se algo naquele castelo tem esse poder...' },
+    opcoes: [
+      { label:'🤝 "Precisamos entrar antes que piore."', proximo:'aceitar' },
+      { label:'🏰 "Como chegamos ao castelo?"', proximo:'entrada' },
+    ]
+  },
+
+  entrada: {
+    narracaoPlayer: '"Como chegamos ao castelo?"',
+    narracao: 'Gregoras desdobra um pedaço de couro curtido com um mapa rudimentar riscado a carvão:',
+    fala: { npc:'Gregoras Pellos', texto:'Estrada principal leva ao portão — óbvio demais. Mas há um antigo aqueduto romano ao norte que passa por baixo dos muros. O Barão o usava para irrigação. Se não foi bloqueado, é caminho livre. Uma hora a pé pela floresta, depois vocês chegam às ruínas da bomba d\'água.' },
+    opcoes: [
+      { label:'🤝 "Partimos ao anoitecer."', proximo:'aceitar' },
+    ]
+  },
+
+  risco: {
+    narracaoPlayer: '"Isso nos coloca em risco político. Se algo der errado..."',
+    narracao: 'Gregoras encontra seus olhos com uma franqueza dura:',
+    fala: { npc:'Gregoras Pellos', texto:'Se algo der errado, nunca nos conhecemos. Essa é a única promessa que posso fazer. Mas se derem certo — a Duquesa tem longa memória para favores. Escolham: risco com recompensa, ou segurança com nada.' },
+    opcoes: [
+      { label:'🤝 "Aceitamos o risco."', proximo:'aceitar' },
+      { label:'❌ "Não. Isso é demais."', proximo:'recusa' },
+    ]
+  },
+
+  aceitar: {
+    narracaoPlayer: '"Aceitamos. Iremos ao Castelo Negro."',
+    narracao: 'Um peso visível sai dos ombros de Gregoras. Ele aperta o pulso de cada um com firmeza:',
+    fala: { npc:'Gregoras Pellos', texto:'Que os deuses olhem por vocês. Oswald é um bom homem — não mereça o que quer que esteja acontecendo lá dentro. Encontrem-me aqui amanhã ao amanhecer se voltarem. E... voltem.' },
+    opcoes: [
+      { label:'🔄 Reiniciar cena', proximo:'__restart__' },
+    ]
+  },
+
+  recusa: {
+    narracaoPlayer: '"Não. Não é nossa responsabilidade."',
+    narracao: 'Gregoras assente, sem julgamento visível no rosto — apenas uma tristeza velha:',
+    fala: { npc:'Gregoras Pellos', texto:'Entendo. Não era justo pedir. Se mudarem de ideia... estarei aqui até o pôr do sol. Depois disso, precisarei encontrar outra solução.' },
+    opcoes: [
+      { label:'🔄 Reiniciar cena', proximo:'__restart__' },
+      { label:'🤔 "Espere — conte-nos mais."', proximo:'oswald' },
+    ]
+  },
+};
+
+// ── ENGINE ──
+let _cenaAtual = null;
+let _dialogoFila = [];
+let _dialogoAtivo = false;
+
+function iniciar(cenaId) {
+  if (cenaId === '__restart__') { location.reload(); return; }
+  const cena = CENAS[cenaId];
+  if (!cena) return;
+  _cenaAtual = cena;
+
+  // Adiciona mensagem do player (se houver)
+  if (cena.narracaoPlayer) {
+    const d = document.createElement('div');
+    d.className = 'msg-player';
+    d.innerHTML = `<div class="msg-player-header">⚔️ Seu personagem</div>${cena.narracaoPlayer}`;
+    document.getElementById('story').insertBefore(d, document.getElementById('story-bottom'));
+  }
+
+  // Adiciona narração
+  if (cena.narracao) {
+    const d = document.createElement('div');
+    d.className = 'msg-gm';
+    d.textContent = cena.narracao;
+    document.getElementById('story').insertBefore(d, document.getElementById('story-bottom'));
+  }
+
+  // Limpa opções
+  document.getElementById('opcoes').innerHTML = '';
+
+  // Programa diálogo NPC
+  if (cena.fala) {
+    _dialogoFila = [cena.fala];
+    mostrarDialogo();
+  } else {
+    mostrarOpcoes(cena.opcoes);
+  }
+
+  scrollDown();
+}
+
+function mostrarDialogo() {
+  if (!_dialogoFila.length) {
+    document.getElementById('dialogo').style.display = 'none';
+    mostrarOpcoes(_cenaAtual.opcoes);
+    return;
+  }
+  _dialogoAtivo = true;
+  const d = _dialogoFila.shift();
+  const npc = NPCS[d.npc] || { icon:'👤', cor:'#4a5a70' };
+
+  const portrait = document.getElementById('dialogo-portrait');
+  portrait.textContent = npc.icon;
+  portrait.style.background = npc.cor + '22';
+
+  document.getElementById('dialogo-nome').textContent = d.npc;
+  document.getElementById('dialogo-texto').textContent = `"${d.texto}"`;
+  document.getElementById('dialogo').style.display = 'flex';
+}
+
+function avancarDialogo() {
+  mostrarDialogo();
+}
+window.avancarDialogo = avancarDialogo;
+
+function mostrarOpcoes(opcoes) {
+  if (!opcoes?.length) return;
+  const cont = document.getElementById('opcoes');
+  cont.innerHTML = '';
+  opcoes.forEach(op => {
+    const btn = document.createElement('button');
+    btn.className = 'opcao-btn';
+    btn.textContent = op.label;
+    btn.onclick = () => {
+      cont.querySelectorAll('.opcao-btn').forEach(b => b.disabled = true);
+      setTimeout(() => iniciar(op.proximo), 120);
+    };
+    cont.appendChild(btn);
+  });
+  scrollDown();
+}
+
+function scrollDown() {
+  setTimeout(() => document.getElementById('story-bottom').scrollIntoView({ behavior:'smooth' }), 80);
+}
+
+// ── START ──
+document.getElementById('msg-intro').textContent =
+  'Este é um teste do sistema de diálogo. A cena se passa no Festival de Mhoried. ' +
+  'Sir Gregoras Pellos se aproxima discretamente — ele tem um pedido urgente. ' +
+  'Escolha suas respostas para explorar a conversa.';
+
+setTimeout(() => iniciar('inicio'), 600);
+</script>
+</body>
+</html>
