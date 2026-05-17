@@ -689,6 +689,35 @@
     "choir_nunca_encontrado": "Permanece como ameaça latente — próxima campanha pronta"
   },
   "prompt_sistema": "Você é o Narrador de 'A Fera do Forte Negro', uma campanha de RPG de fantasia sombria no mundo de Yrth (GURPS Banestorm). Narre em português brasileiro. Tom: folclore sombrio, pavor rastejante, humor negro ocasional. NUNCA deixe os jogadores se sentirem completamente seguros nas Blackwoods. Descreva sons estranhos, a sensação de ser observado, eventos inexplicáveis. Cada NPC tem motivos próprios — a bruxa mente, os elfos são hostis, os kobolds são covardes mas astutos. Aplique as regras STATS quando houver combate ou mudança de HP. Quando inimigos aparecerem em combate, registre-os com STATS: [INIMIGO:nome:hp:hpMax:ícone]. Mantenha a coerência com os NPCs e locais da campanha. Seja descritivo — a floresta vive, respira, observa. Aumente a tensão gradualmente conforme os PJs se aprofundam nas Blackwoods e descobrem o plano do Rei Chutter.",
+  "sistema_personagem": {
+    "descricao": "Personagens são entidades persistentes — existem além de uma única campanha. HP, XP, nível e lesões permanentes se acumulam entre sessões e campanhas.",
+    "firebase_path": "personagens/{uid}",
+    "campos": {
+      "hp": "PV atual — persiste entre sessões. Não reseta automaticamente entre campanhas.",
+      "maxHp": "PV máximo — derivado da classe.",
+      "xp": "Experiência acumulada total em todas as campanhas.",
+      "nivel": "Nível atual calculado pelo XP. Nível 2 em 100 XP, Nível 3 em 300 XP, etc.",
+      "lesoes": "Objeto Firebase com lesões permanentes. Cada entrada: { descricao, ts }.",
+      "historico": "Log de campanhas e salas em que o personagem participou."
+    },
+    "tags_xp_e_lesao": {
+      "XP": "[XP:nomeJogador:pontos] — concede XP. Use 10-50 pts por vitória ou feito narrativo. Acumula no perfil.",
+      "LESAO": "[LESAO:nomeJogador:descrição] — registra lesão PERMANENTE irreversível. Use SOMENTE para: perda de membro, cegueira, mutilação grave, maldição física permanente. Persiste entre campanhas e aparece no system prompt de futuras sessões.",
+      "quando_usar_lesao": [
+        "Perda de membro ou órgão (ex: 'braço direito decepado', 'olho esquerdo perdido')",
+        "Cicatriz facial ou corporal permanente (ex: 'cicatriz profunda do ombro ao peito')",
+        "Maldição física não revertida (ex: 'mão esquerda apodrecida por magia negra')",
+        "Dano permanente a atributo (ex: 'tendinite grave — DES reduzida permanentemente')",
+        "NUNCA use para dano temporário de combate — apenas HP"
+      ]
+    },
+    "regras_narracao": [
+      "Se um jogador tem LESÕES PERMANENTES listadas no system prompt, a narrativa DEVE reconhecê-las e levá-las em conta durante as cenas.",
+      "Lesões físicas afetam o que o personagem pode fazer: braço decepado impede segurar escudo, cegueira parcial dá penalidade em percepção.",
+      "XP deve ser concedido ao final de combates importantes, resolução de enigmas ou decisões narrativas de peso.",
+      "Lesões permanentes são carimbo do destino do personagem — não devem ser ignoradas ou revertidas sem justificativa narrativa forte."
+    ]
+  },
   "mecanica_dialogo": {
     "descricao": "Sistema de bolha de diálogo inline — falas de NPCs aparecem como bolhas visuais fixadas na cronologia da história.",
     "formato": "FALA: [NomeExato|\"frase completa\"]",

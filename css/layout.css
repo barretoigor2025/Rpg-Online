@@ -810,3 +810,54 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   0%, 100% { transform: translateY(0); }
   50%       { transform: translateY(4px); }
 }
+
+/* ══ PERSONAGEM PERSISTENTE — chips e painel ══ */
+.chip-nivel {
+  font-size: 9px;
+  color: var(--gold);
+  background: rgba(200,160,80,.12);
+  border: 1px solid rgba(200,160,80,.25);
+  border-radius: 4px;
+  padding: 1px 4px;
+  letter-spacing: .5px;
+}
+.chip-lesao {
+  font-size: 11px;
+  color: #e08040;
+  cursor: help;
+}
+
+/* XP e nível no painel de perícias */
+.skills-xp {
+  font-size: 10px;
+  color: var(--gold);
+  letter-spacing: .8px;
+  padding: 4px 0 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Lesões permanentes no painel de perícias */
+.skills-lesoes-header {
+  font-size: 9px;
+  color: #e08040;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(224,128,64,.2);
+}
+.skills-lesao-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+.skills-lesao {
+  font-size: 11px;
+  color: #c06040;
+  background: rgba(224,128,64,.07);
+  border-left: 2px solid rgba(224,128,64,.4);
+  padding: 4px 8px;
+  border-radius: 0 4px 4px 0;
+  line-height: 1.4;
+}

@@ -149,8 +149,8 @@ function setActionStatus(msg) {
 
 function limparTags(txt) {
   return txt
-    .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV|JOGADOR|AUSENTE|PRESENTE)[^\]]*\]\s*)*/gi, '')
-    .replace(/\[(?:INIMIGO|MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR):[^\]]+\]/gi, '')
+    .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV|JOGADOR|AUSENTE|PRESENTE|LESAO|XP)[^\]]*\]\s*)*/gi, '')
+    .replace(/\[(?:INIMIGO|MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR|LESAO|XP):[^\]]+\]/gi, '')
     .replace(/^\s*FALA:\s*\[[^\]]+\]\s*$/gim, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -314,7 +314,10 @@ window.toggleSkillsPanel = function() {
     html += `<span>${lbl} <strong>${eu[a]}</strong> <small>${fmt(Math.floor((eu[a]-10)/2))}</small></span>`;
   });
   html += `</div>`;
+  const nivelStr = eu.nivel > 1 ? ` · Nível ${eu.nivel}` : '';
+  const xpStr    = eu.xp != null ? ` · ⭐ ${eu.xp} XP` : '';
   html += `<div class="skills-derived"><span>❤️ PV ${eu.hp}/${eu.maxHp}</span><span>🛡️ CA ${eu.ac}</span><span>⚡ ${fmt(eu.init)}</span><span>Fort ${fmt(eu.fort)}</span><span>Ref ${fmt(eu.ref)}</span><span>Von ${fmt(eu.will)}</span></div>`;
+  if (nivelStr || xpStr) html += `<div class="skills-xp">${nivelStr}${xpStr}</div>`;
   if (hab) html += `<div class="skills-feat"><div class="skills-feat-nome">⚡ ${hab.nome}</div><div class="skills-feat-desc">${hab.desc}</div></div>`;
   if (eu.pericias?.length) {
     html += `<div class="skills-pericia-list">`;
@@ -322,6 +325,12 @@ window.toggleSkillsPanel = function() {
       const per = PERICIAS[k];
       if (per) html += `<div class="skills-pericia"><span class="per-icon">${per.icon}</span><div><strong>${per.nome}</strong><div class="per-desc">${per.desc}</div></div></div>`;
     });
+    html += `</div>`;
+  }
+  const lesoesArr = Object.values(eu.lesoes || {});
+  if (lesoesArr.length) {
+    html += `<div class="skills-lesoes-header">⚠️ Lesões Permanentes</div><div class="skills-lesao-list">`;
+    lesoesArr.forEach(l => { html += `<div class="skills-lesao">${l.descricao}</div>`; });
     html += `</div>`;
   }
   panel.innerHTML = html;
@@ -519,15 +528,47 @@ function getDadosPersonagem() {
 window.criarSala = async function() {
   const p = getDadosPersonagem();
   if (!p) return;
+
+  // Carregar perfil persistente (se existe)
+  const charSnap = await get(ref(db, `personagens/${myUid}`));
+  const charData = charSnap.exists() ? charSnap.val() : null;
+
+  // Montar dados do jogador para esta sala (com persistência)
+  const jogData = {
+    ...p, uid: myUid, ativo: true,
+    xp:    charData?.xp    ?? 0,
+    nivel: charData?.nivel ?? 1,
+    lesoes: charData?.lesoes || {},
+  };
+  if (charData?.hp != null) jogData.hp = Math.min(charData.hp, p.maxHp);
+
+  // Criar ou atualizar perfil persistente
+  if (!charSnap.exists()) {
+    await set(ref(db, `personagens/${myUid}`), {
+      nome: p.nome, classe: p.classe, sexo: p.sexo, uid: myUid,
+      STR: p.STR, DEX: p.DEX, CON: p.CON, INT: p.INT, WIS: p.WIS, CHA: p.CHA,
+      hp: jogData.hp, maxHp: p.maxHp, ac: p.ac, init: p.init,
+      fort: p.fort, ref: p.ref, will: p.will,
+      pericias: p.pericias, vivo: true, xp: 0, nivel: 1
+    });
+  } else {
+    await update(ref(db, `personagens/${myUid}`), {
+      nome: p.nome, classe: p.classe, sexo: p.sexo, maxHp: p.maxHp,
+      ac: p.ac, init: p.init, fort: p.fort, ref: p.ref, will: p.will, pericias: p.pericias
+    });
+  }
+
   const codigo = codigoAleatorio();
-  myNome  = p.nome;
+  await push(ref(db, `personagens/${myUid}/historico`), { sala: codigo, campanhaId: 'beast-of-black-keep', ts: Date.now() });
+
+  myNome   = p.nome;
   myClasse = p.classe;
-  mySala  = codigo;
-  amIHost = true;
+  mySala   = codigo;
+  amIHost  = true;
 
   await set(ref(db, `salas/${codigo}`), {
     config: { host: myUid, estado: 'lobby', rodada: 0, criadoEm: serverTimestamp() },
-    jogadores: { [myUid]: { ...p, uid: myUid, ativo: true } }
+    jogadores: { [myUid]: jogData }
   });
   onDisconnect(ref(db, `salas/${codigo}/jogadores/${myUid}/ativo`)).set(false);
   irParaJogo(codigo);
@@ -543,16 +584,45 @@ window.entrarSala = async function() {
   if (!snap.exists()) { document.getElementById('lobby-error').textContent = 'Sala não encontrada.'; return; }
 
   const data = snap.val();
-  myNome  = p.nome;
+
+  // Carregar perfil persistente
+  const charSnap = await get(ref(db, `personagens/${myUid}`));
+  const charData = charSnap.exists() ? charSnap.val() : null;
+
+  const jogData = {
+    ...p, uid: myUid, ativo: true,
+    xp:    charData?.xp    ?? 0,
+    nivel: charData?.nivel ?? 1,
+    lesoes: charData?.lesoes || {},
+  };
+  if (charData?.hp != null) jogData.hp = Math.min(charData.hp, p.maxHp);
+
+  if (!charSnap.exists()) {
+    await set(ref(db, `personagens/${myUid}`), {
+      nome: p.nome, classe: p.classe, sexo: p.sexo, uid: myUid,
+      STR: p.STR, DEX: p.DEX, CON: p.CON, INT: p.INT, WIS: p.WIS, CHA: p.CHA,
+      hp: jogData.hp, maxHp: p.maxHp, ac: p.ac, init: p.init,
+      fort: p.fort, ref: p.ref, will: p.will,
+      pericias: p.pericias, vivo: true, xp: 0, nivel: 1
+    });
+  } else {
+    await update(ref(db, `personagens/${myUid}`), {
+      nome: p.nome, classe: p.classe, sexo: p.sexo, maxHp: p.maxHp,
+      ac: p.ac, init: p.init, fort: p.fort, ref: p.ref, will: p.will, pericias: p.pericias
+    });
+  }
+  await push(ref(db, `personagens/${myUid}/historico`), { sala: code, campanhaId: 'beast-of-black-keep', ts: Date.now() });
+
+  myNome   = p.nome;
   myClasse = p.classe;
-  mySala  = code;
-  amIHost = data.config?.host === myUid;
+  mySala   = code;
+  amIHost  = data.config?.host === myUid;
 
   const existing = data.jogadores?.[myUid];
   if (existing) {
-    await update(ref(db, `salas/${code}/jogadores/${myUid}`), { ativo: true, nome: p.nome, classe: p.classe, sexo: p.sexo });
+    await update(ref(db, `salas/${code}/jogadores/${myUid}`), { ativo: true, ...jogData });
   } else {
-    await set(ref(db, `salas/${code}/jogadores/${myUid}`), { ...p, uid: myUid, ativo: true });
+    await set(ref(db, `salas/${code}/jogadores/${myUid}`), jogData);
   }
   onDisconnect(ref(db, `salas/${code}/jogadores/${myUid}/ativo`)).set(false);
   irParaJogo(code);
@@ -624,12 +694,17 @@ function renderizarJogadores(jogadores, config) {
     const cls   = CLASSES[j.classe];
     const icon  = cls?.icon || '⚔️';
     const perIcons = (j.pericias||[]).map(k => PERICIAS[k]?.icon || '').join('');
+    const lesoesArr = Object.values(j.lesoes || {});
+    const lesaoBadge = lesoesArr.length
+      ? `<span class="chip-lesao" title="${lesoesArr.map(l=>l.descricao).join(' | ')}">⚠</span>` : '';
+    const nivelBadge = j.nivel > 1 ? `<span class="chip-nivel">Nv${j.nivel}</span>` : '';
     return `<div class="player-chip ${isMe ? 'me' : ''} ${j.ativo === false ? 'offline' : ''} ${j.ausente ? 'ausente' : ''}">
       <span>${icon}</span>
       <span class="chip-name">${j.nome}</span>
       ${j.ausente ? '<span class="chip-ausente">outra cena</span>' : `<span class="chip-hp ${hpCls}">PV ${j.hp}/${j.maxHp}</span>`}
       ${!j.ausente && j.ac != null ? `<span class="chip-hp" style="color:var(--blue)">CA ${j.ac}</span>` : ''}
       ${perIcons ? `<span class="chip-adv">${perIcons}</span>` : ''}
+      ${nivelBadge}${lesaoBadge}
     </div>`;
   }).join('');
 }
@@ -889,53 +964,94 @@ function ocultarRetryUI() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  PARSEAR STATS (inimigos / HP)
+//  XP → NÍVEL
+// ═══════════════════════════════════════════════════════════════
+function calcularNivel(xp) {
+  const limites = [0, 100, 300, 600, 1000, 1500, 2100, 2800, 3600, 4500];
+  for (let i = limites.length - 1; i >= 0; i--) {
+    if (xp >= limites[i]) return i + 1;
+  }
+  return 1;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  PARSEAR STATS (inimigos / HP / lesões / XP)
 // ═══════════════════════════════════════════════════════════════
 async function processarStats(resposta, jogadores, inimigos) {
   const ups = {};
-  const statsLine = resposta.match(/STATS:\s*([^\n]+)/i)?.[1] || '';
 
   // Criar/atualizar inimigos
-  [...statsLine.matchAll(/\[INIMIGO:([^:]+):(\d+):(\d+):([^\]]+)\]/gi)].forEach(([,nome,hp,maxHp,icon]) => {
+  for (const [, nome, hp, maxHp, icon] of resposta.matchAll(/\[INIMIGO:([^:]+):(\d+):(\d+):([^\]]+)\]/gi)) {
     const key = nome.trim().replace(/\W/g,'_');
-    ups[`salas/${mySala}/inimigos/${key}`] = {
-      nome: nome.trim(), hp: +hp, maxHp: +maxHp, icon: icon.trim()
-    };
-  });
+    ups[`salas/${mySala}/inimigos/${key}`] = { nome: nome.trim(), hp: +hp, maxHp: +maxHp, icon: icon.trim() };
+  }
 
   // Atualizar HP inimigo
-  [...resposta.matchAll(/\[HP:([^:]+):(\d+)\]/gi)].forEach(([,nome,hp]) => {
+  for (const [, nome, hp] of resposta.matchAll(/\[HP:([^:]+):(\d+)\]/gi)) {
     const key = nome.trim().replace(/\W/g,'_');
     const ini = inimigos[key] || Object.values(inimigos).find(i => i.nome === nome.trim());
     if (ini) {
       const k = Object.entries(inimigos).find(([,v]) => v === ini)?.[0] || key;
       ups[`salas/${mySala}/inimigos/${k}/hp`] = +hp;
     }
-  });
+  }
 
   // Matar inimigo
-  [...resposta.matchAll(/\[MATAR:([^\]]+)\]/gi)].forEach(([,nome]) => {
+  for (const [, nome] of resposta.matchAll(/\[MATAR:([^\]]+)\]/gi)) {
     const ini = Object.entries(inimigos).find(([,v]) => v.nome === nome.trim());
     if (ini) ups[`salas/${mySala}/inimigos/${ini[0]}/hp`] = 0;
-  });
+  }
 
-  // Atualizar HP jogador
-  [...resposta.matchAll(/\[JOGADOR:([^:]+):(\d+)\]/gi)].forEach(([,nome,hp]) => {
+  // Atualizar HP jogador + persistir no perfil
+  for (const [, nome, hp] of resposta.matchAll(/\[JOGADOR:([^:]+):(\d+)\]/gi)) {
     const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
-    if (entry) ups[`salas/${mySala}/jogadores/${entry[0]}/hp`] = Math.max(0, +hp);
-  });
+    if (entry) {
+      const [uid] = entry;
+      const novoHp = Math.max(0, +hp);
+      ups[`salas/${mySala}/jogadores/${uid}/hp`] = novoHp;
+      ups[`personagens/${uid}/hp`] = novoHp;
+    }
+  }
 
   // Marcar jogador como ausente da cena atual
-  [...resposta.matchAll(/\[AUSENTE:([^\]]+)\]/gi)].forEach(([,nome]) => {
+  for (const [, nome] of resposta.matchAll(/\[AUSENTE:([^\]]+)\]/gi)) {
     const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
     if (entry) ups[`salas/${mySala}/jogadores/${entry[0]}/ausente`] = true;
-  });
+  }
 
   // Marcar jogador como presente novamente
-  [...resposta.matchAll(/\[PRESENTE:([^\]]+)\]/gi)].forEach(([,nome]) => {
+  for (const [, nome] of resposta.matchAll(/\[PRESENTE:([^\]]+)\]/gi)) {
     const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
     if (entry) ups[`salas/${mySala}/jogadores/${entry[0]}/ausente`] = false;
-  });
+  }
+
+  // Lesão permanente — grava no perfil e espelha na sala
+  for (const [, nome, desc] of resposta.matchAll(/\[LESAO:([^:]+):([^\]]+)\]/gi)) {
+    const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
+    if (entry) {
+      const [uid] = entry;
+      const lesaoId = push(ref(db, `personagens/${uid}/lesoes`)).key;
+      const lesaoData = { descricao: desc.trim(), ts: Date.now() };
+      ups[`personagens/${uid}/lesoes/${lesaoId}`] = lesaoData;
+      ups[`salas/${mySala}/jogadores/${uid}/lesoes/${lesaoId}`] = lesaoData;
+    }
+  }
+
+  // XP — acumula no perfil e espelha na sala
+  for (const [, nome, pts] of resposta.matchAll(/\[XP:([^:]+):(\d+)\]/gi)) {
+    const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
+    if (entry) {
+      const [uid] = entry;
+      const charSnap = await get(ref(db, `personagens/${uid}`));
+      const xpAtual  = charSnap.exists() ? (charSnap.val().xp || 0) : 0;
+      const novoXp   = xpAtual + (+pts);
+      const novoNivel = calcularNivel(novoXp);
+      ups[`personagens/${uid}/xp`]    = novoXp;
+      ups[`personagens/${uid}/nivel`] = novoNivel;
+      ups[`salas/${mySala}/jogadores/${uid}/xp`]    = novoXp;
+      ups[`salas/${mySala}/jogadores/${uid}/nivel`]  = novoNivel;
+    }
+  }
 
   if (Object.keys(ups).length) await update(ref(db), ups);
 }
@@ -1166,7 +1282,10 @@ function buildSystemPrompt(jogadores, inimigos) {
     const perStr = (j.pericias||[]).map(k => PERICIAS[k]?.nome).filter(Boolean).join(', ');
     const hab  = cls?.habilidade?.nome || '';
     const fmt  = v => (v >= 0 ? '+' : '') + v;
-    return `${j.nome} (${cls?.nome||j.classe}) — FOR:${j.STR} DES:${j.DEX} CON:${j.CON} INT:${j.INT} SAB:${j.WIS} CAR:${j.CHA} | PV:${j.hp}/${j.maxHp} CA:${j.ac} Init:${fmt(j.init)}${hab ? ` | Hab:${hab}` : ''}${perStr ? ` | Perícias:${perStr}` : ''}`;
+    const lesoesArr = Object.values(j.lesoes || {});
+    const lesoesStr = lesoesArr.length ? ` | LESÕES PERMANENTES:${lesoesArr.map(l=>l.descricao).join('; ')}` : '';
+    const nivelStr  = j.nivel > 1 ? ` Nv${j.nivel}` : '';
+    return `${j.nome} (${cls?.nome||j.classe}${nivelStr}) — FOR:${j.STR} DES:${j.DEX} CON:${j.CON} INT:${j.INT} SAB:${j.WIS} CAR:${j.CHA} | PV:${j.hp}/${j.maxHp} CA:${j.ac} Init:${fmt(j.init)}${hab ? ` | Hab:${hab}` : ''}${perStr ? ` | Perícias:${perStr}` : ''}${lesoesStr}`;
   }).join('\n');
 
   const iniList = Object.values(inimigos).filter(i => i.hp > 0).map(i =>
@@ -1190,8 +1309,10 @@ ${jogList}
 ${iniList ? `\nINIMIGOS EM CENA:\n${iniList}` : ''}
 
 TAGS MECÂNICAS — SOMENTE na última linha da resposta:
-STATS: [INIMIGO:nome:hp:hpMax:ícone] [HP:nome:novoHp] [MATAR:nome] [JOGADOR:nome:novoHp] [AUSENTE:nome] [PRESENTE:nome]
-Exemplo: "O espantalho cai.\nSTATS: [MATAR:Espantalho 1] [JOGADOR:Aldric:8]"
+STATS: [INIMIGO:nome:hp:hpMax:ícone] [HP:nome:novoHp] [MATAR:nome] [JOGADOR:nome:novoHp] [AUSENTE:nome] [PRESENTE:nome] [LESAO:nome:descrição] [XP:nome:pontos]
+Exemplo combate: "O espantalho cai.\nSTATS: [MATAR:Espantalho 1] [JOGADOR:Aldric:8] [XP:Aldric:20]"
+LESAO: somente lesões PERMANENTES irreversíveis (perda de membro, cegueira, cicatriz grave, maldição física). Persiste entre campanhas.
+XP: conceda 10-50 pts por vitória em combate ou feito narrativo relevante. Acumula no perfil do personagem entre sessões.
 
 DIÁLOGOS — sistema de bolhas inline. Regras OBRIGATÓRIAS:
 1. Quando um NPC fala, descreva a ação de falar (terminando em dois-pontos) e coloque a tag na linha seguinte:
