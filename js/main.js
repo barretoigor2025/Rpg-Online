@@ -278,6 +278,88 @@ function mostrarProximoTeste() {
 
 window.avancarTeste = function() { mostrarProximoTeste(); };
 
+// ═══════════════════════════════════════════════════════════════
+//  SISTEMA DE FALA DO JOGADOR
+// ═══════════════════════════════════════════════════════════════
+let _falarTom = 'normal';
+let _falarAlvo = 'Todos';
+
+function detectarAlvosContexto() {
+  const alvos = ['Todos'];
+  Object.values(_jogadoresCache).forEach(j => { if (j.uid !== myUid && j.ativo) alvos.push(j.nome); });
+  const textoRecente = Array.from(document.querySelectorAll('.msg-gm')).slice(-6).map(el => el.textContent).join(' ');
+  Object.keys(NPC_DATA).forEach(npc => { if (textoRecente.includes(npc)) alvos.push(npc); });
+  return [...new Set(alvos)];
+}
+
+window.abrirFalar = function() {
+  const overlay = document.getElementById('falar-overlay');
+  if (!overlay) return;
+  _falarTom = 'normal';
+  _falarAlvo = 'Todos';
+  const alvos = detectarAlvosContexto();
+
+  overlay.innerHTML = `
+    <div class="falar-card">
+      <div class="falar-header">
+        <span>💬 O que seu personagem diz?</span>
+        <button class="falar-close" onclick="fecharFalar()">✕</button>
+      </div>
+      <div class="falar-section-label">Tom</div>
+      <div class="falar-tom-row">
+        <button class="falar-chip falar-chip-tom active" data-tom="sussurro" onclick="selecionarTom('sussurro',this)">🤫 Sussurro</button>
+        <button class="falar-chip falar-chip-tom active" data-tom="normal"   onclick="selecionarTom('normal',this)" style="border-color:rgba(200,160,80,.6)">💬 Normal</button>
+        <button class="falar-chip falar-chip-tom"        data-tom="grito"    onclick="selecionarTom('grito',this)">📢 Grito</button>
+      </div>
+      <div class="falar-section-label">Para quem</div>
+      <div class="falar-alvo-row" id="falar-alvos">
+        ${alvos.map((a,i) => `<button class="falar-chip falar-chip-alvo${i===0?' active':''}" onclick="selecionarAlvo('${a}',this)">${a}</button>`).join('')}
+      </div>
+      <textarea class="falar-textarea" id="falar-texto" placeholder="Digite a fala do seu personagem..." rows="3" maxlength="300"></textarea>
+      <button class="falar-enviar-btn" onclick="enviarFalaPersonagem()">Enviar fala ▶</button>
+    </div>`;
+
+  // Fix: "normal" starts active, reset others
+  overlay.querySelectorAll('.falar-chip-tom').forEach(b => b.classList.toggle('active', b.dataset.tom === 'normal'));
+  overlay.style.display = 'flex';
+  setTimeout(() => overlay.querySelector('#falar-texto')?.focus(), 100);
+};
+
+window.fecharFalar = function() {
+  const el = document.getElementById('falar-overlay');
+  if (el) el.style.display = 'none';
+  const panel = document.getElementById('skills-panel');
+  if (panel) panel.style.display = 'none';
+};
+
+window.selecionarTom = function(tom, btn) {
+  _falarTom = tom;
+  btn.closest('.falar-tom-row').querySelectorAll('.falar-chip-tom').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+};
+
+window.selecionarAlvo = function(alvo, btn) {
+  _falarAlvo = alvo;
+  btn.closest('.falar-alvo-row').querySelectorAll('.falar-chip-alvo').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+};
+
+window.enviarFalaPersonagem = async function() {
+  const texto = document.getElementById('falar-texto')?.value?.trim();
+  if (!texto || !mySala) return;
+  const tomLabel = { sussurro: 'sussurra', normal: 'diz', grito: 'grita' }[_falarTom] || 'diz';
+  const alvoStr  = _falarAlvo === 'Todos' ? '' : ` para ${_falarAlvo}`;
+  const eu = _jogadoresCache[myUid];
+  const nome = eu?.nome || myNome || 'Jogador';
+  const acao = `${nome} ${tomLabel}${alvoStr}: "${texto}"`;
+
+  fecharFalar();
+  const input = document.getElementById('action-input');
+  if (input) { input.value = acao; }
+  await push(ref(db, `salas/${mySala}/historia`), { role:'user', content: acao, uid: myUid, ts: Date.now() });
+  await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), { acao1: acao });
+};
+
 async function narrarResultadoTestes(resultados, jogadores, inimigos, hist, rodada, ups) {
   const resumo = resultados.map(r =>
     `${r.nomeJog} — ${r.acao}: ${r.sucesso ? 'SUCESSO' : 'FALHA'} (rolou ${r.d20}${r.mod >= 0 ? '+' + r.mod : r.mod} = ${r.total} vs CD ${r.dc})`
@@ -504,17 +586,26 @@ window.toggleSkillsPanel = function() {
   const cls = CLASSES[eu.classe];
   const hab = cls?.habilidade;
   const fmt = v => (v >= 0 ? '+' : '') + v;
+  const sexo = eu.sexo || 'm';
+
   let html = `<div class="skills-header"><span class="skills-title">${cls?.icon||'⚔️'} ${cls?.nome||eu.classe}</span><button class="skills-close" onclick="toggleSkillsPanel()">✕</button></div>`;
+
+  // Top row: avatar + stats compacted
+  html += `<div class="skills-top-row">`;
+  html += `<img class="skills-avatar" src="sprites/${eu.classe}_${sexo}.png" alt="${cls?.nome||eu.classe}" onerror="this.src='sprites/${eu.classe}.png'">`;
+  html += `<div class="skills-stats-col">`;
   html += `<div class="skills-attrs">`;
   ['STR','DEX','CON','INT','WIS','CHA'].forEach(a => {
     const lbl = {STR:'FOR',DEX:'DES',CON:'CON',INT:'INT',WIS:'SAB',CHA:'CAR'}[a];
     html += `<span>${lbl} <strong>${eu[a]}</strong> <small>${fmt(Math.floor((eu[a]-10)/2))}</small></span>`;
   });
   html += `</div>`;
-  const nivelStr = eu.nivel > 1 ? ` · Nível ${eu.nivel}` : '';
-  const xpStr    = eu.xp != null ? ` · ⭐ ${eu.xp} XP` : '';
-  html += `<div class="skills-derived"><span>❤️ PV ${eu.hp}/${eu.maxHp}</span><span>🛡️ CA ${eu.ac}</span><span>⚡ ${fmt(eu.init)}</span><span>Fort ${fmt(eu.fort)}</span><span>Ref ${fmt(eu.ref)}</span><span>Von ${fmt(eu.will)}</span></div>`;
-  if (nivelStr || xpStr) html += `<div class="skills-xp">${nivelStr}${xpStr}</div>`;
+  html += `<div class="skills-derived"><span>❤️ ${eu.hp}/${eu.maxHp}</span><span>🛡️ ${eu.ac}</span><span>⚡${fmt(eu.init)}</span><span>Ft${fmt(eu.fort)}</span><span>Rf${fmt(eu.ref)}</span><span>Vn${fmt(eu.will)}</span></div>`;
+  const nivelStr = eu.nivel > 1 ? `Nv${eu.nivel}` : '';
+  const xpStr    = eu.xp != null ? `⭐${eu.xp} XP` : '';
+  if (nivelStr || xpStr) html += `<div class="skills-xp">${[nivelStr,xpStr].filter(Boolean).join(' · ')}</div>`;
+  html += `</div>`; // skills-stats-col
+  html += `</div>`; // skills-top-row
   if (hab) html += `<div class="skills-feat"><div class="skills-feat-nome">⚡ ${hab.nome}</div><div class="skills-feat-desc">${hab.desc}</div></div>`;
   if (eu.pericias?.length) {
     html += `<div class="skills-pericia-list">`;
@@ -576,6 +667,9 @@ window.toggleSkillsPanel = function() {
   });
   html += `</div>`;
 
+  // Botão Falar
+  html += `<div class="skills-falar-wrap"><button class="btn-falar-abrir" onclick="abrirFalar()">💬 Falar</button></div>`;
+
   panel.innerHTML = html;
   panel.style.display = 'flex';
 };
@@ -620,8 +714,9 @@ function renderFeatGrid() {
   if (!grid) return;
   grid.innerHTML = Object.entries(PERICIAS).map(([k, v]) => {
     const sel = _selectedAdvs.has(k);
-    return `<button class="adv-chip${sel ? ' selected' : ''}" onclick="toggleAdv('${k}')" title="${v.desc}">
-      ${v.icon} ${v.nome} <span class="chip-attr">${v.attr}</span>
+    return `<button class="adv-chip${sel ? ' selected' : ''}" onclick="toggleAdv('${k}')">
+      <div class="adv-chip-top">${v.icon} <strong>${v.nome}</strong> <span class="chip-attr">${v.attr}</span></div>
+      <div class="adv-chip-desc">${v.desc}</div>
     </button>`;
   }).join('');
   atualizarPreview();
