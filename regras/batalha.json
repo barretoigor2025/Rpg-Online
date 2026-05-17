@@ -1,0 +1,22 @@
+{
+  "nome": "Sistema de Batalha Inline — PADRÃO OFICIAL",
+  "versao": "1.0",
+  "descricao": "Toda ação de combate relevante gera um card visual com atacante e alvo face a face. O atacante aparece à esquerda (espelhado, olhando para o alvo) e o alvo à direita (normal — ou de costas se pego de surpresa).",
+  "formato": "ATAQUE: [NomeAtacante|NomeAlvo|\"descrição do resultado\"|surpresa]",
+  "surpresa_valores": "surpresa = 'sim' quando o alvo é pego de surpresa/emboscada (mostra sprite de costas); 'nao' em combate aberto",
+  "regras": [
+    "Use ATAQUE para TODA ação de combate relevante — ataque físico, magia ofensiva, armadilha acionada.",
+    "NomeAtacante e NomeAlvo devem ser nomes exatos de jogadores, NPCs ou inimigos registrados.",
+    "O campo resultado deve descrever o que aconteceu: acerto, erro, dano, efeito especial — em uma frase.",
+    "surpresa = 'sim' apenas se o alvo ainda não sabe que está sendo atacado (emboscada, furtividade bem-sucedida).",
+    "Múltiplos ataques na mesma rodada geram múltiplas linhas ATAQUE separadas.",
+    "Tags ATAQUE NÃO contam para o limite de palavras de narração.",
+    "Coloque as tags ATAQUE após a narração da ação, cada uma em sua própria linha.",
+    "Nunca use ATAQUE para ações não-combativas (persuasão, furtividade sem ataque, cura)."
+  ],
+  "exemplos": [
+    "O espantalho assombrado lança seus braços afiados contra o guerreiro:\nATAQUE: [Espantalho Assombrado|Hrothgar|\"Garras rasgam o ombro esquerdo — 6 de dano perfurante\"|nao]",
+    "Aproveitando a distração, Lyra mergulha nas sombras e atinge o guarda pelas costas:\nATAQUE: [Lyra|Guarda Kobold|\"Golpe pelas costas — 12 de dano + atordoado 1 rodada\"|sim]",
+    "Dois ataques em sequência:\nATAQUE: [Gregoras Pellos|Esqueleto Lanceiro|\"Espada conecta na costela — 8 de dano\"|nao]\nATAQUE: [Esqueleto Lanceiro|Gregoras Pellos|\"Lança desviada pelo escudo — erro\"|nao]"
+  ]
+}

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Preview — Diálogos RPG Online</title>
+<title>Preview — Diálogos & Batalha RPG Online</title>
 <style>
   :root {
     --bg:   #06080f;
@@ -55,6 +55,19 @@
     animation: fi .35s ease both;
   }
 
+  /* ── Ação do jogador ── */
+  .msg-player {
+    background: rgba(16,22,40,.65);
+    border-right: 3px solid rgba(80,130,200,.45);
+    color: #c0cce0;
+    padding: 8px 14px;
+    border-radius: 8px 0 0 8px;
+    font-size: 13px;
+    text-align: right;
+    font-style: italic;
+    animation: fi .35s ease both;
+  }
+
   /* ── Separador de cena ── */
   .sep {
     display: flex;
@@ -72,6 +85,12 @@
     height: 1px;
     background: rgba(200,160,80,.12);
   }
+  .sep.sep-batalha {
+    color: rgba(200,70,50,.45);
+  }
+  .sep.sep-batalha::before, .sep.sep-batalha::after {
+    background: rgba(200,70,50,.18);
+  }
 
   /* ══ BOLHA DE DIÁLOGO ══ */
   .dialogo-inline {
@@ -86,7 +105,7 @@
     animation: fi .35s ease both;
   }
 
-  /* Retrato */
+  /* Retrato — diálogo */
   .dialogo-inline-portrait {
     flex-shrink: 0;
     width: 52px;
@@ -106,16 +125,9 @@
     object-position: top center;
     display: block;
   }
-  /* Falante: espelhado para olhar em direção ao ouvinte */
-  .dialogo-inline-portrait img.espelhado {
-    transform: scaleX(-1);
-  }
+  .dialogo-inline-portrait img.espelhado { transform: scaleX(-1); }
 
-  /* Corpo */
-  .dialogo-inline-body {
-    flex: 1;
-    min-width: 0;
-  }
+  .dialogo-inline-body { flex: 1; min-width: 0; }
   .dialogo-inline-nome {
     font-size: 9px;
     color: var(--gold);
@@ -130,35 +142,106 @@
     line-height: 1.6;
   }
 
-  /* ── Animações com delays ── */
+  /* ══ CARD DE BATALHA ══ */
+  .batalha-inline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 5px 0;
+    padding: 8px 10px;
+    background: rgba(24,6,6,.80);
+    border-left: 2px solid rgba(200,70,50,.55);
+    border-radius: 0 6px 6px 0;
+    animation: fi .35s ease both;
+  }
+
+  /* Retrato — batalha */
+  .batalha-inline-portrait {
+    flex-shrink: 0;
+    width: 52px;
+    height: 70px;
+    border-radius: 5px;
+    border: 1px solid rgba(200,70,50,.25);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+  }
+  .batalha-inline-portrait img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    display: block;
+  }
+  .batalha-inline-portrait img.espelhado { transform: scaleX(-1); }
+
+  .batalha-inline-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .batalha-inline-label {
+    font-size: 9px;
+    color: #e05040;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .batalha-inline-texto {
+    font-size: 13px;
+    color: #ded0c0;
+    font-style: italic;
+    line-height: 1.55;
+  }
+  .batalha-surpresa {
+    display: inline-block;
+    background: rgba(200,50,30,.35);
+    color: #ff7a60;
+    padding: 0 5px;
+    border-radius: 3px;
+    font-size: 8px;
+    letter-spacing: 1.5px;
+    vertical-align: middle;
+    margin-left: 4px;
+  }
+
+  /* ── Animações ── */
   @keyframes fi { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:none; } }
   .story-area > *:nth-child(1)  { animation-delay: .05s }
-  .story-area > *:nth-child(2)  { animation-delay: .20s }
-  .story-area > *:nth-child(3)  { animation-delay: .36s }
-  .story-area > *:nth-child(4)  { animation-delay: .52s }
-  .story-area > *:nth-child(5)  { animation-delay: .68s }
-  .story-area > *:nth-child(6)  { animation-delay: .84s }
-  .story-area > *:nth-child(7)  { animation-delay: 1.00s }
-  .story-area > *:nth-child(8)  { animation-delay: 1.16s }
-  .story-area > *:nth-child(9)  { animation-delay: 1.32s }
-  .story-area > *:nth-child(10) { animation-delay: 1.48s }
-  .story-area > *:nth-child(11) { animation-delay: 1.64s }
-  .story-area > *:nth-child(12) { animation-delay: 1.80s }
-  .story-area > *:nth-child(13) { animation-delay: 1.96s }
-  .story-area > *:nth-child(14) { animation-delay: 2.12s }
-  .story-area > *:nth-child(15) { animation-delay: 2.28s }
-  .story-area > *:nth-child(16) { animation-delay: 2.44s }
-  .story-area > *:nth-child(17) { animation-delay: 2.60s }
-  .story-area > *:nth-child(18) { animation-delay: 2.76s }
-  .story-area > *:nth-child(19) { animation-delay: 2.92s }
-  .story-area > *:nth-child(20) { animation-delay: 3.08s }
-  .story-area > *:nth-child(n+21) { animation-delay: 3.24s }
+  .story-area > *:nth-child(2)  { animation-delay: .18s }
+  .story-area > *:nth-child(3)  { animation-delay: .32s }
+  .story-area > *:nth-child(4)  { animation-delay: .46s }
+  .story-area > *:nth-child(5)  { animation-delay: .60s }
+  .story-area > *:nth-child(6)  { animation-delay: .74s }
+  .story-area > *:nth-child(7)  { animation-delay: .88s }
+  .story-area > *:nth-child(8)  { animation-delay: 1.02s }
+  .story-area > *:nth-child(9)  { animation-delay: 1.16s }
+  .story-area > *:nth-child(10) { animation-delay: 1.30s }
+  .story-area > *:nth-child(11) { animation-delay: 1.44s }
+  .story-area > *:nth-child(12) { animation-delay: 1.58s }
+  .story-area > *:nth-child(13) { animation-delay: 1.72s }
+  .story-area > *:nth-child(14) { animation-delay: 1.86s }
+  .story-area > *:nth-child(15) { animation-delay: 2.00s }
+  .story-area > *:nth-child(16) { animation-delay: 2.14s }
+  .story-area > *:nth-child(17) { animation-delay: 2.28s }
+  .story-area > *:nth-child(18) { animation-delay: 2.42s }
+  .story-area > *:nth-child(19) { animation-delay: 2.56s }
+  .story-area > *:nth-child(20) { animation-delay: 2.70s }
+  .story-area > *:nth-child(21) { animation-delay: 2.84s }
+  .story-area > *:nth-child(22) { animation-delay: 2.98s }
+  .story-area > *:nth-child(23) { animation-delay: 3.12s }
+  .story-area > *:nth-child(24) { animation-delay: 3.26s }
+  .story-area > *:nth-child(25) { animation-delay: 3.40s }
+  .story-area > *:nth-child(26) { animation-delay: 3.54s }
+  .story-area > *:nth-child(27) { animation-delay: 3.68s }
+  .story-area > *:nth-child(28) { animation-delay: 3.82s }
+  .story-area > *:nth-child(29) { animation-delay: 3.96s }
+  .story-area > *:nth-child(n+30) { animation-delay: 4.10s }
 </style>
 </head>
 <body>
 
 <p class="preview-title">RPG Online — Preview Visual</p>
-<p class="preview-subtitle">Falante à esquerda (espelhado) · Ouvinte à direita · Olhares se encontram</p>
+<p class="preview-subtitle">Diálogos · Cards de Batalha · Falante ESQ espelhado → Ouvinte DIR</p>
 
 <div class="story-area">
 
@@ -223,24 +306,6 @@
   </div>
 </div>
 
-<!-- Gregoras corta → Gregoras ESQ espelhado | Sam DIR normal -->
-<div class="dialogo-inline">
-  <div class="dialogo-inline-portrait" style="background:#60708022;border-color:#60708055">
-    <img src="sprites/npc_gregoras_pellos.png" class="espelhado"
-         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-    <span style="display:none">🗡️</span>
-  </div>
-  <div class="dialogo-inline-body">
-    <div class="dialogo-inline-nome">Gregoras Pellos</div>
-    <div class="dialogo-inline-texto">"Coragem. Ou loucura. Ainda não sei qual dos dois ele tem. Vamos esperar chegar lá para descobrir."</div>
-  </div>
-  <div class="dialogo-inline-portrait" style="background:#5a7a4a22;border-color:#5a7a4a55">
-    <img src="sprites/npc_hobbleboot_sam.png"
-         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-    <span style="display:none">🥾</span>
-  </div>
-</div>
-
 <!-- ══ CENA II ══ -->
 <div class="sep">Cena II — O Acampamento de Mutter Grimmhaar</div>
 
@@ -284,7 +349,7 @@
   </div>
 </div>
 
-<!-- Mac Rónán avisa Theron → Mac ESQ espelhado | Theron DIR normal -->
+<!-- Mac Rónán avisa → Mac ESQ espelhado | Theron DIR normal -->
 <div class="dialogo-inline">
   <div class="dialogo-inline-portrait" style="background:#3a6a3a22;border-color:#3a6a3a55">
     <img src="sprites/npc_mac_ronan.png" class="espelhado"
@@ -303,86 +368,7 @@
 </div>
 
 <!-- ══ CENA III ══ -->
-<div class="sep">Cena III — O Salão do Duque Oswald</div>
-
-<div class="msg-gm">
-  O Duque Oswald Thool observa os aventureiros com aquele olhar calculista que parece enxergar além da carne. Aelar Eisenlí mantém postura de corte enquanto Finn Willowheel circula pela sala fingindo examinar os tapetes.
-</div>
-
-<!-- Oswald fala → Oswald ESQ espelhado | Theron DIR normal -->
-<div class="dialogo-inline">
-  <div class="dialogo-inline-portrait" style="background:#5a6a7022;border-color:#5a6a7055">
-    <img src="sprites/npc_duque_oswald_thool.png" class="espelhado"
-         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-    <span style="display:none">👁️</span>
-  </div>
-  <div class="dialogo-inline-body">
-    <div class="dialogo-inline-nome">Duque Oswald Thool</div>
-    <div class="dialogo-inline-texto">"Impressionante. Vocês chegaram até aqui. A maioria morre no segundo corredor. Talvez sejam realmente úteis."</div>
-  </div>
-  <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
-    <img src="sprites/guerreiro_m.png"
-         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-    <span style="display:none">🧑</span>
-  </div>
-</div>
-
-<!-- Aelar interrompe → Aelar ESQ espelhado | Oswald DIR normal -->
-<div class="dialogo-inline">
-  <div class="dialogo-inline-portrait" style="background:#3a5a4022;border-color:#3a5a4055">
-    <img src="sprites/npc_aelar_eisenli.png" class="espelhado"
-         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-    <span style="display:none">🏹</span>
-  </div>
-  <div class="dialogo-inline-body">
-    <div class="dialogo-inline-nome">Aelar Eisenlí</div>
-    <div class="dialogo-inline-texto">"Milorde, talvez devêssemos verificar as credenciais antes de fazer promessas. Aventureiros são... variáveis."</div>
-  </div>
-  <div class="dialogo-inline-portrait" style="background:#5a6a7022;border-color:#5a6a7055">
-    <img src="sprites/npc_duque_oswald_thool.png"
-         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-    <span style="display:none">👁️</span>
-  </div>
-</div>
-
-<!-- Theron responde a Oswald → Theron ESQ espelhado | Oswald DIR normal -->
-<div class="dialogo-inline">
-  <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
-    <img src="sprites/guerreiro_m.png" class="espelhado"
-         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-    <span style="display:none">🧑</span>
-  </div>
-  <div class="dialogo-inline-body">
-    <div class="dialogo-inline-nome">Theron</div>
-    <div class="dialogo-inline-texto">"Nossas credenciais estão no fio da espada, Milorde. Diz o que precisa de nós."</div>
-  </div>
-  <div class="dialogo-inline-portrait" style="background:#5a6a7022;border-color:#5a6a7055">
-    <img src="sprites/npc_duque_oswald_thool.png"
-         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-    <span style="display:none">👁️</span>
-  </div>
-</div>
-
-<!-- Finn cutuca → Finn ESQ espelhado | Oswald DIR normal -->
-<div class="dialogo-inline">
-  <div class="dialogo-inline-portrait" style="background:#6a5a3022;border-color:#6a5a3055">
-    <img src="sprites/npc_finn_willowheel.png" class="espelhado"
-         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-    <span style="display:none">👟</span>
-  </div>
-  <div class="dialogo-inline-body">
-    <div class="dialogo-inline-nome">Finn Willowheel</div>
-    <div class="dialogo-inline-texto">"Gosto desse. Direto ao assunto. Sabe o que isso significa? Ou muito corajoso ou muito burro. Perfeito pro que você precisa, Oswald."</div>
-  </div>
-  <div class="dialogo-inline-portrait" style="background:#5a6a7022;border-color:#5a6a7055">
-    <img src="sprites/npc_duque_oswald_thool.png"
-         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-    <span style="display:none">👁️</span>
-  </div>
-</div>
-
-<!-- ══ CENA IV ══ -->
-<div class="sep">Cena IV — As Ruínas de Choir</div>
+<div class="sep">Cena III — As Ruínas de Choir</div>
 
 <div class="msg-gm">
   A névoa se adensa entre pedras negras. Choir materializa-se da escuridão. Ruzalka emerge do poço próximo, a água escorrendo de seus cabelos. Fariborz aparece das sombras, as chamas nos nós dos dedos pulsando.
@@ -397,48 +383,12 @@
   </div>
   <div class="dialogo-inline-body">
     <div class="dialogo-inline-nome">Choir</div>
-    <div class="dialogo-inline-texto">"Os mortos aqui me contaram sobre vocês. Curioso... ficaram com muito mais medo de você do que você deveria ter deles."</div>
+    <div class="dialogo-inline-texto">"Os mortos aqui me contaram sobre vocês. Ficaram com muito mais medo de você do que você deveria ter deles."</div>
   </div>
   <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
     <img src="sprites/guerreiro_m.png"
          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
     <span style="display:none">🧑</span>
-  </div>
-</div>
-
-<!-- Ruzalka para Theron → Ruzalka ESQ espelhado | Theron DIR normal -->
-<div class="dialogo-inline">
-  <div class="dialogo-inline-portrait" style="background:#306a8a22;border-color:#306a8a55">
-    <img src="sprites/npc_ruzalka.png" class="espelhado"
-         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-    <span style="display:none">💧</span>
-  </div>
-  <div class="dialogo-inline-body">
-    <div class="dialogo-inline-nome">Ruzalka</div>
-    <div class="dialogo-inline-texto">"As águas falam também. Você carrega um peso que não é seu. Isso pode te afogar antes de qualquer lâmina."</div>
-  </div>
-  <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
-    <img src="sprites/guerreiro_m.png"
-         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-    <span style="display:none">🧑</span>
-  </div>
-</div>
-
-<!-- Theron responde a Choir → Theron ESQ espelhado | Choir DIR normal -->
-<div class="dialogo-inline">
-  <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
-    <img src="sprites/guerreiro_m.png" class="espelhado"
-         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-    <span style="display:none">🧑</span>
-  </div>
-  <div class="dialogo-inline-body">
-    <div class="dialogo-inline-nome">Theron</div>
-    <div class="dialogo-inline-texto">"Não sou afogado facilmente. E prefiro que os mortos fiquem quietos. Onde está o que viemos buscar?"</div>
-  </div>
-  <div class="dialogo-inline-portrait" style="background:#2a1a3a22;border-color:#2a1a3a55">
-    <img src="sprites/npc_choir_necromante.png"
-         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-    <span style="display:none">💀</span>
   </div>
 </div>
 
@@ -460,8 +410,140 @@
   </div>
 </div>
 
+<!-- ══ CENA IV — BATALHA ══ -->
+<div class="sep sep-batalha">Cena IV — Emboscada no Campo do Espantalho</div>
+
 <div class="msg-gm">
-  Choir inclina a cabeça num ângulo impossível para um ser vivo. Em silêncio, aponta para o corredor mais escuro das ruínas — onde nem a luz das chamas de Fariborz parece alcançar.
+  O milharal estava silencioso demais. O espantalho na estaca central move a cabeça devagar — palha se derramando dos olhos negros. Não havia percebido. O grupo avança em formação quando o monstro salta das sombras.
+</div>
+
+<!-- Espantalho ataca Theron de surpresa — alvo de COSTAS -->
+<div class="batalha-inline">
+  <div class="batalha-inline-portrait" style="background:#8a6a2022;border-color:#8a6a2055">
+    <img src="sprites/inimigo_espantalho_assombrado.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🌾</span>
+  </div>
+  <div class="batalha-inline-body">
+    <div class="batalha-inline-label">Espantalho Assombrado → Theron <span class="batalha-surpresa">SURPRESA!</span></div>
+    <div class="batalha-inline-texto">Garras de aço lascam o ombro direito antes que Theron possa reagir — 8 de dano perfurante.</div>
+  </div>
+  <div class="batalha-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🧑</span>
+  </div>
+</div>
+
+<div class="msg-gm">
+  A dor volta Theron à realidade. Ele se vira, escudo na frente, e avança para trás do monstro antes que possa se reposicionar.
+</div>
+
+<div class="msg-player">Ataco o espantalho pela lateral enquanto ele está distraído com Theron!</div>
+
+<!-- Theron contra-ataca — combate aberto, frente a frente -->
+<div class="batalha-inline">
+  <div class="batalha-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🧑</span>
+  </div>
+  <div class="batalha-inline-body">
+    <div class="batalha-inline-label">Theron → Espantalho Assombrado</div>
+    <div class="batalha-inline-texto">Espada longa rasga o torso de palha — chamas lampejam pelo corte. 11 de dano cortante + fogo.</div>
+  </div>
+  <div class="batalha-inline-portrait" style="background:#8a6a2022;border-color:#8a6a2055">
+    <img src="sprites/inimigo_espantalho_assombrado.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🌾</span>
+  </div>
+</div>
+
+<!-- Espantalho responde — frente a frente agora -->
+<div class="batalha-inline">
+  <div class="batalha-inline-portrait" style="background:#8a6a2022;border-color:#8a6a2055">
+    <img src="sprites/inimigo_espantalho_assombrado.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🌾</span>
+  </div>
+  <div class="batalha-inline-body">
+    <div class="batalha-inline-label">Espantalho Assombrado → Theron</div>
+    <div class="batalha-inline-texto">Golpe giratório desviado pelo escudo — metal geme, mas segura.</div>
+  </div>
+  <div class="batalha-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🧑</span>
+  </div>
+</div>
+
+<!-- ══ CENA V — BATALHA: ESQUELETO ══ -->
+<div class="sep sep-batalha">Cena V — A Cripta do Esqueleto Lanceiro</div>
+
+<div class="msg-gm">
+  As tochas da cripta projetam sombras dançantes nas paredes. O Esqueleto Lanceiro ergue-se da lápide com um farfalhar de ossos, lança enferrujada apontada para o corredor. Theron avança — desta vez, ele não vai ser pego de surpresa.
+</div>
+
+<!-- Theron embosca o esqueleto pelas costas com furtividade -->
+<div class="batalha-inline">
+  <div class="batalha-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🧑</span>
+  </div>
+  <div class="batalha-inline-body">
+    <div class="batalha-inline-label">Theron → Esqueleto Lanceiro <span class="batalha-surpresa">SURPRESA!</span></div>
+    <div class="batalha-inline-texto">Golpe certeiro na coluna de ossos antes do esqueleto se virar — vértebras estalam. 14 de dano esmagador.</div>
+  </div>
+  <div class="batalha-inline-portrait" style="background:#60505022;border-color:#60505055">
+    <img src="sprites/inimigo_esqueleto_lanceiro_costas.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">💀</span>
+  </div>
+</div>
+
+<div class="msg-gm">
+  O esqueleto gira entre um barulho de dentes rangendo — ainda de pé. A lança rasga o ar em direção a Theron.
+</div>
+
+<!-- Esqueleto responde -->
+<div class="batalha-inline">
+  <div class="batalha-inline-portrait" style="background:#60505022;border-color:#60505055">
+    <img src="sprites/inimigo_esqueleto_lanceiro.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">💀</span>
+  </div>
+  <div class="batalha-inline-body">
+    <div class="batalha-inline-label">Esqueleto Lanceiro → Theron</div>
+    <div class="batalha-inline-texto">Lança rasga o antebraço — 5 de dano perfurante. Escudo jogado para o lado.</div>
+  </div>
+  <div class="batalha-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🧑</span>
+  </div>
+</div>
+
+<!-- Theron finaliza -->
+<div class="batalha-inline">
+  <div class="batalha-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">🧑</span>
+  </div>
+  <div class="batalha-inline-body">
+    <div class="batalha-inline-label">Theron → Esqueleto Lanceiro</div>
+    <div class="batalha-inline-texto">Golpe final esmiúça o crânio — ossos explodem em pó antigo. Abatido.</div>
+  </div>
+  <div class="batalha-inline-portrait" style="background:#60505022;border-color:#60505055">
+    <img src="sprites/inimigo_esqueleto_lanceiro.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none">💀</span>
+  </div>
+</div>
+
+<div class="msg-gm">
+  O silêncio volta à cripta. Ossos dispersos no chão de pedra. A tocha mais próxima cintila uma vez — e apaga.
 </div>
 
 </div><!-- /story-area -->
