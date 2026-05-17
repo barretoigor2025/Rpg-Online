@@ -117,6 +117,11 @@ let _campanha   = null;
 let _introSlides = [];
 let _introIdx    = 0;
 let _introAtivo  = false;
+let _afterNarrationCb = null;
+let _dialogoFila      = [];
+let _dialogoAtivo     = false;
+let _dialogoConcluido = null;
+let _jogadoresCache   = {};
 
 // ═══════════════════════════════════════════════════════════════
 //  HELPERS
@@ -149,8 +154,231 @@ function limparTags(txt) {
   return txt
     .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV|JOGADOR|AUSENTE|PRESENTE)[^\]]*\]\s*)*/gi, '')
     .replace(/\[(?:INIMIGO|MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR):[^\]]+\]/gi, '')
+    .replace(/^FALA:\s*\[[^\]]+\]\s*$/gim, '')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  NPC — DADOS DE DIÁLOGO
+// ═══════════════════════════════════════════════════════════════
+const NPC_DATA = {
+  'Gregoras Pellos':  { icon: '🗡️', cor: '#607080', voz: 'Fritz-PlayAI'   },
+  'Catherine':        { icon: '👑', cor: '#b08030', voz: 'Val-PlayAI'      },
+  'Hobbleboot Sam':   { icon: '🥾', cor: '#5a7a4a', voz: 'Briggs-PlayAI'  },
+  'Mutter Grimmhaar': { icon: '🧙', cor: '#6a3a6a', voz: 'Deedee-PlayAI'  },
+  'Wulfram':          { icon: '🦌', cor: '#6a5a30', voz: 'Orion-PlayAI'   },
+  'Príncipe Kalos':   { icon: '🧝', cor: '#305070', voz: 'Gideon-PlayAI'  },
+  'Rei Chutter':      { icon: '👹', cor: '#7a1a1a', voz: 'Thunder-PlayAI' },
+  'Mac Rónán':        { icon: '🌿', cor: '#3a6a3a', voz: 'Briggs-PlayAI'  },
+  'Ruzalka':          { icon: '💧', cor: '#306a8a', voz: 'Nova-PlayAI'    },
+  'Blunkin':          { icon: '🦎', cor: '#4a5a2a', voz: 'Fritz-PlayAI'   },
+  'Drizzle':          { icon: '🦎', cor: '#5a6a3a', voz: 'Fritz-PlayAI'   },
+  'Rootflayer':       { icon: '🌳', cor: '#3a2a1a', voz: 'Thunder-PlayAI' },
+};
+
+function getNpcData(nome) {
+  const key = Object.keys(NPC_DATA).find(
+    k => nome.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(nome.toLowerCase())
+  );
+  return key ? NPC_DATA[key] : { icon: '👤', cor: '#4a5a70', voz: 'Fritz-PlayAI' };
+}
+
+function extrairFalas(txt) {
+  const falas = [];
+  const re = /^FALA:\s*\[([^\|]+)\|"([^"]+)"\]/gim;
+  let m;
+  while ((m = re.exec(txt)) !== null) {
+    falas.push({ nome: m[1].trim(), texto: m[2].trim() });
+  }
+  return falas;
+}
+
+function normalizarFalas(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  return Object.values(raw).filter(Boolean);
+}
+
+function parsearSegmentos(txt) {
+  const segs = [];
+  const linhas = txt.split('\n');
+  let acum = [];
+  linhas.forEach(linha => {
+    const m = linha.match(/^FALA:\s*\[([^\|]+)\|"([^"]+)"\]/i);
+    if (m) {
+      const t = acum.join('\n').trim();
+      if (t) segs.push({ tipo: 'texto', conteudo: t });
+      acum = [];
+      segs.push({ tipo: 'fala', nome: m[1].trim(), texto: m[2].trim() });
+    } else {
+      acum.push(linha);
+    }
+  });
+  const resto = acum.join('\n').trim();
+  if (resto) segs.push({ tipo: 'texto', conteudo: resto });
+  return segs;
+}
+
+function chuncarTexto(txt, maxWords = 50) {
+  const palavras = txt.split(/\s+/).filter(Boolean);
+  if (palavras.length <= maxWords) return [txt];
+  const chunks = [];
+  for (let i = 0; i < palavras.length; i += maxWords) {
+    chunks.push(palavras.slice(i, i + maxWords).join(' '));
+  }
+  return chunks;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SISTEMA DE DIÁLOGO NPC
+// ═══════════════════════════════════════════════════════════════
+function enfileirarDialogos(falas, afterCb) {
+  if (!falas.length) { if (afterCb) afterCb(); return; }
+  if (afterCb) _dialogoConcluido = afterCb;
+  _dialogoFila.push(...falas);
+  if (!_dialogoAtivo) mostrarProximoDialogo();
+}
+
+function mostrarProximoDialogo() {
+  if (!_dialogoFila.length) {
+    _dialogoAtivo = false;
+    const ov = document.getElementById('dialogo-overlay');
+    if (ov) ov.style.display = 'none';
+    if (_dialogoConcluido) { const cb = _dialogoConcluido; _dialogoConcluido = null; cb(); }
+    return;
+  }
+  _dialogoAtivo = true;
+  const d   = _dialogoFila.shift();
+  const npc = getNpcData(d.nome);
+  const ov  = document.getElementById('dialogo-overlay');
+  if (!ov) return;
+  ov.style.display = 'flex';
+  const iconEl = document.getElementById('dialogo-icon');
+  if (iconEl) { iconEl.textContent = npc.icon; iconEl.style.background = npc.cor + '33'; }
+  const nomeEl = document.getElementById('dialogo-nome');
+  if (nomeEl) nomeEl.textContent = d.nome;
+  const textoEl = document.getElementById('dialogo-texto');
+  if (textoEl) textoEl.textContent = `"${d.texto}"`;
+  const img = document.getElementById('dialogo-img');
+  if (img) {
+    const slug = d.nome.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z_]/g,'');
+    img.src = `sprites/npc_${slug}.png`;
+    img.style.display = 'none';
+    img.onload  = () => { img.style.display = ''; };
+    img.onerror = () => { img.style.display = 'none'; };
+  }
+  narrarDialogo(d.texto, npc.voz);
+}
+
+function narrarDialogo(texto, voz) {
+  if (!voiceEnabled) return;
+  const limpo = texto.replace(/[*#_`~]/g,'').trim().substring(0, 600);
+  const apiKey = getApiKey();
+  if (!apiKey) { _narrarWebSpeech(limpo); return; }
+  fetch('https://api.groq.com/openai/v1/audio/speech', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
+    body: JSON.stringify({ model:'playai-tts', input: limpo, voice: voz, response_format:'mp3', speed: 1.2 })
+  }).then(async res => {
+    if (!res.ok) { _narrarWebSpeech(limpo); return; }
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    _currentAudio = audio;
+    audio.onended = () => { URL.revokeObjectURL(url); _currentAudio = null; };
+    audio.onerror = () => {};
+    audio.play().catch(() => _narrarWebSpeech(limpo));
+  }).catch(() => _narrarWebSpeech(limpo));
+}
+
+window.avancarDialogo = function() {
+  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  mostrarProximoDialogo();
+};
+
+function renderizarSegmentos(container, segs, falas) {
+  const items = [];
+  segs.forEach(s => {
+    if (s.tipo === 'texto') {
+      chuncarTexto(s.conteudo, 50).forEach(c => { if (c.trim()) items.push({ tipo:'chunk', texto:c }); });
+    } else {
+      items.push({ tipo:'fala', nome: s.nome, texto: s.texto });
+    }
+  });
+  if (!items.length) return;
+
+  if (items.length === 1 && items[0].tipo === 'chunk') {
+    const p = document.createElement('p');
+    p.className = 'narr-chunk';
+    p.textContent = items[0].texto;
+    container.appendChild(p);
+    narrarTexto(items[0].texto);
+    return;
+  }
+
+  let idx = 0;
+  function proxItem() {
+    if (idx >= items.length) return;
+    const it = items[idx++];
+    if (it.tipo === 'chunk') {
+      const p = document.createElement('p');
+      p.className = 'narr-chunk';
+      p.textContent = it.texto;
+      container.appendChild(p);
+      scrollDown();
+      if (idx < items.length) {
+        narrarTexto(it.texto, () => {
+          const btn = document.createElement('button');
+          btn.className = 'btn-continuar-narr';
+          btn.textContent = '▶ Continuar';
+          btn.onclick = () => { btn.remove(); proxItem(); };
+          container.appendChild(btn);
+          scrollDown();
+        });
+      } else {
+        narrarTexto(it.texto);
+      }
+    } else {
+      enfileirarDialogos([{ nome: it.nome, texto: it.texto }], proxItem);
+    }
+  }
+  proxItem();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  PAINEL DE PERÍCIAS
+// ═══════════════════════════════════════════════════════════════
+window.toggleSkillsPanel = function() {
+  const panel = document.getElementById('skills-panel');
+  if (!panel) return;
+  if (panel.style.display === 'flex') { panel.style.display = 'none'; return; }
+  const eu = _jogadoresCache[myUid];
+  if (!eu) return;
+  const cls = CLASSES[eu.classe];
+  const hab = cls?.habilidade;
+  const fmt = v => (v >= 0 ? '+' : '') + v;
+  let html = `<div class="skills-header"><span class="skills-title">${cls?.icon||'⚔️'} ${cls?.nome||eu.classe}</span><button class="skills-close" onclick="toggleSkillsPanel()">✕</button></div>`;
+  html += `<div class="skills-attrs">`;
+  ['STR','DEX','CON','INT','WIS','CHA'].forEach(a => {
+    const lbl = {STR:'FOR',DEX:'DES',CON:'CON',INT:'INT',WIS:'SAB',CHA:'CAR'}[a];
+    html += `<span>${lbl} <strong>${eu[a]}</strong> <small>${fmt(Math.floor((eu[a]-10)/2))}</small></span>`;
+  });
+  html += `</div>`;
+  html += `<div class="skills-derived"><span>❤️ PV ${eu.hp}/${eu.maxHp}</span><span>🛡️ CA ${eu.ac}</span><span>⚡ ${fmt(eu.init)}</span><span>Fort ${fmt(eu.fort)}</span><span>Ref ${fmt(eu.ref)}</span><span>Von ${fmt(eu.will)}</span></div>`;
+  if (hab) html += `<div class="skills-feat"><div class="skills-feat-nome">⚡ ${hab.nome}</div><div class="skills-feat-desc">${hab.desc}</div></div>`;
+  if (eu.pericias?.length) {
+    html += `<div class="skills-pericia-list">`;
+    eu.pericias.forEach(k => {
+      const per = PERICIAS[k];
+      if (per) html += `<div class="skills-pericia"><span class="per-icon">${per.icon}</span><div><strong>${per.nome}</strong><div class="per-desc">${per.desc}</div></div></div>`;
+    });
+    html += `</div>`;
+  }
+  panel.innerHTML = html;
+  panel.style.display = 'flex';
+};
 
 // ═══════════════════════════════════════════════════════════════
 //  LOBBY — SELEÇÃO DE CLASSE, GÊNERO E PERÍCIAS (AD&D)
@@ -405,6 +633,7 @@ function irParaJogo(codigo) {
     const rodEl = document.getElementById('round-display');
     if (rodEl) rodEl.textContent = config.rodada ? `Rodada ${config.rodada}` : '';
 
+    _jogadoresCache = jogadores;
     renderizarJogadores(jogadores, config);
     renderizarInimigos(inimigos);
     renderizarHistoria(historia, jogadores);
@@ -495,8 +724,9 @@ function renderizarHistoria(historia, jogadores) {
     const div = document.createElement('div');
     if (entry.role === 'model') {
       div.className = 'msg msg-gm';
-      div.textContent = entry.content;
-      narrarTexto(entry.content);
+      const falas = normalizarFalas(entry.falas);
+      const segs  = parsearSegmentos(entry.content);
+      renderizarSegmentos(div, segs, falas);
     } else if (entry.role === 'user') {
       const j = Object.values(jogadores).find(j => j.uid === entry.uid);
       div.className = 'msg msg-player';
@@ -603,8 +833,12 @@ function setVoiceIndicator(on) {
   if (el) el.className = on ? 'speaking' : '';
 }
 
-function narrarTexto(texto) {
-  if (!voiceEnabled) return;
+function narrarTexto(texto, afterCb) {
+  _afterNarrationCb = afterCb || null;
+  if (!voiceEnabled) {
+    if (_afterNarrationCb) { const cb = _afterNarrationCb; _afterNarrationCb = null; cb(); }
+    return;
+  }
   voiceQueue = [];
   if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
   if (window.speechSynthesis) speechSynthesis.cancel();
@@ -614,7 +848,12 @@ function narrarTexto(texto) {
 }
 
 function _nextUtterance() {
-  if (!voiceQueue.length) { voiceBusy = false; setVoiceIndicator(false); return; }
+  if (!voiceQueue.length) {
+    voiceBusy = false;
+    setVoiceIndicator(false);
+    if (_afterNarrationCb) { const cb = _afterNarrationCb; _afterNarrationCb = null; cb(); }
+    return;
+  }
   voiceBusy = true;
   setVoiceIndicator(true);
   const texto = voiceQueue.shift();
@@ -862,7 +1101,7 @@ STATS: ${Array.from({length: totalEsp}, (_,i) => `[INIMIGO:Espantalho ${i+1}:10:
     ocultarRetryUI();
 
     if (resposta) {
-      await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), ts: Date.now() });
+      await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), falas: extrairFalas(resposta), ts: Date.now() });
       await processarStats(resposta, jogadores, {});
     }
     await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando', rodada: 1 });
@@ -937,7 +1176,7 @@ async function chamarIA(jogadores, data) {
     ups[`salas/${mySala}/config/estado`] = 'aguardando';
     ups[`salas/${mySala}/config/rodada`] = rodada + 1;
 
-    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), ts: Date.now() });
+    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), falas: extrairFalas(resposta), ts: Date.now() });
     await processarStats(resposta, jogadores, inimigos);
     await update(ref(db), ups);
   } finally {
@@ -981,5 +1220,16 @@ ${iniList ? `\nINIMIGOS EM CENA:\n${iniList}` : ''}
 TAGS MECÂNICAS — coloque SOMENTE na última linha da resposta, nunca no meio do texto:
 STATS: [INIMIGO:nome:hp:hpMax:ícone] [HP:nome:novoHp] [MATAR:nome] [JOGADOR:nome:novoHp] [AUSENTE:nome] [PRESENTE:nome]
 Exemplo correto: "O espantalho cai em chamas.\nSTATS: [MATAR:Espantalho 1] [JOGADOR:Aldric:8]"
-NUNCA escreva tags no meio das frases narrativas.`;
+NUNCA escreva tags no meio das frases narrativas.
+
+DIÁLOGOS — quando um NPC falar, termine a frase narrativa com dois-pontos e coloque FALA na linha seguinte:
+FALA: [NomeExato|"texto da fala sem aspas externas"]
+Exemplo correto:
+  Gregoras aproxima-se e murmura:
+  FALA: [Gregoras Pellos|"As Blackwoods começam a poucas milhas daqui."]
+  A velha ergueu um dedo nodoso e disse:
+  FALA: [Mutter Grimmhaar|"Sangue por sangue, criança. Não há outra moeda aqui."]
+⛔ PROIBIDO: escrever a fala entre aspas no corpo narrativo — nunca use "texto", ele disse.
+✅ OBRIGATÓRIO: narre apenas a ação de falar; a fala em si vem SOMENTE na tag FALA.
+Múltiplos NPCs: use múltiplas linhas FALA separadas.`;
 }

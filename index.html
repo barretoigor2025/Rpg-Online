@@ -106,6 +106,7 @@
     </div>
     <div id="topbar-right">
       <button id="voice-btn" class="icon-btn" onclick="toggleVoz()" title="Narração">🔊</button>
+      <button class="icon-btn" onclick="toggleSkillsPanel()" title="Perícias">📜</button>
       <button class="icon-btn" onclick="resetarSala()" title="Resetar">↺</button>
     </div>
   </div>
@@ -169,6 +170,22 @@
     </div>
   </div>
 </div>
+
+<!-- ══ DIÁLOGO NPC ══ -->
+<div id="dialogo-overlay" style="display:none">
+  <div id="dialogo-portrait">
+    <span id="dialogo-icon">👤</span>
+    <img id="dialogo-img" src="" alt="" style="display:none">
+  </div>
+  <div id="dialogo-body">
+    <div id="dialogo-nome"></div>
+    <p id="dialogo-texto"></p>
+  </div>
+  <button id="dialogo-ok" onclick="avancarDialogo()">▼</button>
+</div>
+
+<!-- ══ PAINEL DE PERÍCIAS ══ -->
+<div id="skills-panel" style="display:none"></div>
 
 <script type="module" src="js/main.js"></script>
 </body>
