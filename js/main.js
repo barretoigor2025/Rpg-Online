@@ -118,9 +118,6 @@ let _introSlides = [];
 let _introIdx    = 0;
 let _introAtivo  = false;
 let _afterNarrationCb = null;
-let _dialogoFila      = [];
-let _dialogoAtivo     = false;
-let _dialogoConcluido = null;
 let _jogadoresCache   = {};
 
 // ═══════════════════════════════════════════════════════════════
@@ -230,74 +227,6 @@ function chuncarTexto(txt, maxWords = 50) {
   return chunks;
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  SISTEMA DE DIÁLOGO NPC
-// ═══════════════════════════════════════════════════════════════
-function enfileirarDialogos(falas, afterCb) {
-  if (!falas.length) { if (afterCb) afterCb(); return; }
-  if (afterCb) _dialogoConcluido = afterCb;
-  _dialogoFila.push(...falas);
-  if (!_dialogoAtivo) mostrarProximoDialogo();
-}
-
-function mostrarProximoDialogo() {
-  if (!_dialogoFila.length) {
-    _dialogoAtivo = false;
-    const ov = document.getElementById('dialogo-overlay');
-    if (ov) ov.style.display = 'none';
-    if (_dialogoConcluido) { const cb = _dialogoConcluido; _dialogoConcluido = null; cb(); }
-    return;
-  }
-  _dialogoAtivo = true;
-  const d   = _dialogoFila.shift();
-  const npc = getNpcData(d.nome);
-  const ov  = document.getElementById('dialogo-overlay');
-  if (!ov) return;
-  ov.style.display = 'flex';
-  const iconEl = document.getElementById('dialogo-icon');
-  if (iconEl) { iconEl.textContent = npc.icon; iconEl.style.background = npc.cor + '33'; }
-  const nomeEl = document.getElementById('dialogo-nome');
-  if (nomeEl) nomeEl.textContent = d.nome;
-  const textoEl = document.getElementById('dialogo-texto');
-  if (textoEl) textoEl.textContent = `"${d.texto}"`;
-  const img = document.getElementById('dialogo-img');
-  if (img) {
-    const slug = d.nome.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z_]/g,'');
-    img.src = `sprites/npc_${slug}.png`;
-    img.style.display = 'none';
-    img.onload  = () => { img.style.display = ''; };
-    img.onerror = () => { img.style.display = 'none'; };
-  }
-  narrarDialogo(d.texto, npc.voz);
-}
-
-function narrarDialogo(texto, voz) {
-  if (!voiceEnabled) return;
-  const limpo = texto.replace(/[*#_`~]/g,'').trim().substring(0, 600);
-  const apiKey = getApiKey();
-  if (!apiKey) { _narrarWebSpeech(limpo); return; }
-  fetch('https://api.groq.com/openai/v1/audio/speech', {
-    method: 'POST',
-    headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
-    body: JSON.stringify({ model:'playai-tts', input: limpo, voice: voz, response_format:'mp3', speed: 1.2 })
-  }).then(async res => {
-    if (!res.ok) { _narrarWebSpeech(limpo); return; }
-    const blob = await res.blob();
-    const url  = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    _currentAudio = audio;
-    audio.onended = () => { URL.revokeObjectURL(url); _currentAudio = null; };
-    audio.onerror = () => {};
-    audio.play().catch(() => _narrarWebSpeech(limpo));
-  }).catch(() => _narrarWebSpeech(limpo));
-}
-
-window.avancarDialogo = function() {
-  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
-  if (window.speechSynthesis) speechSynthesis.cancel();
-  mostrarProximoDialogo();
-};
-
 function renderizarSegmentos(container, segs, falas) {
   const items = [];
   segs.forEach(s => {
@@ -353,8 +282,8 @@ function renderizarSegmentos(container, segs, falas) {
         </div>`;
       container.appendChild(bubble);
       scrollDown();
-      // Card flutuante por cima para TTS; ao clicar ▼ continua a sequência
-      enfileirarDialogos([{ nome: it.nome, texto: it.texto }], proxItem);
+      // Narra a fala inline e encadeia o próximo item
+      narrarTexto(it.texto, proxItem);
     }
   }
   proxItem();
