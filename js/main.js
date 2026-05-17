@@ -341,6 +341,19 @@ function renderizarSegmentos(container, segs, falas) {
         narrarTexto(it.texto);
       }
     } else {
+      // Bolha inline permanente na história (para releitura cronológica)
+      const npc    = getNpcData(it.nome);
+      const bubble = document.createElement('div');
+      bubble.className = 'dialogo-inline';
+      bubble.innerHTML = `
+        <div class="dialogo-inline-icon" style="background:${npc.cor}22">${npc.icon}</div>
+        <div class="dialogo-inline-body">
+          <div class="dialogo-inline-nome">${it.nome}</div>
+          <div class="dialogo-inline-texto">"${it.texto}"</div>
+        </div>`;
+      container.appendChild(bubble);
+      scrollDown();
+      // Card flutuante por cima para TTS; ao clicar ▼ continua a sequência
       enfileirarDialogos([{ nome: it.nome, texto: it.texto }], proxItem);
     }
   }
