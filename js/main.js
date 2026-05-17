@@ -119,6 +119,7 @@ let _introIdx    = 0;
 let _introAtivo  = false;
 let _afterNarrationCb = null;
 let _jogadoresCache   = {};
+let _regras           = {};
 
 // ═══════════════════════════════════════════════════════════════
 //  HELPERS
@@ -149,8 +150,8 @@ function setActionStatus(msg) {
 
 function limparTags(txt) {
   return txt
-    .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV|JOGADOR|AUSENTE|PRESENTE|LESAO|XP)[^\]]*\]\s*)*/gi, '')
-    .replace(/\[(?:INIMIGO|MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR|LESAO|XP):[^\]]+\]/gi, '')
+    .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV|JOGADOR|AUSENTE|PRESENTE|LESAO|XP|TITULO|POSSE|REPUTACAO)[^\]]*\]\s*)*/gi, '')
+    .replace(/\[(?:INIMIGO|MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR|LESAO|XP|TITULO|POSSE|REPUTACAO):[^\]]+\]/gi, '')
     .replace(/^\s*FALA:\s*\[[^\]]+\]\s*$/gim, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -333,6 +334,28 @@ window.toggleSkillsPanel = function() {
     lesoesArr.forEach(l => { html += `<div class="skills-lesao">${l.descricao}</div>`; });
     html += `</div>`;
   }
+  const titulosArr = Object.values(eu.titulos || {});
+  if (titulosArr.length) {
+    html += `<div class="skills-lesoes-header" style="color:var(--gold);border-color:rgba(200,160,80,.2)">👑 Títulos</div><div class="skills-lesao-list">`;
+    titulosArr.forEach(t => { html += `<div class="skills-lesao" style="border-left-color:rgba(200,160,80,.5);color:#d4b060">${t.titulo}</div>`; });
+    html += `</div>`;
+  }
+  const possesArr = Object.values(eu.posses || {});
+  if (possesArr.length) {
+    html += `<div class="skills-lesoes-header" style="color:#70a060;border-color:rgba(112,160,96,.2)">📦 Posses & Terras</div><div class="skills-lesao-list">`;
+    possesArr.forEach(p => { html += `<div class="skills-lesao" style="border-left-color:rgba(112,160,96,.5);color:#90c080">${p.descricao}</div>`; });
+    html += `</div>`;
+  }
+  const repsArr = Object.entries(eu.reputacoes || {});
+  if (repsArr.length) {
+    html += `<div class="skills-lesoes-header" style="color:#7090b0;border-color:rgba(112,144,176,.2)">🏛️ Reputação</div><div class="skills-lesao-list">`;
+    repsArr.forEach(([, r]) => {
+      const cor = r.valor > 0 ? '#70b070' : '#b07070';
+      const sinal = r.valor > 0 ? '+' : '';
+      html += `<div class="skills-lesao" style="border-left-color:${cor}44;color:${cor}">${r.local || ''}: ${sinal}${r.valor}</div>`;
+    });
+    html += `</div>`;
+  }
   panel.innerHTML = html;
   panel.style.display = 'flex';
 };
@@ -450,6 +473,16 @@ async function carregarCampanha() {
   }
 }
 
+async function carregarRegras() {
+  const arquivos = ['sistema', 'personagem', 'dialogo', 'narrativa', 'recompensas'];
+  await Promise.all(arquivos.map(async nome => {
+    try {
+      const res = await fetch(`regras/${nome}.json`);
+      if (res.ok) _regras[nome] = await res.json();
+    } catch(e) {}
+  }));
+}
+
 function buildCampaignContext() {
   if (!_campanha) return '';
 
@@ -488,6 +521,32 @@ ESTADO INICIAL DA CAMPANHA: ${_campanha.estado_inicial.localizacao} — ${_campa
 `;
 }
 
+function buildRegrasContext() {
+  if (!_regras || !Object.keys(_regras).length) return '';
+  const linhas = [];
+
+  const narrativa = _regras.narrativa;
+  if (narrativa?.voz) linhas.push('VOZ: ' + narrativa.voz.slice(0, 4).join(' | '));
+
+  const dialogo = _regras.dialogo;
+  if (dialogo?.regras) linhas.push('DIÁLOGO OBRIGATÓRIO:\n' + dialogo.regras.map(r => '• ' + r).join('\n'));
+
+  const personagem = _regras.personagem;
+  if (personagem?.tags) linhas.push('TAGS PERSONAGEM:\n' + personagem.tags.map(t => '• ' + t).join('\n'));
+
+  const recompensas = _regras.recompensas;
+  if (recompensas?.categorias) {
+    const c = recompensas.categorias;
+    linhas.push('TAGS RECOMPENSAS:\n' +
+      `• ${c.titulos.tag} — ${c.titulos.regra}\n` +
+      `• ${c.posses.tag} — ${c.posses.regra}\n` +
+      `• ${c.reputacao.tag} — ${c.reputacao.regra}`
+    );
+  }
+
+  return linhas.length ? `\n═══ REGRAS DO SISTEMA ═══\n${linhas.join('\n\n')}\n` : '';
+}
+
 // Preenche input se já tiver chave
 window.addEventListener('DOMContentLoaded', () => {
   const k = getApiKey();
@@ -501,7 +560,7 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   renderFeatGrid();
-  carregarCampanha();
+  carregarCampanha(); carregarRegras();
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -536,9 +595,12 @@ window.criarSala = async function() {
   // Montar dados do jogador para esta sala (com persistência)
   const jogData = {
     ...p, uid: myUid, ativo: true,
-    xp:    charData?.xp    ?? 0,
-    nivel: charData?.nivel ?? 1,
-    lesoes: charData?.lesoes || {},
+    xp:        charData?.xp        ?? 0,
+    nivel:     charData?.nivel     ?? 1,
+    lesoes:    charData?.lesoes    || {},
+    titulos:   charData?.titulos   || {},
+    posses:    charData?.posses    || {},
+    reputacoes: charData?.reputacoes || {},
   };
   if (charData?.hp != null) jogData.hp = Math.min(charData.hp, p.maxHp);
 
@@ -591,9 +653,12 @@ window.entrarSala = async function() {
 
   const jogData = {
     ...p, uid: myUid, ativo: true,
-    xp:    charData?.xp    ?? 0,
-    nivel: charData?.nivel ?? 1,
-    lesoes: charData?.lesoes || {},
+    xp:        charData?.xp        ?? 0,
+    nivel:     charData?.nivel     ?? 1,
+    lesoes:    charData?.lesoes    || {},
+    titulos:   charData?.titulos   || {},
+    posses:    charData?.posses    || {},
+    reputacoes: charData?.reputacoes || {},
   };
   if (charData?.hp != null) jogData.hp = Math.min(charData.hp, p.maxHp);
 
@@ -1053,6 +1118,45 @@ async function processarStats(resposta, jogadores, inimigos) {
     }
   }
 
+  // Título permanente
+  for (const [, nome, titulo] of resposta.matchAll(/\[TITULO:([^:]+):([^\]]+)\]/gi)) {
+    const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
+    if (entry) {
+      const [uid] = entry;
+      const tituloId = push(ref(db, `personagens/${uid}/titulos`)).key;
+      const tituloData = { titulo: titulo.trim(), campanhaId: 'beast-of-black-keep', ts: Date.now() };
+      ups[`personagens/${uid}/titulos/${tituloId}`] = tituloData;
+      ups[`salas/${mySala}/jogadores/${uid}/titulos/${tituloId}`] = tituloData;
+    }
+  }
+
+  // Posse permanente
+  for (const [, nome, desc] of resposta.matchAll(/\[POSSE:([^:]+):([^\]]+)\]/gi)) {
+    const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
+    if (entry) {
+      const [uid] = entry;
+      const posseId = push(ref(db, `personagens/${uid}/posses`)).key;
+      const posseData = { descricao: desc.trim(), campanhaId: 'beast-of-black-keep', ts: Date.now() };
+      ups[`personagens/${uid}/posses/${posseId}`] = posseData;
+      ups[`salas/${mySala}/jogadores/${uid}/posses/${posseId}`] = posseData;
+    }
+  }
+
+  // Reputação em cidade/facção
+  for (const [, nome, local, val] of resposta.matchAll(/\[REPUTACAO:([^:]+):([^:]+):(-?\d+)\]/gi)) {
+    const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
+    if (entry) {
+      const [uid] = entry;
+      const localKey = local.trim().replace(/\s+/g, '_');
+      const repSnap = await get(ref(db, `personagens/${uid}/reputacoes/${localKey}`));
+      const repAtual = repSnap.exists() ? (repSnap.val().valor || 0) : 0;
+      const novoValor = repAtual + (+val);
+      const repData = { valor: novoValor, local: local.trim(), ts: Date.now() };
+      ups[`personagens/${uid}/reputacoes/${localKey}`] = repData;
+      ups[`salas/${mySala}/jogadores/${uid}/reputacoes/${localKey}`] = repData;
+    }
+  }
+
   if (Object.keys(ups).length) await update(ref(db), ups);
 }
 
@@ -1282,10 +1386,16 @@ function buildSystemPrompt(jogadores, inimigos) {
     const perStr = (j.pericias||[]).map(k => PERICIAS[k]?.nome).filter(Boolean).join(', ');
     const hab  = cls?.habilidade?.nome || '';
     const fmt  = v => (v >= 0 ? '+' : '') + v;
-    const lesoesArr = Object.values(j.lesoes || {});
-    const lesoesStr = lesoesArr.length ? ` | LESÕES PERMANENTES:${lesoesArr.map(l=>l.descricao).join('; ')}` : '';
-    const nivelStr  = j.nivel > 1 ? ` Nv${j.nivel}` : '';
-    return `${j.nome} (${cls?.nome||j.classe}${nivelStr}) — FOR:${j.STR} DES:${j.DEX} CON:${j.CON} INT:${j.INT} SAB:${j.WIS} CAR:${j.CHA} | PV:${j.hp}/${j.maxHp} CA:${j.ac} Init:${fmt(j.init)}${hab ? ` | Hab:${hab}` : ''}${perStr ? ` | Perícias:${perStr}` : ''}${lesoesStr}`;
+    const lesoesArr  = Object.values(j.lesoes  || {});
+    const titulosArr = Object.values(j.titulos || {});
+    const possesArr  = Object.values(j.posses  || {});
+    const repsArr    = Object.entries(j.reputacoes || {});
+    const lesoesStr  = lesoesArr.length  ? ` | LESÕES:${lesoesArr.map(l=>l.descricao).join('; ')}` : '';
+    const titulosStr = titulosArr.length ? ` | TÍTULOS:${titulosArr.map(t=>t.titulo).join(', ')}` : '';
+    const possesStr  = possesArr.length  ? ` | POSSES:${possesArr.map(p=>p.descricao).join(', ')}` : '';
+    const repStr     = repsArr.length    ? ` | REP:${repsArr.map(([,r]) => `${r.local||''}${r.valor > 0 ? '+' : ''}${r.valor}`).join(', ')}` : '';
+    const nivelStr   = j.nivel > 1 ? ` Nv${j.nivel}` : '';
+    return `${j.nome} (${cls?.nome||j.classe}${nivelStr}) — FOR:${j.STR} DES:${j.DEX} CON:${j.CON} INT:${j.INT} SAB:${j.WIS} CAR:${j.CHA} | PV:${j.hp}/${j.maxHp} CA:${j.ac} Init:${fmt(j.init)}${hab ? ` | Hab:${hab}` : ''}${perStr ? ` | Perícias:${perStr}` : ''}${lesoesStr}${titulosStr}${possesStr}${repStr}`;
   }).join('\n');
 
   const iniList = Object.values(inimigos).filter(i => i.hp > 0).map(i =>
@@ -1295,6 +1405,7 @@ function buildSystemPrompt(jogadores, inimigos) {
   const campCtx = buildCampaignContext();
 
   return `Você é o Narrador. Escreva em português do Brasil com drama, impacto e tom de folclore sombrio. Seja DIRETO — cada palavra conta.
+${buildRegrasContext()}
 ${campCtx}
 VOZ:
 - Verbos fortes e sensoriais: "rasga", "despenca", "estala", "cheira a enxofre".
@@ -1309,10 +1420,14 @@ ${jogList}
 ${iniList ? `\nINIMIGOS EM CENA:\n${iniList}` : ''}
 
 TAGS MECÂNICAS — SOMENTE na última linha da resposta:
-STATS: [INIMIGO:nome:hp:hpMax:ícone] [HP:nome:novoHp] [MATAR:nome] [JOGADOR:nome:novoHp] [AUSENTE:nome] [PRESENTE:nome] [LESAO:nome:descrição] [XP:nome:pontos]
-Exemplo combate: "O espantalho cai.\nSTATS: [MATAR:Espantalho 1] [JOGADOR:Aldric:8] [XP:Aldric:20]"
-LESAO: somente lesões PERMANENTES irreversíveis (perda de membro, cegueira, cicatriz grave, maldição física). Persiste entre campanhas.
-XP: conceda 10-50 pts por vitória em combate ou feito narrativo relevante. Acumula no perfil do personagem entre sessões.
+STATS: [INIMIGO:nome:hp:hpMax:ícone] [HP:nome:novoHp] [MATAR:nome] [JOGADOR:nome:novoHp] [AUSENTE:nome] [PRESENTE:nome] [LESAO:nome:descrição] [XP:nome:pontos] [TITULO:nome:título] [POSSE:nome:descrição] [REPUTACAO:nome:local:valor]
+Exemplos:
+  Fim de combate: "STATS: [MATAR:Espantalho 1] [JOGADOR:Aldric:8] [XP:Aldric:25]"
+  Recompensa: "STATS: [TITULO:Carne:Cavaleiro de Mhoried] [POSSE:Carne:100 hectares em Mhoried] [REPUTACAO:Carne:Mhoried:3]"
+  Lesão: "STATS: [LESAO:Carne:braço direito decepado]"
+LESAO: somente lesões PERMANENTES irreversíveis. Persiste entre campanhas.
+XP: conceda 10-50 pts por vitória ou feito relevante.
+TITULO/POSSE/REPUTACAO: use quando a narrativa conferir recompensas concretas ou reconhecimento formal.
 
 DIÁLOGOS — sistema de bolhas inline. Regras OBRIGATÓRIAS:
 1. Quando um NPC fala, descreva a ação de falar (terminando em dois-pontos) e coloque a tag na linha seguinte:

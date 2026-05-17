@@ -1,0 +1,34 @@
+{
+  "nome": "Sistema de Recompensas e Reputação",
+  "versao": "1.0",
+  "descricao": "Personagens ganham títulos, posses e reputação que persistem canonicamente entre campanhas e são reconhecidos pelo narrador em todas as sessões futuras.",
+  "categorias": {
+    "titulos": {
+      "descricao": "Honrarias formais conferidas por autoridades ou feitos lendários.",
+      "exemplos": ["Cavaleiro de Mhoried", "Campeão da Árvore Eterna", "Senhor de Greystone", "Protetor das Blackwoods", "Barão de Limm", "Campeão do Norte"],
+      "como_ganhar": "Decreto de nobreza, vitória reconhecida publicamente, feito lendário aceito pela comunidade.",
+      "tag": "[TITULO:nomeJogador:título completo]",
+      "regra": "Somente em cerimônias ou reconhecimentos formais — nunca informalmente."
+    },
+    "posses": {
+      "descricao": "Propriedades, terras, itens mágicos nomeados, somas significativas de dinheiro.",
+      "exemplos": ["100 hectares em Mhoried", "Espada Selvimar", "5.000 moedas de prata", "Cabana nas Blackwoods", "Cavalo de guerra Alvor", "Fragmento de Pedra de Voorn"],
+      "como_ganhar": "Recompensa por missão concluída, tesouro encontrado, presente de NPC importante.",
+      "tag": "[POSSE:nomeJogador:descrição da posse]",
+      "regra": "Somente para posses concretas e significativas (acima de 500 moedas ou item mágico nomeado)."
+    },
+    "reputacao": {
+      "descricao": "Como o personagem é percebido em cada cidade ou facção. Persiste entre campanhas.",
+      "exemplos_positivos": ["Mhoried +3 (herói da festa)", "Kobold-Town +1 (aliado improvável)"],
+      "exemplos_negativos": ["Elfos Sombrios -2 (intruso hostil)", "Kobold-Town -3 (inimigo declarado)"],
+      "tag": "[REPUTACAO:nomeJogador:local:valor]",
+      "regra": "Valor inteiro: +1 a +5 para conquistas, -1 a -5 para hostilidades. Use sempre que personagens fizerem algo memorável num local."
+    }
+  },
+  "efeitos_narrativos": {
+    "reputacao_alta": "Reputação +3 ou mais: portas se abrem, NPCs oferecem ajuda espontânea, preços melhoram.",
+    "reputacao_negativa": "Reputação -2 ou menos: hostilidade ativa, guardiões alertados, preços piores ou recusa de serviço.",
+    "titulos": "Personagens com títulos são reconhecidos por NPCs que conhecem a origem do título.",
+    "posses": "Itens mágicos nomeados e terras são conhecidos regionalmente — podem atrair atenção indesejada ou aliados."
+  }
+}

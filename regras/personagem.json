@@ -1,0 +1,29 @@
+{
+  "nome": "Personagem Persistente",
+  "versao": "1.0",
+  "descricao": "Personagens são entidades permanentes que existem além de qualquer campanha. Tudo o que lhes acontece fica registrado para sempre.",
+  "firebase_path": "personagens/{uid}",
+  "o_que_persiste": [
+    "HP atual — ferimentos não curam automaticamente entre sessões",
+    "XP e Nível — acumulam em todas as campanhas",
+    "Lesões permanentes — perda de membro, cegueira, mutilação grave",
+    "Títulos — cavaleiro, senhor, barão, campeão, protetor",
+    "Posses — terras, itens mágicos nomeados, somas significativas de dinheiro",
+    "Reputação — como o personagem é visto em cada cidade ou facção",
+    "Histórico de campanhas participadas"
+  ],
+  "tags": [
+    "[XP:nomeJogador:pontos] — concede experiência. Use 10-50 pts por feito relevante.",
+    "[LESAO:nomeJogador:descrição] — lesão PERMANENTE irreversível (perda de membro, cegueira, etc.).",
+    "[TITULO:nomeJogador:título completo] — concede título permanente após cerimônia ou decreto formal.",
+    "[POSSE:nomeJogador:descrição da posse] — registra posse, terra ou recompensa concreta (acima de 500 moedas ou item mágico).",
+    "[REPUTACAO:nomeJogador:local:valor] — altera reputação num local (inteiro positivo=herói, negativo=inimigo)."
+  ],
+  "regras": [
+    "Sempre conceda XP ao final de combates relevantes e feitos narrativos de peso.",
+    "Use TITULO somente quando a narrativa confere o título formalmente (cerimônia, decreto, reconhecimento público).",
+    "Use POSSE para recompensas concretas e significativas.",
+    "Use REPUTACAO quando personagens fizerem algo memorável numa cidade ou facção.",
+    "Lesões, títulos, posses e reputações de sessões anteriores aparecem no contexto — o narrador DEVE reconhecê-los e incorporá-los na narrativa."
+  ]
+}

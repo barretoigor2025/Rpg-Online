@@ -1,0 +1,19 @@
+{
+  "nome": "Sistema Base — AD&D Simplificado",
+  "versao": "1.0",
+  "descricao": "Regras fundamentais que se aplicam a TODAS as campanhas sem exceção.",
+  "atributos": {
+    "FOR": "Força — dano corpo a corpo, carga, arrombamento",
+    "DEX": "Destreza — iniciativa, CA, ataques à distância",
+    "CON": "Constituição — PV máximos, resistência física",
+    "INT": "Inteligência — magias arcanas, idiomas, conhecimento",
+    "WIS": "Sabedoria — magias divinas, percepção, intuição",
+    "CHA": "Carisma — reação de NPCs, liderança, presença"
+  },
+  "modificador": "mod = floor((atributo - 10) / 2)",
+  "progressao_nivel": {
+    "nivel_1": 0, "nivel_2": 100, "nivel_3": 300, "nivel_4": 600,
+    "nivel_5": 1000, "nivel_6": 1500, "nivel_7": 2100, "nivel_8": 2800,
+    "nivel_9": 3600, "nivel_10": 4500
+  }
+}
