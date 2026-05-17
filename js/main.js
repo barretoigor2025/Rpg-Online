@@ -676,9 +676,15 @@ function renderizarHistoria(historia, jogadores) {
       const segs  = parsearSegmentos(entry.content);
       renderizarSegmentos(div, segs, falas);
     } else if (entry.role === 'user') {
-      const j = Object.values(jogadores).find(j => j.uid === entry.uid);
+      const j   = Object.values(jogadores).find(j => j.uid === entry.uid);
+      const cls = CLASSES[j?.classe] || {};
       div.className = 'msg msg-player';
-      div.innerHTML = `<span class="msg-author">${j?.nome || 'Jogador'}</span>${entry.content}`;
+      div.innerHTML = `
+        <div class="player-bubble-header">
+          <span class="player-bubble-icon">${cls.icon || '⚔️'}</span>
+          <span class="player-bubble-nome">${j?.nome || 'Jogador'}</span>
+        </div>
+        <div class="player-bubble-acao">${entry.content}</div>`;
     } else if (entry.role === 'system') {
       div.className = 'msg msg-system';
       div.textContent = entry.content;
@@ -1186,35 +1192,33 @@ ${campCtx}
 VOZ:
 - Verbos fortes e sensoriais: "rasga", "despenca", "estala", "cheira a enxofre".
 - Foque no RESULTADO das ações, não na preparação.
-- ${iniList ? 'COMBATE ATIVO — máximo 50 palavras de narração.' : 'EXPLORAÇÃO/DIÁLOGO — máximo 70 palavras de narração (tags FALA não contam).'}
+- ${iniList ? 'COMBATE ATIVO — máximo 50 palavras de narração.' : 'EXPLORAÇÃO — máximo 70 palavras por bloco narrativo (tags FALA não contam no limite).'}
 - Mantenha o tom: a floresta observa, os NPCs têm segredos, nada é seguro.
-- NUNCA termine com pergunta ao jogador. Não escreva "O que você faz?", "Como reagem?", "O que fazem a seguir?" ou similar. A narração termina com a consequência da cena, não com uma pergunta.
-- Se jogadores estiverem em locais diferentes, narre apenas a cena atual. Use [AUSENTE:nome] para marcar quem saiu da cena e [PRESENTE:nome] para quem retorna.
+- NUNCA termine com pergunta ao jogador. A narração termina com a consequência da cena.
+- Se jogadores estiverem em locais diferentes, use [AUSENTE:nome] e [PRESENTE:nome].
 
 JOGADORES ATIVOS:
 ${jogList}
 ${iniList ? `\nINIMIGOS EM CENA:\n${iniList}` : ''}
 
-TAGS MECÂNICAS — coloque SOMENTE na última linha da resposta, nunca no meio do texto:
+TAGS MECÂNICAS — SOMENTE na última linha da resposta:
 STATS: [INIMIGO:nome:hp:hpMax:ícone] [HP:nome:novoHp] [MATAR:nome] [JOGADOR:nome:novoHp] [AUSENTE:nome] [PRESENTE:nome]
-Exemplo correto: "O espantalho cai em chamas.\nSTATS: [MATAR:Espantalho 1] [JOGADOR:Aldric:8]"
-NUNCA escreva tags no meio das frases narrativas.
+Exemplo: "O espantalho cai.\nSTATS: [MATAR:Espantalho 1] [JOGADOR:Aldric:8]"
 
-DIÁLOGOS — quando um NPC fizer uma fala, ela OBRIGATORIAMENTE deve aparecer via tag FALA.
-Regra: narre brevemente o contexto (terminar com dois-pontos), depois coloque a tag:
-FALA: [NomeExato|"frase completa do NPC"]
+DIÁLOGOS — sistema de bolhas inline. Regras OBRIGATÓRIAS:
+1. Quando um NPC fala, descreva a ação de falar (terminando em dois-pontos) e coloque a tag na linha seguinte:
+   FALA: [NomeExato|"frase completa do NPC"]
 
-Exemplo de resposta COMPLETA com diálogo:
-Gregoras aguarda que a multidão se afaste e então se inclina, voz baixa:
-FALA: [Gregoras Pellos|"As Blackwoods começam a poucas milhas daqui. Algo lá dentro planeja o próximo ataque — e desta vez pode ser pior."]
+2. DIÁLOGO MULTI-TURNO: se a cena for uma conversa, gere múltiplas trocas com narração entre cada fala, até o diálogo se encerrar naturalmente:
+   Gregoras olha ao redor antes de falar:
+   FALA: [Gregoras Pellos|"As Blackwoods começam a poucas milhas daqui."]
+   Ele hesita, escolhendo as palavras:
+   FALA: [Gregoras Pellos|"Oswald ainda está lá dentro. Mudado, mas está."]
+   O guarda-costas fecha os olhos por um momento:
+   FALA: [Gregoras Pellos|"Salvem-no se puderem. Se não houver jeito... vocês saberão o que fazer."]
 
-Exemplo com dois NPCs:
-A velha ergueu um dedo nodoso e disse:
-FALA: [Mutter Grimmhaar|"Sangue por sangue, criança. Não há outra moeda aqui."]
-O guarda cruzou os braços e respondeu:
-FALA: [Gregoras Pellos|"Ela tem razão. Paguem o preço ou vão embora."]
+3. RESPOSTA A FALA DE JOGADOR: se um jogador declarou uma fala direta, narre a reação do NPC e use FALA para a resposta dele. Não deixe perguntas sem resposta.
 
-IMPORTANTE: se um NPC fala na cena, a fala DEVE aparecer na tag — nunca suprima a fala de um NPC.
-Coloque a fala completa do NPC dentro da tag, não um resumo.
-Múltiplos NPCs: use múltiplas linhas FALA separadas.`;
+4. Nunca suprima a fala de um NPC — se o contexto exige que ele fale, ele DEVE falar via tag FALA.
+5. Coloque a fala COMPLETA do NPC na tag, não um resumo.`;
 }

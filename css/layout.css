@@ -281,16 +281,28 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 }
 .msg-player {
   background: rgba(20,30,20,.5);
-  border-left: 3px solid rgba(76,175,80,.5);
-  color: var(--text2);
+  border-left: 2px solid rgba(76,175,80,.4);
+  border-radius: 0 6px 6px 0;
+  padding: 8px 12px;
   font-size: 13px;
 }
-.msg-player .msg-author {
-  font-size: 10px;
-  color: rgba(76,175,80,.7);
-  display: block;
-  margin-bottom: 3px;
-  letter-spacing: .5px;
+.player-bubble-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.player-bubble-icon { font-size: 14px; }
+.player-bubble-nome {
+  font-size: 9px;
+  color: rgba(76,175,80,.8);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+.player-bubble-acao {
+  color: var(--text);
+  line-height: 1.6;
+  font-style: italic;
 }
 .msg-system {
   text-align: center;
