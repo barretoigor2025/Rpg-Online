@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Preview — Card de Diálogo</title>
+<title>Preview — Diálogo Inline</title>
 <style>
 :root {
   --bg:      #06080f;
@@ -11,7 +11,6 @@
   --border:  rgba(88,104,160,.25);
   --text:    #c8d0e0;
   --text2:   #8090a8;
-  --text3:   #4a5570;
   --gold:    #c8a050;
 }
 * { box-sizing:border-box; margin:0; padding:0; }
@@ -24,107 +23,53 @@ body {
   flex-direction: column;
   overflow: hidden;
 }
-
-/* ── topbar ── */
 #topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 14px;
-  height: 40px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 14px; height: 40px;
   background: rgba(13,17,32,.95);
   border-bottom: 1px solid var(--border);
-  font-size: 12px;
-  color: var(--gold);
-  letter-spacing: 1px;
-  flex-shrink: 0;
+  font-size: 12px; color: var(--gold); letter-spacing: 1px; flex-shrink: 0;
 }
-
-/* ── players bar ── */
 #players-bar {
-  padding: 6px 10px;
-  background: rgba(13,17,32,.7);
+  padding: 6px 10px; background: rgba(13,17,32,.7);
   border-bottom: 1px solid var(--border);
-  display: flex;
-  gap: 8px;
-  flex-shrink: 0;
+  display: flex; gap: 8px; flex-shrink: 0;
 }
 .player-chip {
   display: flex; align-items: center; gap: 6px;
   padding: 4px 10px; border-radius: 20px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  font-size: 11px;
+  border: 1px solid var(--border); background: var(--surface); font-size: 11px;
 }
 .chip-hp { color: #4caf50; }
-
-/* ── story area ── */
-#story-area {
-  flex: 1;
-  overflow-y: auto;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-}
+#story-area { flex: 1; overflow-y: auto; padding: 14px; }
 .msg-gm {
   border-left: 2px solid var(--gold);
-  padding: 10px 14px;
-  margin-bottom: 8px;
+  padding: 10px 14px; margin-bottom: 8px;
   background: rgba(13,17,32,.6);
   border-radius: 0 6px 6px 0;
-  line-height: 1.7;
-  font-size: 14px;
-  color: var(--text);
+  line-height: 1.7; font-size: 14px; color: var(--text);
 }
-
-/* ── enemies bar ── */
 #enemies-bar {
-  display: flex;
-  gap: 8px;
-  padding: 6px 10px;
+  display: flex; gap: 8px; padding: 6px 10px;
   background: rgba(13,17,32,.8);
-  border-top: 1px solid rgba(204,68,68,.25);
-  flex-shrink: 0;
+  border-top: 1px solid rgba(204,68,68,.25); flex-shrink: 0;
 }
-.enemy-chip {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 11px; color: var(--text2);
-}
+.enemy-chip { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2); }
 .enemy-hp-bar { width: 60px; height: 5px; background: rgba(255,255,255,.1); border-radius: 3px; }
 .enemy-hp-fill { height: 100%; background: #cc4444; border-radius: 3px; }
-
-/* ── action bar ── */
 #action-bar {
-  padding: 10px 12px;
-  background: rgba(13,17,32,.95);
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
+  padding: 10px 12px; background: rgba(13,17,32,.95);
+  border-top: 1px solid var(--border); flex-shrink: 0;
 }
-#action-wrap {
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-}
+#action-wrap { display: flex; gap: 8px; align-items: flex-end; }
 textarea {
-  flex: 1;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text);
-  font-family: inherit;
-  font-size: 13px;
-  padding: 8px 12px;
-  resize: none;
+  flex: 1; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-family: inherit;
+  font-size: 13px; padding: 8px 12px; resize: none;
 }
 #btn-send {
-  width: 42px; height: 42px;
-  border-radius: 10px;
-  border: none;
-  background: #2a52a0;
-  color: #fff;
-  font-size: 18px;
-  cursor: pointer;
-  flex-shrink: 0;
+  width: 42px; height: 42px; border-radius: 10px; border: none;
+  background: #2a52a0; color: #fff; font-size: 18px; cursor: pointer; flex-shrink: 0;
 }
 
 /* ── DIÁLOGO INLINE ── */
@@ -143,81 +88,28 @@ textarea {
 .dialogo-inline-nome { font-size: 9px; color: var(--gold); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px; }
 .dialogo-inline-texto { font-size: 13px; color: #ddd8c4; font-style: italic; line-height: 1.6; }
 
-/* ── CARD DE DIÁLOGO NPC ── */
-#dialogo-overlay {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  z-index: 70;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  background: rgba(6,8,15,0.97);
-  border-top: 1px solid rgba(200,160,80,.4);
-  box-shadow: 0 -4px 24px rgba(0,0,0,.7);
-  animation: slide-up .3s ease;
+/* ── CONTINUAR ── */
+.narr-chunk { margin: 0 0 6px; line-height: 1.7; }
+.btn-continuar-narr {
+  display: block; margin: 8px auto;
+  background: none; border: 1px solid rgba(200,160,80,.35);
+  color: var(--gold); font-size: 11px; padding: 4px 18px;
+  border-radius: 20px; cursor: pointer; font-family: inherit; letter-spacing: 1px;
+  transition: all .15s;
 }
-@keyframes slide-up {
-  from { transform: translateY(100%); }
-  to   { transform: none; }
-}
-#dialogo-portrait {
-  flex-shrink: 0;
-  width: 64px; height: 72px;
-  border-radius: 6px;
-  border: 1px solid rgba(200,160,80,.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 30px;
-  overflow: hidden;
-}
-#dialogo-body { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-#dialogo-nome {
-  font-size: 10px;
-  color: var(--gold);
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-}
-#dialogo-texto {
-  font-size: 13px;
-  color: #e0d8c8;
-  line-height: 1.6;
-  font-style: italic;
-}
-#dialogo-ok {
-  flex-shrink: 0;
-  background: none;
-  border: 1px solid rgba(200,160,80,.3);
-  color: var(--gold);
-  font-size: 16px;
-  width: 32px; height: 32px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  align-self: flex-end;
-  animation: blink-arrow 1s infinite;
-}
-@keyframes blink-arrow { 0%,100%{opacity:.4} 50%{opacity:1} }
+.btn-continuar-narr:hover { background: rgba(200,160,80,.1); border-color: var(--gold); }
 
 /* ── CARD DE AÇÃO ── */
 .action-prompt-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 20px 0 8px;
-  padding: 14px 16px;
-  border-radius: 8px;
-  border: 1px solid rgba(200,160,80,.35);
-  border-left: 3px solid var(--gold);
-  background: rgba(200,160,80,.07);
+  display: flex; align-items: center; gap: 12px;
+  margin: 20px 0 8px; padding: 14px 16px;
+  border-radius: 8px; border: 1px solid rgba(200,160,80,.35);
+  border-left: 3px solid var(--gold); background: rgba(200,160,80,.07);
   animation: apc-pulse 2.4s ease-in-out infinite;
 }
 @keyframes apc-pulse {
   0%,100% { border-left-color: rgba(200,160,80,.4); background: rgba(200,160,80,.05); }
-  50%     { border-left-color: var(--gold);         background: rgba(200,160,80,.12); }
+  50%     { border-left-color: var(--gold);          background: rgba(200,160,80,.12); }
 }
 .apc-icon { font-size: 22px; }
 .apc-body { flex: 1; }
@@ -226,57 +118,23 @@ textarea {
 .apc-arrow { color: var(--gold); font-size: 18px; animation: apc-bounce .9s ease-in-out infinite; }
 @keyframes apc-bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(4px)} }
 
-/* ── CHUNK / CONTINUAR ── */
-.narr-chunk { margin: 0 0 6px; line-height: 1.7; }
-.btn-continuar-narr {
-  display: block;
-  margin: 8px auto;
-  background: none;
-  border: 1px solid rgba(200,160,80,.35);
-  color: var(--gold);
-  font-size: 11px;
-  padding: 4px 18px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-family: inherit;
-  letter-spacing: 1px;
-}
-
-/* ── CONTROLES DO DEMO ── */
+/* ── DEMO ── */
 #demo-controls {
-  position: fixed;
-  top: 48px; right: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  z-index: 80;
+  position: fixed; top: 48px; right: 8px;
+  display: flex; flex-direction: column; gap: 6px; z-index: 80;
 }
 .demo-btn {
-  background: rgba(13,17,32,.95);
-  border: 1px solid rgba(200,160,80,.4);
-  color: var(--gold);
-  font-size: 10px;
-  letter-spacing: .8px;
-  padding: 6px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-family: inherit;
-  text-transform: uppercase;
-  white-space: nowrap;
+  background: rgba(13,17,32,.95); border: 1px solid rgba(200,160,80,.4);
+  color: var(--gold); font-size: 10px; letter-spacing: .8px;
+  padding: 6px 10px; border-radius: 6px; cursor: pointer;
+  font-family: inherit; text-transform: uppercase; white-space: nowrap;
 }
 .demo-btn:hover { background: rgba(200,160,80,.1); }
 #demo-label {
-  position: fixed;
-  top: 8px; left: 50%; transform: translateX(-50%);
-  background: rgba(200,160,80,.15);
-  border: 1px solid rgba(200,160,80,.4);
-  color: var(--gold);
-  font-size: 10px;
-  letter-spacing: 1px;
-  padding: 4px 14px;
-  border-radius: 20px;
-  z-index: 80;
-  text-transform: uppercase;
+  position: fixed; top: 8px; left: 50%; transform: translateX(-50%);
+  background: rgba(200,160,80,.15); border: 1px solid rgba(200,160,80,.4);
+  color: var(--gold); font-size: 10px; letter-spacing: 1px;
+  padding: 4px 14px; border-radius: 20px; z-index: 80; text-transform: uppercase;
 }
 </style>
 </head>
@@ -284,26 +142,20 @@ textarea {
 
 <div id="demo-label">▶ PREVIEW INTERATIVO</div>
 
-<!-- topbar -->
 <div id="topbar">
   <span>V9VEQ &nbsp; Rodada 1</span>
   <span>🔊 📜 ↺</span>
 </div>
-
-<!-- players -->
 <div id="players-bar">
   <div class="player-chip">⚔️ <span>Carne</span> <span class="chip-hp">PV 15/15</span> <span style="color:#3a72b0">CA 17</span></div>
 </div>
 
-<!-- story -->
 <div id="story-area">
   <div id="story-content">
     <div class="msg-gm">
       <p class="narr-chunk">Espantalhos de palha e trapos rasgados irrompem das barracas, olhos de madeira fixos em Carne. O primeiro espantalho se espatifa no chão, madeira estalando, enquanto o segundo avança, braços de vara se estendendo como garras.</p>
     </div>
-
-    <!-- Card de ação aparece aqui -->
-    <div class="action-prompt-card" id="action-card">
+    <div class="action-prompt-card">
       <div class="apc-icon">⚔</div>
       <div class="apc-body">
         <div class="apc-title">Declare sua ação</div>
@@ -314,13 +166,11 @@ textarea {
   </div>
 </div>
 
-<!-- enemies -->
 <div id="enemies-bar">
   <div class="enemy-chip">🪨 Espantalho 1 <div class="enemy-hp-bar"><div class="enemy-hp-fill" style="width:100%"></div></div> 10/10</div>
   <div class="enemy-chip">🪨 Espantalho 2 <div class="enemy-hp-bar"><div class="enemy-hp-fill" style="width:100%"></div></div> 10/10</div>
 </div>
 
-<!-- action bar -->
 <div id="action-bar">
   <div id="action-wrap">
     <textarea rows="2" placeholder="Declare a ação do seu personagem..."></textarea>
@@ -328,97 +178,79 @@ textarea {
   </div>
 </div>
 
-<!-- Diálogo NPC (começa oculto) -->
-<div id="dialogo-overlay" style="display:none">
-  <div id="dialogo-portrait" style="background:rgba(96,112,128,.2)">🗡️</div>
-  <div id="dialogo-body">
-    <div id="dialogo-nome">Gregoras Pellos</div>
-    <p id="dialogo-texto">"As Blackwoods começam a poucas milhas daqui. Algo lá dentro planeja o próximo ataque — e desta vez pode ser pior."</p>
-  </div>
-  <button id="dialogo-ok">▼</button>
-</div>
-
-<!-- Botões de demo -->
 <div id="demo-controls">
-  <button class="demo-btn" onclick="mostrarNarracaoChunks()">📖 Narração longa<br>(chunks)</button>
-  <button class="demo-btn" onclick="mostrarDialogoGregoras()">🗡️ Diálogo<br>Gregoras</button>
-  <button class="demo-btn" onclick="mostrarDialogoMutter()">🧙 Diálogo<br>Mutter</button>
+  <button class="demo-btn" onclick="mostrarNarracaoComDialogo()">📖 Demo completo</button>
+  <button class="demo-btn" onclick="mostrarDialogoSolto('Gregoras Pellos','As Blackwoods começam a poucas milhas daqui. Algo planeja o próximo ataque.')">🗡️ Só diálogo<br>Gregoras</button>
+  <button class="demo-btn" onclick="mostrarDialogoSolto('Mutter Grimmhaar','Sangue por sangue, criança. Não há outra moeda aqui.')">🧙 Só diálogo<br>Mutter</button>
   <button class="demo-btn" onclick="resetDemo()">↺ Reset</button>
 </div>
 
 <script>
 const NPCS = {
-  'Gregoras Pellos': { icon:'🗡️', cor:'#607080' },
+  'Gregoras Pellos':  { icon:'🗡️', cor:'#607080' },
   'Mutter Grimmhaar': { icon:'🧙', cor:'#6a3a6a' },
-  'Catherine': { icon:'👑', cor:'#b08030' },
+  'Catherine':        { icon:'👑', cor:'#b08030' },
 };
+const sc = () => document.getElementById('story-content');
+const sa = () => document.getElementById('story-area');
 
-function mostrarDialogo(nome, texto, container) {
+function scrollBaixo() { sa().scrollTop = sa().scrollHeight; }
+
+function adicionarBolha(nome, texto, onContinuar) {
   const npc = NPCS[nome] || { icon:'👤', cor:'#4a5a70' };
+  const bubble = document.createElement('div');
+  bubble.className = 'dialogo-inline';
+  bubble.innerHTML = `
+    <div class="dialogo-inline-icon" style="background:${npc.cor}22">${npc.icon}</div>
+    <div>
+      <div class="dialogo-inline-nome">${nome}</div>
+      <div class="dialogo-inline-texto">"${texto}"</div>
+    </div>`;
+  sc().appendChild(bubble);
 
-  // 1. Bolha inline permanente na história
-  if (container) {
-    const bubble = document.createElement('div');
-    bubble.className = 'dialogo-inline';
-    bubble.innerHTML = `
-      <div class="dialogo-inline-icon" style="background:${npc.cor}22">${npc.icon}</div>
-      <div>
-        <div class="dialogo-inline-nome">${nome}</div>
-        <div class="dialogo-inline-texto">"${texto}"</div>
-      </div>`;
-    container.appendChild(bubble);
-    document.getElementById('story-area').scrollTop = 99999;
+  if (onContinuar) {
+    const btn = document.createElement('button');
+    btn.className = 'btn-continuar-narr';
+    btn.textContent = '▶ Continuar';
+    btn.onclick = () => { btn.remove(); onContinuar(); };
+    sc().appendChild(btn);
   }
-
-  // 2. Card flutuante para TTS
-  document.getElementById('dialogo-portrait').textContent = npc.icon;
-  document.getElementById('dialogo-portrait').style.background = npc.cor + '33';
-  document.getElementById('dialogo-nome').textContent = nome;
-  document.getElementById('dialogo-texto').textContent = `"${texto}"`;
-  const ov = document.getElementById('dialogo-overlay');
-  ov.style.display = 'flex';
-  ov.style.animation = 'none'; ov.offsetHeight; ov.style.animation = '';
+  scrollBaixo();
 }
 
-document.getElementById('dialogo-ok').onclick = () => {
-  document.getElementById('dialogo-overlay').style.display = 'none';
-};
-
-function mostrarDialogoGregoras() {
-  const sc = document.getElementById('story-content');
-  mostrarDialogo('Gregoras Pellos', 'As Blackwoods começam a poucas milhas daqui. Algo lá dentro planeja o próximo ataque — e desta vez pode ser pior.', sc);
-}
-
-function mostrarDialogoMutter() {
-  const sc = document.getElementById('story-content');
-  mostrarDialogo('Mutter Grimmhaar', 'Sangue por sangue, criança. Não há outra moeda aqui. Pague o preço ou vá embora com suas perguntas.', sc);
-}
-
-function mostrarNarracaoChunks() {
+function mostrarDialogoSolto(nome, texto) {
   resetDemo(false);
-  const sc = document.getElementById('story-content');
+  adicionarBolha(nome, texto, null);
+}
+
+function mostrarNarracaoComDialogo() {
+  resetDemo(false);
+  const div = document.createElement('div');
+  div.className = 'msg-gm';
+  sc().appendChild(div);
 
   const chunks = [
     'Sir Gregoras Pellos afasta-se da multidão festiva e gesticula para que o sigam. Seu rosto carrega o peso de dois anos guardando um segredo que corrói Mhoried por dentro.',
-    'Ele para sob a sombra de uma azinheira, de costas para as barracas. A voz dele, quando fala, é quase um sussurro — mas cada palavra cai como pedra em água parada.',
+    'Ele para sob a sombra de uma azinheira, de costas para as barracas. A voz é quase um sussurro — mas cada palavra cai como pedra em água parada.',
     'Gregoras aguarda que o último foliante se afaste e então se inclina, voz baixa:'
   ];
 
   let i = 0;
-  const div = document.createElement('div');
-  div.className = 'msg-gm';
-  sc.appendChild(div);
-
   function proxChunk() {
     if (i >= chunks.length) {
-      setTimeout(() => mostrarDialogoGregoras(), 400);
+      // após narração: bolha inline + botão continuar
+      adicionarBolha(
+        'Gregoras Pellos',
+        'As Blackwoods começam a poucas milhas daqui. Algo lá dentro planeja o próximo ataque — e desta vez pode ser pior.',
+        mostrarCardAcao
+      );
       return;
     }
     const p = document.createElement('p');
     p.className = 'narr-chunk';
     p.textContent = chunks[i++];
     div.appendChild(p);
-    sc.scrollTop = sc.scrollHeight;
+    scrollBaixo();
 
     if (i < chunks.length) {
       const btn = document.createElement('button');
@@ -426,40 +258,34 @@ function mostrarNarracaoChunks() {
       btn.textContent = '▶ Continuar';
       btn.onclick = () => { btn.remove(); proxChunk(); };
       div.appendChild(btn);
-      sc.scrollTop = sc.scrollHeight;
+      scrollBaixo();
     } else {
-      proxChunk(); // vai pro diálogo
+      proxChunk();
     }
   }
   proxChunk();
 }
 
-function resetDemo(readdActionCard = true) {
-  document.getElementById('dialogo-overlay').style.display = 'none';
-  const sc = document.getElementById('story-content');
-  // remove tudo exceto o primeiro msg-gm e o action-card
-  [...sc.children].forEach(el => {
-    if (!el.classList.contains('msg-gm') || el.querySelector('.narr-chunk:not(:first-child)') || el.children.length > 1) {
-      if (!el.id) el.remove();
-    }
-  });
-  // restaurar primeiro bloco
-  sc.innerHTML = `
+function mostrarCardAcao() {
+  const card = document.createElement('div');
+  card.className = 'action-prompt-card';
+  card.innerHTML = `
+    <div class="apc-icon">⚔</div>
+    <div class="apc-body">
+      <div class="apc-title">Declare sua ação</div>
+      <div class="apc-sub">O que o seu personagem faz agora?</div>
+    </div>
+    <div class="apc-arrow">↓</div>`;
+  sc().appendChild(card);
+  scrollBaixo();
+}
+
+function resetDemo(comCard = true) {
+  sc().innerHTML = `
     <div class="msg-gm">
       <p class="narr-chunk">Espantalhos de palha e trapos rasgados irrompem das barracas, olhos de madeira fixos em Carne. O primeiro espantalho se espatifa no chão, madeira estalando, enquanto o segundo avança, braços de vara se estendendo como garras.</p>
     </div>`;
-  if (readdActionCard) {
-    const card = document.createElement('div');
-    card.className = 'action-prompt-card';
-    card.innerHTML = `
-      <div class="apc-icon">⚔</div>
-      <div class="apc-body">
-        <div class="apc-title">Declare sua ação</div>
-        <div class="apc-sub">O que o seu personagem faz agora?</div>
-      </div>
-      <div class="apc-arrow">↓</div>`;
-    sc.appendChild(card);
-  }
+  if (comCard) mostrarCardAcao();
 }
 </script>
 </body>

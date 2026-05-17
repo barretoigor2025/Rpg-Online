@@ -282,8 +282,14 @@ function renderizarSegmentos(container, segs, falas) {
         </div>`;
       container.appendChild(bubble);
       scrollDown();
-      // Narra a fala inline e encadeia o próximo item
-      narrarTexto(it.texto, proxItem);
+      // Narra a fala (sem bloquear — usuário clica para continuar)
+      narrarTexto(it.texto);
+      const btn = document.createElement('button');
+      btn.className = 'btn-continuar-narr';
+      btn.textContent = '▶ Continuar';
+      btn.onclick = () => { btn.remove(); proxItem(); };
+      container.appendChild(btn);
+      scrollDown();
     }
   }
   proxItem();
