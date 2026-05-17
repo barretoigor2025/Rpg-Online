@@ -506,7 +506,8 @@ const EQUIP_SLOTS = [
 ];
 const SLOT_LABELS = { cabeca:'Cabeça', tronco:'Tronco', mao_d:'Mão Direita', mao_e:'Mão Esquerda', pes:'Pés' };
 
-const MOCHILA_MAX = 6;
+const MOCHILA_MAX      = 12; // slots totais na mochila
+const MOCHILA_ITENS    = 11; // slots para itens (1 reservado para dinheiro)
 
 const STARTER_KITS = {
   guerreiro: {
@@ -563,8 +564,9 @@ window.desequiparParaMochila = async function(slot) {
   const mochila = eu.mochila || {};
   const slug = item.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') || `item_${Date.now()}`;
   const jaExiste = !!mochila[slug];
-  if (!jaExiste && Object.keys(mochila).length >= MOCHILA_MAX) {
-    toast(`Mochila cheia! Desequipe algo antes.`, 2500); return;
+  const qtdItens = Object.keys(mochila).filter(k => k !== 'dinheiro').length;
+  if (!jaExiste && qtdItens >= MOCHILA_ITENS) {
+    toast(`Mochila cheia! Máximo de ${MOCHILA_ITENS} itens.`, 2500); return;
   }
   const ups = {};
   ups[`salas/${mySala}/jogadores/${myUid}/equipamento/${slot}`] = null;
@@ -629,7 +631,7 @@ window.confirmarEquiparDaMochila = async function(mochilaKey, slot) {
     if (jaExisteOld) {
       ups[`salas/${mySala}/jogadores/${myUid}/mochila/${oldSlug}/qtd`] = (mochila[oldSlug].qtd || 1) + 1;
       ups[`personagens/${myUid}/mochila/${oldSlug}/qtd`] = (mochila[oldSlug].qtd || 1) + 1;
-    } else if (Object.keys(mochila).length < MOCHILA_MAX || mochilaKey === oldSlug) {
+    } else if (Object.keys(mochila).filter(k=>k!=='dinheiro').length < MOCHILA_ITENS || mochilaKey === oldSlug) {
       ups[`salas/${mySala}/jogadores/${myUid}/mochila/${oldSlug}`] = { nome: itemAnterior, qtd: 1, slot };
       ups[`personagens/${myUid}/mochila/${oldSlug}`] = { nome: itemAnterior, qtd: 1, slot };
     }
@@ -638,6 +640,28 @@ window.confirmarEquiparDaMochila = async function(mochilaKey, slot) {
   toast(`${item.nome} equipado em ${SLOT_LABELS[slot]}`, 2000);
   setTimeout(() => renderizarMochila(), 200);
 };
+
+function _itemIcon(it) {
+  if (!it) return '📦';
+  if (it.slot) return EQUIP_SLOTS.find(s => s.key === it.slot)?.icon || '⚔';
+  const n = (it.nome || '').toLowerCase();
+  if (n.includes('poção') || n.includes('pocao')) return '🧪';
+  if (n.includes('tocha'))                         return '🕯️';
+  if (n.includes('corda'))                         return '🪢';
+  if (n.includes('ração') || n.includes('racao'))  return '🍖';
+  if (n.includes('erva'))                          return '🌿';
+  if (n.includes('água') || n.includes('benta'))   return '💧';
+  if (n.includes('flecha') || n.includes('aljava'))return '🪃';
+  if (n.includes('ferramenta'))                    return '🔧';
+  if (n.includes('componente') || n.includes('feitiço')) return '✨';
+  if (n.includes('pedra'))                         return '🪨';
+  if (n.includes('faca') || n.includes('adaga'))   return '🗡️';
+  return '📦';
+}
+
+function _nomeAbrev(nome, max) {
+  return nome.length > max ? nome.substring(0, max - 1) + '…' : nome;
+}
 
 window.toggleMochila = function() {
   const el = document.getElementById('mochila-overlay');
@@ -654,32 +678,93 @@ function renderizarMochila() {
   if (!el) return;
   const eu = _jogadoresCache[myUid];
   const mochila = eu?.mochila || {};
-  const items = Object.entries(mochila).sort(([,a],[,b]) => (a.nome||'').localeCompare(b.nome||''));
+  const dinheiro = mochila.dinheiro || { nome: 'Dinheiro', qtd: 0 };
+  const items = Object.entries(mochila)
+    .filter(([k]) => k !== 'dinheiro')
+    .sort(([,a],[,b]) => (a.nome||'').localeCompare(b.nome||''));
   const count = items.length;
-  const isFull = count >= MOCHILA_MAX;
-  let h = `<div class="mochila-header"><span>🎒 Mochila <small class="mochila-count">${count}/${MOCHILA_MAX}</small></span><button class="mochila-close" onclick="toggleMochila()">✕</button></div>`;
-  h += `<div class="mochila-items">`;
-  if (!items.length) h += `<div class="mochila-vazia">Mochila vazia</div>`;
-  items.forEach(([key, it]) => {
-    const equippable = !!it.slot;
-    h += `<div class="mochila-item">
-      <span class="mochila-item-nome">${it.nome}</span>
-      <div class="mochila-item-qtd">
-        ${equippable ? `<button class="mochila-equip-btn" onclick="equiparDaMochila('${key}')" title="Equipar">⚔</button>` : ''}
-        <button class="mochila-qty-btn" onclick="ajustarMochila('${key}',${(it.qtd||1)-1})">−</button>
-        <span>${it.qtd||1}</span>
-        <button class="mochila-qty-btn" onclick="ajustarMochila('${key}',${(it.qtd||1)+1})">+</button>
-      </div>
-    </div>`;
-  });
-  h += `</div>`;
-  h += `<div class="mochila-add">
-    <input type="text" id="mochila-new-item" placeholder="${isFull ? 'Mochila cheia!' : 'Adicionar item...'}" maxlength="50" ${isFull ? 'disabled' : ''} onkeydown="if(event.key==='Enter')adicionarMochila()">
-    <input type="number" id="mochila-new-qtd" value="1" min="1" max="99" ${isFull ? 'disabled' : ''}>
-    <button class="btn-sm" onclick="adicionarMochila()" ${isFull ? 'disabled' : ''}>+</button>
+
+  let h = `<div class="mochila-header">
+    <span>🎒 Mochila <small class="mochila-count">${count}/${MOCHILA_ITENS}</small></span>
+    <button class="mochila-close" onclick="toggleMochila()">✕</button>
   </div>`;
+
+  h += `<div class="mochila-grid">`;
+  // 11 slots de itens
+  for (let i = 0; i < MOCHILA_ITENS; i++) {
+    if (i < items.length) {
+      const [key, it] = items[i];
+      h += `<div class="mochila-slot ocupado" onclick="cliqueMochilaItem('${key}')">
+        <div class="mochila-slot-icon">${_itemIcon(it)}</div>
+        <div class="mochila-slot-nome">${_nomeAbrev(it.nome, 11)}</div>
+        <div class="mochila-slot-qtd">×${it.qtd || 1}</div>
+      </div>`;
+    } else {
+      h += `<div class="mochila-slot vazio" onclick="cliqueMochilaVazio()">
+        <div class="mochila-slot-add">+</div>
+      </div>`;
+    }
+  }
+  // Slot de dinheiro (fixo, sempre último)
+  h += `<div class="mochila-slot mochila-dinheiro" onclick="editarDinheiro()">
+    <div class="mochila-slot-icon">🪙</div>
+    <div class="mochila-slot-nome">Dinheiro</div>
+    <div class="mochila-slot-qtd">${dinheiro.qtd || 0}</div>
+  </div>`;
+  h += `</div>`;
   el.innerHTML = h;
 }
+
+window.cliqueMochilaItem = function(key) {
+  // Remove qualquer popup anterior
+  document.getElementById('mochila-action-bar')?.remove();
+  document.getElementById('mochila-add-form')?.remove();
+  const eu = _jogadoresCache[myUid];
+  const it = (eu?.mochila || {})[key];
+  if (!it) return;
+  const equippable = !!it.slot;
+  let h = `<div id="mochila-action-bar" class="mochila-action-bar">
+    <span class="mochila-action-nome">${it.nome} ×${it.qtd || 1}</span>
+    <div class="mochila-action-btns">`;
+  if (equippable) h += `<button class="mochila-equip-btn" onclick="equiparDaMochila('${key}')">⚔ Equipar</button>`;
+  h += `<button class="mochila-qty-btn" onclick="ajustarMochila('${key}',${(it.qtd||1)-1})">−</button>
+    <button class="mochila-qty-btn" onclick="ajustarMochila('${key}',${(it.qtd||1)+1})">+</button>
+    <button class="mochila-remove-btn" onclick="ajustarMochila('${key}',0)">🗑</button>
+    <button class="mochila-qty-btn" onclick="document.getElementById('mochila-action-bar').remove()">✕</button>
+  </div></div>`;
+  document.getElementById('mochila-overlay').insertAdjacentHTML('beforeend', h);
+};
+
+window.cliqueMochilaVazio = function() {
+  document.getElementById('mochila-action-bar')?.remove();
+  if (document.getElementById('mochila-add-form')) {
+    document.getElementById('mochila-add-form').remove(); return;
+  }
+  const eu = _jogadoresCache[myUid];
+  const mochila = eu?.mochila || {};
+  const qtdItens = Object.keys(mochila).filter(k => k !== 'dinheiro').length;
+  if (qtdItens >= MOCHILA_ITENS) { toast(`Mochila cheia!`, 1500); return; }
+  const h = `<div id="mochila-add-form" class="mochila-add">
+    <input type="text" id="mochila-new-item" placeholder="Nome do item..." maxlength="50" onkeydown="if(event.key==='Enter')adicionarMochila()">
+    <input type="number" id="mochila-new-qtd" value="1" min="1" max="99">
+    <button class="btn-sm" onclick="adicionarMochila()">+</button>
+  </div>`;
+  document.getElementById('mochila-overlay').insertAdjacentHTML('beforeend', h);
+  setTimeout(() => document.getElementById('mochila-new-item')?.focus(), 50);
+};
+
+window.editarDinheiro = function() {
+  const eu = _jogadoresCache[myUid];
+  const atual = (eu?.mochila || {}).dinheiro?.qtd || 0;
+  const val = prompt('Quantidade de dinheiro (pratas):', atual);
+  if (val === null) return;
+  const qtd = Math.max(0, parseInt(val) || 0);
+  if (!mySala) return;
+  const ups = {};
+  ups[`salas/${mySala}/jogadores/${myUid}/mochila/dinheiro`] = { nome: 'Dinheiro', qtd };
+  ups[`personagens/${myUid}/mochila/dinheiro`] = { nome: 'Dinheiro', qtd };
+  update(ref(db), ups).then(() => setTimeout(() => renderizarMochila(), 200));
+};
 
 window.ajustarMochila = async function(key, novaQtd) {
   if (!mySala) return;
@@ -705,8 +790,9 @@ window.adicionarMochila = async function() {
   const qtd = Math.max(1, Math.min(99, +(qtdEl?.value) || 1));
   const slug = nome.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') || `item_${Date.now()}`;
   const jaExiste = !!mochila[slug];
-  if (!jaExiste && Object.keys(mochila).length >= MOCHILA_MAX) {
-    toast(`Mochila cheia! Máximo de ${MOCHILA_MAX} itens.`, 2500); return;
+  const qtdItens = Object.keys(mochila).filter(k => k !== 'dinheiro').length;
+  if (!jaExiste && qtdItens >= MOCHILA_ITENS) {
+    toast(`Mochila cheia! Máximo de ${MOCHILA_ITENS} itens.`, 2500); return;
   }
   const qtdAtual = mochila[slug]?.qtd || 0;
   const ups = {};
