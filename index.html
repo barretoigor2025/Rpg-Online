@@ -5,6 +5,24 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
   <title>Oráculo RPG</title>
   <link rel="stylesheet" href="css/layout.css">
+  <script>
+    // Navegação básica inline — roda ANTES de qualquer script externo.
+    // Garante que os botões funcionem mesmo se o Firebase demorar a carregar.
+    (function(){
+      var IDS=['screen-home','screen-chars','screen-create','screen-lobby','screen-game'];
+      function _show(id){
+        IDS.forEach(function(s){
+          var el=document.getElementById(s);
+          if(el)el.style.display=(s===id)?'':'none';
+        });
+      }
+      window.irParaHome=function(){_show('screen-home');};
+      window.irParaPersonagens=function(){
+        _show('screen-chars');
+        // Slots serão preenchidos quando main.js carregar
+      };
+    })();
+  </script>
 </head>
 <body>
 
@@ -203,6 +221,6 @@
 <!-- Firebase SDK via script tags (mais confiável em mobile que ES module imports) -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-<script src="js/main.js" defer></script>
+<script src="js/main.js?v=4"></script>
 </body>
 </html>

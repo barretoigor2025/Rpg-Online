@@ -1,15 +1,17 @@
 // ═══════════════════════════════════════════════════════════════
 //  FIREBASE — compat SDK (carregado via script tag no HTML)
 // ═══════════════════════════════════════════════════════════════
-firebase.initializeApp({
-  apiKey:            "AIzaSyAsn9ZFJP6QWFesfls9anBAJbAqcDMfnqg",
-  authDomain:        "rpg-online-ad73f.firebaseapp.com",
-  databaseURL:       "https://rpg-online-ad73f-default-rtdb.firebaseio.com",
-  projectId:         "rpg-online-ad73f",
-  storageBucket:     "rpg-online-ad73f.firebasestorage.app",
-  messagingSenderId: "1031450807961",
-  appId:             "1:1031450807961:web:369342194731ad0ae37208"
-});
+try {
+  firebase.initializeApp({
+    apiKey:            "AIzaSyAsn9ZFJP6QWFesfls9anBAJbAqcDMfnqg",
+    authDomain:        "rpg-online-ad73f.firebaseapp.com",
+    databaseURL:       "https://rpg-online-ad73f-default-rtdb.firebaseio.com",
+    projectId:         "rpg-online-ad73f",
+    storageBucket:     "rpg-online-ad73f.firebasestorage.app",
+    messagingSenderId: "1031450807961",
+    appId:             "1:1031450807961:web:369342194731ad0ae37208"
+  });
+} catch(e) { /* app já inicializado — reutilizar instância existente */ }
 const db = firebase.database();
 
 // Wrappers para manter a sintaxe da API modular intacta no restante do código
