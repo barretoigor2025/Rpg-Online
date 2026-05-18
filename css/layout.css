@@ -2011,3 +2011,19 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 }
 .btn-back:hover { color: var(--text2); }
 
+/* ══════════════════════════════════════════════════════
+   AUTO-AVANÇO — card "A história continua…"
+══════════════════════════════════════════════════════ */
+.action-prompt-card.apc-avançando {
+  border-color: rgba(88,104,160,.2);
+  background: rgba(13,17,32,.6);
+  opacity: .8;
+}
+.apc-pulse {
+  animation: apc-pulse-anim 1.8s ease-in-out infinite;
+  color: var(--text3) !important;
+}
+@keyframes apc-pulse-anim {
+  0%,100% { opacity: .3; transform: translateX(0); }
+  50%      { opacity: .8; transform: translateX(3px); }
+}

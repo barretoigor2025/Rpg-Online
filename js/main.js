@@ -157,8 +157,17 @@ function limparTags(txt) {
     .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV|JOGADOR|AUSENTE|PRESENTE|LESAO|XP|TITULO|POSSE|REPUTACAO|EQUIPAR|ITEM_BAG)[^\]]*\]\s*)*/gi, '')
     .replace(/\[(?:INIMIGO|MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR|LESAO|XP|TITULO|POSSE|REPUTACAO|EQUIPAR|ITEM_BAG):[^\]]+\]/gi, '')
     .replace(/^\s*TESTAR:\s*\[.*\]\s*$/gim, '')
+    .replace(/^\s*AVANÇAR\s*$/im, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+function extrairAvançar(txt) {
+  return /^\s*AVANÇAR\s*$/im.test(txt);
+}
+
+function removerAvançar(txt) {
+  return txt.replace(/^\s*AVANÇAR\s*$/im, '').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1741,6 +1750,21 @@ function irParaJogo(codigo) {
       if (iniciarWrap) iniciarWrap.style.display = 'block';
     }
 
+    // Cancelar timer se saiu do estado avançando
+    if (config.estado !== 'avançando') cancelarAutoAvancar();
+
+    // Auto-avançar quando IA sinalizou AVANÇAR
+    if (amIHost && config.estado === 'avançando' && !chamandoIA) {
+      const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
+      const alguemAgiu = ativos.some(j => j.acao1 != null);
+      if (alguemAgiu) {
+        cancelarAutoAvancar();
+        await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
+      } else {
+        iniciarAutoAvancar();
+      }
+    }
+
     // Host narra quando estado = 'aguardando' e todos enviaram ação
     if (amIHost && config.estado === 'aguardando') {
       const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
@@ -1919,24 +1943,39 @@ function atualizarPromptAcao(eu, config) {
   if (!storyContent) return;
 
   let card = document.getElementById('action-prompt-card');
-  const deveExibir = eu && config.estado === 'aguardando' && eu.acao1 == null && eu.vivo && eu.consciente;
+  const estadoAvançando = config.estado === 'avançando';
+  const deveExibir = eu && (config.estado === 'aguardando' || estadoAvançando) && eu.acao1 == null && eu.vivo && eu.consciente;
 
   if (!deveExibir) {
     if (card) card.remove();
     return;
   }
 
+  const novoTipo = estadoAvançando ? 'apc-avançando' : '';
+  if (card && card.dataset.tipo !== novoTipo) { card.remove(); card = null; }
+
   if (!card) {
     card = document.createElement('div');
     card.id = 'action-prompt-card';
-    card.className = 'action-prompt-card';
-    card.innerHTML = `
-      <div class="apc-icon">⚔</div>
-      <div class="apc-body">
-        <div class="apc-title">Declare sua ação</div>
-        <div class="apc-sub">O que o seu personagem faz agora?</div>
-      </div>
-      <div class="apc-arrow">↓</div>`;
+    card.dataset.tipo = novoTipo;
+    if (estadoAvançando) {
+      card.className = 'action-prompt-card apc-avançando';
+      card.innerHTML = `
+        <div class="apc-icon apc-pulse">⟫</div>
+        <div class="apc-body">
+          <div class="apc-title">A história continua…</div>
+          <div class="apc-sub">Você pode agir a qualquer momento</div>
+        </div>`;
+    } else {
+      card.className = 'action-prompt-card';
+      card.innerHTML = `
+        <div class="apc-icon">⚔</div>
+        <div class="apc-body">
+          <div class="apc-title">Declare sua ação</div>
+          <div class="apc-sub">O que o seu personagem faz agora?</div>
+        </div>
+        <div class="apc-arrow">↓</div>`;
+    }
     storyContent.appendChild(card);
     scrollDown();
   }
@@ -1953,6 +1992,15 @@ window.enviarAcao = async function() {
   input.value = '';
   await push(ref(db, `salas/${mySala}/historia`), { role:'user', content: acao, uid: myUid, ts: Date.now() });
   await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), { acao1: acao });
+
+  // Se estava em auto-avanço e sou o host, cancelar e retornar ao aguardando
+  if (amIHost) {
+    const configSnap = (await get(ref(db, `salas/${mySala}/config`))).val();
+    if (configSnap?.estado === 'avançando') {
+      cancelarAutoAvancar();
+      await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
+    }
+  }
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -2407,6 +2455,64 @@ window.chamarIAInicio = async function() {
 };
 
 // ═══════════════════════════════════════════════════════════════
+//  AUTO-AVANÇO — timer e continuação sem input do jogador
+// ═══════════════════════════════════════════════════════════════
+const DELAY_AUTO_AVANCAR = 7000;
+let _autoAvancarTimer = null;
+
+function iniciarAutoAvancar() {
+  if (_autoAvancarTimer) return;
+  _autoAvancarTimer = setTimeout(async () => {
+    _autoAvancarTimer = null;
+    if (!amIHost || !mySala) return;
+    await chamarIA_continuar();
+  }, DELAY_AUTO_AVANCAR);
+}
+
+function cancelarAutoAvancar() {
+  if (_autoAvancarTimer) { clearTimeout(_autoAvancarTimer); _autoAvancarTimer = null; }
+}
+
+async function chamarIA_continuar() {
+  if (chamandoIA) return;
+  if (!getApiKey()) { pedirApiKey(() => {}); return; }
+  const snap = await get(ref(db, `salas/${mySala}`));
+  if (!snap.exists()) return;
+  const data = snap.val();
+  if (data.config?.estado !== 'avançando') return;
+  chamandoIA = true;
+  try {
+    const { config = {}, jogadores = {}, inimigos = {}, historia = {} } = data;
+    const rodada = config.rodada || 1;
+    await update(ref(db, `salas/${mySala}/config`), { estado: 'narrando' });
+    const hist = Object.values(historia)
+      .sort((a,b) => (a.ts||0)-(b.ts||0))
+      .filter(e => e.role === 'model' || e.role === 'user')
+      .slice(-10);
+    const msg = `Rodada ${rodada}.\n\n[Continuação automática — nenhuma nova ação do jogador. Continue a narrativa naturalmente, avançando a cena ou introduzindo um novo elemento.]`;
+    const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), hist, msg, mostrarRetryUI);
+    ocultarRetryUI();
+    const ups = {};
+    if (!resposta) {
+      ups[`salas/${mySala}/config/estado`] = 'aguardando';
+      ups[`salas/${mySala}/config/rodada`] = rodada + 1;
+      await update(ref(db), ups);
+      return;
+    }
+    const temAvançar = extrairAvançar(resposta);
+    const respostaFinal = temAvançar ? removerAvançar(resposta) : resposta;
+    ups[`salas/${mySala}/config/estado`] = temAvançar ? 'avançando' : 'aguardando';
+    ups[`salas/${mySala}/config/rodada`] = rodada + 1;
+    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(respostaFinal), falas: extrairFalas(respostaFinal), ataques: extrairAtaques(respostaFinal), ts: Date.now() });
+    await processarStats(respostaFinal, jogadores, inimigos);
+    await update(ref(db), ups);
+  } finally {
+    chamandoIA = false;
+    ocultarRetryUI();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  IA — TURNO
 // ═══════════════════════════════════════════════════════════════
 async function chamarIA(jogadores, data) {
@@ -2471,10 +2577,12 @@ async function chamarIA(jogadores, data) {
       });
     } else {
       // Fluxo normal sem testes
-      ups[`salas/${mySala}/config/estado`] = 'aguardando';
+      const temAvançar = extrairAvançar(resposta);
+      const respostaFinal = temAvançar ? removerAvançar(resposta) : resposta;
+      ups[`salas/${mySala}/config/estado`] = temAvançar ? 'avançando' : 'aguardando';
       ups[`salas/${mySala}/config/rodada`] = rodada + 1;
-      await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), falas: extrairFalas(resposta), ataques: extrairAtaques(resposta), ts: Date.now() });
-      await processarStats(resposta, jogadores, inimigos);
+      await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(respostaFinal), falas: extrairFalas(respostaFinal), ataques: extrairAtaques(respostaFinal), ts: Date.now() });
+      await processarStats(respostaFinal, jogadores, inimigos);
       await update(ref(db), ups);
     }
   } finally {
@@ -2530,6 +2638,7 @@ VOZ:
 - ${iniList ? 'COMBATE ATIVO — máximo 40 palavras de narração (após testes). JAMAIS mencione dados, modificadores, CD ou cálculos no texto.' : 'EXPLORAÇÃO — máximo 70 palavras por bloco narrativo (tags FALA não contam no limite).'}
 - Mantenha o tom: a floresta observa, os NPCs têm segredos, nada é seguro.
 - NUNCA termine com pergunta ao jogador. A narração termina com a consequência da cena.
+- Use AVANÇAR (sozinho, última linha da resposta) quando a cena não exige decisão do jogador — ex: consequência já resolvida, transição narrativa natural, momento puramente descritivo, NPC despedindo-se, multidão dispersando. O sistema continuará automaticamente. Não use AVANÇAR se o jogador precisar escolher algo ou se houver combate ativo.
 - Se jogadores estiverem em locais diferentes, use [AUSENTE:nome] e [PRESENTE:nome].
 - AÇÕES INDIVIDUAIS: cada jogador age de forma INDEPENDENTE. Narre SOMENTE o que CADA UM declarou. NUNCA aplique a ação de um jogador ao grupo todo nem a outros jogadores.
 
