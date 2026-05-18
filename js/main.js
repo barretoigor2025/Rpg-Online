@@ -235,10 +235,10 @@ function normalizarFalas(raw) {
 // ═══════════════════════════════════════════════════════════════
 function extrairTestes(txt) {
   const testes = [];
-  const re = /^\s*TESTAR:\s*\[([^\|]+)\|([^\|]+)\|([^\|]+)\|(\d+)\]/gim;
+  const re = /^\s*TESTAR:\s*\[([^\|]+)\|([^\|]+)\|([^\|]+)\|(\d+)(?:\|([^\]]+))?\]/gim;
   let m;
   while ((m = re.exec(txt)) !== null) {
-    testes.push({ nomeJog: m[1].trim(), acao: m[2].trim(), attr: m[3].trim().toUpperCase(), dc: +m[4] });
+    testes.push({ nomeJog: m[1].trim(), acao: m[2].trim(), attr: m[3].trim().toUpperCase(), dc: +m[4], alvo: m[5] ? m[5].trim() : null });
   }
   return testes;
 }
@@ -251,63 +251,70 @@ function getAttrMod(jog, attr) {
   return Math.floor(((jog?.[stat] ?? 10) - 10) / 2);
 }
 
-let _testeFila      = [];
 let _testeResultados = [];
-let _testeCallbackFn = null;
 
 function iniciarTestes(testes, jogadores, afterCb) {
   if (!testes.length) { afterCb([]); return; }
-  _testeFila = testes.map(t => ({
-    ...t,
-    jog: Object.values(jogadores).find(j => j.nome === t.nomeJog) || null
-  }));
-  _testeResultados  = [];
-  _testeCallbackFn  = afterCb;
-  mostrarProximoTeste();
-}
 
-function mostrarProximoTeste() {
-  const overlay = document.getElementById('teste-overlay');
-  if (!_testeFila.length) {
-    if (overlay) overlay.style.display = 'none';
-    const cb = _testeCallbackFn;
-    _testeCallbackFn = null;
-    if (cb) cb(_testeResultados);
-    return;
+  // Rola todos os testes de uma vez
+  const resultados = testes.map(t => {
+    const jog = Object.values(jogadores).find(j => j.nome === t.nomeJog) || null;
+    const mod = getAttrMod(jog, t.attr);
+    const d20 = Math.floor(Math.random() * 20) + 1;
+    const total = d20 + mod;
+    const sucesso = total >= t.dc;
+    const modStr = mod >= 0 ? `+${mod}` : `${mod}`;
+    return { ...t, jog, mod, d20, total, sucesso, modStr };
+  });
+  _testeResultados = resultados;
+
+  // Portrait do atacante (jogador que age)
+  const eu = _jogadoresCache[myUid];
+  const pAtac = eu
+    ? { src: `sprites/${eu.classe}_${eu.sexo || 'm'}.png`, icon: '🧑', cor: '#4a7090' }
+    : { src: '', icon: '🧑', cor: '#4a7090' };
+
+  // Portrait do alvo (inimigo/NPC, do campo alvo do 1º teste)
+  const alvoNome = resultados[0].alvo || null;
+  const pAlvo = alvoNome ? getPortraitAtaque(alvoNome, false) : null;
+
+  const _phc = (p, espelhar) =>
+    `<div class="combate-teste-portrait" style="background:${p.cor}22;border-color:${p.cor}55">
+      ${p.src ? `<img src="${p.src}" alt=""${espelhar ? ' class="espelhado"' : ''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+      <span class="combate-teste-icon-fb"${p.src ? ' style="display:none"' : ''}>${p.icon}</span>
+    </div>`;
+
+  const linhasHTML = resultados.map((r, i) => {
+    const cor = r.sucesso ? '#5a9a5a' : '#c05050';
+    return `<div class="combate-teste-linha" style="color:${cor}">
+      <span class="combate-teste-num">${i + 1}.</span>
+      <span class="combate-teste-resultado">${r.sucesso ? 'ACERTO' : 'FALHA'}</span>
+      <span class="combate-teste-roll">${r.d20}${r.modStr}=${r.total} <span class="combate-teste-cd">CD${r.dc}</span></span>
+    </div>`;
+  }).join('');
+
+  const el = document.getElementById('story-content');
+  if (el) {
+    const card = document.createElement('div');
+    card.className = 'combate-teste-card';
+    card.innerHTML = `
+      ${_phc(pAtac, true)}
+      <div class="combate-teste-centro">
+        <div class="combate-teste-acao">${resultados[0].acao}</div>
+        ${linhasHTML}
+      </div>
+      ${pAlvo ? _phc(pAlvo, false) : `<div class="combate-teste-portrait combate-teste-sem-alvo"></div>`}`;
+    el.appendChild(card);
+    const btn = document.createElement('button');
+    btn.className = 'btn-continuar-narr';
+    btn.textContent = '▶ Ver resultado';
+    btn.onclick = () => { btn.remove(); afterCb(_testeResultados); };
+    el.appendChild(btn);
+    scrollDown();
+  } else {
+    afterCb(resultados);
   }
-
-  const t   = _testeFila.shift();
-  const mod = getAttrMod(t.jog, t.attr);
-  const d20 = Math.floor(Math.random() * 20) + 1;
-  const total   = d20 + mod;
-  const sucesso = total >= t.dc;
-  _testeResultados.push({ ...t, d20, mod, total, sucesso });
-
-  const modStr  = mod >= 0 ? `+${mod}` : `${mod}`;
-  const cor     = sucesso ? '#5cb85c' : '#c9534f';
-  const icon    = sucesso ? '✅' : '❌';
-  const restante = _testeFila.length;
-
-  if (overlay) {
-    overlay.style.display = 'flex';
-    overlay.innerHTML = `
-      <div class="teste-card">
-        <div class="teste-card-nome">${t.nomeJog}</div>
-        <div class="teste-card-acao">${t.acao}</div>
-        <div class="teste-card-atributo">${t.attr} <span class="teste-mod">(${modStr})</span></div>
-        <div class="teste-dice-area">
-          <div class="teste-d20-face">${d20}</div>
-          <div class="teste-formula">d20 ${modStr} = <strong>${total}</strong> &nbsp;vs&nbsp; CD ${t.dc}</div>
-        </div>
-        <div class="teste-resultado" style="color:${cor}">${icon} ${sucesso ? 'SUCESSO' : 'FALHA'}</div>
-        <button class="teste-avancar-btn" onclick="avancarTeste()">
-          ${restante > 0 ? `▶ Próximo teste (${restante} restante${restante > 1 ? 's' : ''})` : '▶ Ver resultado'}
-        </button>
-      </div>`;
-  }
 }
-
-window.avancarTeste = function() { mostrarProximoTeste(); };
 
 // ═══════════════════════════════════════════════════════════════
 //  SISTEMA DE FALA DO JOGADOR
@@ -1546,15 +1553,57 @@ function renderizarHistoria(historia, jogadores) {
       const segs  = parsearSegmentos(entry.content);
       renderizarSegmentos(div, segs, falas);
     } else if (entry.role === 'user') {
-      const j   = Object.values(jogadores).find(j => j.uid === entry.uid);
+      const j = Object.values(jogadores).find(j => j.uid === entry.uid);
       const cls = CLASSES[j?.classe] || {};
-      div.className = 'msg msg-player';
-      div.innerHTML = `
-        <div class="player-bubble-header">
-          <span class="player-bubble-icon">${cls.icon || '⚔️'}</span>
-          <span class="player-bubble-nome">${j?.nome || 'Jogador'}</span>
-        </div>
-        <div class="player-bubble-acao">${entry.content}</div>`;
+
+      // Detecta fala via botão Falar: "Nome diz/grita/sussurra [para X]: "texto""
+      const mFala = entry.content.match(/^.+?\s(diz|grita|sussurra)(?:\s+para\s+(.+?))?\s*:\s*"(.+)"$/is);
+      if (mFala) {
+        const tom = mFala[1];
+        const alvoNome = mFala[2] || null;
+        const texto = mFala[3];
+        const tomIcon = { diz: '💬', grita: '📢', sussurra: '🤫' }[tom] || '💬';
+
+        const _ph = (src, icon, cor, espelhar) =>
+          `<div class="dialogo-inline-portrait" style="background:${cor}22;border-color:${cor}55">
+            ${src ? `<img src="${src}" alt=""${espelhar ? ' class="espelhado"' : ''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+            <span class="dialogo-inline-icon-fb"${src ? ' style="display:none"' : ''}>${icon}</span>
+          </div>`;
+
+        const srcJog = j ? `sprites/${j.classe}_${j.sexo || 'm'}.png` : '';
+        const htmlEsq = _ph(srcJog, cls.icon || '🧑', '#4a7090', true);
+
+        let htmlDir = '';
+        if (alvoNome) {
+          const npcKey = Object.keys(NPC_DATA).find(k =>
+            alvoNome.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(alvoNome.toLowerCase())
+          );
+          if (npcKey) {
+            const npc = NPC_DATA[npcKey];
+            htmlDir = _ph(npc.portrait ? `sprites/${npc.portrait}.png` : '', npc.icon, npc.cor, false);
+          } else {
+            const ini = getInimigo(alvoNome);
+            if (ini) htmlDir = _ph(`sprites/inimigo_${ini.id}.png`, ini.icon || '💀', ini.cor_hp || '#7a1a1a', false);
+          }
+        }
+
+        div.className = 'dialogo-inline dialogo-jogador';
+        div.innerHTML = `
+          ${htmlEsq}
+          <div class="dialogo-inline-body">
+            <div class="dialogo-inline-nome">${j?.nome || 'Jogador'} <span class="dialogo-tom-badge">${tomIcon} ${tom.toUpperCase()}</span></div>
+            <div class="dialogo-inline-texto">"${texto}"</div>
+          </div>
+          ${htmlDir}`;
+      } else {
+        div.className = 'msg msg-player';
+        div.innerHTML = `
+          <div class="player-bubble-header">
+            <span class="player-bubble-icon">${cls.icon || '⚔️'}</span>
+            <span class="player-bubble-nome">${j?.nome || 'Jogador'}</span>
+          </div>
+          <div class="player-bubble-acao">${entry.content}</div>`;
+      }
     } else if (entry.role === 'system') {
       div.className = 'msg msg-system';
       div.textContent = entry.content;
@@ -2223,13 +2272,13 @@ ${iniList ? `\nINIMIGOS EM CENA:\n${iniList}` : ''}
 
 TESTES DE AÇÃO — quando a ação de um jogador for complexa ou arriscada (correr, saltar, sacar em movimento, atacar pelas costas, etc.), determine quais testes são necessários e liste-os ANTES de narrar qualquer resultado. O sistema rola os dados e você narra depois.
 Formato obrigatório (uma linha por teste, na ordem em que ocorrem):
-  TESTAR: [NomeExato|Descrição curta da ação|Atributo|CD]
+  TESTAR: [NomeExato|Descrição curta da ação|Atributo|CD|Alvo]
+Onde Alvo é o nome do inimigo ou NPC que está sendo atacado (opcional, omitir em testes não-combativos).
 Atributos válidos: FOR, DES, CON, INT, SAB, CAR, FORT, REF, VON
 CD típicas: fácil=8, médio=12, difícil=15, muito difícil=18, heróico=22
 Exemplo — "Carne quer correr, sacar a faca e arremessá-la nas costas do goblin":
+  TESTAR: [Carne|Golpe de espada|FOR|13|Espantalho 1]
   TESTAR: [Carne|Corrida pelas barracas|DES|10]
-  TESTAR: [Carne|Saque da faca em movimento|DES|13]
-  TESTAR: [Carne|Arremesso nas costas|DES|15]
 Após listar os TESTAR, escreva apenas uma frase curtíssima de suspense (sem revelar o resultado). NÃO narre o desfecho — ele depende dos dados.
 Se a ação for simples (atacar de frente, falar com NPC, mover-se para adjacente), não use TESTAR — narre diretamente.
 
