@@ -19,7 +19,18 @@
       window.irParaHome=function(){_show('screen-home');};
       window.irParaPersonagens=function(){
         _show('screen-chars');
-        // Slots serão preenchidos quando main.js carregar
+        // Render 8 empty slots immediately; main.js will override with real data
+        var g=document.getElementById('chars-grid');
+        if(g&&!g.children.length){
+          var h='';
+          for(var i=0;i<8;i++){
+            h+='<div class="slot-card empty" onclick="irParaCriacao('+i+')">'
+              +'<div class="slot-empty-icon">+</div>'
+              +'<div class="slot-empty-label">Criar Aventureiro</div>'
+              +'</div>';
+          }
+          g.innerHTML=h;
+        }
       };
     })();
   </script>
@@ -221,6 +232,6 @@
 <!-- Firebase SDK via script tags (mais confiável em mobile que ES module imports) -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-<script src="js/main.js?v=4"></script>
+<script src="js/main.js?v=5"></script>
 </body>
 </html>

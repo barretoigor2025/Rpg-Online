@@ -1820,7 +1820,7 @@ function irParaJogo(codigo) {
       const alguemAgiu = ativos.some(j => j.acao1 != null);
       if (alguemAgiu) {
         cancelarAutoAvancar();
-        await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
+        update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
       } else {
         iniciarAutoAvancar();
       }
