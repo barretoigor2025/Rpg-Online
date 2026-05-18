@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview — Sistema Completo RPG Online</title>
+<style>
+  :root { --bg:#06080f; --text:#c8d0e0; --gold:#c8a050; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    background:var(--bg); color:var(--text);
+    font-family: Georgia,'Times New Roman',serif;
+    min-height:100vh; display:flex; flex-direction:column;
+    align-items:center; padding:28px 16px 64px;
+  }
+  .preview-title { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--gold); opacity:.55; margin-bottom:4px; }
+  .preview-subtitle { font-size:12px; color:rgba(200,160,80,.3); margin-bottom:36px; letter-spacing:.5px; }
+
+  .story-area { width:100%; max-width:620px; display:flex; flex-direction:column; gap:4px; }
+
+  /* ── Narração ── */
+  .msg-gm {
+    background:rgba(12,16,28,.7); border-left:3px solid var(--gold);
+    color:#d8c8a8; padding:10px 14px; border-radius:8px;
+    line-height:1.7; font-size:14px; animation:fi .35s ease both;
+  }
+
+  /* ── Ação do jogador ── */
+  .msg-player {
+    background:rgba(16,22,40,.65);
+    border-left:3px solid rgba(80,130,200,.45);
+    color:#c0cce0; padding:8px 14px; border-radius:8px;
+    font-size:13px; animation:fi .35s ease both;
+  }
+  .player-bubble-header { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+  .player-bubble-icon { font-size:16px; }
+  .player-bubble-nome { font-size:9px; color:rgba(80,130,200,.8); letter-spacing:1.5px; text-transform:uppercase; }
+  .player-bubble-acao { font-size:13px; font-style:italic; color:#b8c8d8; }
+
+  /* ── Separador ── */
+  .sep {
+    display:flex; align-items:center; gap:10px;
+    margin:28px 0 8px; color:rgba(200,160,80,.3);
+    font-size:10px; letter-spacing:2px; text-transform:uppercase;
+  }
+  .sep::before,.sep::after { content:''; flex:1; height:1px; background:rgba(200,160,80,.12); }
+  .sep.sep-batalha { color:rgba(200,70,50,.45); }
+  .sep.sep-batalha::before,.sep.sep-batalha::after { background:rgba(200,70,50,.18); }
+  .sep.sep-teste { color:rgba(150,110,200,.5); }
+  .sep.sep-teste::before,.sep.sep-teste::after { background:rgba(150,110,200,.15); }
+
+  /* ── Continuar ── */
+  .btn-continuar-narr {
+    display:block; width:100%; margin:4px 0;
+    background:rgba(6,8,15,.8); border:1px solid rgba(200,160,80,.2);
+    color:rgba(200,160,80,.55); font-size:11px; font-family:inherit;
+    padding:7px; border-radius:6px; cursor:pointer; text-align:center;
+    letter-spacing:1px; transition:all .15s;
+    animation:fi .35s ease both;
+  }
+
+  /* ══ DIÁLOGO INLINE ══ */
+  .dialogo-inline {
+    display:flex; align-items:center; gap:10px;
+    margin:6px 0 4px; padding:8px 10px;
+    background:rgba(8,12,24,.7);
+    border-left:2px solid rgba(200,160,80,.35);
+    border-radius:0 6px 6px 0;
+    animation:fi .35s ease both;
+  }
+  .dialogo-inline-portrait {
+    flex-shrink:0; width:52px; height:70px; border-radius:5px;
+    border:1px solid rgba(200,160,80,.2); overflow:hidden;
+    display:flex; align-items:center; justify-content:center; font-size:24px;
+  }
+  .dialogo-inline-portrait img { width:100%; height:100%; object-fit:cover; object-position:top center; display:block; }
+  .dialogo-inline-portrait img.espelhado { transform:scaleX(-1); }
+  .dialogo-inline-icon-fb { font-size:22px; display:flex; align-items:center; justify-content:center; }
+  .dialogo-inline-body { flex:1; min-width:0; }
+  .dialogo-inline-nome { font-size:9px; color:var(--gold); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:3px; }
+  .dialogo-inline-texto { font-size:13px; color:#ddd8c4; font-style:italic; line-height:1.6; }
+
+  /* Jogador fala → borda azul */
+  .dialogo-jogador { border-left-color:rgba(80,130,200,.5); }
+  .dialogo-tom-badge { display:inline-block; font-size:8px; letter-spacing:1px; opacity:.55; vertical-align:middle; margin-left:4px; }
+
+  /* ══ BATALHA INLINE ══ */
+  .batalha-inline {
+    display:flex; align-items:center; gap:10px;
+    margin:6px 0 4px; padding:8px 10px;
+    background:rgba(24,6,6,.78);
+    border-left:2px solid rgba(200,70,50,.55);
+    border-radius:0 6px 6px 0;
+    animation:fi .35s ease both;
+  }
+  .batalha-inline-portrait {
+    flex-shrink:0; width:52px; height:70px; border-radius:5px;
+    border:1px solid rgba(200,70,50,.3); overflow:hidden;
+    display:flex; align-items:center; justify-content:center; font-size:24px;
+  }
+  .batalha-inline-portrait img { width:100%; height:100%; object-fit:cover; object-position:top center; display:block; }
+  .batalha-inline-portrait img.espelhado { transform:scaleX(-1); }
+  .batalha-inline-icon-fb { font-size:22px; display:flex; align-items:center; justify-content:center; }
+  .batalha-inline-body { flex:1; display:flex; flex-direction:column; gap:4px; min-width:0; }
+  .batalha-inline-label { font-size:9px; color:#e05040; letter-spacing:1.2px; text-transform:uppercase; font-weight:700; margin-bottom:2px; }
+  .batalha-inline-texto { font-size:13px; color:#ded0c0; font-style:italic; line-height:1.55; }
+  .batalha-surpresa { display:inline-block; background:rgba(200,50,30,.35); color:#ff7a60; padding:0 5px; border-radius:3px; font-size:8px; letter-spacing:1.5px; vertical-align:middle; margin-left:4px; }
+
+  /* ══ CARD COMBATE/TESTE ══ */
+  .combate-teste-card {
+    display:flex; align-items:stretch;
+    margin:6px 0 4px;
+    background:rgba(10,6,24,.88);
+    border:1px solid rgba(150,110,200,.35);
+    border-radius:8px; overflow:hidden;
+    animation:fi .3s ease both;
+  }
+  .combate-teste-portrait {
+    flex-shrink:0; width:56px; height:84px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px; border-right:1px solid rgba(150,110,200,.15);
+  }
+  .combate-teste-portrait:last-child { border-right:none; border-left:1px solid rgba(150,110,200,.15); }
+  .combate-teste-portrait img { width:100%; height:100%; object-fit:cover; object-position:top center; display:block; }
+  .combate-teste-portrait img.espelhado { transform:scaleX(-1); }
+  .combate-teste-icon-fb { display:flex; align-items:center; justify-content:center; width:100%; height:100%; }
+  .combate-teste-sem-alvo { background:transparent!important; border-color:transparent!important; }
+  .combate-teste-centro {
+    flex:1; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:5px; padding:8px 6px;
+  }
+  .combate-teste-acao { font-size:9px; color:rgba(180,140,220,.55); letter-spacing:1.2px; text-transform:uppercase; text-align:center; margin-bottom:2px; }
+  .combate-teste-linha { display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:.5px; }
+  .combate-teste-num { opacity:.45; font-size:9px; font-weight:400; }
+  .combate-teste-resultado { letter-spacing:1.5px; text-transform:uppercase; }
+  .combate-teste-roll { font-size:9px; opacity:.55; font-weight:400; }
+  .combate-teste-cd { opacity:.5; }
+
+  /* ── Animações ── */
+  @keyframes fi { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:none} }
+  .story-area > *:nth-child(1)  { animation-delay:.05s }
+  .story-area > *:nth-child(2)  { animation-delay:.18s }
+  .story-area > *:nth-child(3)  { animation-delay:.32s }
+  .story-area > *:nth-child(4)  { animation-delay:.46s }
+  .story-area > *:nth-child(5)  { animation-delay:.60s }
+  .story-area > *:nth-child(6)  { animation-delay:.74s }
+  .story-area > *:nth-child(7)  { animation-delay:.88s }
+  .story-area > *:nth-child(8)  { animation-delay:1.02s }
+  .story-area > *:nth-child(9)  { animation-delay:1.16s }
+  .story-area > *:nth-child(10) { animation-delay:1.30s }
+  .story-area > *:nth-child(11) { animation-delay:1.44s }
+  .story-area > *:nth-child(12) { animation-delay:1.58s }
+  .story-area > *:nth-child(13) { animation-delay:1.72s }
+  .story-area > *:nth-child(14) { animation-delay:1.86s }
+  .story-area > *:nth-child(15) { animation-delay:2.00s }
+  .story-area > *:nth-child(16) { animation-delay:2.14s }
+  .story-area > *:nth-child(17) { animation-delay:2.28s }
+  .story-area > *:nth-child(18) { animation-delay:2.42s }
+  .story-area > *:nth-child(19) { animation-delay:2.56s }
+  .story-area > *:nth-child(20) { animation-delay:2.70s }
+  .story-area > *:nth-child(n+21) { animation-delay:2.84s }
+</style>
+</head>
+<body>
+
+<p class="preview-title">RPG Online — Preview do Sistema Completo</p>
+<p class="preview-subtitle">Diálogos · Fala do Jogador · Card de Teste · Card de Batalha</p>
+
+<div class="story-area">
+
+<!-- ══ CENA I — DIÁLOGO NPC ══ -->
+<div class="sep">Cena I — Diálogo NPC (existente)</div>
+
+<div class="msg-gm">
+  Gregoras Pellos bloqueia a porta da estalagem com o ombro. A luz das velas projeta sombras longas pelo salão. Sua voz é baixa, mas carrega o peso de quem já enterrou companheiros nas Blackwoods.
+</div>
+
+<!-- NPC fala → retrato ESQ espelhado | Jogador DIR normal -->
+<div class="dialogo-inline">
+  <div class="dialogo-inline-portrait" style="background:#60708022;border-color:#60708055">
+    <img src="sprites/npc_gregoras_pellos.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="dialogo-inline-icon-fb">🗡️</span>
+  </div>
+  <div class="dialogo-inline-body">
+    <div class="dialogo-inline-nome">Gregoras Pellos</div>
+    <div class="dialogo-inline-texto">"Antes de entrar lá, você precisa saber: os espantalhos não dormem. Nunca. Fique no caminho iluminado e não pare de se mover."</div>
+  </div>
+  <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="dialogo-inline-icon-fb">🧑</span>
+  </div>
+</div>
+
+<!-- ══ CENA II — FALA DO JOGADOR (NOVO) ══ -->
+<div class="sep">Cena II — Fala do Jogador via botão "Falar" (novo)</div>
+
+<div class="msg-gm">
+  Tuprix ouve as palavras de Gregoras em silêncio. Então olha para o grupo reunido ao redor da mesa e respira fundo antes de falar.
+</div>
+
+<!-- Jogador fala para Todos — grito → retrato ESQ espelhado, sem alvo DIR -->
+<div class="dialogo-inline dialogo-jogador">
+  <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="dialogo-inline-icon-fb">⚔️</span>
+  </div>
+  <div class="dialogo-inline-body">
+    <div class="dialogo-inline-nome">Tuprix <span class="dialogo-tom-badge">📢 GRITO</span></div>
+    <div class="dialogo-inline-texto">"Eu vou matar todo mundo lá dentro! Pode me chamar de louco, mas é o que vai acontecer!"</div>
+  </div>
+</div>
+
+<!-- Jogador fala diretamente para Gregoras — tom normal -->
+<div class="dialogo-inline dialogo-jogador">
+  <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="dialogo-inline-icon-fb">⚔️</span>
+  </div>
+  <div class="dialogo-inline-body">
+    <div class="dialogo-inline-nome">Tuprix <span class="dialogo-tom-badge">💬 DIZ</span></div>
+    <div class="dialogo-inline-texto">"Gregoras, você vai nos guiar ou fica aqui bebendo enquanto a gente faz o trabalho?"</div>
+  </div>
+  <div class="dialogo-inline-portrait" style="background:#60708022;border-color:#60708055">
+    <img src="sprites/npc_gregoras_pellos.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="dialogo-inline-icon-fb">🗡️</span>
+  </div>
+</div>
+
+<!-- Gregoras responde -->
+<div class="dialogo-inline">
+  <div class="dialogo-inline-portrait" style="background:#60708022;border-color:#60708055">
+    <img src="sprites/npc_gregoras_pellos.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="dialogo-inline-icon-fb">🗡️</span>
+  </div>
+  <div class="dialogo-inline-body">
+    <div class="dialogo-inline-nome">Gregoras Pellos</div>
+    <div class="dialogo-inline-texto">"Pago adiantado. E se você morrer lá dentro, não culpe a mim."</div>
+  </div>
+  <div class="dialogo-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="dialogo-inline-icon-fb">⚔️</span>
+  </div>
+</div>
+
+<!-- ══ CENA III — CARD DE TESTE/COMBATE (NOVO) ══ -->
+<div class="sep sep-teste">Cena III — Card de Teste Integrado (novo)</div>
+
+<!-- Ação do jogador -->
+<div class="msg-player">
+  <div class="player-bubble-header">
+    <span class="player-bubble-icon">⚔️</span>
+    <span class="player-bubble-nome">Tuprix</span>
+  </div>
+  <div class="player-bubble-acao">Eu saco minha espada e corro em direção ao espantalho mais próximo pra atacar ele com um golpe de baixo pra cima</div>
+</div>
+
+<div class="msg-gm">
+  Tuprix arremessa seu manto para o lado e avança pelo campo de milho seco. O espantalho gira devagar na estaca, mas seus olhos de brasa já o rastrearam.
+</div>
+
+<!-- Card de teste: Tuprix (esq espelhado) | resultados centro | Espantalho (dir) -->
+<!-- 1 teste simples: acerto -->
+<div class="combate-teste-card">
+  <div class="combate-teste-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="combate-teste-icon-fb">⚔️</span>
+  </div>
+  <div class="combate-teste-centro">
+    <div class="combate-teste-acao">Golpe de baixo pra cima</div>
+    <div class="combate-teste-linha" style="color:#5a9a5a">
+      <span class="combate-teste-num">1.</span>
+      <span class="combate-teste-resultado">ACERTO</span>
+      <span class="combate-teste-roll">16+3=19 <span class="combate-teste-cd">CD13</span></span>
+    </div>
+  </div>
+  <div class="combate-teste-portrait" style="background:#8a6a2022;border-color:#8a6a2055">
+    <img src="sprites/inimigo_espantalho_assombrado.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="combate-teste-icon-fb">🌾</span>
+  </div>
+</div>
+
+<div class="btn-continuar-narr">▶ Ver resultado</div>
+
+<!-- Narração do resultado -->
+<div class="msg-gm">
+  A lâmina rasga o torso de palha. Faíscas de magia negra escapam pelo corte enquanto o espantalho cambaleia:
+</div>
+
+<!-- Card de batalha com resultado -->
+<div class="batalha-inline">
+  <div class="batalha-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="batalha-inline-icon-fb">⚔️</span>
+  </div>
+  <div class="batalha-inline-body">
+    <div class="batalha-inline-label">Tuprix → Espantalho 1</div>
+    <div class="batalha-inline-texto">Golpe certeiro rasga o tronco de palha — 9 de dano cortante. O espantalho gira e lança um braço afiado de volta.</div>
+  </div>
+  <div class="batalha-inline-portrait" style="background:#8a6a2022;border-color:#8a6a2055">
+    <img src="sprites/inimigo_espantalho_assombrado.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="batalha-inline-icon-fb">🌾</span>
+  </div>
+</div>
+
+<!-- ══ CENA IV — MÚLTIPLOS TESTES ══ -->
+<div class="sep sep-teste">Cena IV — Múltiplos Testes numa ação complexa</div>
+
+<div class="msg-player">
+  <div class="player-bubble-header">
+    <span class="player-bubble-icon">⚔️</span>
+    <span class="player-bubble-nome">Tuprix</span>
+  </div>
+  <div class="player-bubble-acao">Corro pelas barracas, salto por cima do balcão derrubado e arremesso minha adaga nas costas do kobold antes que ele escape!</div>
+</div>
+
+<div class="msg-gm">
+  Três obstáculos entre Tuprix e sua presa. Cada segundo conta — o kobold azul já está metade do caminho até a saída.
+</div>
+
+<!-- Card de teste com 3 testes: corrida + salto (acerto) + arremesso (falha) -->
+<div class="combate-teste-card">
+  <div class="combate-teste-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="combate-teste-icon-fb">⚔️</span>
+  </div>
+  <div class="combate-teste-centro">
+    <div class="combate-teste-acao">Perseguição + arremesso</div>
+    <div class="combate-teste-linha" style="color:#5a9a5a">
+      <span class="combate-teste-num">1.</span>
+      <span class="combate-teste-resultado">ACERTO</span>
+      <span class="combate-teste-roll">14+2=16 <span class="combate-teste-cd">CD10</span></span>
+    </div>
+    <div class="combate-teste-linha" style="color:#5a9a5a">
+      <span class="combate-teste-num">2.</span>
+      <span class="combate-teste-resultado">ACERTO</span>
+      <span class="combate-teste-roll">11+2=13 <span class="combate-teste-cd">CD12</span></span>
+    </div>
+    <div class="combate-teste-linha" style="color:#c05050">
+      <span class="combate-teste-num">3.</span>
+      <span class="combate-teste-resultado">FALHA</span>
+      <span class="combate-teste-roll">4+2=6 <span class="combate-teste-cd">CD15</span></span>
+    </div>
+  </div>
+  <div class="combate-teste-portrait" style="background:#2a4a6a22;border-color:#2a4a6a55">
+    <img src="sprites/inimigo_kobold_azul.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="combate-teste-icon-fb">🐊</span>
+  </div>
+</div>
+
+<div class="btn-continuar-narr">▶ Ver resultado</div>
+
+<div class="msg-gm">
+  Tuprix voa pelo mercado — desvio perfeito das barracas, salto limpo por cima do balcão. Mas a adaga sai torta, range no peitoril de pedra e some tilintando no beco. O kobold olha para trás com um sorriso torto e dobra a esquina.
+</div>
+
+<!-- ══ CENA V — SURPRESA ══ -->
+<div class="sep sep-batalha">Cena V — Ataque por Surpresa (costas)</div>
+
+<div class="msg-player">
+  <div class="player-bubble-header">
+    <span class="player-bubble-icon">⚔️</span>
+    <span class="player-bubble-nome">Tuprix</span>
+  </div>
+  <div class="player-bubble-acao">Me esgueiro pelas sombras e pego o esqueleto lanceiro pelas costas antes que ele perceba minha presença</div>
+</div>
+
+<!-- Teste de furtividade -->
+<div class="combate-teste-card">
+  <div class="combate-teste-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="combate-teste-icon-fb">⚔️</span>
+  </div>
+  <div class="combate-teste-centro">
+    <div class="combate-teste-acao">Furtividade + golpe surpresa</div>
+    <div class="combate-teste-linha" style="color:#5a9a5a">
+      <span class="combate-teste-num">1.</span>
+      <span class="combate-teste-resultado">ACERTO</span>
+      <span class="combate-teste-roll">17+2=19 <span class="combate-teste-cd">CD12</span></span>
+    </div>
+    <div class="combate-teste-linha" style="color:#5a9a5a">
+      <span class="combate-teste-num">2.</span>
+      <span class="combate-teste-resultado">ACERTO</span>
+      <span class="combate-teste-roll">13+3=16 <span class="combate-teste-cd">CD14</span></span>
+    </div>
+  </div>
+  <div class="combate-teste-portrait" style="background:#3a4a2a22;border-color:#3a4a2a55">
+    <img src="sprites/inimigo_esqueleto_lanceiro.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="combate-teste-icon-fb">💀</span>
+  </div>
+</div>
+
+<div class="btn-continuar-narr">▶ Ver resultado</div>
+
+<div class="msg-gm">
+  Passos silenciosos. Sombra perfeita. O esqueleto não farejou nada até a lâmina já estar no meio da coluna vertebral.
+</div>
+
+<!-- Batalha: Tuprix pega esqueleto de costas -->
+<div class="batalha-inline">
+  <div class="batalha-inline-portrait" style="background:#4a709022;border-color:#4a709055">
+    <img src="sprites/guerreiro_m.png" class="espelhado"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="batalha-inline-icon-fb">⚔️</span>
+  </div>
+  <div class="batalha-inline-body">
+    <div class="batalha-inline-label">Tuprix → Esqueleto Lanceiro <span class="batalha-surpresa">SURPRESA!</span></div>
+    <div class="batalha-inline-texto">Golpe pelas costas — 14 de dano esmagador. Vértebras estalam. Esqueleto cai em pedaços antes de reagir.</div>
+  </div>
+  <div class="batalha-inline-portrait" style="background:#3a4a2a22;border-color:#3a4a2a55">
+    <img src="sprites/inimigo_esqueleto_lanceiro_costas.png"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="batalha-inline-icon-fb">💀</span>
+  </div>
+</div>
+
+<div class="msg-gm">
+  Silêncio. Ossos dispersos no piso de pedra. Nenhum grito, nenhum aviso dado. Tuprix continua avançando pela cripta.
+</div>
+
+</div><!-- /story-area -->
+</body>
+</html>
