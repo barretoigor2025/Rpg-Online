@@ -102,6 +102,8 @@ let myUid       = localStorage.getItem('rpg_uid') || (() => {
 let mySala      = null;
 let myNome      = null;
 let myClasse    = 'guerreiro';
+let _activeSlot  = parseInt(localStorage.getItem('rpg_active_slot') || '0');
+let _charSlots   = new Array(8).fill(null);
 let amIHost     = false;
 let chamandoIA  = false;
 let unsubSala   = null;
@@ -1030,6 +1032,9 @@ function atualizarPreview() {
   if (sprite) sprite.src = `sprites/${_selectedClass}_${_selectedGender}.png`;
 }
 
+// Alias for new navigation code
+function renderizarPreview() { atualizarPreview(); }
+
 function renderFeatGrid() {
   const grid = document.getElementById('adv-grid');
   if (!grid) return;
@@ -1231,7 +1236,184 @@ window.addEventListener('DOMContentLoaded', () => {
 
   renderFeatGrid();
   carregarCampanha(); carregarRegras();
+
+  // Show home screen on start
+  irParaHome();
 });
+
+// ═══════════════════════════════════════════════════════════════
+//  NAVEGAÇÃO POR TELAS
+// ═══════════════════════════════════════════════════════════════
+function mostrarTela(id) {
+  ['screen-home','screen-chars','screen-create','screen-lobby','screen-game']
+    .forEach(s => { const el = document.getElementById(s); if (el) el.style.display = 'none'; });
+  const el = document.getElementById(id);
+  if (el) el.style.display = '';
+}
+
+window.irParaHome = function() { mostrarTela('screen-home'); };
+
+window.irParaPersonagens = async function() {
+  mostrarTela('screen-chars');
+  await carregarSlots();
+  renderSlots();
+};
+
+window.irParaCriacao = function(slotIndex) {
+  _activeSlot = slotIndex;
+  localStorage.setItem('rpg_active_slot', slotIndex);
+  // Reset form
+  _selectedClass = 'guerreiro';
+  _selectedGender = 'm';
+  _selectedAdvs = new Set();
+  document.querySelectorAll('.class-btn').forEach(b => b.classList.toggle('active', b.dataset.class === 'guerreiro'));
+  document.querySelectorAll('.gender-btn').forEach(b => b.classList.toggle('active', b.dataset.gender === 'm'));
+  const nomeEl = document.getElementById('char-nome');
+  if (nomeEl) nomeEl.value = '';
+  renderFeatGrid();
+  renderizarPreview();
+  mostrarTela('screen-create');
+};
+
+window.irParaLobbyScreen = function(slotIndex) {
+  _activeSlot = slotIndex;
+  localStorage.setItem('rpg_active_slot', slotIndex);
+  renderLobbyCharCard();
+  mostrarTela('screen-lobby');
+};
+
+function renderLobbyCharCard() {
+  const card = document.getElementById('lobby-char-card');
+  if (!card) return;
+  const ch = _charSlots[_activeSlot];
+  if (!ch) { card.innerHTML = ''; return; }
+  const cls = CLASSES[ch.classe] || {};
+  const nivel = ch.nivel || 1;
+  const xp = ch.xp || 0;
+  const cor = CLASS_COLORS[ch.classe] || '#4a5a70';
+  card.innerHTML = `
+    <img id="lobby-char-sprite" src="sprites/${ch.classe}_${ch.sexo||'m'}.png" alt=""
+         onerror="this.style.opacity='.3'" style="border-radius:6px;background:${cor}22">
+    <div id="lobby-char-info">
+      <div id="lobby-char-nome">${ch.nome}</div>
+      <div id="lobby-char-classe">${cls.icon||''} ${cls.nome||ch.classe} · Nível ${nivel}</div>
+      <div id="lobby-char-stats">❤️ ${ch.maxHp} PV &nbsp; 🛡️ ${ch.ac} CA &nbsp; ★ ${xp} XP</div>
+    </div>
+    <button id="btn-trocar-char" onclick="irParaPersonagens()">Trocar</button>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SLOTS DE PERSONAGENS
+// ═══════════════════════════════════════════════════════════════
+const CLASS_COLORS = {
+  guerreiro: '#8a4a20', mago: '#3a2a6a', ladino: '#1a3a2a',
+  clerigo: '#4a3a10', barbaro: '#6a1a1a', arqueiro: '#2a4a2a',
+};
+
+async function carregarSlots() {
+  try {
+    // Migração: mover personagens/${myUid} antigo para chars/${myUid}/s0
+    const oldSnap = await get(ref(db, `personagens/${myUid}`));
+    const charsSnap = await get(ref(db, `chars/${myUid}`));
+    if (oldSnap.exists() && !charsSnap.exists()) {
+      const d = oldSnap.val();
+      if (d.nome && d.classe) {
+        await set(ref(db, `chars/${myUid}/s0`), { ...d, criadoEm: d.criadoEm || Date.now() });
+      }
+    }
+    const snap = await get(ref(db, `chars/${myUid}`));
+    _charSlots = new Array(8).fill(null);
+    if (snap.exists()) {
+      const data = snap.val();
+      for (let i = 0; i < 8; i++) {
+        _charSlots[i] = data[`s${i}`] || null;
+      }
+    }
+  } catch(e) { console.warn('carregarSlots:', e); }
+}
+
+function renderSlots() {
+  const grid = document.getElementById('chars-grid');
+  if (!grid) return;
+  grid.innerHTML = _charSlots.map((ch, i) => {
+    if (!ch) {
+      return `<div class="slot-card empty" onclick="irParaCriacao(${i})">
+        <div class="slot-empty-icon">+</div>
+        <div class="slot-empty-label">Criar Aventureiro</div>
+      </div>`;
+    }
+    const cls = CLASSES[ch.classe] || {};
+    const cor = CLASS_COLORS[ch.classe] || '#4a5a70';
+    const nivel = ch.nivel || 1;
+    return `<div class="slot-card occupied" onclick="selecionarSlotExistente(${i})"
+                 style="background:linear-gradient(160deg,${cor}22 0%,rgba(6,8,15,.95) 60%);">
+      <button class="slot-delete" onclick="event.stopPropagation();deletarSlot(${i})" title="Excluir">✕</button>
+      <div class="slot-sprite-wrap">
+        <img src="sprites/${ch.classe}_${ch.sexo||'m'}.png" alt=""
+             onerror="this.style.display='none'">
+      </div>
+      <div class="slot-nome">${ch.nome}</div>
+      <div class="slot-classe">${cls.icon||''} ${cls.nome||ch.classe}</div>
+      <div class="slot-nivel">Nível ${nivel} &nbsp;·&nbsp; ★ ${ch.xp||0} XP</div>
+      <div class="slot-class-bar" style="background:${cor}88"></div>
+    </div>`;
+  }).join('');
+}
+
+window.selecionarSlotExistente = function(i) {
+  const ch = _charSlots[i];
+  if (!ch) return;
+  // Load character data into form state
+  _selectedClass  = ch.classe || 'guerreiro';
+  _selectedGender = ch.sexo   || 'm';
+  _selectedAdvs   = new Set(Array.isArray(ch.pericias) ? ch.pericias : Object.values(ch.pericias||{}));
+  const nomeEl = document.getElementById('char-nome');
+  if (nomeEl) nomeEl.value = ch.nome || '';
+  document.querySelectorAll('.class-btn').forEach(b => b.classList.toggle('active', b.dataset.class === _selectedClass));
+  document.querySelectorAll('.gender-btn').forEach(b => b.classList.toggle('active', b.dataset.gender === _selectedGender));
+  renderFeatGrid();
+  renderizarPreview();
+  irParaLobbyScreen(i);
+};
+
+window.deletarSlot = async function(i) {
+  if (!confirm(`Excluir "${_charSlots[i]?.nome}"? Isso é permanente.`)) return;
+  await set(ref(db, `chars/${myUid}/s${i}`), null);
+  _charSlots[i] = null;
+  renderSlots();
+};
+
+window.confirmarCriacaoPersonagem = async function() {
+  const nome = document.getElementById('char-nome')?.value?.trim();
+  if (!nome) { document.getElementById('create-error').textContent = 'Digite o nome do personagem.'; return; }
+  const cls = CLASSES[_selectedClass];
+  const d   = dndDerivados(cls);
+  const novoChar = {
+    nome, classe: _selectedClass, sexo: _selectedGender,
+    STR: cls.STR, DEX: cls.DEX, CON: cls.CON,
+    INT: cls.INT, WIS: cls.WIS, CHA: cls.CHA,
+    hp: d.hp, maxHp: d.hp, ac: d.ac, init: d.init,
+    fort: d.fort, ref: d.ref, will: d.will,
+    pericias: [..._selectedAdvs],
+    xp: 0, nivel: 1, vivo: true,
+    equipamento: {}, mochila: {},
+    criadoEm: Date.now(),
+  };
+  // Apply starter kit
+  const kit = STARTER_KITS[_selectedClass];
+  if (kit) {
+    Object.entries(kit.equipamento || {}).forEach(([slot, item]) => {
+      if (item) novoChar.equipamento[slot] = item;
+    });
+    Object.entries(kit.mochila || {}).forEach(([key, item]) => {
+      novoChar.mochila[key] = { ...item };
+    });
+  }
+  await set(ref(db, `chars/${myUid}/s${_activeSlot}`), novoChar);
+  _charSlots[_activeSlot] = novoChar;
+  document.getElementById('create-error').textContent = '';
+  irParaLobbyScreen(_activeSlot);
+};
 
 // ═══════════════════════════════════════════════════════════════
 //  SALA — CRIAR / ENTRAR
@@ -1258,9 +1440,8 @@ window.criarSala = async function() {
   const p = getDadosPersonagem();
   if (!p) return;
 
-  // Carregar perfil persistente (se existe)
-  const charSnap = await get(ref(db, `personagens/${myUid}`));
-  const charData = charSnap.exists() ? charSnap.val() : null;
+  // Use active character slot data
+  const charData = _charSlots[_activeSlot];
 
   // Se a classe mudou em relação ao save, reseta equipamento (kit correto será aplicado abaixo)
   const classeChanged = charData?.classe && charData.classe !== p.classe;
@@ -1294,26 +1475,15 @@ window.criarSala = async function() {
     });
   }
 
-  // Criar ou atualizar perfil persistente
-  if (!charSnap.exists()) {
-    await set(ref(db, `personagens/${myUid}`), {
-      nome: p.nome, classe: p.classe, sexo: p.sexo, uid: myUid,
-      STR: p.STR, DEX: p.DEX, CON: p.CON, INT: p.INT, WIS: p.WIS, CHA: p.CHA,
-      hp: jogData.hp, maxHp: p.maxHp, ac: p.ac, init: p.init,
-      fort: p.fort, ref: p.ref, will: p.will,
-      pericias: p.pericias, vivo: true, xp: 0, nivel: 1,
-      equipamento: jogData.equipamento, mochila: jogData.mochila
-    });
-  } else {
-    await update(ref(db, `personagens/${myUid}`), {
-      nome: p.nome, classe: p.classe, sexo: p.sexo, maxHp: p.maxHp,
-      ac: p.ac, init: p.init, fort: p.fort, ref: p.ref, will: p.will, pericias: p.pericias,
-      equipamento: jogData.equipamento, mochila: jogData.mochila
-    });
-  }
-
   const codigo = codigoAleatorio();
-  await push(ref(db, `personagens/${myUid}/historico`), { sala: codigo, campanhaId: 'beast-of-black-keep', ts: Date.now() });
+
+  // Sync back to slot with updated state
+  const slotData = { ...jogData };
+  delete slotData.uid; delete slotData.ativo; delete slotData.consciente;
+  await set(ref(db, `chars/${myUid}/s${_activeSlot}`), slotData);
+  _charSlots[_activeSlot] = slotData;
+  // Keep personagens/${myUid} as active char (for host to read other players' data via uid)
+  await set(ref(db, `personagens/${myUid}`), slotData);
 
   myNome   = p.nome;
   myClasse = p.classe;
@@ -1339,9 +1509,8 @@ window.entrarSala = async function() {
 
   const data = snap.val();
 
-  // Carregar perfil persistente
-  const charSnap = await get(ref(db, `personagens/${myUid}`));
-  const charData = charSnap.exists() ? charSnap.val() : null;
+  // Use active character slot data
+  const charData = _charSlots[_activeSlot];
 
   // Se a classe mudou em relação ao save, reseta equipamento (kit correto será aplicado abaixo)
   const classeChangedE = charData?.classe && charData.classe !== p.classe;
@@ -1374,23 +1543,13 @@ window.entrarSala = async function() {
     });
   }
 
-  if (!charSnap.exists()) {
-    await set(ref(db, `personagens/${myUid}`), {
-      nome: p.nome, classe: p.classe, sexo: p.sexo, uid: myUid,
-      STR: p.STR, DEX: p.DEX, CON: p.CON, INT: p.INT, WIS: p.WIS, CHA: p.CHA,
-      hp: jogData.hp, maxHp: p.maxHp, ac: p.ac, init: p.init,
-      fort: p.fort, ref: p.ref, will: p.will,
-      pericias: p.pericias, vivo: true, xp: 0, nivel: 1,
-      equipamento: jogData.equipamento, mochila: jogData.mochila
-    });
-  } else {
-    await update(ref(db, `personagens/${myUid}`), {
-      nome: p.nome, classe: p.classe, sexo: p.sexo, maxHp: p.maxHp,
-      ac: p.ac, init: p.init, fort: p.fort, ref: p.ref, will: p.will, pericias: p.pericias,
-      equipamento: jogData.equipamento, mochila: jogData.mochila
-    });
-  }
-  await push(ref(db, `personagens/${myUid}/historico`), { sala: code, campanhaId: 'beast-of-black-keep', ts: Date.now() });
+  // Sync back to slot with updated state
+  const slotData = { ...jogData };
+  delete slotData.uid; delete slotData.ativo; delete slotData.consciente;
+  await set(ref(db, `chars/${myUid}/s${_activeSlot}`), slotData);
+  _charSlots[_activeSlot] = slotData;
+  // Keep personagens/${myUid} as active char (for host to read other players' data via uid)
+  await set(ref(db, `personagens/${myUid}`), slotData);
 
   myNome   = p.nome;
   myClasse = p.classe;
@@ -1411,8 +1570,7 @@ window.entrarSala = async function() {
 //  IR PARA JOGO
 // ═══════════════════════════════════════════════════════════════
 function irParaJogo(codigo) {
-  document.getElementById('screen-lobby').style.display = 'none';
-  document.getElementById('screen-game').style.display  = 'flex';
+  mostrarTela('screen-game');
   document.getElementById('room-code').textContent = codigo;
 
   _kitMigrado = false;
