@@ -33,42 +33,78 @@ const CLASSES = {
     STR: 16, DEX: 14, CON: 15, INT: 10, WIS: 10, CHA: 10,
     dado_vida: 10, ca_armor: 5, fort_base: 2, ref_base: 0, will_base: 0,
     descricao: 'Combatente versátil. Usa qualquer arma ou armadura. Superior no corpo a corpo.',
-    habilidade: { nome: 'Ataque Extra', desc: 'Uma vez por combate, faz dois ataques em um único turno.' }
+    habilidade: { nome: 'Ataque Extra', desc: 'Uma vez por combate, faz dois ataques em um único turno.' },
+    poderes: [
+      { nome: 'Ataque Extra',     icon: '⚔️', desc: 'Uma vez por combate, faz dois ataques em um único turno. Declare antes de rolar.' },
+      { nome: 'Golpe Poderoso',   icon: '💥', desc: '-2 no ataque, +4 no dano. Declare antes de rolar. Ideal contra armaduras leves.' },
+      { nome: 'Postura de Defesa',icon: '🛡️', desc: '+2 CA durante 1 rodada. Não pode atacar no mesmo turno em que ativa.' },
+      { nome: 'Segundo Fôlego',   icon: '❤️', desc: '1× por dia: recupera 1d6+CON PV como ação livre. Não interrompe combate.' },
+    ]
   },
   mago: {
     nome: 'Mago', icon: '🔮',
     STR: 8, DEX: 12, CON: 10, INT: 17, WIS: 13, CHA: 12,
     dado_vida: 4, ca_armor: 0, fort_base: 0, ref_base: 0, will_base: 2,
     descricao: 'Arquimago em formação. Magias devastadoras — mas fisicamente frágil.',
-    habilidade: { nome: 'Grimório', desc: 'Conhece 3 magias arcanas. Pode identificar itens e criaturas mágicas.' }
+    habilidade: { nome: 'Grimório', desc: 'Conhece 3 magias arcanas. Pode identificar itens e criaturas mágicas.' },
+    poderes: [
+      { nome: 'Míssil Mágico',   icon: '✨', desc: '1d4+1 de dano arcano infalível em um alvo. Não pode ser desviado ou bloqueado por escudo.' },
+      { nome: 'Sono',            icon: '💤', desc: 'Adormece até 2 inimigos com menos de 10 PV por 3 rodadas. Não afeta mortos-vivos.' },
+      { nome: 'Detectar Magia',  icon: '🔍', desc: 'Revela auras mágicas, itens encantados e criaturas sobrenaturais em 20m por 1 min.' },
+      { nome: 'Identificar',     icon: '📖', desc: 'Descobre propriedades ocultas de itens mágicos. Requer 10 min de ritual e toque no item.' },
+    ]
   },
   ladino: {
     nome: 'Ladino', icon: '🗡️',
     STR: 10, DEX: 17, CON: 11, INT: 13, WIS: 10, CHA: 13,
     dado_vida: 6, ca_armor: 2, fort_base: 0, ref_base: 2, will_base: 0,
     descricao: 'Especialista furtivo. Ataca na sombra para dano máximo e some antes da reação.',
-    habilidade: { nome: 'Ataque Furtivo', desc: 'Causa dano duplo ao atacar por surpresa ou flanqueando inimigo.' }
+    habilidade: { nome: 'Ataque Furtivo', desc: 'Causa dano duplo ao atacar por surpresa ou flanqueando inimigo.' },
+    poderes: [
+      { nome: 'Ataque Furtivo', icon: '🗡️', desc: 'Dano duplo ao atacar de surpresa ou flanqueando. Exige que o alvo não perceba ou esteja distraído.' },
+      { nome: 'Gatuno',         icon: '🖐️', desc: 'Furta objetos de alvos próximos e distraídos. Teste DES CD 12. Detectado em falha crítica.' },
+      { nome: 'Arrombar',       icon: '🔓', desc: 'Abre fechaduras, desativa armadilhas e força mecanismos usando ferramentas de ladrão.' },
+      { nome: 'Desaparecer',    icon: '🌑', desc: '1× por combate: some nas sombras ou na multidão. Inimigos perdem o rastro imediatamente.' },
+    ]
   },
   clerigo: {
     nome: 'Clérigo', icon: '✨',
     STR: 12, DEX: 10, CON: 12, INT: 12, WIS: 16, CHA: 13,
     dado_vida: 8, ca_armor: 5, fort_base: 0, ref_base: 0, will_base: 2,
     descricao: 'Sacerdote guerreiro. Cura aliados e confronta mortos-vivos com poder divino.',
-    habilidade: { nome: 'Canalizar Divindade', desc: 'Cura 1d6+SAB aliado adjacente ou repele mortos-vivos em 10m.' }
+    habilidade: { nome: 'Canalizar Divindade', desc: 'Cura 1d6+SAB aliado adjacente ou repele mortos-vivos em 10m.' },
+    poderes: [
+      { nome: 'Curar Ferimentos',   icon: '❤️‍🩹', desc: 'Restaura 1d6+SAB PV em aliado tocado. 3 usos por dia. Não funciona em mortos-vivos.' },
+      { nome: 'Canalizar Divindade',icon: '✨',    desc: 'Cura 1d6+SAB aliado adjacente OU repele todos os mortos-vivos em 10m por 2 rodadas.' },
+      { nome: 'Bênção',             icon: '🙏',    desc: '+1 em rolagens de ataque e dano para todos os aliados em 10m. Dura 3 rodadas.' },
+      { nome: 'Luz Sagrada',        icon: '☀️',    desc: 'Ilumina 10m por 1 hora. Mortos-vivos no alcance ficam cegos por 1 rodada (Vontade CD 13).' },
+    ]
   },
   barbaro: {
     nome: 'Bárbaro', icon: '🪓',
     STR: 18, DEX: 12, CON: 16, INT: 8, WIS: 9, CHA: 8,
     dado_vida: 12, ca_armor: 3, fort_base: 2, ref_base: 2, will_base: 0,
     descricao: 'Força bruta da natureza. Em fúria, torna-se quase imparável.',
-    habilidade: { nome: 'Fúria', desc: 'FOR +4 e resistência a dano físico por 3 rodadas. 1 uso por combate.' }
+    habilidade: { nome: 'Fúria', desc: 'FOR +4 e resistência a dano físico por 3 rodadas. 1 uso por combate.' },
+    poderes: [
+      { nome: 'Fúria',             icon: '🔥', desc: 'FOR +4 e reduz 2 de dano físico recebido por 3 rodadas. 1 uso por combate. Não pode ser interrompido.' },
+      { nome: 'Pele Grossa',       icon: '🪨', desc: 'Passivo: reduz 1 de dano físico recebido de qualquer fonte (empilha com Fúria).' },
+      { nome: 'Movimento Acelerado',icon: '💨', desc: 'Passivo: +3m de deslocamento. Pode realizar Esforço em terreno difícil sem penalidade.' },
+      { nome: 'Instinto Primal',   icon: '👁️', desc: 'Passivo: nunca é surpreendido. Sempre age na primeira rodada, mesmo em emboscadas.' },
+    ]
   },
   arqueiro: {
     nome: 'Arqueiro', icon: '🏹',
     STR: 12, DEX: 16, CON: 13, INT: 11, WIS: 13, CHA: 10,
     dado_vida: 8, ca_armor: 4, fort_base: 0, ref_base: 2, will_base: 0,
     descricao: 'Rastreador preciso. Abate inimigos à distância antes de serem vistos.',
-    habilidade: { nome: 'Tiro Certeiro', desc: 'Ignora metade da cobertura. +2 de ataque a alvos acima de 10m.' }
+    habilidade: { nome: 'Tiro Certeiro', desc: 'Ignora metade da cobertura. +2 de ataque a alvos acima de 10m.' },
+    poderes: [
+      { nome: 'Tiro Certeiro',      icon: '🎯', desc: 'Ignora cobertura parcial. +2 de ataque contra alvos a mais de 10m de distância.' },
+      { nome: 'Flecha de Penetração',icon: '➡️', desc: 'A flecha atravessa cobertura leve e causa +2 de dano contra armaduras pesadas.' },
+      { nome: 'Tiro Duplo',         icon: '🏹', desc: 'Dispara duas flechas em uma única ação. O segundo tiro sofre -2 de ataque.' },
+      { nome: 'Rastrear',           icon: '🌿', desc: 'Segue rastros em qualquer terreno. +2 em testes de Percepção e Sobrevivência ao ar livre.' },
+    ]
   }
 };
 
@@ -945,7 +981,17 @@ window.toggleSkillsPanel = function() {
   if (nivelStr || xpStr) html += `<div class="skills-xp">${[nivelStr,xpStr].filter(Boolean).join(' · ')}</div>`;
   html += `</div>`; // skills-stats-col
   html += `</div>`; // skills-top-row
-  if (hab) html += `<div class="skills-feat"><div class="skills-feat-nome">⚡ ${hab.nome}</div><div class="skills-feat-desc">${hab.desc}</div></div>`;
+  const poderes = cls?.poderes || (hab ? [hab] : []);
+  if (poderes.length) {
+    html += `<div class="skills-section-header">⚡ Habilidades & Magias</div><div class="skills-poderes-list">`;
+    poderes.forEach(p => {
+      html += `<div class="skills-poder">
+        <div class="skills-poder-top"><span class="skills-poder-icon">${p.icon||'⚡'}</span><strong class="skills-poder-nome">${p.nome}</strong></div>
+        <div class="skills-poder-desc">${p.desc}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
   if (eu.pericias?.length) {
     html += `<div class="skills-pericia-list">`;
     eu.pericias.forEach(k => {

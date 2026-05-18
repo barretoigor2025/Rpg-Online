@@ -744,6 +744,25 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 }
 .skills-feat-nome { font-size: 11px; color: var(--gold); font-weight: bold; margin-bottom: 4px; }
 .skills-feat-desc { font-size: 11px; color: var(--text2); line-height: 1.5; }
+.skills-section-header {
+  font-size: 10px;
+  color: var(--gold);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 10px 0 4px;
+  border-top: 1px solid rgba(200,160,80,.15);
+}
+.skills-poderes-list { display: flex; flex-direction: column; gap: 6px; }
+.skills-poder {
+  background: rgba(200,160,80,.06);
+  border: 1px solid rgba(200,160,80,.15);
+  border-radius: 6px;
+  padding: 7px 10px;
+}
+.skills-poder-top { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.skills-poder-icon { font-size: 15px; line-height: 1; }
+.skills-poder-nome { font-size: 12px; color: var(--text); }
+.skills-poder-desc { font-size: 11px; color: var(--text2); line-height: 1.45; }
 .skills-pericia-list { display: flex; flex-direction: column; gap: 8px; }
 .skills-pericia {
   display: flex;
