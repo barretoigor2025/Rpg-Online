@@ -1136,7 +1136,10 @@ async function carregarCampanha() {
 }
 
 async function carregarRegras() {
-  const arquivos = ['sistema', 'personagem', 'dialogo', 'batalha', 'narrativa', 'recompensas'];
+  const arquivos = [
+    'sistema', 'personagem', 'dialogo', 'batalha',
+    'narrativa', 'recompensas', 'equipamentos', 'inimigos', 'avançar'
+  ];
   await Promise.all(arquivos.map(async nome => {
     try {
       const res = await fetch(`regras/${nome}.json`);
@@ -1185,50 +1188,99 @@ ESTADO INICIAL DA CAMPANHA: ${_campanha.estado_inicial.localizacao} — ${_campa
 
 function buildRegrasContext() {
   if (!_regras || !Object.keys(_regras).length) return '';
-  const linhas = [];
+  const sec = [];
 
-  const narrativa = _regras.narrativa;
-  if (narrativa?.voz) linhas.push('VOZ: ' + narrativa.voz.slice(0, 4).join(' | '));
+  // VOZ / NARRAÇÃO
+  const narr = _regras.narrativa;
+  if (narr) {
+    const b = ['VOZ E TOM:'];
+    if (narr.voz) narr.voz.forEach(r => b.push('• ' + r));
+    if (narr.proibido?.length) { b.push('PROIBIDO:'); narr.proibido.forEach(r => b.push('• ' + r)); }
+    sec.push(b.join('\n'));
+  }
 
-  const dialogo = _regras.dialogo;
-  if (dialogo) {
-    const bloco = [`DIÁLOGO — PADRÃO OFICIAL OBRIGATÓRIO (${dialogo.versao || ''})`];
-    bloco.push(`Formato: ${dialogo.formato}`);
-    if (dialogo.regras) dialogo.regras.forEach(r => bloco.push('• ' + r));
-    if (dialogo.exemplos?.length) {
-      bloco.push('Exemplos corretos:');
-      dialogo.exemplos.forEach(e => bloco.push(e));
+  // DIÁLOGO
+  const dial = _regras.dialogo;
+  if (dial) {
+    const b = [`DIÁLOGO — PADRÃO OFICIAL OBRIGATÓRIO (v${dial.versao || '?'})`];
+    b.push(`Formato: ${dial.formato}`);
+    if (dial.regras) dial.regras.forEach(r => b.push('• ' + r));
+    if (dial.exemplos?.length) { b.push('Exemplos:'); dial.exemplos.forEach(e => b.push(e)); }
+    sec.push(b.join('\n'));
+  }
+
+  // BATALHA / ATAQUE
+  const bat = _regras.batalha;
+  if (bat) {
+    const b = [`BATALHA — PADRÃO OFICIAL (v${bat.versao || '?'})`];
+    b.push(`Formato: ${bat.formato}`);
+    b.push(`Surpresa: ${bat.surpresa_valores}`);
+    if (bat.regras) bat.regras.forEach(r => b.push('• ' + r));
+    if (bat.exemplos?.length) { b.push('Exemplos:'); bat.exemplos.forEach(e => b.push(e)); }
+    sec.push(b.join('\n'));
+  }
+
+  // INIMIGOS
+  const inim = _regras.inimigos;
+  if (inim) {
+    const b = ['INIMIGOS E TESTES:'];
+    if (inim.tags_inimigos) inim.tags_inimigos.forEach(t => b.push('• ' + t));
+    if (inim.regras_introducao) inim.regras_introducao.forEach(r => b.push('• ' + r));
+    if (inim.testes) {
+      b.push(`Testes — Formato: ${inim.testes.formato}`);
+      const cds = inim.testes.cds;
+      if (cds) b.push(`CDs: fácil=${cds.facil} médio=${cds.medio} difícil=${cds.dificil} muito difícil=${cds.muito_dificil} heróico=${cds.heroico}`);
+      if (inim.testes.regras) inim.testes.regras.forEach(r => b.push('• ' + r));
     }
-    linhas.push(bloco.join('\n'));
+    if (inim.exemplos_testes?.length) { b.push('Exemplos testes:'); inim.exemplos_testes.forEach(e => b.push(e)); }
+    sec.push(b.join('\n'));
   }
 
-  const batalha = _regras.batalha;
-  if (batalha) {
-    const bloco = [`BATALHA — PADRÃO OFICIAL OBRIGATÓRIO (${batalha.versao || ''})`];
-    bloco.push(`Formato: ${batalha.formato}`);
-    bloco.push(`Surpresa: ${batalha.surpresa_valores}`);
-    if (batalha.regras) batalha.regras.forEach(r => bloco.push('• ' + r));
-    if (batalha.exemplos?.length) {
-      bloco.push('Exemplos corretos:');
-      batalha.exemplos.forEach(e => bloco.push(e));
+  // EQUIPAMENTOS
+  const equip = _regras.equipamentos;
+  if (equip) {
+    const b = ['EQUIPAMENTOS E INVENTÁRIO:'];
+    if (equip.tags) equip.tags.forEach(t => b.push('• ' + t));
+    if (equip.regras_validacao) equip.regras_validacao.forEach(r => b.push('• ' + r));
+    if (equip.exemplos?.length) { b.push('Exemplos:'); equip.exemplos.forEach(e => b.push(e)); }
+    sec.push(b.join('\n'));
+  }
+
+  // PERSONAGEM PERSISTENTE
+  const pers = _regras.personagem;
+  if (pers?.tags) {
+    const b = ['TAGS PERSONAGEM PERSISTENTE:'];
+    pers.tags.forEach(t => b.push('• ' + t));
+    if (pers.regras) pers.regras.forEach(r => b.push('• ' + r));
+    sec.push(b.join('\n'));
+  }
+
+  // RECOMPENSAS
+  const rec = _regras.recompensas;
+  if (rec?.categorias) {
+    const c = rec.categorias;
+    const b = ['RECOMPENSAS E REPUTAÇÃO:'];
+    b.push(`• ${c.titulos.tag} — ${c.titulos.regra}`);
+    b.push(`• ${c.posses.tag} — ${c.posses.regra}`);
+    b.push(`• ${c.reputacao.tag} — ${c.reputacao.regra}`);
+    if (rec.efeitos_narrativos) {
+      b.push('Efeitos narrativos:');
+      Object.values(rec.efeitos_narrativos).forEach(ef => b.push('• ' + ef));
     }
-    linhas.push(bloco.join('\n'));
+    sec.push(b.join('\n'));
   }
 
-  const personagem = _regras.personagem;
-  if (personagem?.tags) linhas.push('TAGS PERSONAGEM:\n' + personagem.tags.map(t => '• ' + t).join('\n'));
-
-  const recompensas = _regras.recompensas;
-  if (recompensas?.categorias) {
-    const c = recompensas.categorias;
-    linhas.push('TAGS RECOMPENSAS:\n' +
-      `• ${c.titulos.tag} — ${c.titulos.regra}\n` +
-      `• ${c.posses.tag} — ${c.posses.regra}\n` +
-      `• ${c.reputacao.tag} — ${c.reputacao.regra}`
-    );
+  // AVANÇAR
+  const av = _regras['avançar'];
+  if (av) {
+    const b = [`AUTO-AVANÇO — Tag ${av.tag}:`];
+    if (av.quando_usar) { b.push('Usar quando:'); av.quando_usar.forEach(u => b.push('• ' + u)); }
+    if (av.quando_nao_usar) { b.push('NÃO usar quando:'); av.quando_nao_usar.forEach(u => b.push('• ' + u)); }
+    if (av.exemplos?.length) { b.push('Exemplos:'); av.exemplos.forEach(e => b.push(e)); }
+    sec.push(b.join('\n'));
   }
 
-  return linhas.length ? `\n═══ REGRAS DO SISTEMA ═══\n${linhas.join('\n\n')}\n` : '';
+  return sec.length ? `\n═══ REGRAS CANÔNICAS DO SISTEMA ═══\n${sec.join('\n\n')}\n═══════════════════════════════════\n` : '';
 }
 
 // Preenche input se já tiver chave
@@ -1351,8 +1403,9 @@ window.irParaHome = function() { mostrarTela('screen-home'); };
 window.irParaPersonagens = async function() {
   tocarVinhetaArcana();
   mostrarTela('screen-chars');
-  await carregarSlots();
-  renderSlots();
+  renderSlots();          // render cached state immediately (all empty slots)
+  await carregarSlots();  // fetch Firebase
+  renderSlots();          // update with real data
 };
 
 window.deixarSala = function() {

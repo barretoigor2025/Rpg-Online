@@ -1,0 +1,36 @@
+{
+  "nome": "Sistema de Auto-Avanço — Tag AVANÇAR",
+  "versao": "1.0",
+  "descricao": "Permite que o narrador sinalize quando a história tem momentum natural e não precisa de input do jogador. O sistema aguarda 7 segundos e então chama a IA automaticamente para continuar.",
+
+  "tag": "AVANÇAR",
+  "formato": "Linha isolada, sozinha, no final da resposta. Sem outros caracteres na mesma linha.",
+
+  "quando_usar": [
+    "NPC agradeceu e se despediu — consequência já resolvida.",
+    "Transição de cena sem decisão pendente (caminham pelo bosque, a noite cai).",
+    "Momento puramente descritivo sem ramificação (a multidão dispersa, o fogo se apaga).",
+    "Recompensa entregue e cena encerrada — próximo momento ainda não começou.",
+    "Fim de diálogo em que todos os pontos foram cobertos."
+  ],
+
+  "quando_nao_usar": [
+    "Combate ativo — jogador DEVE agir.",
+    "Decisão real pendente (dois caminhos, oferta de NPC, armadilha visível).",
+    "Qualquer momento em que o desfecho DEPENDE da escolha do jogador.",
+    "Quando um NPC está aguardando resposta do jogador."
+  ],
+
+  "comportamento_sistema": {
+    "card_visual": "Exibe 'A história continua…' com ícone pulsante ⟫ — o jogador pode agir a qualquer momento.",
+    "timer": "7 segundos. Após esse tempo, o sistema chama o narrador automaticamente.",
+    "interrupção": "Se o jogador digitar uma ação durante os 7 segundos, o timer é cancelado e o fluxo normal retoma.",
+    "loop": "Se a nova resposta também contiver AVANÇAR, o ciclo se repete — cenas de transição longas funcionam automaticamente."
+  },
+
+  "exemplos": [
+    "Vendedor entregou as moedas e acenou com a cabeça, voltando à sua banca.\nAVANÇAR",
+    "A neblina engoliu os últimos rastros da batalha. A aldeia respirou, finalmente.\nAVANÇAR",
+    "Gregoras se inclinou, ponderando. Amanhã cedo eles partiriam para as Blackwoods.\nAVANÇAR"
+  ]
+}

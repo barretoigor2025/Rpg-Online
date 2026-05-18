@@ -1,0 +1,60 @@
+{
+  "nome": "Sistema de Inimigos e Combate",
+  "versao": "1.0",
+  "descricao": "Regras para introdução, rastreamento e resolução de combates com inimigos.",
+
+  "tags_inimigos": [
+    "INIMIGO: [nome:hp:hpMax:ícone] — introduz ou atualiza inimigo na cena.",
+    "HP: [nomeInimigo:novoHp] — atualiza HP de inimigo existente.",
+    "MATAR: [nomeInimigo] — remove inimigo permanentemente da cena.",
+    "MOV: [nomeInimigo:novaLocalizacao] — move inimigo para outro local/zona."
+  ],
+
+  "regras_introducao": [
+    "Ao introduzir um inimigo na cena, registre-o com INIMIGO incluindo HP e ícone.",
+    "Use nomes únicos para distinguir múltiplos inimigos do mesmo tipo: 'Goblin 1', 'Goblin 2'.",
+    "HP máximo deve refletir a ficha do inimigo — não invente valores arbitrários.",
+    "O ícone deve ser um emoji temático (🐺 lobo, 🧟 morto-vivo, 💀 esqueleto, 👹 ogro, etc.).",
+    "Inimigos invisíveis ou ocultos não aparecem na barra de inimigos — não os registre até serem revelados."
+  ],
+
+  "regras_combate": [
+    "Em combate ativo: máximo 40 palavras de narração pura. JAMAIS mencione dados, CDs ou cálculos.",
+    "Narre APENAS o que foi testado e decidido pelos dados — não adicione resultados extras.",
+    "Cada inimigo age uma vez por rodada, a menos que tenha habilidade especial.",
+    "Inimigos com HP ≤ 0 devem ser eliminados com MATAR imediatamente.",
+    "Nunca narre inimigos como invencíveis ou imunes sem base mecânica."
+  ],
+
+  "testes": {
+    "descricao": "Use TESTAR para ações complexas ou arriscadas antes de narrar o resultado.",
+    "formato": "TESTAR: [NomeExato|Descrição curta|Atributo|CD|Alvo]",
+    "atributos": ["FOR", "DES", "CON", "INT", "SAB", "CAR", "FORT", "REF", "VON"],
+    "cds": {
+      "facil": 8,
+      "medio": 12,
+      "dificil": 15,
+      "muito_dificil": 18,
+      "heroico": 22
+    },
+    "regras": [
+      "Liste TODOS os TESTAR necessários ANTES de narrar qualquer resultado.",
+      "Após os TESTAR, escreva UMA frase curtíssima de suspense — sem revelar o desfecho.",
+      "Ações simples (atacar de frente, falar com NPC) NÃO precisam de TESTAR.",
+      "Alvo é obrigatório apenas em testes combativos contra inimigo/NPC nomeado.",
+      "O sistema rola os dados e você narra o resultado depois — nunca presuma sucesso ou falha."
+    ]
+  },
+
+  "exemplos_tags": [
+    "Introduzir inimigos: STATS: [INIMIGO:Espantalho 1:10:10:🪨] [INIMIGO:Espantalho 2:10:10:🪨]",
+    "Dano recebido: STATS: [HP:Espantalho 1:4] [JOGADOR:Aldric:8]",
+    "Matar inimigo: STATS: [MATAR:Espantalho 1] [XP:Aldric:25]",
+    "Combate múltiplo: STATS: [MATAR:Goblin 1] [HP:Goblin 2:3] [JOGADOR:Carne:12]"
+  ],
+
+  "exemplos_testes": [
+    "Jogador corre e ataca pelas costas:\nTESTAR: [Aldric|Corrida furtiva|DES|12]\nTESTAR: [Aldric|Golpe nas costas|FOR|13|Goblin 1]\nA tensão congela o ar por um instante.",
+    "Ataque simples (sem TESTAR):\nA espada de Carne fende o ar — ATAQUE: [Carne|Espantalho 2|\"Golpe certeiro no pescoço de palha — 8 de dano\"|nao]"
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "nome": "Sistema de Equipamentos e Inventário",
+  "versao": "1.0",
+  "descricao": "Regras definitivas para uso, validação e rastreamento de equipamentos e itens de mochila.",
+
+  "slots_equip": {
+    "cabeca": "Elmo, capuz, tiara",
+    "tronco": "Armadura, gibão, manto",
+    "mao_d": "Arma principal ou escudo",
+    "mao_e": "Arma secundária, escudo ou item de apoio",
+    "pes": "Botas, grevas, sandálias"
+  },
+
+  "tags": [
+    "EQUIPAR: [nomeJogador|slot|nomeItem] — equipa item num slot. Item vazio = desequipar.",
+    "ITEM_BAG: [nomeJogador|nomeItem|qtd] — qtd positiva=adicionar, negativa=remover da mochila."
+  ],
+
+  "regras_validacao": [
+    "O jogador APENAS usa armas/itens que constam em EQUIP ou MOCHILA.",
+    "Se declarar usar algo que não possui: narre improviso ('sem espada, usa os punhos') ou falha — NUNCA invente itens.",
+    "Nunca ignore a ausência de um item declarado pelo jogador.",
+    "Transferência entre jogadores: ITEM_BAG negativo no doador, positivo no receptor.",
+    "Consumíveis (poção, tocha): ITEM_BAG com qtd -1 ao usar."
+  ],
+
+  "regras_gerais": [
+    "Slot mao_d + mao_e podem conter armas diferentes para dual-wield.",
+    "Escudo em qualquer mão concede bônus de CA passivo.",
+    "Arma de duas mãos (maça, arco longo) ocupa AMBAS as mãos — registre em mao_d e mao_e.",
+    "Armaduras (tronco) afetam a CA — o sistema calcula automaticamente.",
+    "Itens mágicos nomeados devem ser registrados também em POSSE."
+  ],
+
+  "starter_kits": {
+    "guerreiro":  "Espada Longa (mao_d), Escudo (mao_e), Cota de Malha (tronco), Elmo de Ferro (cabeca), Botas Robustas (pes)",
+    "mago":       "Cajado (mao_d), Vestes de Mago (tronco), Chapéu Pontudo (cabeca), Sandálias Leves (pes)",
+    "ladino":     "Adaga (mao_d), Adaga (mao_e), Couro Cravejado (tronco), Capuz Sombrio (cabeca), Botas Silenciosas (pes)",
+    "clerigo":    "Maça de Guerra (mao_d), Escudo Sagrado (mao_e), Armadura de Placas Leve (tronco), Elmo Sagrado (cabeca), Sandálias (pes)",
+    "barbaro":    "Machado de Guerra (mao_d), Machado de Guerra (mao_e), Pele de Urso (tronco), Bandana (cabeca), Botas de Couro (pes)",
+    "arqueiro":   "Arco Curto (mao_d), Aljava de Flechas (mao_e), Couro Reforçado (tronco), Capuz de Caçador (cabeca), Botas Leves (pes)"
+  },
+
+  "exemplos": [
+    "Equipar novo item: STATS: [EQUIPAR:Carne:mao_d:Espada Longa] [EQUIPAR:Carne:tronco:Cota de Malha]",
+    "Remover item sem substituto: STATS: [EQUIPAR:Carne:cabeca:]",
+    "Adicionar à mochila: STATS: [ITEM_BAG:Aldric:Poção de Cura:2]",
+    "Consumir item: STATS: [ITEM_BAG:Aldric:Poção de Cura:-1]",
+    "Transferir item: STATS: [ITEM_BAG:Carne:Tocha:-1] [ITEM_BAG:Aldric:Tocha:1]"
+  ]
+}
