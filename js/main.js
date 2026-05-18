@@ -1262,6 +1262,9 @@ window.criarSala = async function() {
   const charSnap = await get(ref(db, `personagens/${myUid}`));
   const charData = charSnap.exists() ? charSnap.val() : null;
 
+  // Se a classe mudou em relação ao save, reseta equipamento (kit correto será aplicado abaixo)
+  const classeChanged = charData?.classe && charData.classe !== p.classe;
+
   // Montar dados do jogador para esta sala (com persistência)
   const jogData = {
     ...p, uid: myUid, ativo: true,
@@ -1271,10 +1274,10 @@ window.criarSala = async function() {
     titulos:    charData?.titulos    || {},
     posses:     charData?.posses     || {},
     reputacoes: charData?.reputacoes || {},
-    equipamento: charData?.equipamento || {},
-    mochila:    charData?.mochila    || {},
+    equipamento: classeChanged ? {} : (charData?.equipamento || {}),
+    mochila:    classeChanged ? {} : (charData?.mochila    || {}),
   };
-  if (charData?.hp != null) jogData.hp = Math.min(charData.hp, p.maxHp);
+  if (!classeChanged && charData?.hp != null) jogData.hp = Math.min(charData.hp, p.maxHp);
 
   // Preencher slots vazios com o kit iniciante
   const kit = STARTER_KITS[p.classe];
@@ -1340,6 +1343,9 @@ window.entrarSala = async function() {
   const charSnap = await get(ref(db, `personagens/${myUid}`));
   const charData = charSnap.exists() ? charSnap.val() : null;
 
+  // Se a classe mudou em relação ao save, reseta equipamento (kit correto será aplicado abaixo)
+  const classeChangedE = charData?.classe && charData.classe !== p.classe;
+
   const jogData = {
     ...p, uid: myUid, ativo: true,
     xp:          charData?.xp          ?? 0,
@@ -1348,10 +1354,10 @@ window.entrarSala = async function() {
     titulos:     charData?.titulos     || {},
     posses:      charData?.posses      || {},
     reputacoes:  charData?.reputacoes  || {},
-    equipamento: charData?.equipamento || {},
-    mochila:     charData?.mochila     || {},
+    equipamento: classeChangedE ? {} : (charData?.equipamento || {}),
+    mochila:     classeChangedE ? {} : (charData?.mochila     || {}),
   };
-  if (charData?.hp != null) jogData.hp = Math.min(charData.hp, p.maxHp);
+  if (!classeChangedE && charData?.hp != null) jogData.hp = Math.min(charData.hp, p.maxHp);
 
   // Preencher slots vazios com o kit iniciante
   const kitE = STARTER_KITS[p.classe];
