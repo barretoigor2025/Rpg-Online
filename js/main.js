@@ -46,13 +46,19 @@ const CLASSES = {
     STR: 8, DEX: 12, CON: 10, INT: 17, WIS: 13, CHA: 12,
     dado_vida: 4, ca_armor: 0, fort_base: 0, ref_base: 0, will_base: 2,
     descricao: 'Arquimago em formação. Magias devastadoras — mas fisicamente frágil.',
-    habilidade: { nome: 'Grimório', desc: 'Conhece 3 magias arcanas. Pode identificar itens e criaturas mágicas.' },
-    poderes: [
-      { nome: 'Míssil Mágico',   icon: '✨', desc: '1d4+1 de dano arcano infalível em um alvo. Não pode ser desviado ou bloqueado por escudo.' },
-      { nome: 'Sono',            icon: '💤', desc: 'Adormece até 2 inimigos com menos de 10 PV por 3 rodadas. Não afeta mortos-vivos.' },
-      { nome: 'Detectar Magia',  icon: '🔍', desc: 'Revela auras mágicas, itens encantados e criaturas sobrenaturais em 20m por 1 min.' },
-      { nome: 'Identificar',     icon: '📖', desc: 'Descobre propriedades ocultas de itens mágicos. Requer 10 min de ritual e toque no item.' },
-    ]
+    habilidade: { nome: 'Grimório', desc: 'Escolhe 3 magias arcanas ao criar o personagem. Pode identificar itens e criaturas mágicas.' },
+    poderes_pool: [
+      { id: 'missil',      nome: 'Míssil Mágico',    icon: '✨', desc: '1d4+1 de dano arcano infalível. Não pode ser desviado ou bloqueado por escudo.' },
+      { id: 'sono',        nome: 'Sono',              icon: '💤', desc: 'Adormece até 2 inimigos com menos de 10 PV por 3 rodadas. Não afeta mortos-vivos.' },
+      { id: 'bola_fogo',   nome: 'Bola de Fogo',      icon: '🔥', desc: '2d6 de dano de fogo em área de 5m. Atenção: afeta aliados no alcance.' },
+      { id: 'raio_gelo',   nome: 'Raio de Gelo',      icon: '🧊', desc: '1d6 de dano e alvo fica lento (movimento -3m) por 1 rodada. CD Fortitude 12.' },
+      { id: 'escudo',      nome: 'Escudo Arcano',     icon: '🛡️', desc: '+4 CA por 2 rodadas. Anula automaticamente Mísseis Mágicos inimigos.' },
+      { id: 'detectar',    nome: 'Detectar Magia',    icon: '🔍', desc: 'Revela auras mágicas, itens encantados e criaturas sobrenaturais em 20m.' },
+      { id: 'identificar', nome: 'Identificar',       icon: '📖', desc: 'Descobre propriedades ocultas de itens mágicos. Requer 10 min de ritual.' },
+      { id: 'confusao',    nome: 'Confusão',          icon: '🌪️', desc: 'Alvo testa Vontade CD 13 ou perde 1 ação inteira por rodada. Dura 2 rodadas.' },
+    ],
+    poderes_qtd: 3,
+    poderes: [],
   },
   ladino: {
     nome: 'Ladino', icon: '🗡️',
@@ -158,6 +164,7 @@ let voiceBusy   = false;
 let _currentAudio = null;
 let _selectedClass  = 'guerreiro';
 let _selectedAdvs   = new Set();
+let _selectedPoderes = new Set();
 let _selectedGender = 'm';
 let _campanha   = null;
 let _introSlides = [];
@@ -998,7 +1005,15 @@ window.toggleSkillsPanel = function() {
   if (nivelStr || xpStr) html += `<div class="skills-xp">${[nivelStr,xpStr].filter(Boolean).join(' · ')}</div>`;
   html += `</div>`; // skills-stats-col
   html += `</div>`; // skills-top-row
-  const poderes = cls?.poderes || (hab ? [hab] : []);
+  // For classes with spell selection, show only chosen spells; fallback to full poderes list
+  let poderes;
+  if (cls?.poderes_pool?.length && eu.poderes_escolhidos?.length) {
+    poderes = eu.poderes_escolhidos
+      .map(id => cls.poderes_pool.find(p => p.id === id))
+      .filter(Boolean);
+  } else {
+    poderes = cls?.poderes?.length ? cls.poderes : (hab ? [hab] : []);
+  }
   if (poderes.length) {
     html += `<div class="skills-section-header">⚡ Habilidades & Magias</div><div class="skills-poderes-list">`;
     poderes.forEach(p => {
@@ -1124,6 +1139,8 @@ function atualizarPreview() {
 
   const sprite = document.getElementById('char-sprite');
   if (sprite) sprite.src = `sprites/${_selectedClass}_${_selectedGender}.png`;
+
+  renderPoderesGrid();
 }
 
 // Alias for new navigation code
@@ -1150,6 +1167,39 @@ window.toggleAdv = function(k) {
     _selectedAdvs.add(k);
   }
   renderFeatGrid();
+};
+
+function renderPoderesGrid() {
+  const section = document.getElementById('poderes-section');
+  if (!section) return;
+  const cls = CLASSES[_selectedClass];
+  const pool = cls?.poderes_pool;
+  if (!pool || !pool.length) { section.style.display = 'none'; return; }
+  const qtd = cls.poderes_qtd || pool.length;
+  section.style.display = '';
+  const lbl = section.querySelector('.poderes-section-lbl');
+  if (lbl) lbl.innerHTML = `Magias <span class="hint" style="text-transform:none;letter-spacing:0">(escolha ${qtd})</span>`;
+  const grid = document.getElementById('poderes-grid');
+  if (!grid) return;
+  grid.innerHTML = pool.map(p => {
+    const sel = _selectedPoderes.has(p.id);
+    return `<button class="poder-chip${sel ? ' selected' : ''}" onclick="togglePoderSelecionado('${p.id}')">
+      <div class="poder-chip-top">${p.icon} <strong>${p.nome}</strong></div>
+      <div class="poder-chip-desc">${p.desc}</div>
+    </button>`;
+  }).join('');
+}
+
+window.togglePoderSelecionado = function(id) {
+  const cls = CLASSES[_selectedClass];
+  const qtd = cls?.poderes_qtd || 0;
+  if (_selectedPoderes.has(id)) {
+    _selectedPoderes.delete(id);
+  } else {
+    if (_selectedPoderes.size >= qtd) { toast(`Escolha apenas ${qtd} magias.`, 1500); return; }
+    _selectedPoderes.add(id);
+  }
+  renderPoderesGrid();
 };
 
 window.toggleGenero = function(g) {
@@ -1512,6 +1562,7 @@ window.irParaCriacao = function(slotIndex) {
   _selectedClass = 'guerreiro';
   _selectedGender = 'm';
   _selectedAdvs = new Set();
+  _selectedPoderes = new Set();
   document.querySelectorAll('.class-btn').forEach(b => b.classList.toggle('active', b.dataset.class === 'guerreiro'));
   document.querySelectorAll('.gender-btn').forEach(b => b.classList.toggle('active', b.dataset.gender === 'm'));
   const nomeEl = document.getElementById('char-nome');
@@ -1613,6 +1664,7 @@ window.selecionarSlotExistente = function(i) {
   _selectedClass  = ch.classe || 'guerreiro';
   _selectedGender = ch.sexo   || 'm';
   _selectedAdvs   = new Set(Array.isArray(ch.pericias) ? ch.pericias : Object.values(ch.pericias||{}));
+  _selectedPoderes = new Set(Array.isArray(ch.poderes_escolhidos) ? ch.poderes_escolhidos : []);
   const nomeEl = document.getElementById('char-nome');
   if (nomeEl) nomeEl.value = ch.nome || '';
   document.querySelectorAll('.class-btn').forEach(b => b.classList.toggle('active', b.dataset.class === _selectedClass));
@@ -1634,6 +1686,18 @@ window.confirmarCriacaoPersonagem = async function() {
   if (!nome) { document.getElementById('create-error').textContent = 'Digite o nome do personagem.'; return; }
   const cls = CLASSES[_selectedClass];
   const d   = dndDerivados(cls);
+
+  // Validate spell selection for classes with poderes_pool
+  if (cls.poderes_pool?.length) {
+    const qtd = cls.poderes_qtd || cls.poderes_pool.length;
+    if (_selectedPoderes.size < qtd) {
+      document.getElementById('create-error').textContent = `Escolha ${qtd} magi${qtd === 1 ? 'a' : 'as'} antes de continuar.`;
+      return;
+    }
+  }
+
+  const poderesSelecionados = cls.poderes_pool?.length ? [..._selectedPoderes] : null;
+
   const novoChar = {
     nome, classe: _selectedClass, sexo: _selectedGender,
     STR: cls.STR, DEX: cls.DEX, CON: cls.CON,
@@ -1641,6 +1705,7 @@ window.confirmarCriacaoPersonagem = async function() {
     hp: d.hp, maxHp: d.hp, ac: d.ac, init: d.init,
     fort: d.fort, ref: d.ref, will: d.will,
     pericias: [..._selectedAdvs],
+    ...(poderesSelecionados ? { poderes_escolhidos: poderesSelecionados } : {}),
     xp: 0, nivel: 1, vivo: true,
     equipamento: {}, mochila: {},
     criadoEm: Date.now(),
@@ -2776,7 +2841,15 @@ function buildSystemPrompt(jogadores, inimigos) {
     const mochilaItems = Object.values(mochila).map(it => `${it.nome}×${it.qtd||1}`);
     const equipStr   = equipParts.length ? ` | EQUIP:${equipParts.join(', ')}` : '';
     const mochilaStr = mochilaItems.length ? ` | MOCHILA:${mochilaItems.join(', ')}` : '';
-    return `${j.nome} (${cls?.nome||j.classe}${nivelStr}) — FOR:${j.STR} DES:${j.DEX} CON:${j.CON} INT:${j.INT} SAB:${j.WIS} CAR:${j.CHA} | PV:${j.hp}/${j.maxHp} CA:${j.ac} Init:${fmt(j.init)}${hab ? ` | Hab:${hab}` : ''}${perStr ? ` | Perícias:${perStr}` : ''}${lesoesStr}${titulosStr}${possesStr}${repStr}${equipStr}${mochilaStr}`;
+    // Spells/abilities: use chosen spells for mage, otherwise class ability
+    let habStr = hab ? `Hab:${hab}` : '';
+    if (cls?.poderes_pool?.length && j.poderes_escolhidos?.length) {
+      const spellNames = j.poderes_escolhidos
+        .map(id => cls.poderes_pool.find(p => p.id === id)?.nome)
+        .filter(Boolean).join(', ');
+      habStr = `Magias:[${spellNames}]`;
+    }
+    return `${j.nome} (${cls?.nome||j.classe}${nivelStr}) — FOR:${j.STR} DES:${j.DEX} CON:${j.CON} INT:${j.INT} SAB:${j.WIS} CAR:${j.CHA} | PV:${j.hp}/${j.maxHp} CA:${j.ac} Init:${fmt(j.init)}${habStr ? ` | ${habStr}` : ''}${perStr ? ` | Perícias:${perStr}` : ''}${lesoesStr}${titulosStr}${possesStr}${repStr}${equipStr}${mochilaStr}`;
   }).join('\n');
 
   const iniList = Object.values(inimigos).filter(i => i.hp > 0).map(i =>

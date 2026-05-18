@@ -660,6 +660,49 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 }
 .adv-chip.selected .adv-chip-desc { color: rgba(200,160,80,.8); }
 
+/* ══ SELEÇÃO DE MAGIAS/PODERES (criação) ══ */
+.poderes-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.poder-chip {
+  text-align: left;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text2);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all .12s;
+  font-family: inherit;
+  width: 100%;
+}
+.poder-chip:hover { border-color: rgba(88,104,160,.5); color: var(--text); }
+.poder-chip.selected {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(200,160,80,.08);
+}
+.poder-chip-top {
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.poder-chip-desc {
+  font-size: 10px;
+  color: rgba(200,160,80,.55);
+  font-style: italic;
+  line-height: 1.35;
+}
+.poder-chip.selected .poder-chip-desc { color: rgba(200,160,80,.8); }
+
 /* ══ NARRAÇÃO EM CHUNKS ══ */
 .narr-chunk {
   margin: 0 0 6px;
