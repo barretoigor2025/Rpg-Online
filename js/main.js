@@ -490,7 +490,7 @@ function renderizarSegmentos(container, segs, falas) {
       } else {
         narrarTexto(it.texto);
       }
-    } else {
+    } else if (it.tipo === 'fala') {
       // Bolha inline: FALANTE à esquerda (espelhado → olha pra direita) | OUVINTE à direita (normal → olha pra esquerda)
       const _ph = (src, icon, cor, espelhar) =>
         `<div class="dialogo-inline-portrait" style="background:${cor}22;border-color:${cor}55">
