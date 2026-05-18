@@ -177,9 +177,13 @@ function getNpcData(nome) {
 function getInimigo(nome) {
   if (!_inimigos) return null;
   const todos = [...(_inimigos.essenciais || []), ...(_inimigos.encontros || [])];
-  return todos.find(e =>
-    nome.toLowerCase().includes(e.nome.toLowerCase()) || e.nome.toLowerCase().includes(nome.toLowerCase())
-  ) || null;
+  const n = nome.toLowerCase();
+  // strip trailing number (e.g. "Espantalho 1" → "espantalho") for fuzzy match
+  const nBase = n.replace(/\s+\d+$/, '').trim();
+  return todos.find(e => {
+    const en = e.nome.toLowerCase();
+    return n.includes(en) || en.includes(n) || nBase.includes(en) || en.includes(nBase);
+  }) || null;
 }
 
 function getPortraitAtaque(nome, costas = false) {
