@@ -1,11 +1,7 @@
-import { initializeApp }  from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
-import { getDatabase, ref, set, get, push, update, onValue, onDisconnect, serverTimestamp, remove }
-  from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js';
-
 // ═══════════════════════════════════════════════════════════════
-//  FIREBASE
+//  FIREBASE — compat SDK (carregado via script tag no HTML)
 // ═══════════════════════════════════════════════════════════════
-const app = initializeApp({
+firebase.initializeApp({
   apiKey:            "AIzaSyAsn9ZFJP6QWFesfls9anBAJbAqcDMfnqg",
   authDomain:        "rpg-online-ad73f.firebaseapp.com",
   databaseURL:       "https://rpg-online-ad73f-default-rtdb.firebaseio.com",
@@ -14,7 +10,17 @@ const app = initializeApp({
   messagingSenderId: "1031450807961",
   appId:             "1:1031450807961:web:369342194731ad0ae37208"
 });
-const db = getDatabase(app);
+const db = firebase.database();
+
+// Wrappers para manter a sintaxe da API modular intacta no restante do código
+const ref          = (database, path) => path !== undefined ? database.ref(path) : database.ref();
+const get          = (r) => r.get();
+const set          = (r, val) => r.set(val);
+const push         = (r, val) => val !== undefined ? r.push(val) : r.push();
+const update       = (r, val) => r.update(val);
+const onValue      = (r, cb) => { r.on('value', cb); return () => r.off('value', cb); };
+const onDisconnect = (r) => r.onDisconnect();
+const serverTimestamp = () => firebase.database.ServerValue.TIMESTAMP;
 
 // ═══════════════════════════════════════════════════════════════
 //  AD&D — CLASSES, PERÍCIAS E DERIVADOS

@@ -200,6 +200,9 @@
 <div id="teste-overlay" style="display:none"></div>
 <div id="falar-overlay" style="display:none"></div>
 
-<script type="module" src="js/main.js"></script>
+<!-- Firebase SDK via script tags (mais confiável em mobile que ES module imports) -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script src="js/main.js" defer></script>
 </body>
 </html>
