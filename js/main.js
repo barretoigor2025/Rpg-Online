@@ -384,8 +384,16 @@ let _falarAlvo = 'Todos';
 function detectarAlvosContexto() {
   const alvos = ['Todos'];
   Object.values(_jogadoresCache).forEach(j => { if (j.uid !== myUid && j.ativo) alvos.push(j.nome); });
-  const textoRecente = Array.from(document.querySelectorAll('.msg-gm')).slice(-6).map(el => el.textContent).join(' ');
-  Object.keys(NPC_DATA).forEach(npc => { if (textoRecente.includes(npc)) alvos.push(npc); });
+  const textoRecente = Array.from(document.querySelectorAll('.msg-gm')).slice(-8).map(el => el.textContent).join(' ');
+  Object.keys(NPC_DATA).forEach(npc => {
+    if (textoRecente.toLowerCase().includes(npc.toLowerCase())) alvos.push(npc);
+  });
+  const reNome = /([A-ZÁÉÍÓÚÀÃÕÂÊÔ][a-záéíóúàãõâêô]+(?:\s+[A-ZÁÉÍÓÚÀÃÕÂÊÔ][a-záéíóúàãõâêô]+)*)\s+(?:disse|falou|gritou|sussurrou|respondeu|perguntou|murmurou|exclamou)/g;
+  let m;
+  while ((m = reNome.exec(textoRecente)) !== null) {
+    const nome = m[1].trim();
+    if (nome.length > 2 && nome.length < 35) alvos.push(nome);
+  }
   return [...new Set(alvos)];
 }
 
@@ -455,6 +463,15 @@ window.enviarFalaPersonagem = async function() {
   if (input) { input.value = acao; }
   await push(ref(db, `salas/${mySala}/historia`), { role:'user', content: acao, uid: myUid, ts: Date.now() });
   await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), { acao1: acao });
+};
+
+window.querAvançarHistoria = async function() {
+  if (!mySala) return;
+  const eu = _jogadoresCache[myUid];
+  if (!eu || !eu.vivo || !eu.consciente || eu.acao1 != null) return;
+  const nome = eu.nome || myNome || 'Jogador';
+  await push(ref(db, `salas/${mySala}/historia`), { role: 'user', content: `${nome} está pronto para avançar a história.`, uid: myUid, ts: Date.now() });
+  await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), { acao1: '__avançar__' });
 };
 
 async function narrarResultadoTestes(resultados, jogadores, inimigos, hist, rodada, ups) {
@@ -992,14 +1009,6 @@ window.toggleSkillsPanel = function() {
     });
     html += `</div>`;
   }
-  if (eu.pericias?.length) {
-    html += `<div class="skills-pericia-list">`;
-    eu.pericias.forEach(k => {
-      const per = PERICIAS[k];
-      if (per) html += `<div class="skills-pericia"><span class="per-icon">${per.icon}</span><div><strong>${per.nome}</strong><div class="per-desc">${per.desc}</div></div></div>`;
-    });
-    html += `</div>`;
-  }
   const lesoesArr = Object.values(eu.lesoes || {});
   if (lesoesArr.length) {
     html += `<div class="skills-lesoes-header">⚠️ Lesões Permanentes</div><div class="skills-lesao-list">`;
@@ -1053,11 +1062,33 @@ window.toggleSkillsPanel = function() {
   });
   html += `</div>`;
 
-  // Botão Falar
-  html += `<div class="skills-falar-wrap"><button class="btn-falar-abrir" onclick="abrirFalar()">💬 Falar</button></div>`;
 
   panel.innerHTML = html;
   panel.style.display = 'flex';
+};
+
+window.togglePericiasPanel = function() {
+  let overlay = document.getElementById('pericias-overlay');
+  if (overlay && overlay.style.display === 'flex') { overlay.style.display = 'none'; return; }
+  if (!overlay) { overlay = document.createElement('div'); overlay.id = 'pericias-overlay'; document.body.appendChild(overlay); }
+  const eu = _jogadoresCache[myUid];
+  if (!eu) return;
+  const pericias = Array.isArray(eu.pericias) ? eu.pericias : Object.values(eu.pericias || {});
+  let html = `<div class="pericias-card">
+    <div class="pericias-header"><span>📜 Perícias</span><button onclick="document.getElementById('pericias-overlay').style.display='none'">✕</button></div>`;
+  if (pericias.length) {
+    html += `<div class="skills-pericia-list">`;
+    pericias.forEach(k => {
+      const p = PERICIAS[k];
+      if (p) html += `<div class="skills-pericia"><span class="per-icon">${p.icon}</span><div><strong>${p.nome}</strong> <small style="color:rgba(200,160,80,.6)">${p.attr}</small><div class="per-desc">${p.desc}</div></div></div>`;
+    });
+    html += `</div>`;
+  } else {
+    html += `<div class="pericias-empty">Nenhuma perícia selecionada.</div>`;
+  }
+  html += `</div>`;
+  overlay.innerHTML = html;
+  overlay.style.display = 'flex';
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -2043,6 +2074,24 @@ function atualizarInputArea(eu, config) {
   atualizarPromptAcao(eu, config);
 
   if (iniciarWrap && config.estado !== 'lobby') iniciarWrap.style.display = 'none';
+
+  const btnAv = document.getElementById('btn-avançar-hist');
+  if (btnAv) {
+    const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
+    const querAvCount = ativos.filter(j => j.acao1 === '__avançar__').length;
+    const mostrar = !narrando && !morto && config.estado === 'aguardando';
+    btnAv.style.display = mostrar ? '' : 'none';
+    const euQuer = eu?.acao1 === '__avançar__';
+    btnAv.classList.toggle('ativo', euQuer);
+    btnAv.disabled = euQuer || narrando || morto;
+    if (euQuer) {
+      btnAv.textContent = `⏩ ${querAvCount}/${ativos.length}`;
+    } else if (ativos.length > 1 && querAvCount > 0) {
+      btnAv.textContent = `⏩ Avançar (${querAvCount}/${ativos.length})`;
+    } else {
+      btnAv.textContent = '⏩ Avançar';
+    }
+  }
 }
 
 function atualizarPromptAcao(eu, config) {
@@ -2644,7 +2693,7 @@ async function chamarIA(jogadores, data) {
     // Monta mensagem das ações desta rodada
     const acoes = Object.values(jogadores)
       .filter(j => j.acao1)
-      .map(j => `${j.nome}: ${j.acao1}`)
+      .map(j => `${j.nome}: ${j.acao1 === '__avançar__' ? '(aguardando — sem ação específica, quer que a história avance)' : j.acao1}`)
       .join('\n');
 
     const msg = `Rodada ${rodada}.\n\nAções dos jogadores:\n${acoes}`;

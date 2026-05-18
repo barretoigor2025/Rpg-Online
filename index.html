@@ -182,7 +182,10 @@
   </div>
   <div id="action-bar">
     <div id="action-top-btns">
-      <button id="btn-falar" onclick="abrirFalar()" title="Falar como personagem">💬 Falar</button>
+      <button id="btn-falar" class="action-quick-btn" onclick="abrirFalar()">💬 Falar</button>
+      <button id="btn-ficha" class="action-quick-btn" onclick="toggleSkillsPanel()">📋 Ficha</button>
+      <button id="btn-skills" class="action-quick-btn" onclick="togglePericiasPanel()">📜 Skills</button>
+      <button id="btn-avançar-hist" class="action-quick-btn" onclick="querAvançarHistoria()" style="display:none">⏩ Avançar</button>
     </div>
     <div id="action-wrap">
       <textarea id="action-input" rows="2" placeholder="Declare a ação do seu personagem..."></textarea>
