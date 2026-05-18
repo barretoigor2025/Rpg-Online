@@ -1251,12 +1251,111 @@ function mostrarTela(id) {
   if (el) el.style.display = '';
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  VINHETA ARCANA
+// ═══════════════════════════════════════════════════════════════
+let _vinhetaTocada = false;
+function tocarVinhetaArcana() {
+  if (_vinhetaTocada) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    _vinhetaTocada = true;
+    const dur = 6.5;
+
+    const master = ctx.createGain();
+    master.connect(ctx.destination);
+    master.gain.setValueAtTime(0, ctx.currentTime);
+    master.gain.linearRampToValueAtTime(0.55, ctx.currentTime + 0.6);
+    master.gain.setValueAtTime(0.55, ctx.currentTime + dur - 1.2);
+    master.gain.linearRampToValueAtTime(0, ctx.currentTime + dur);
+
+    // Reverb via delay loop
+    const delay = ctx.createDelay(0.6);
+    delay.delayTime.value = 0.38;
+    const delayFb = ctx.createGain();
+    delayFb.gain.value = 0.42;
+    delay.connect(delayFb);
+    delayFb.connect(delay);
+    delayFb.connect(master);
+
+    // Drone grave
+    const bass = ctx.createOscillator();
+    bass.type = 'sine';
+    bass.frequency.setValueAtTime(55, ctx.currentTime);
+    bass.frequency.linearRampToValueAtTime(58, ctx.currentTime + dur);
+    const bassG = ctx.createGain();
+    bassG.gain.value = 0.22;
+    bass.connect(bassG); bassG.connect(master);
+    bass.start(ctx.currentTime); bass.stop(ctx.currentTime + dur);
+
+    // Pad harmônico (A menor)
+    [[220,.07],[330,.05],[440,.06],[550,.03],[660,.04]].forEach(([f, v]) => {
+      const o = ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = f + (Math.random() - 0.5) * 2;
+      const g = ctx.createGain(); g.gain.value = v;
+      o.connect(g); g.connect(delay); g.connect(master);
+      o.start(ctx.currentTime + 0.1); o.stop(ctx.currentTime + dur);
+    });
+
+    // Melodia arcana (arpejo ascendente-descendente)
+    const notas = [
+      [523.25, 0.5 ], // C5
+      [659.25, 1.05], // E5
+      [783.99, 1.6 ], // G5
+      [880.00, 2.2 ], // A5
+      [1046.5, 3.0 ], // C6
+      [880.00, 3.7 ], // A5
+      [783.99, 4.35], // G5
+      [659.25, 4.9 ], // E5 — final
+    ];
+    notas.forEach(([f, t]) => {
+      const o = ctx.createOscillator();
+      o.type = 'triangle';
+      o.frequency.value = f;
+      const g = ctx.createGain();
+      const at = ctx.currentTime + t;
+      g.gain.setValueAtTime(0, at);
+      g.gain.linearRampToValueAtTime(0.18, at + 0.025);
+      g.gain.exponentialRampToValueAtTime(0.001, at + 1.4);
+      o.connect(g); g.connect(delay); g.connect(master);
+      o.start(at); o.stop(at + 1.6);
+    });
+
+    // Shimmer alto (cintilação)
+    [[2093, 1.8],[2637, 2.5],[3136, 3.2]].forEach(([f, t]) => {
+      const o = ctx.createOscillator();
+      o.type = 'sine'; o.frequency.value = f;
+      const g = ctx.createGain(); const at = ctx.currentTime + t;
+      g.gain.setValueAtTime(0, at);
+      g.gain.linearRampToValueAtTime(0.04, at + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, at + 0.9);
+      o.connect(g); g.connect(master);
+      o.start(at); o.stop(at + 1);
+    });
+  } catch(e) { /* autoplay bloqueado — silencioso */ }
+}
+
 window.irParaHome = function() { mostrarTela('screen-home'); };
 
 window.irParaPersonagens = async function() {
+  tocarVinhetaArcana();
   mostrarTela('screen-chars');
   await carregarSlots();
   renderSlots();
+};
+
+window.deixarSala = function() {
+  if (!confirm('Sair da sala? Você poderá entrar novamente pelo código.')) return;
+  if (unsubSala) { unsubSala(); unsubSala = null; }
+  mySala = null; amIHost = false; _kitMigrado = false;
+  _jogadoresCache = {};
+  // Para narração em andamento
+  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  voiceQueue = []; voiceBusy = false;
+  irParaPersonagens();
 };
 
 window.irParaCriacao = function(slotIndex) {
@@ -1306,7 +1405,7 @@ function renderLobbyCharCard() {
 //  SLOTS DE PERSONAGENS
 // ═══════════════════════════════════════════════════════════════
 const CLASS_COLORS = {
-  guerreiro: '#8a4a20', mago: '#3a2a6a', ladino: '#1a3a2a',
+  guerreiro: '#8a4a20', mago: '#3a2a6a', ladino: '#0f2448',
   clerigo: '#4a3a10', barbaro: '#6a1a1a', arqueiro: '#2a4a2a',
 };
 
