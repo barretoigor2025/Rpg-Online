@@ -6,7 +6,7 @@
   --bg:      #06080f;
   --surface: #0d1120;
   --surface2:#111828;
-  --border:  rgba(88,104,160,.25);
+  --border:  rgba(120,140,190,.45);
   --text:    #c8d0e0;
   --text2:   #8090a8;
   --text3:   #4a5570;
@@ -100,7 +100,7 @@ textarea {
   outline: none;
   transition: border-color .15s;
 }
-input:focus, textarea:focus { border-color: rgba(88,104,160,.6); }
+input:focus, textarea:focus { border-color: rgba(200,160,60,.75); outline: none; }
 input::placeholder, textarea::placeholder { color: var(--text3); font-style: italic; }
 
 .row-input {
@@ -213,6 +213,8 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   transition: color .12s;
 }
 .icon-btn:hover { color: var(--text); }
+.icon-btn-exit { color: rgba(255,120,100,.6) !important; }
+.icon-btn-exit:hover { color: rgba(255,80,60,.9) !important; }
 
 /* Players bar */
 #players-bar {
@@ -1890,21 +1892,21 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   position: absolute;
   top: 6px;
   right: 6px;
-  width: 22px;
-  height: 22px;
-  background: rgba(180,40,40,.0);
-  border: none;
-  color: rgba(255,100,100,.3);
+  width: 24px;
+  height: 24px;
+  background: rgba(120,20,20,.5);
+  border: 1px solid rgba(255,80,80,.3);
+  color: rgba(255,120,120,.8);
   cursor: pointer;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color .15s, background .15s;
+  transition: color .15s, background .15s, border-color .15s;
   z-index: 2;
 }
-.slot-delete:hover { color: #ff5555; background: rgba(180,40,40,.2); }
+.slot-delete:hover { color: #fff; background: rgba(200,40,40,.8); border-color: rgba(255,80,80,.7); }
 .slot-class-bar {
   position: absolute;
   bottom: 0; left: 0; right: 0;
