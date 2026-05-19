@@ -177,6 +177,7 @@ let _ultimoNpc        = null; // último NPC que falou, usado como ouvinte quand
 let _regras           = {};
 let _trocaItens       = new Set(); // slugs selecionados para troca
 let _trocaAtual       = null;     // snapshot atual do nó salas/${sala}/troca
+let _lastConfig       = {};       // último snapshot de config (para re-check de prompt)
 
 // ═══════════════════════════════════════════════════════════════
 //  HELPERS
@@ -785,7 +786,7 @@ function chuncarTexto(txt, maxWords = 50) {
   return chunks;
 }
 
-function renderizarSegmentos(container, segs, falas) {
+function renderizarSegmentos(container, segs, falas, noTTS) {
   const items = [];
   segs.forEach(s => {
     if (s.tipo === 'texto') {
@@ -796,6 +797,28 @@ function renderizarSegmentos(container, segs, falas) {
       items.push({ tipo:'fala', nome: s.nome, texto: s.texto });
     }
   });
+
+  // Modo silencioso: renderiza tudo de uma vez, sem TTS nem botões Continuar
+  if (noTTS) {
+    items.forEach(it => {
+      if (it.tipo === 'chunk') {
+        const p = document.createElement('p');
+        p.className = 'narr-chunk';
+        p.textContent = it.texto;
+        container.appendChild(p);
+      } else if (it.tipo === 'fala') {
+        const bubble = document.createElement('div');
+        bubble.className = 'dialogo-inline';
+        const npc = getNpcData(it.nome);
+        bubble.innerHTML = `<div class="dialogo-inline-body">
+          <div class="dialogo-inline-nome">${it.nome}</div>
+          <div class="dialogo-inline-texto">"${it.texto}"</div>
+        </div>`;
+        container.appendChild(bubble);
+      }
+    });
+    return;
+  }
   if (!items.length) return;
 
   if (items.length === 1 && items[0].tipo === 'chunk') {
@@ -809,7 +832,12 @@ function renderizarSegmentos(container, segs, falas) {
 
   let idx = 0;
   function proxItem() {
-    if (idx >= items.length) return;
+    if (idx >= items.length) {
+      // Narração completa — verificar se o card de ação já pode aparecer
+      const eu = _jogadoresCache?.[myUid];
+      if (eu && _lastConfig) atualizarPromptAcao(eu, _lastConfig);
+      return;
+    }
     const it = items[idx++];
     if (it.tipo === 'chunk') {
       const p = document.createElement('p');
@@ -2592,7 +2620,7 @@ function renderizarHistoria(historia, jogadores) {
       div.className = 'msg msg-gm';
       const falas = normalizarFalas(entry.falas);
       const segs  = parsearSegmentos(entry.content);
-      renderizarSegmentos(div, segs, falas);
+      renderizarSegmentos(div, segs, falas, entry.noTTS);
     } else if (entry.role === 'user') {
       const j = Object.values(jogadores).find(j => j.uid === entry.uid);
       const cls = CLASSES[j?.classe] || {};
@@ -2668,15 +2696,17 @@ function renderizarHistoria(historia, jogadores) {
 //  INPUT AREA
 // ═══════════════════════════════════════════════════════════════
 function atualizarInputArea(eu, config) {
+  _lastConfig = config;
   const btn        = document.getElementById('btn-send');
   const status     = document.getElementById('action-status');
   const iniciarWrap = document.getElementById('btn-iniciar-wrap');
 
   if (!eu) return;
 
-  const jaEnviou = eu.acao1 != null;
-  const narrando = config.estado === 'narrando' || config.estado === 'iniciando';
-  const morto    = !eu.vivo || !eu.consciente;
+  const jaEnviou    = eu.acao1 != null;
+  const temContinuar = !!document.querySelector('#story-content .btn-continuar-narr');
+  const narrando    = config.estado === 'narrando' || config.estado === 'iniciando' || temContinuar;
+  const morto       = !eu.vivo || !eu.consciente;
 
   if (btn) btn.disabled = jaEnviou || narrando || morto;
 
@@ -2695,7 +2725,7 @@ function atualizarInputArea(eu, config) {
   if (btnAv) {
     const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
     const querAvCount = ativos.filter(j => j.acao1 === '__avançar__').length;
-    const mostrar = !narrando && !morto && config.estado === 'aguardando';
+    const mostrar = !narrando && !morto && config.estado === 'aguardando' && !temContinuar;
     btnAv.style.display = mostrar ? '' : 'none';
     const euQuer = eu?.acao1 === '__avançar__';
     btnAv.classList.toggle('ativo', euQuer);
@@ -2715,8 +2745,9 @@ function atualizarPromptAcao(eu, config) {
   if (!storyContent) return;
 
   let card = document.getElementById('action-prompt-card');
-  const estadoAvançando = config.estado === 'avançando';
-  const deveExibir = eu && (config.estado === 'aguardando' || estadoAvançando) && eu.acao1 == null && eu.vivo && eu.consciente;
+  const estadoAvançando  = config.estado === 'avançando';
+  const temContinuarBtn  = !!document.querySelector('#story-content .btn-continuar-narr');
+  const deveExibir = eu && (config.estado === 'aguardando' || estadoAvançando) && eu.acao1 == null && eu.vivo && eu.consciente && !temContinuarBtn;
 
   if (!deveExibir) {
     if (card) card.remove();
@@ -3371,7 +3402,7 @@ async function chamarIA(jogadores, data) {
       const textoAntes = primeiroTag >= 0 ? resposta.substring(0, primeiroTag) : '';
       const preamble = limparTags(textoAntes);
       if (preamble) {
-        await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: preamble, falas: extrairFalas(textoAntes), ataques: extrairAtaques(textoAntes), ts: Date.now() });
+        await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: preamble, falas: extrairFalas(textoAntes), ataques: extrairAtaques(textoAntes), noTTS: true, ts: Date.now() });
       }
       await update(ref(db), ups);
       iniciarTestes(testes, roles, jogadores, async (resultados) => {
