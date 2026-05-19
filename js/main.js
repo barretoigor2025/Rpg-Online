@@ -3071,7 +3071,7 @@ async function chamarOpenAI(systemPrompt, history, userMsg, onRetry, maxTokens =
 
   const messages = [
     { role:'system', content: systemPrompt },
-    ...history.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.content || '' })),
+    ...history.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.role === 'trade' ? `[TROCA] ${m.content}` : (m.content || '') })),
     { role:'user', content: userMsg }
   ];
 
@@ -3258,7 +3258,7 @@ async function chamarIA_jogadoresAvançam(jogadores, data) {
     await update(ref(db), ups);
     const hist = Object.values(historia)
       .sort((a,b)=>(a.ts||0)-(b.ts||0))
-      .filter(e=>e.role==='model'||e.role==='user')
+      .filter(e=>e.role==='model'||e.role==='user'||e.role==='trade')
       .slice(-10);
     const msg = `Rodada ${rodada}.\n\n[Os aventureiros estão prontos para prosseguir. Como Mestre, retome a cena — aja como NPCs presentes, descreva o que acontece ao redor, ou introduza um novo elemento. Máximo 80 palavras. Não mencione que os jogadores pediram para avançar.]`;
     const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), hist, msg, mostrarRetryUI);
@@ -3292,7 +3292,7 @@ async function chamarIA_continuar() {
     await update(ref(db, `salas/${mySala}/config`), { estado: 'narrando' });
     const hist = Object.values(historia)
       .sort((a,b) => (a.ts||0)-(b.ts||0))
-      .filter(e => e.role === 'model' || e.role === 'user')
+      .filter(e => e.role === 'model' || e.role === 'user' || e.role === 'trade')
       .slice(-10);
     const msg = `Rodada ${rodada}.\n\n[Continuação automática — nenhuma nova ação do jogador. Continue a narrativa naturalmente, avançando a cena ou introduzindo um novo elemento.]`;
     const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), hist, msg, mostrarRetryUI);
@@ -3336,7 +3336,7 @@ async function chamarIA(jogadores, data) {
     // Monta histórico (últimas 10 entradas)
     const hist = Object.values(historia)
       .sort((a,b) => (a.ts||0)-(b.ts||0))
-      .filter(e => e.role === 'model' || e.role === 'user')
+      .filter(e => e.role === 'model' || e.role === 'user' || e.role === 'trade')
       .slice(-10);
 
     // Monta mensagem das ações desta rodada
@@ -3488,6 +3488,8 @@ TITULO/POSSE/REPUTACAO: use quando a narrativa conferir recompensas concretas ou
 EQUIPAR: slots válidos — cabeca, tronco, mao_d, mao_e, pes. Item vazio = desequipar.
 ITEM_BAG: qtd positiva = adicionar, negativa = remover da mochila.
 VALIDAÇÃO DE EQUIPAMENTO: o jogador APENAS usa armas/itens que constam em EQUIP ou MOCHILA. Se declarar usar algo que não possui, narre o improviso ("sem espada, usa os punhos") ou falha — NUNCA invente itens nem ignore a ausência.
+
+TROCA DE ITENS ENTRE JOGADORES: quando você ver [TROCA] no histórico, significa que um jogador acabou de passar item(s) para outro jogador fora do turno. O sistema já processou a transferência — os itens já mudaram de mochila. Você pode (e deve) comentar brevemente na narrativa quando fizer sentido dramático, ex: "Enquanto vocês se preparam, Igor estende a poção para Afonso — um gesto silencioso que diz mais que palavras.". Trate como ação válida; NUNCA questione ou invalide a troca.`
 
 DIÁLOGOS — sistema de bolhas inline. Regras OBRIGATÓRIAS:
 1. Quando um NPC fala, descreva a ação de falar (terminando em dois-pontos) e coloque a tag na linha seguinte:

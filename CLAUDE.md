@@ -1,0 +1,193 @@
+# Oráculo RPG — Registro Canônico de Mecânicas
+
+Repositório: `barretoigor2025/Rpg-Online`  
+GitHub Pages: `https://barretoigor2025.github.io/Rpg-Online/`  
+Branch de desenvolvimento: `main` (sempre push direto para main)  
+Stack: HTML/CSS/JS puro · Firebase Realtime Database compat v9 · Groq API (`llama-3.3-70b-versatile` + `playai-tts`) · Three.js r0.160.0
+
+---
+
+## Tags da IA Narrador
+
+A IA usa tags especiais nas respostas para acionar mecânicas do sistema. Nunca aparecem no texto final exibido ao jogador.
+
+### TESTAR
+```
+TESTAR: [NomeExato|Descrição curta|Atributo|CD|Alvo?]
+```
+- Dispara rolagem d20 + mod do atributo contra CD
+- Atributos válidos: `FOR DES CON INT SAB CAR FORT REF VON`
+- Alvo = nome do inimigo (opcional, só em ataques)
+- d20 natural 20 → CRÍTICO · d20 natural 1 → CATÁSTROFE
+- Múltiplos TESTAR são sequenciais com animação de dado acumulando lista
+- O overlay Three.js exibe tudo antes de narrar o resultado
+
+### ROLAR
+```
+ROLAR: [NomeExato|Descrição do dano|NotaçãoDados|Alvo?]
+```
+- Aparece logo após TESTAR de ataque com alvo
+- Sistema cancela automaticamente se o TESTAR pai falhou
+- Notação: `1d20`, `2d6`, `1d8+3`, `1d4-1` etc.
+- Usa dado animado Three.js; dados de dano usam geometria d4/d6/d8/d10/d12/d20 correspondente
+
+### AVANÇAR
+```
+AVANÇAR
+```
+- Última linha da resposta da IA (sozinho)
+- Estado Firebase `config.estado = 'avançando'`
+- Botão ⏩ Avançar aparece para todos; quando todos clicam → `chamarIA_jogadoresAvançam()` com prompt de "Mestre entrando na cena"
+- Timer de auto-avanço se ninguém clicar
+
+### FALA
+```
+FALA: [NomeNPC|"frase completa"]
+```
+- Bolha de diálogo inline na história
+- Multi-turno suportado (várias FALAs na mesma resposta)
+
+### STATS
+```
+STATS: [tag:param:param...]
+```
+Só na última linha. Tags disponíveis:
+| Tag | Efeito |
+|-----|--------|
+| `INIMIGO:nome:hp:hpMax:ícone` | Cria/atualiza inimigo |
+| `HP:nome:novoHp` | Altera HP de personagem |
+| `MATAR:nome` | Remove inimigo da cena |
+| `JOGADOR:nome:novoHp` | Altera HP de jogador |
+| `AUSENTE:nome` | Marca jogador como ausente |
+| `PRESENTE:nome` | Retorna jogador à cena |
+| `LESAO:nome:descrição` | Lesão permanente |
+| `XP:nome:pontos` | Concede XP (10–50 pts) |
+| `TITULO:nome:título` | Confere título |
+| `POSSE:nome:descrição` | Confere posse |
+| `REPUTACAO:nome:local:valor` | Reputação regional |
+| `EQUIPAR:nome:slot:item` | Equipa item (slots: `cabeca tronco mao_d mao_e pes`) |
+| `ITEM_BAG:nome:item:qtd` | Adiciona (qtd+) ou remove (qtd-) da mochila |
+
+---
+
+## Mecânicas do Sistema (Frontend)
+
+### Troca de Itens entre Jogadores ✅
+**Botão:** 🤝 Troca (action bar, ao lado de Skills)  
+**Firebase node:** `salas/${id}/troca: { estado, iniciador, alvo, ts }`  
+**Fluxo:**
+1. Iniciador abre modal → seleciona jogador alvo
+2. Firebase escreve `troca: { estado:'pendente', iniciador, alvo }`
+3. Listener `onValue` detecta → alvo recebe modal de convite na tela
+4. Alvo aceita → `estado = 'ativa'` · Alvo recusa → `troca = null`
+5. Iniciador vê sua mochila, seleciona itens (Set `_trocaItens`)
+6. Confirma → transferência atômica `update(ref(db), ups)`:
+   - Remove slugs da mochila do iniciador (`salas/` + `personagens/`)
+   - Adiciona na mochila do alvo (merge de qtd se slug já existe)
+   - `troca = null`
+7. Push para `historia`: `{ role:'trade', content, de, para, itens[], ts }`
+8. Card verde `🤝 X entregou Y para Z.` aparece no story de todos
+
+**IA ciente:** entradas `role:'trade'` são incluídas no histórico enviado à IA como `[TROCA] X entregou Y para Z.` para que o narrador possa comentar dramaticamente.
+
+**Demo:** `https://barretoigor2025.github.io/Rpg-Online/troca-demo.html`
+
+---
+
+### Rolagem de Dados 3D (Three.js) ✅
+**IIFE:** `DiceOverlay` em `js/main.js`  
+**Demo:** `https://barretoigor2025.github.io/Rpg-Online/teste-de-dados.html`  
+- Dados: d4 (tetraedro), d6 (cubo), d8 (octaedro), d10 (bipiramide pentagonal custom), d12 (dodecaedro), d20 (icosaedro)
+- Vermelhos sólidos `MeshStandardMaterial({ color:0xbf1a0c, side:THREE.DoubleSide })`
+- Linhas brancas nas arestas via `EdgesGeometry + LineSegments`
+- Animação: queda + spin rápido 18rad/s → desaceleração quadrática → para ao mostrar resultado
+- Resultado: número + veredicto ACERTO/FALHA/CRÍTICO/CATÁSTROFE
+- Sequencial: playlist de rolls com histórico acumulado na tela
+- ROLAR condicional: se TESTAR pai falhou → mostra CANCELADO sem animar
+
+---
+
+### Mochila ✅
+- Estrutura: `{ slug: { nome, qtd, slot? } }` em `salas/${id}/jogadores/${uid}/mochila/` e `personagens/${uid}/mochila/`
+- Máximo 11 itens + 1 slot de dinheiro (`MOCHILA_ITENS = 11`, `MOCHILA_MAX = 12`)
+- Delete = `null` no Firebase update
+- Global: `_jogadoresCache`, `myUid`, `mySala`
+
+### Skills Panel ✅
+- **Ficha (📋):** atributos, equipamento, perícias — `toggleSkillsPanel()`
+- **Skills (📜):** modal centralizado com habilidades de classe + magias — `togglePericiasPanel()`
+  - Mago: Grimório + 3 magias escolhidas na criação
+  - Outras classes: poderes da classe
+  - Badges coloridos: ativo/passivo/combate/diário/ritual/temporário/perícia
+
+### Falar ✅
+- Overlay de bolha de NPC/jogador — `abrirFalar()`
+
+### Sistema de Avançar ✅
+- Ação especial `'__avançar__'`
+- Todos os jogadores ativos devem clicar para acionar `chamarIA_jogadoresAvançam()`
+- Prompt especial: Mestre entra em cena, máximo 80 palavras
+
+---
+
+## Firebase Schema (principais nós)
+
+```
+salas/${codigo}/
+  config/          { host, estado, rodada, campanha... }
+  jogadores/${uid}/ { nome, classe, hp, maxHp, ac, mochila{}, equipamento{}, acao1, ... }
+  historia/${push}/ { role, content, ts, falas?, ataques?, de?, para?, itens? }
+  inimigos/${push}/ { nome, hp, maxHp, icon }
+  troca/           { estado, iniciador, alvo, ts }  ← null quando não há troca ativa
+
+personagens/${uid}/  ← espelho do jogador ativo (lido pelo host para builds dos outros)
+chars/${uid}/s${0..7}/  ← slots de personagem salvos
+```
+
+---
+
+## Variáveis Globais Importantes
+
+| Variável | Tipo | Descrição |
+|----------|------|-----------|
+| `myUid` | string | UID do jogador atual (localStorage) |
+| `mySala` | string | Código da sala atual |
+| `amIHost` | bool | Se sou o host (narrador) |
+| `chamandoIA` | bool | Lock para evitar chamadas duplas |
+| `_jogadoresCache` | object | Snapshot atual de todos os jogadores |
+| `_trocaItens` | Set | Slugs selecionados para troca |
+| `_trocaAtual` | object | Snapshot do nó `troca` do Firebase |
+| `MOCHILA_MAX` | 12 | Capacidade total da mochila |
+| `MOCHILA_ITENS` | 11 | Slots de itens (excluindo dinheiro) |
+
+---
+
+## Padrão de Update Firebase
+
+```js
+const ups = {};
+ups[`salas/${mySala}/jogadores/${uid}/campo`] = valor;
+ups[`personagens/${uid}/campo`] = valor;  // sempre espelhar
+// null = deletar
+await update(ref(db), ups);  // atômico
+```
+
+---
+
+## Classes e Poderes
+
+| Classe | Ícone | Habilidade | Poderes |
+|--------|-------|-----------|---------|
+| Guerreiro | ⚔️ | Ataque Extra | Golpe Poderoso, Postura de Defesa, Segundo Fôlego |
+| Mago | 🔮 | Grimório | Pool de 9 magias, escolhe 3 na criação |
+| Ladino | 🗡️ | Ataque Furtivo | Evasão, Veneno, Sombras |
+| Clérigo | ✨ | Canalizar Divindade | Bênção, Curar Ferimentos, Expulsar Mortos-Vivos, Escudo da Fé |
+| Bárbaro | 🪓 | Fúria | Golpe Devastador, Pele de Ferro, Uivo de Guerra |
+| Arqueiro | 🏹 | Olho de Águia | Tiro Preciso, Chuva de Flechas, Passo do Vento |
+
+---
+
+## Versão do cache JS
+
+Incrementar `?v=N` em `index.html` a cada deploy que altere `main.js` ou `layout.css`.  
+Versão atual: `?v=7`
