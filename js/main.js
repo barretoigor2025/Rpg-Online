@@ -1336,17 +1336,20 @@ window.togglePericiasPanel = function() {
   if (!eu) return;
   const cls = CLASSES[eu.classe];
 
-  // Monta lista de habilidades/magias da classe
+  // Para mago: Grimório (habilidade) + magias escolhidas
+  // Para outras classes: todos os poderes da classe
   let poderes;
-  if (cls?.poderes_pool?.length && eu.poderes_escolhidos?.length) {
-    poderes = eu.poderes_escolhidos.map(id => cls.poderes_pool.find(p => p.id === id)).filter(Boolean);
+  if (cls?.poderes_pool?.length) {
+    const magias = (eu.poderes_escolhidos || [])
+      .map(id => cls.poderes_pool.find(p => p.id === id))
+      .filter(Boolean);
+    poderes = cls.habilidade ? [cls.habilidade, ...magias] : magias;
   } else {
     poderes = cls?.poderes?.length ? cls.poderes : (cls?.habilidade ? [cls.habilidade] : []);
   }
 
-  const pericias = Array.isArray(eu.pericias) ? eu.pericias : Object.values(eu.pericias || {});
   const isMago = cls?.poderes_pool?.length > 0;
-  const secaoLabel = isMago ? '✨ Magias' : '⚡ Habilidades de Classe';
+  const secaoLabel = isMago ? '✨ Grimório & Magias' : '⚡ Habilidades de Classe';
 
   let html = `<div class="ab-modal-backdrop" onclick="togglePericiasPanel()"></div>
   <div class="ab-modal">
@@ -1357,9 +1360,11 @@ window.togglePericiasPanel = function() {
 
   if (poderes.length) {
     html += `<div class="ab-section-label">${secaoLabel}</div>`;
-    poderes.forEach(p => {
+    poderes.forEach((p, i) => {
       const badge = _badgeAbilidade(p.desc || '');
-      html += `<div class="ab-card">
+      // Para mago, o primeiro item é o Grimório — mostrar diferenciado
+      const isGrimoire = isMago && i === 0;
+      html += `<div class="ab-card${isGrimoire ? ' ab-card-grimoire' : ''}">
         <div class="ab-card-top">
           <span class="ab-card-icon">${p.icon||'⚡'}</span>
           <span class="ab-card-nome">${p.nome}</span>
@@ -1368,25 +1373,7 @@ window.togglePericiasPanel = function() {
         <div class="ab-card-desc">${p.desc}</div>
       </div>`;
     });
-  }
-
-  if (pericias.length) {
-    html += `<div class="ab-section-label">📜 Perícias</div>`;
-    pericias.forEach(k => {
-      const p = PERICIAS[k];
-      if (!p) return;
-      html += `<div class="ab-card">
-        <div class="ab-card-top">
-          <span class="ab-card-icon">${p.icon}</span>
-          <span class="ab-card-nome">${p.nome}</span>
-          <span class="ab-badge ab-badge-pericia">${p.attr}</span>
-        </div>
-        <div class="ab-card-desc">${p.desc}</div>
-      </div>`;
-    });
-  }
-
-  if (!poderes.length && !pericias.length) {
+  } else {
     html += `<div class="ab-empty">Nenhuma habilidade registrada.</div>`;
   }
 
