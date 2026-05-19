@@ -153,7 +153,7 @@ let mySala      = null;
 let myNome      = null;
 let myClasse    = 'guerreiro';
 let _activeSlot  = parseInt(localStorage.getItem('rpg_active_slot') || '0');
-let _charSlots   = new Array(8).fill(null);
+let _charSlots   = new Array(4).fill(null);
 let amIHost     = false;
 let chamandoIA  = false;
 let unsubSala   = null;
@@ -1998,6 +1998,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Show home screen on start
   irParaHome();
+  _atualizarBotaoRetomarHome();
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -2096,7 +2097,7 @@ function tocarVinhetaArcana() {
   } catch(e) { /* autoplay bloqueado — silencioso */ }
 }
 
-window.irParaHome = function() { mostrarTela('screen-home'); };
+window.irParaHome = function() { mostrarTela('screen-home'); _atualizarBotaoRetomarHome(); };
 
 window.irParaPersonagens = async function() {
   tocarVinhetaArcana();
@@ -2108,6 +2109,7 @@ window.irParaPersonagens = async function() {
 
 window.deixarSala = function() {
   if (!confirm('Sair da sala? Você poderá entrar novamente pelo código.')) return;
+  localStorage.removeItem(`rpg_sala_s${_activeSlot}`);
   if (unsubSala) { unsubSala(); unsubSala = null; }
   mySala = null; amIHost = false; _kitMigrado = false;
   _jogadoresCache = {};
@@ -2182,10 +2184,10 @@ async function carregarSlots() {
       }
     }
     const snap = await get(ref(db, `chars/${myUid}`));
-    _charSlots = new Array(8).fill(null);
+    _charSlots = new Array(4).fill(null);
     if (snap.exists()) {
       const data = snap.val();
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 4; i++) {
         _charSlots[i] = data[`s${i}`] || null;
       }
     }
@@ -2202,9 +2204,14 @@ function renderSlots() {
         <div class="slot-empty-label">Criar Aventureiro</div>
       </div>`;
     }
-    const cls = CLASSES[ch.classe] || {};
-    const cor = CLASS_COLORS[ch.classe] || '#4a5a70';
+    const cls   = CLASSES[ch.classe] || {};
+    const cor   = CLASS_COLORS[ch.classe] || '#4a5a70';
     const nivel = ch.nivel || 1;
+    const sala  = localStorage.getItem(`rpg_sala_s${i}`);
+    const retBadge = sala
+      ? `<div class="slot-sala-badge">🏰 ${sala}</div>
+         <button class="slot-btn-retomar" onclick="event.stopPropagation();retomarSala(${i},'${sala}')">▶ Retomar Campanha</button>`
+      : '';
     return `<div class="slot-card occupied" onclick="selecionarSlotExistente(${i})"
                  style="background:linear-gradient(160deg,${cor}22 0%,rgba(6,8,15,.95) 60%);">
       <button class="slot-delete" onclick="event.stopPropagation();deletarSlot(${i})" title="Excluir">✕</button>
@@ -2215,9 +2222,35 @@ function renderSlots() {
       <div class="slot-nome">${ch.nome}</div>
       <div class="slot-classe">${cls.icon||''} ${cls.nome||ch.classe}</div>
       <div class="slot-nivel">Nível ${nivel} &nbsp;·&nbsp; ★ ${ch.xp||0} XP</div>
+      ${retBadge}
       <div class="slot-class-bar" style="background:${cor}88"></div>
     </div>`;
   }).join('');
+  _atualizarBotaoRetomarHome();
+}
+
+function _atualizarBotaoRetomarHome() {
+  const btn = document.getElementById('home-retomar-btn');
+  if (!btn) return;
+  const slot = parseInt(localStorage.getItem('rpg_active_slot') || '0');
+  const sala = localStorage.getItem(`rpg_sala_s${slot}`);
+  if (sala) {
+    btn.style.display = '';
+    btn.textContent = `▶ Retomar Campanha`;
+    btn.onclick = () => retomarSala(slot, sala);
+  } else {
+    // Check any slot
+    for (let i = 0; i < 4; i++) {
+      const s = localStorage.getItem(`rpg_sala_s${i}`);
+      if (s) {
+        btn.style.display = '';
+        btn.textContent = `▶ Retomar Campanha`;
+        btn.onclick = () => retomarSala(i, s);
+        return;
+      }
+    }
+    btn.style.display = 'none';
+  }
 }
 
 window.selecionarSlotExistente = function(i) {
@@ -2241,7 +2274,57 @@ window.deletarSlot = async function(i) {
   if (!confirm(`Excluir "${_charSlots[i]?.nome}"? Isso é permanente.`)) return;
   await set(ref(db, `chars/${myUid}/s${i}`), null);
   _charSlots[i] = null;
+  localStorage.removeItem(`rpg_sala_s${i}`);
   renderSlots();
+};
+
+window.retomarSala = async function(slotIndex, codigo) {
+  const ch = _charSlots[slotIndex];
+  if (!ch) {
+    // Slots may not be loaded yet — load first
+    await carregarSlots();
+    const ch2 = _charSlots[slotIndex];
+    if (!ch2) { toast('Personagem não encontrado.', 2000); return; }
+  }
+  const char = _charSlots[slotIndex];
+
+  _activeSlot      = slotIndex;
+  _selectedClass   = char.classe || 'guerreiro';
+  _selectedGender  = char.sexo   || 'm';
+  _selectedAdvs    = new Set(Array.isArray(char.pericias) ? char.pericias : []);
+  _selectedPoderes = new Set(Array.isArray(char.poderes_escolhidos) ? char.poderes_escolhidos : []);
+  localStorage.setItem('rpg_active_slot', String(slotIndex));
+
+  const nomeEl = document.getElementById('char-nome');
+  if (nomeEl) nomeEl.value = char.nome || '';
+
+  const snap = await get(ref(db, `salas/${codigo}`));
+  if (!snap.exists()) {
+    localStorage.removeItem(`rpg_sala_s${slotIndex}`);
+    toast(`Sala ${codigo} não existe mais. Crie ou entre em outra.`, 3500);
+    renderSlots();
+    irParaLobbyScreen(slotIndex);
+    return;
+  }
+
+  const codeEl = document.getElementById('code-input');
+  if (codeEl) codeEl.value = codigo;
+  await entrarSala();
+};
+
+window.retomarUltimaSessao = async function() {
+  const slot = parseInt(localStorage.getItem('rpg_active_slot') || '0');
+  let sala = localStorage.getItem(`rpg_sala_s${slot}`);
+  let targetSlot = slot;
+  if (!sala) {
+    for (let i = 0; i < 4; i++) {
+      sala = localStorage.getItem(`rpg_sala_s${i}`);
+      if (sala) { targetSlot = i; break; }
+    }
+  }
+  if (!sala) { irParaPersonagens(); return; }
+  await carregarSlots();
+  await retomarSala(targetSlot, sala);
 };
 
 window.confirmarCriacaoPersonagem = async function() {
@@ -2444,6 +2527,7 @@ window.entrarSala = async function() {
 //  IR PARA JOGO
 // ═══════════════════════════════════════════════════════════════
 function irParaJogo(codigo) {
+  localStorage.setItem(`rpg_sala_s${_activeSlot}`, codigo);
   mostrarTela('screen-game');
   document.getElementById('room-code').textContent = codigo;
 

@@ -19,11 +19,11 @@
       window.irParaHome=function(){_show('screen-home');};
       window.irParaPersonagens=function(){
         _show('screen-chars');
-        // Render 8 empty slots immediately; main.js will override with real data
+        // Render 4 empty slots immediately; main.js will override with real data
         var g=document.getElementById('chars-grid');
         if(g&&!g.children.length){
           var h='';
-          for(var i=0;i<8;i++){
+          for(var i=0;i<4;i++){
             h+='<div class="slot-card empty" onclick="irParaCriacao('+i+')">'
               +'<div class="slot-empty-icon">+</div>'
               +'<div class="slot-empty-label">Criar Aventureiro</div>'
@@ -32,6 +32,53 @@
           g.innerHTML=h;
         }
       };
+
+      // ── Partículas mágicas (fagulhas/vagalumes) na tela home ──
+      (function initParticles(){
+        function start(){
+          var cv=document.getElementById('home-canvas');
+          if(!cv)return;
+          var ctx=cv.getContext('2d');
+          var W,H,pts=[];
+          function resize(){W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;}
+          resize();
+          window.addEventListener('resize',resize);
+          var CORES=[[255,180,55],[255,140,30],[255,215,90],[180,150,255],[100,190,255],[255,100,120]];
+          function mk(){
+            var c=CORES[Math.floor(Math.random()*CORES.length)];
+            var life=Math.floor(Math.random()*220);
+            var max=150+Math.floor(Math.random()*200);
+            return{x:Math.random()*W,y:H-Math.random()*H*0.7,
+              sz:0.8+Math.random()*2.2,sp:0.25+Math.random()*0.9,
+              dx:(Math.random()-0.5)*0.25,ph:Math.random()*6.28,
+              a:0,ma:0.35+Math.random()*0.55,life:life,max:max,r:c[0],g:c[1],b:c[2]};
+          }
+          for(var i=0;i<75;i++)pts.push(mk());
+          function draw(){
+            ctx.clearRect(0,0,W,H);
+            for(var i=0;i<pts.length;i++){
+              var p=pts[i];
+              p.life++;p.y-=p.sp;p.x+=p.dx+Math.sin(p.ph+p.life*0.025)*0.18;
+              var prog=p.life/p.max;
+              p.a=prog<0.18?prog/0.18*p.ma:prog>0.72?(1-prog)/0.28*p.ma:p.ma;
+              // Core dot
+              ctx.beginPath();ctx.arc(p.x,p.y,p.sz,0,6.28);
+              ctx.fillStyle='rgba('+p.r+','+p.g+','+p.b+','+p.a+')';ctx.fill();
+              // Glow halo
+              var gr=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.sz*5);
+              gr.addColorStop(0,'rgba('+p.r+','+p.g+','+p.b+','+(p.a*0.35)+')');
+              gr.addColorStop(1,'rgba(0,0,0,0)');
+              ctx.beginPath();ctx.arc(p.x,p.y,p.sz*5,0,6.28);
+              ctx.fillStyle=gr;ctx.fill();
+              if(p.life>=p.max)pts[i]=mk();
+            }
+            requestAnimationFrame(draw);
+          }
+          draw();
+        }
+        if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);
+        else start();
+      })();
     })();
   </script>
 </head>
@@ -39,6 +86,7 @@
 
 <!-- ══ TELA HOME ══ -->
 <div id="screen-home">
+  <canvas id="home-canvas"></canvas>
   <div id="home-content">
     <div id="home-logo-wrap">
       <div id="home-oraculo">ORÁCULO</div>
@@ -47,6 +95,7 @@
     <p id="home-tagline">Sistema de RPG Generativo com Mestre de IA</p>
     <p id="home-desc">A inteligência artificial conduz a narrativa, interpreta NPCs, controla inimigos e adapta a campanha em tempo real conforme suas escolhas.</p>
     <button id="home-play-btn" onclick="irParaPersonagens()">Jogar</button>
+    <button id="home-retomar-btn" style="display:none" onclick="retomarUltimaSessao()">▶ Retomar Campanha</button>
   </div>
 </div>
 
@@ -244,6 +293,6 @@
 <!-- Firebase SDK via script tags (mais confiável em mobile que ES module imports) -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-<script src="js/main.js?v=9"></script>
+<script src="js/main.js?v=10"></script>
 </body>
 </html>
