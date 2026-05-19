@@ -160,36 +160,6 @@ shadowPlane.receiveShadow = true;
 scene.add(shadowPlane);
 
 // ═══════════════════════════════════════════════════
-//  TEXTURAS — número em todas as faces
-// ═══════════════════════════════════════════════════
-function criarTexturaNumero(n) {
-  const sz = 256;
-  const c = document.createElement('canvas');
-  c.width = c.height = sz;
-  const ctx = c.getContext('2d');
-
-  // Fundo vermelho com gradiente radial (iluminação simulada)
-  const g = ctx.createRadialGradient(sz*.42, sz*.38, 0, sz*.5, sz*.5, sz*.72);
-  g.addColorStop(0, '#d42010');
-  g.addColorStop(0.6, '#b01808');
-  g.addColorStop(1, '#650a04');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, sz, sz);
-
-  // Número branco
-  const fs = n >= 10 ? 108 : 126;
-  ctx.font = `900 ${fs}px Georgia,serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0,0,0,.55)';
-  ctx.shadowBlur = 10;
-  ctx.fillText(String(n), sz/2, sz/2 + 5);
-
-  return new THREE.CanvasTexture(c);
-}
-
-// ═══════════════════════════════════════════════════
 //  GEOMETRIAS
 // ═══════════════════════════════════════════════════
 function criarGeoD10() {
@@ -226,15 +196,14 @@ function obterGeo(lados) {
 // ═══════════════════════════════════════════════════
 //  CRIAR DADO
 // ═══════════════════════════════════════════════════
-function criarDado(lados, resultado) {
+function criarDado(lados) {
   const geo = obterGeo(lados);
-  const tex = criarTexturaNumero(resultado);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
 
   const mat = new THREE.MeshStandardMaterial({
-    map: tex,
-    roughness: 0.25,
-    metalness: 0.06,
+    color: 0xbf1a0c,
+    roughness: 0.28,
+    metalness: 0.08,
+    side: THREE.DoubleSide,
   });
 
   const mesh = new THREE.Mesh(geo, mat);
@@ -308,7 +277,13 @@ function animLoop(ts) {
       spinMult = Math.pow(1 - prog, 2.5); // desaceleração quadrática
     } else {
       spinMult = 0;
-      if (!_resultShown) { _resultShown = true; mostrarResultado(); }
+      if (!_resultShown) {
+        _resultShown = true;
+        _mesh.rotation.x += 0; // dado parado
+        renderer.render(scene, cam);
+        mostrarResultado();
+      }
+      return; // loop para aqui — dado imóvel
     }
 
     _mesh.rotation.x += _svx * spinMult * dt;
@@ -318,18 +293,6 @@ function animLoop(ts) {
 
   renderer.render(scene, cam);
   _raf = requestAnimationFrame(animLoop);
-}
-
-// Idle: gira devagar depois que o resultado aparece
-function idleLoop(ts) {
-  if (_mesh) {
-    _mesh.rotation.x += 0.004;
-    _mesh.rotation.y += 0.007;
-  }
-  cam.position.x *= 0.9;
-  cam.position.y *= 0.9;
-  renderer.render(scene, cam);
-  _raf = requestAnimationFrame(idleLoop);
 }
 
 // ═══════════════════════════════════════════════════
@@ -363,11 +326,6 @@ function mostrarResultado() {
   }
 
   resDiv.classList.add('visivel');
-
-  // Trocar para idle
-  if (_raf) cancelAnimationFrame(_raf);
-  _raf = requestAnimationFrame(idleLoop);
-
   _autoTimer = setTimeout(fechar, 4500);
 }
 
@@ -394,7 +352,7 @@ function lancar(lados, opcoes={}) {
     opcoes.label || `Rolando d${lados}…`;
 
   // Criar dado
-  _mesh = criarDado(lados, resultado);
+  _mesh = criarDado(lados);
   _mesh.position.set(0, 300, 0);
   scene.add(_mesh);
 
