@@ -5,98 +5,75 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Teste de Dados — Oráculo RPG</title>
 <style>
-  :root { --gold:#c8a050; --red:#bf1a0c; --red2:#8c0e06; --fundo:#07090f; }
+  :root{--gold:#c8a050;--red:#bf1a0c;--fundo:#07090f;}
   *{box-sizing:border-box;margin:0;padding:0;}
   body{
-    background:var(--fundo);
-    color:#e8e0d0;
-    font-family:'Georgia',serif;
+    background:var(--fundo);color:#e8e0d0;font-family:'Georgia',serif;
     display:flex;flex-direction:column;align-items:center;
     min-height:100vh;padding:24px 16px 48px;gap:18px;
   }
   h1{font-size:17px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-top:8px;}
   p.sub{font-size:11px;color:rgba(200,160,80,.5);letter-spacing:1px;text-align:center;}
 
-  .btn-grid{
-    display:grid;grid-template-columns:repeat(3,1fr);
-    gap:8px;width:100%;max-width:400px;
-  }
+  .btn-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:400px;}
   .btn-dado{
     background:rgba(191,26,12,.1);border:1px solid rgba(191,26,12,.4);
     color:#ff7060;border-radius:8px;font-size:14px;padding:10px 6px;
-    cursor:pointer;font-family:'Georgia',serif;
-    transition:background .15s,border-color .15s;
+    cursor:pointer;font-family:'Georgia',serif;transition:background .15s;
     display:flex;flex-direction:column;align-items:center;gap:3px;
   }
-  .btn-dado:hover{background:rgba(191,26,12,.22);border-color:rgba(255,68,51,.6);}
-  .btn-dado span{font-size:9px;color:rgba(255,110,90,.5);letter-spacing:.5px;text-transform:uppercase;}
+  .btn-dado:hover{background:rgba(191,26,12,.22);}
+  .btn-dado span{font-size:9px;color:rgba(255,110,90,.45);letter-spacing:.5px;text-transform:uppercase;}
   .btn-cena{
-    grid-column:span 3;
-    background:rgba(200,160,80,.07);border:1px solid rgba(200,160,80,.2);
-    color:rgba(200,160,80,.75);border-radius:8px;font-size:12px;padding:10px;
+    grid-column:span 3;background:rgba(200,160,80,.07);
+    border:1px solid rgba(200,160,80,.2);color:rgba(200,160,80,.75);
+    border-radius:8px;font-size:12px;padding:10px;
     cursor:pointer;font-family:'Georgia',serif;transition:background .15s;
   }
   .btn-cena:hover{background:rgba(200,160,80,.14);}
 
-  /* ── OVERLAY ── */
   #dado-overlay{
     display:none;position:fixed;inset:0;z-index:100;
-    background:rgba(3,5,10,.92);backdrop-filter:blur(8px);
+    background:rgba(3,5,10,.93);backdrop-filter:blur(8px);
     align-items:center;justify-content:center;cursor:pointer;
   }
   #dado-overlay.ativo{display:flex;}
-
   #dado-card{
     display:flex;flex-direction:column;align-items:center;gap:10px;
     padding:22px 28px 20px;
-    background:rgba(8,10,20,.9);
-    border:1px solid rgba(191,26,12,.3);
+    background:rgba(8,10,20,.92);border:1px solid rgba(191,26,12,.3);
     border-radius:18px;min-width:240px;max-width:320px;width:90vw;
     cursor:default;box-shadow:0 8px 48px rgba(0,0,0,.7),0 0 60px rgba(191,26,12,.1);
   }
-
-  #dado-meta{
-    font-size:10px;color:rgba(200,160,80,.55);
-    letter-spacing:1.5px;text-transform:uppercase;text-align:center;min-height:14px;
-  }
-
-  #dice-canvas{
-    border-radius:12px;display:block;
-    /* canvas size set by JS */
-  }
+  #dado-meta{font-size:10px;color:rgba(200,160,80,.55);letter-spacing:1.5px;text-transform:uppercase;text-align:center;min-height:14px;}
+  #dice-canvas{border-radius:10px;display:block;}
 
   #dado-resultado{
     display:flex;flex-direction:column;align-items:center;gap:5px;
-    opacity:0;transform:scale(.65) translateY(8px);
-    transition:opacity .4s ease,transform .4s cubic-bezier(.15,.9,.3,1.15);
-    min-height:70px;justify-content:center;
+    opacity:0;transform:scale(.6) translateY(10px);
+    transition:opacity .38s ease,transform .38s cubic-bezier(.15,.9,.25,1.2);
+    min-height:72px;justify-content:center;
   }
   #dado-resultado.visivel{opacity:1;transform:scale(1) translateY(0);}
-
   #dado-numero{
-    font-size:64px;font-weight:900;color:#fff;line-height:1;
-    text-shadow:0 0 30px rgba(255,60,40,.8),0 2px 6px rgba(0,0,0,.7);
+    font-size:68px;font-weight:900;color:#fff;line-height:1;
+    text-shadow:0 0 32px rgba(255,60,40,.85),0 2px 6px rgba(0,0,0,.7);
     letter-spacing:-3px;
   }
-  #dado-detalhe{font-size:13px;color:rgba(255,255,255,.45);font-style:italic;min-height:18px;}
+  #dado-detalhe{font-size:13px;color:rgba(255,255,255,.4);font-style:italic;min-height:18px;}
   #dado-veredicto{
     font-size:12px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;
     padding:3px 16px;border-radius:4px;min-height:22px;
   }
   #dado-veredicto.acerto{color:#7adc7a;background:rgba(80,180,80,.1);border:1px solid rgba(100,200,100,.25);}
-  #dado-veredicto.falha{color:#e06060;background:rgba(180,50,50,.1);border:1px solid rgba(200,80,80,.25);}
-
-  #dado-hint{
-    font-size:10px;color:rgba(200,160,80,.3);letter-spacing:1px;
-    animation:piscar 1.6s ease infinite;
-  }
-  @keyframes piscar{0%,100%{opacity:.3}50%{opacity:.75}}
+  #dado-veredicto.falha {color:#e06060;background:rgba(180,50,50,.1);border:1px solid rgba(200,80,80,.25);}
+  #dado-hint{font-size:10px;color:rgba(200,160,80,.28);letter-spacing:1px;animation:piscar 1.6s ease infinite;}
+  @keyframes piscar{0%,100%{opacity:.28}50%{opacity:.7}}
 
   .info-box{
-    max-width:400px;width:100%;
-    background:rgba(12,15,26,.7);border:1px solid rgba(200,160,80,.1);
-    border-radius:10px;padding:14px 16px;
-    font-size:12px;color:rgba(220,210,190,.55);line-height:1.75;
+    max-width:400px;width:100%;background:rgba(12,15,26,.7);
+    border:1px solid rgba(200,160,80,.1);border-radius:10px;
+    padding:14px 16px;font-size:12px;color:rgba(220,210,190,.5);line-height:1.75;
   }
   .info-box h3{font-size:10px;color:var(--gold);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px;}
   code{background:rgba(200,160,80,.1);color:rgba(200,160,80,.85);padding:0 4px;border-radius:3px;font-family:monospace;font-size:11px;}
@@ -111,7 +88,7 @@
   <button class="btn-dado" onclick="lancar(4)">d4<span>tetraedro</span></button>
   <button class="btn-dado" onclick="lancar(6)">d6<span>cubo</span></button>
   <button class="btn-dado" onclick="lancar(8)">d8<span>octaedro</span></button>
-  <button class="btn-dado" onclick="lancar(10)">d10<span>trapezoedro</span></button>
+  <button class="btn-dado" onclick="lancar(10)">d10<span>bipiramide</span></button>
   <button class="btn-dado" onclick="lancar(12)">d12<span>dodecaedro</span></button>
   <button class="btn-dado" onclick="lancar(20)">d20<span>icosaedro</span></button>
   <button class="btn-cena" onclick="cenaTestar('Aldric','Golpe de espada','FOR',3,13)">
@@ -136,358 +113,317 @@
 </div>
 
 <div class="info-box">
-  <h3>Como funciona no jogo</h3>
-  A IA usa <code>TESTAR: [Jogador|Ação|Atributo|CD]</code> para ações arriscadas.
-  O sistema rola um <strong>d20</strong> + modificador vs CD — esta animação
-  aparece antes de revelar o desfecho narrativo.
+  <h3>Integração com o jogo</h3>
+  A IA usa <code>TESTAR: [Jogador|Ação|Atributo|CD]</code> — o sistema rola d20 + modificador vs CD.
+  Esta animação aparecerá antes do desfecho narrativo.
 </div>
 
-<!-- Three.js via CDN -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
-// ════════════════════════════════════════════════════════
-//  SETUP THREE.JS
-// ════════════════════════════════════════════════════════
-const SIZE = Math.min(window.innerWidth * .72, 240) | 0;
+// ═══════════════════════════════════════════════════
+//  SETUP
+// ═══════════════════════════════════════════════════
+const SZ = Math.min(window.innerWidth * .74, 248) | 0;
 const canvas = document.getElementById('dice-canvas');
-canvas.width = canvas.height = SIZE;
+canvas.width = canvas.height = SZ;
 
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.setSize(SIZE, SIZE);
+renderer.setSize(SZ, SZ);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setClearColor(0x000000, 0);
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(38, 1, 1, 2000);
-camera.position.set(0, 0, 340);
-camera.lookAt(0, 0, 0);
+const cam = new THREE.PerspectiveCamera(38, 1, 1, 2000);
+cam.position.set(0, 0, 350);
 
-// Lights
-const ambient = new THREE.AmbientLight(0xffffff, 0.55);
+// Luzes
+const ambient = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambient);
+const key = new THREE.DirectionalLight(0xffe8cc, 1.15);
+key.position.set(100, 180, 120); key.castShadow = true;
+key.shadow.mapSize.set(512,512); scene.add(key);
+const fill = new THREE.DirectionalLight(0xaad0ff, 0.38);
+fill.position.set(-80, 40, 60); scene.add(fill);
+const rim = new THREE.PointLight(0xff3311, 0.55, 900);
+rim.position.set(-150, 80, -220); scene.add(rim);
 
-const keyLight = new THREE.DirectionalLight(0xffddc8, 1.1);
-keyLight.position.set(80, 160, 120);
-keyLight.castShadow = true;
-keyLight.shadow.mapSize.width = 512;
-keyLight.shadow.mapSize.height = 512;
-scene.add(keyLight);
+// Plano de sombra
+const shadowPlane = new THREE.Mesh(
+  new THREE.PlaneGeometry(600,600),
+  new THREE.ShadowMaterial({opacity:.22})
+);
+shadowPlane.rotation.x = -Math.PI/2;
+shadowPlane.position.y = -100;
+shadowPlane.receiveShadow = true;
+scene.add(shadowPlane);
 
-const fillLight = new THREE.DirectionalLight(0xaaccff, 0.35);
-fillLight.position.set(-80, 40, 60);
-scene.add(fillLight);
-
-const rimLight = new THREE.PointLight(0xff4422, 0.5, 800);
-rimLight.position.set(-120, 60, -200);
-scene.add(rimLight);
-
-// Shadow plane (invisible, just receives shadow)
-const planeGeo = new THREE.PlaneGeometry(600, 600);
-const planeMat = new THREE.ShadowMaterial({ opacity: 0.28 });
-const plane = new THREE.Mesh(planeGeo, planeMat);
-plane.rotation.x = -Math.PI / 2;
-plane.position.y = -90;
-plane.receiveShadow = true;
-scene.add(plane);
-
-// ════════════════════════════════════════════════════════
-//  TEXTURAS DE FACES (d6 com pips, outros com número)
-// ════════════════════════════════════════════════════════
-function texturaPip(n) {
+// ═══════════════════════════════════════════════════
+//  TEXTURAS — número em todas as faces
+// ═══════════════════════════════════════════════════
+function criarTexturaNumero(n) {
   const sz = 256;
   const c = document.createElement('canvas');
   c.width = c.height = sz;
   const ctx = c.getContext('2d');
 
-  // Fundo vermelho
-  const grad = ctx.createRadialGradient(sz*.4,sz*.35,0, sz*.5,sz*.5,sz*.7);
-  grad.addColorStop(0, '#d42010');
-  grad.addColorStop(1, '#7a0a05');
-  ctx.fillStyle = grad;
+  // Fundo vermelho com gradiente radial (iluminação simulada)
+  const g = ctx.createRadialGradient(sz*.42, sz*.38, 0, sz*.5, sz*.5, sz*.72);
+  g.addColorStop(0, '#d42010');
+  g.addColorStop(0.6, '#b01808');
+  g.addColorStop(1, '#650a04');
+  ctx.fillStyle = g;
   ctx.fillRect(0, 0, sz, sz);
 
-  // Borda
-  ctx.strokeStyle = 'rgba(255,80,60,.7)';
-  ctx.lineWidth = 10;
-  const r = 28;
-  ctx.beginPath();
-  ctx.moveTo(r, 8); ctx.lineTo(sz-r, 8);
-  ctx.quadraticCurveTo(sz-8, 8, sz-8, r);
-  ctx.lineTo(sz-8, sz-r);
-  ctx.quadraticCurveTo(sz-8, sz-8, sz-r, sz-8);
-  ctx.lineTo(r, sz-8);
-  ctx.quadraticCurveTo(8, sz-8, 8, sz-r);
-  ctx.lineTo(8, r);
-  ctx.quadraticCurveTo(8, 8, r, 8);
-  ctx.closePath();
-  ctx.stroke();
-
-  // Pips
-  const pos = {
-    1:[[128,128]],
-    2:[[72,72],[184,184]],
-    3:[[72,72],[128,128],[184,184]],
-    4:[[72,72],[184,72],[72,184],[184,184]],
-    5:[[72,72],[184,72],[128,128],[72,184],[184,184]],
-    6:[[72,64],[184,64],[72,128],[184,128],[72,192],[184,192]]
-  };
-  ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0,0,0,.4)';
-  ctx.shadowBlur = 6;
-  (pos[n]||pos[1]).forEach(([x,y]) => {
-    ctx.beginPath();
-    ctx.arc(x, y, 22, 0, Math.PI*2);
-    ctx.fill();
-  });
-  return new THREE.CanvasTexture(c);
-}
-
-function texturaNumero(n, lados) {
-  const sz = 256;
-  const c = document.createElement('canvas');
-  c.width = c.height = sz;
-  const ctx = c.getContext('2d');
-
-  const grad = ctx.createRadialGradient(sz*.4,sz*.35,0, sz*.5,sz*.5,sz*.72);
-  grad.addColorStop(0, '#d42010');
-  grad.addColorStop(1, '#6a0804');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, sz, sz);
-
-  ctx.fillStyle = 'rgba(255,255,255,.85)';
-  ctx.font = `900 ${n >= 10 ? 100 : 120}px Georgia,serif`;
+  // Número branco
+  const fs = n >= 10 ? 108 : 126;
+  ctx.font = `900 ${fs}px Georgia,serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.shadowColor = 'rgba(0,0,0,.5)';
-  ctx.shadowBlur = 8;
-  ctx.fillText(String(n), sz/2, sz/2 + 6);
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0,0,0,.55)';
+  ctx.shadowBlur = 10;
+  ctx.fillText(String(n), sz/2, sz/2 + 5);
 
   return new THREE.CanvasTexture(c);
 }
 
-// Cache de texturas
-const _texCache = {};
-function getTex(key, fn) {
-  if (!_texCache[key]) _texCache[key] = fn();
-  return _texCache[key];
+// ═══════════════════════════════════════════════════
+//  GEOMETRIAS
+// ═══════════════════════════════════════════════════
+function criarGeoD10() {
+  // Bipiramide pentagonal: polo top + polo bottom + anel equatorial
+  const verts = [];
+  verts.push(0, 95, 0);   // 0 top
+  verts.push(0, -95, 0);  // 1 bottom
+  for (let i = 0; i < 5; i++) {
+    const a = (Math.PI*2*i/5) - Math.PI/2;
+    verts.push(74*Math.cos(a), 0, 74*Math.sin(a)); // 2..6
+  }
+  const idx = [];
+  for (let i = 0; i < 5; i++) {
+    idx.push(0, 2+i, 2+(i+1)%5);           // top
+    idx.push(1, 2+(i+1)%5, 2+i);           // bottom (invertido)
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  return geo;
 }
 
-// ════════════════════════════════════════════════════════
-//  MATERIAIS E GEOMETRIAS
-// ════════════════════════════════════════════════════════
-const MAT_VERMELHO = new THREE.MeshStandardMaterial({
-  color: 0xbf1a0c, roughness: 0.28, metalness: 0.08,
-  envMapIntensity: 0.4
-});
+function obterGeo(lados) {
+  if (lados === 4)  return new THREE.TetrahedronGeometry(72);
+  if (lados === 6)  return new THREE.BoxGeometry(105,105,105);
+  if (lados === 8)  return new THREE.OctahedronGeometry(72);
+  if (lados === 10) return criarGeoD10();
+  if (lados === 12) return new THREE.DodecahedronGeometry(68);
+  if (lados === 20) return new THREE.IcosahedronGeometry(72, 0);
+  return new THREE.IcosahedronGeometry(72, 0);
+}
 
-function criarMesh(lados, resultado) {
-  let geo, mat;
+// ═══════════════════════════════════════════════════
+//  CRIAR DADO
+// ═══════════════════════════════════════════════════
+function criarDado(lados, resultado) {
+  const geo = obterGeo(lados);
+  const tex = criarTexturaNumero(resultado);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
 
-  if (lados === 6) {
-    geo = new THREE.BoxGeometry(110, 110, 110);
-    // 6 faces com pips individuais
-    const mats = [2,5,3,4,1,6].map(n =>
-      new THREE.MeshStandardMaterial({
-        map: getTex(`pip_${n}`, () => texturaPip(n)),
-        roughness: 0.3, metalness: 0.08
-      })
-    );
-    mat = mats;
-  } else {
-    let r = 70;
-    if (lados === 4)  { geo = new THREE.TetrahedronGeometry(r); }
-    else if (lados === 8)  { geo = new THREE.OctahedronGeometry(r); }
-    else if (lados === 12) { geo = new THREE.DodecahedronGeometry(r); }
-    else if (lados === 20) { geo = new THREE.IcosahedronGeometry(r, 0); }
-    else if (lados === 10) {
-      // d10: aproximado com DodecaedroGeometry smaller
-      geo = new THREE.CylinderGeometry(0, 72, 100, 10, 1);
-    }
-    mat = new THREE.MeshStandardMaterial({
-      color: 0xbf1a0c, roughness: 0.26, metalness: 0.1,
-    });
-  }
+  const mat = new THREE.MeshStandardMaterial({
+    map: tex,
+    roughness: 0.25,
+    metalness: 0.06,
+  });
 
-  const mesh = Array.isArray(mat)
-    ? new THREE.Mesh(geo, mat)
-    : new THREE.Mesh(geo, mat);
+  const mesh = new THREE.Mesh(geo, mat);
   mesh.castShadow = true;
-  mesh.receiveShadow = true;
+  mesh.receiveShadow = false;
+
+  // Linhas brancas nas arestas
+  const threshold = lados <= 6 ? 20 : lados <= 8 ? 20 : 30;
+  const edges = new THREE.EdgesGeometry(geo, threshold);
+  const lineMat = new THREE.LineBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.45,
+  });
+  const lines = new THREE.LineSegments(edges, lineMat);
+  mesh.add(lines);
+
   return mesh;
 }
 
-// ════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 //  ANIMAÇÃO
-// ════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 let _mesh = null;
-let _rafId = null;
-let _animStart = null;
-let _animDuration = 0;
-let _spinVelX = 0, _spinVelY = 0, _spinVelZ = 0;
-let _phase = 'idle'; // 'falling' | 'landing' | 'done'
-let _autoCloseTimer = null;
-let _afterAnimCb = null;
-let _camShake = 0;
+let _raf  = null;
+let _t0   = null;
+let _svx  = 0, _svy = 0, _svz = 0;     // spin velocities (rad/s)
+let _resultShown = false;
+let _autoTimer   = null;
 
-function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+const FALL_END   = 1.15;  // die lands at this time
+const SPIN_FAST  = 1.8;   // fast spin until here
+const SPIN_STOP  = 2.35;  // fully stopped here — result shown at SPIN_STOP
+
 function easeOutBounce(t) {
-  if (t < 1/2.75) return 7.5625*t*t;
-  if (t < 2/2.75) { t-=1.5/2.75; return 7.5625*t*t+.75; }
-  if (t < 2.5/2.75) { t-=2.25/2.75; return 7.5625*t*t+.9375; }
-  t-=2.625/2.75; return 7.5625*t*t+.984375;
+  if (t < 1/2.75)  return 7.5625*t*t;
+  if (t < 2/2.75)  { t -= 1.5/2.75;  return 7.5625*t*t+.75; }
+  if (t < 2.5/2.75){ t -= 2.25/2.75; return 7.5625*t*t+.9375; }
+  t -= 2.625/2.75; return 7.5625*t*t+.984375;
 }
 
+let _lastTS = null;
 function animLoop(ts) {
-  if (!_animStart) _animStart = ts;
-  const t = (ts - _animStart) / 1000;
-  const prog = Math.min(t / _animDuration, 1);
+  if (!_t0) _t0 = ts;
+  const dt = _lastTS ? (ts - _lastTS)/1000 : 0;
+  _lastTS = ts;
+  const t = (ts - _t0)/1000;
 
   if (_mesh) {
-    if (_phase === 'falling') {
-      // Queda da parte de cima + rotação rápida
-      const yStart = 350, yEnd = 0;
-      const fallProg = easeOutBounce(prog);
-      _mesh.position.y = yStart + (yEnd - yStart) * fallProg;
-      _mesh.position.z = -50 * (1 - prog);
+    // Queda com bounce
+    const fallProg = Math.min(t / FALL_END, 1);
+    _mesh.position.y = 300 - 300 * easeOutBounce(fallProg);
 
-      // Rotação vai desacelerando com o tempo
-      const spinDecay = Math.max(0, 1 - prog * 1.4);
-      _mesh.rotation.x += _spinVelX * spinDecay * 0.016;
-      _mesh.rotation.y += _spinVelY * spinDecay * 0.016;
-      _mesh.rotation.z += _spinVelZ * spinDecay * 0.016;
-
-      // Camera shake no impacto (70-80% da animação)
-      if (prog > 0.68 && prog < 0.82) {
-        _camShake = (0.82 - prog) / 0.14;
-        camera.position.x = (Math.random() - .5) * 8 * _camShake;
-        camera.position.y = (Math.random() - .5) * 6 * _camShake;
-      } else {
-        camera.position.x = 0; camera.position.y = 0;
-      }
-
-      if (prog >= 1) {
-        _phase = 'done';
-        camera.position.set(0, 0, 340);
-        if (_afterAnimCb) { _afterAnimCb(); _afterAnimCb = null; }
-      }
+    // Tremor de câmera no impacto (70-85% da queda)
+    const impactZone = fallProg > 0.70 && fallProg < 0.88;
+    if (impactZone) {
+      const intensity = (0.88 - fallProg) / 0.18;
+      cam.position.x = (Math.random()-.5) * 7 * intensity;
+      cam.position.y = (Math.random()-.5) * 5 * intensity;
+    } else {
+      cam.position.x *= 0.85;
+      cam.position.y *= 0.85;
     }
+
+    // Spin: rápido até SPIN_FAST, depois para bruscamente
+    let spinMult;
+    if (t < SPIN_FAST) {
+      spinMult = 1.0;
+    } else if (t < SPIN_STOP) {
+      const prog = (t - SPIN_FAST) / (SPIN_STOP - SPIN_FAST);
+      spinMult = Math.pow(1 - prog, 2.5); // desaceleração quadrática
+    } else {
+      spinMult = 0;
+      if (!_resultShown) { _resultShown = true; mostrarResultado(); }
+    }
+
+    _mesh.rotation.x += _svx * spinMult * dt;
+    _mesh.rotation.y += _svy * spinMult * dt;
+    _mesh.rotation.z += _svz * spinMult * dt;
   }
 
-  renderer.render(scene, camera);
-  if (_phase !== 'done' || _mesh) {
-    _rafId = requestAnimationFrame(animLoop);
-  }
+  renderer.render(scene, cam);
+  _raf = requestAnimationFrame(animLoop);
 }
 
-// Loop idle (para não parar o renderer após animação)
-function idleLoop() {
+// Idle: gira devagar depois que o resultado aparece
+function idleLoop(ts) {
   if (_mesh) {
     _mesh.rotation.x += 0.004;
     _mesh.rotation.y += 0.007;
   }
-  renderer.render(scene, camera);
-  _rafId = requestAnimationFrame(idleLoop);
+  cam.position.x *= 0.9;
+  cam.position.y *= 0.9;
+  renderer.render(scene, cam);
+  _raf = requestAnimationFrame(idleLoop);
 }
 
-// ════════════════════════════════════════════════════════
-//  INTERFACE PÚBLICA
-// ════════════════════════════════════════════════════════
-let _overlayTimer2 = null;
+// ═══════════════════════════════════════════════════
+//  RESULTADO
+// ═══════════════════════════════════════════════════
+let _opcoes = {};
 
-function lancar(lados, opcoes = {}) {
-  const resultado = Math.floor(Math.random() * lados) + 1;
-  const mod = opcoes.mod || 0;
-  const cd = opcoes.cd != null ? opcoes.cd : null;
-  const label = opcoes.label || null;
+function mostrarResultado() {
+  const { resultado, mod, cd } = _opcoes;
+  const total = resultado + (mod||0);
 
-  // Limpar cena anterior
-  if (_mesh) { scene.remove(_mesh); _mesh = null; }
-  if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
-  if (_overlayTimer2) { clearTimeout(_overlayTimer2); _overlayTimer2 = null; }
-
-  // Reset UI
-  const resDiv = document.getElementById('dado-resultado');
   const numEl  = document.getElementById('dado-numero');
   const detEl  = document.getElementById('dado-detalhe');
   const vered  = document.getElementById('dado-veredicto');
-  const metaEl = document.getElementById('dado-meta');
-  resDiv.classList.remove('visivel');
-  numEl.textContent = '';
-  detEl.textContent = '';
-  vered.textContent = '';
-  vered.className   = '';
-  metaEl.textContent = label || `Rolando d${lados}…`;
+  const resDiv = document.getElementById('dado-resultado');
 
-  // Criar dado 3D
-  _mesh = criarMesh(lados, resultado);
-  _mesh.position.set(0, 350, 0);
+  numEl.textContent = cd != null ? String(total) : String(resultado);
+
+  if (cd != null) {
+    const ok = total >= cd;
+    detEl.textContent = mod
+      ? `${resultado} ${mod>=0?'+':''}${mod} = ${total} · CD ${cd}`
+      : `${resultado} · CD ${cd}`;
+    vered.textContent = ok ? '✦ ACERTO ✦' : '✕ FALHA ✕';
+    vered.className   = ok ? 'acerto' : 'falha';
+    numEl.style.textShadow = ok
+      ? '0 0 34px rgba(100,230,100,.9),0 2px 6px rgba(0,0,0,.7)'
+      : '0 0 34px rgba(230,80,80,.9),0 2px 6px rgba(0,0,0,.7)';
+  } else {
+    numEl.style.textShadow = '0 0 32px rgba(255,60,40,.85),0 2px 6px rgba(0,0,0,.7)';
+  }
+
+  resDiv.classList.add('visivel');
+
+  // Trocar para idle
+  if (_raf) cancelAnimationFrame(_raf);
+  _raf = requestAnimationFrame(idleLoop);
+
+  _autoTimer = setTimeout(fechar, 4500);
+}
+
+// ═══════════════════════════════════════════════════
+//  API PÚBLICA
+// ═══════════════════════════════════════════════════
+function lancar(lados, opcoes={}) {
+  const resultado = Math.floor(Math.random() * lados) + 1;
+  _opcoes = { resultado, mod: opcoes.mod||0, cd: opcoes.cd??null };
+
+  // Reset cena
+  if (_mesh)  { scene.remove(_mesh); _mesh = null; }
+  if (_raf)   { cancelAnimationFrame(_raf); _raf = null; }
+  if (_autoTimer) { clearTimeout(_autoTimer); _autoTimer = null; }
+
+  // Reset UI
+  const resDiv = document.getElementById('dado-resultado');
+  resDiv.classList.remove('visivel');
+  ['dado-numero','dado-detalhe','dado-veredicto'].forEach(id => {
+    document.getElementById(id).textContent = '';
+    document.getElementById(id).className = '';
+  });
+  document.getElementById('dado-meta').textContent =
+    opcoes.label || `Rolando d${lados}…`;
+
+  // Criar dado
+  _mesh = criarDado(lados, resultado);
+  _mesh.position.set(0, 300, 0);
   scene.add(_mesh);
 
-  // Velocidades de spin aleatórias
-  _spinVelX = (Math.random() - .5) * 28 + 12;
-  _spinVelY = (Math.random() - .5) * 24 + 10;
-  _spinVelZ = (Math.random() - .5) * 16;
+  // Velocidades de spin aleatórias — bastante rápidas
+  const base = 18;
+  _svx = (Math.random()-.5)*base + (Math.random()>0.5?8:-8);
+  _svy = (Math.random()-.5)*base + (Math.random()>0.5?8:-8);
+  _svz = (Math.random()-.5)*(base*.7);
+  _t0  = null; _lastTS = null; _resultShown = false;
 
-  // Duração da animação
-  _animDuration = lados === 6 ? 1.4 : lados === 20 ? 1.55 : 1.3;
-  _animStart = null;
-  _phase = 'falling';
-
-  // Callback pós-animação: mostrar resultado
-  _afterAnimCb = () => {
-    const total = resultado + mod;
-    numEl.textContent = String(cd != null ? total : resultado);
-
-    if (cd != null) {
-      const ok = total >= cd;
-      detEl.textContent = mod !== 0
-        ? `${resultado} ${mod >= 0 ? '+' : ''}${mod} = ${total}  ·  CD ${cd}`
-        : `${resultado}  ·  CD ${cd}`;
-      vered.textContent = ok ? '✦ ACERTO ✦' : '✕ FALHA ✕';
-      vered.className   = ok ? 'acerto' : 'falha';
-      numEl.style.textShadow = ok
-        ? '0 0 32px rgba(100,230,100,.9),0 2px 6px rgba(0,0,0,.7)'
-        : '0 0 32px rgba(230,80,80,.9),0 2px 6px rgba(0,0,0,.7)';
-    } else {
-      numEl.style.textShadow = '0 0 30px rgba(255,60,40,.8),0 2px 6px rgba(0,0,0,.7)';
-    }
-
-    resDiv.classList.add('visivel');
-
-    // Trocar para idle loop após revelar
-    setTimeout(() => {
-      if (_rafId) cancelAnimationFrame(_rafId);
-      _phase = 'idle';
-      _rafId = requestAnimationFrame(idleLoop);
-    }, 100);
-
-    // Auto-fechar após 4.5s
-    _overlayTimer2 = setTimeout(fechar, 4500);
-  };
-
-  // Abrir overlay e iniciar animação
+  // Abrir overlay e animar
   document.getElementById('dado-overlay').classList.add('ativo');
-  _rafId = requestAnimationFrame(animLoop);
+  _raf = requestAnimationFrame(animLoop);
 }
 
 function cenaTestar(nome, acao, attr, mod, cd) {
-  lancar(20, {
-    mod, cd,
-    label: `${nome} · ${acao} · ${attr}${mod >= 0 ? '+' : ''}${mod}`
-  });
+  lancar(20, { mod, cd, label:`${nome} · ${acao} · ${attr}${mod>=0?'+':''}${mod}` });
 }
 
-function fechar() {
-  if (_overlayTimer2) { clearTimeout(_overlayTimer2); _overlayTimer2 = null; }
+window.fechar = function() {
+  if (_autoTimer) { clearTimeout(_autoTimer); _autoTimer = null; }
   document.getElementById('dado-overlay').classList.remove('ativo');
-  if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
+  if (_raf) { cancelAnimationFrame(_raf); _raf = null; }
   if (_mesh) { scene.remove(_mesh); _mesh = null; }
-  renderer.render(scene, camera);
-}
+  cam.position.set(0,0,350);
+  renderer.render(scene, cam);
+};
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') fechar(); });
+document.addEventListener('keydown', e => { if(e.key==='Escape') fechar(); });
 </script>
 </body>
 </html>
