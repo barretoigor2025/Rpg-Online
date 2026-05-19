@@ -178,6 +178,7 @@ let _regras           = {};
 let _trocaItens       = new Set(); // slugs selecionados para troca
 let _trocaAtual       = null;     // snapshot atual do nó salas/${sala}/troca
 let _lastConfig       = {};       // último snapshot de config (para re-check de prompt)
+let _narracaoAtiva    = 0;        // contagem de segmentos sendo narrados (com Continuar buttons)
 
 // ═══════════════════════════════════════════════════════════════
 //  HELPERS
@@ -830,10 +831,12 @@ function renderizarSegmentos(container, segs, falas, noTTS) {
     return;
   }
 
+  _narracaoAtiva++;
   let idx = 0;
   function proxItem() {
     if (idx >= items.length) {
-      // Narração completa — verificar se o card de ação já pode aparecer
+      // Narração completa — liberar card de ação
+      _narracaoAtiva = Math.max(0, _narracaoAtiva - 1);
       const eu = _jogadoresCache?.[myUid];
       if (eu && _lastConfig) atualizarPromptAcao(eu, _lastConfig);
       return;
@@ -2789,7 +2792,7 @@ function atualizarInputArea(eu, config) {
 
   const jaEnviou    = eu.acao1 != null;
   const temContinuar = !!document.querySelector('#story-content .btn-continuar-narr');
-  const narrando    = config.estado === 'narrando' || config.estado === 'iniciando' || temContinuar;
+  const narrando    = config.estado === 'narrando' || config.estado === 'iniciando' || temContinuar || _narracaoAtiva > 0;
   const morto       = !eu.vivo || !eu.consciente;
 
   if (btn) btn.disabled = jaEnviou || narrando || morto;
@@ -2831,7 +2834,7 @@ function atualizarPromptAcao(eu, config) {
   let card = document.getElementById('action-prompt-card');
   const estadoAvançando  = config.estado === 'avançando';
   const temContinuarBtn  = !!document.querySelector('#story-content .btn-continuar-narr');
-  const deveExibir = eu && (config.estado === 'aguardando' || estadoAvançando) && eu.acao1 == null && eu.vivo && eu.consciente && !temContinuarBtn;
+  const deveExibir = eu && (config.estado === 'aguardando' || estadoAvançando) && eu.acao1 == null && eu.vivo && eu.consciente && !temContinuarBtn && _narracaoAtiva <= 0;
 
   if (!deveExibir) {
     if (card) card.remove();
