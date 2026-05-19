@@ -3178,6 +3178,20 @@ async function processarStats(resposta, jogadores, inimigos) {
   }
 
   if (Object.keys(ups).length) await update(ref(db), ups);
+
+  // Pós-combate: se todos os inimigos morreram nesta rodada, avançar automaticamente
+  if (amIHost && Object.keys(inimigos).length > 0 && /\[MATAR:[^\]]+\]/i.test(resposta)) {
+    const todosHpZero = Object.entries(inimigos).every(([key, ini]) => {
+      const hpEscrito = ups[`salas/${mySala}/inimigos/${key}/hp`];
+      return (hpEscrito !== undefined ? hpEscrito : ini.hp) <= 0;
+    });
+    if (todosHpZero) {
+      setTimeout(() => {
+        if (!amIHost || !mySala) return;
+        update(ref(db, `salas/${mySala}/config`), { estado: 'avançando' });
+      }, 2000);
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3564,10 +3578,10 @@ ${campCtx}
 VOZ:
 - Verbos fortes e sensoriais: "rasga", "despenca", "estala", "cheira a enxofre".
 - Foque no RESULTADO das ações, não na preparação.
-- ${iniList ? 'COMBATE ATIVO — máximo 40 palavras de narração (após testes). JAMAIS mencione dados, modificadores, CD ou cálculos no texto.' : 'EXPLORAÇÃO — máximo 70 palavras por bloco narrativo (tags FALA não contam no limite).'}
+- ${iniList ? 'COMBATE ATIVO — máximo 40 palavras de narração (após testes). JAMAIS mencione dados, modificadores, CD ou cálculos no texto. Após narrar o resultado das ações dos jogadores, os INIMIGOS REAGEM E CONTRA-ATACAM imediatamente na mesma resposta: use TESTAR para cada inimigo vivo que atacar (nome exato do inimigo no primeiro campo, nome do jogador alvo no campo Alvo), seguido de ROLAR de dano. Inclua STATS:[JOGADOR:nome:novoHp] para atualizar o HP dos jogadores atingidos. Descreva sons, impactos e o caos da batalha em 1–2 frases sensoriais.' : 'EXPLORAÇÃO — máximo 70 palavras por bloco narrativo (tags FALA não contam no limite).'}
 - Mantenha o tom: a floresta observa, os NPCs têm segredos, nada é seguro.
 - NUNCA termine com pergunta ao jogador. A narração termina com a consequência da cena.
-- Use AVANÇAR (sozinho, última linha da resposta) quando a cena não exige decisão do jogador — ex: consequência já resolvida, transição narrativa natural, momento puramente descritivo, NPC despedindo-se, multidão dispersando. O sistema continuará automaticamente. Não use AVANÇAR se o jogador precisar escolher algo ou se houver combate ativo.
+- Use AVANÇAR (sozinho, última linha da resposta) quando a cena não exige decisão do jogador — ex: consequência já resolvida, transição narrativa natural, momento puramente descritivo, NPC despedindo-se, multidão dispersando. O sistema continuará automaticamente. Não use AVANÇAR se o jogador precisar escolher algo. Em combate, use AVANÇAR SOMENTE quando o último inimigo morrer nesta resposta (todos receberem MATAR nesta mesma resposta) — sinaliza fim de combate e o sistema narrará o desfecho automaticamente.
 - Se jogadores estiverem em locais diferentes, use [AUSENTE:nome] e [PRESENTE:nome].
 - AÇÕES INDIVIDUAIS: cada jogador age de forma INDEPENDENTE. Narre SOMENTE o que CADA UM declarou. NUNCA aplique a ação de um jogador ao grupo todo nem a outros jogadores.
 
