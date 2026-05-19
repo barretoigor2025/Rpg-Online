@@ -1344,7 +1344,25 @@ window.confirmarTroca = async function() {
   // Clear trade node
   ups[`salas/${mySala}/troca`] = null;
 
+  // Build item list for story card
+  const nomesItens = [];
+  _trocaItens.forEach(slug => {
+    const it = mochila[slug];
+    if (it) nomesItens.push(it.qtd > 1 ? `${it.nome} ×${it.qtd}` : it.nome);
+  });
+
   await update(ref(db), ups);
+
+  // Push trade card to historia
+  await push(ref(db, `salas/${mySala}/historia`), {
+    role: 'trade',
+    content: `${eu.nome} entregou ${nomesItens.join(', ')} para ${alvo.nome}.`,
+    de: eu.nome,
+    para: alvo.nome,
+    itens: nomesItens,
+    ts: Date.now()
+  });
+
   toast(`Itens enviados para ${alvo.nome}! ✓`, 2500);
   fecharTroca();
 };
@@ -2633,6 +2651,10 @@ function renderizarHistoria(historia, jogadores) {
     } else if (entry.role === 'dados') {
       div.className = 'msg msg-dados';
       div.textContent = entry.content;
+    } else if (entry.role === 'trade') {
+      div.className = 'msg msg-trade';
+      const itensStr = (entry.itens || []).join(', ');
+      div.innerHTML = `<span class="trade-card-icon">🤝</span><span class="trade-card-txt"><strong>${entry.de}</strong> entregou <em>${itensStr}</em> para <strong>${entry.para}</strong>.</span>`;
     } else {
       return;
     }

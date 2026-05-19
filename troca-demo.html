@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Demo — Troca de Itens | Oráculo RPG</title>
+  <style>
+    :root {
+      --bg:    #07090f;
+      --card:  #0d111e;
+      --card2: #111522;
+      --border: rgba(100,130,200,.2);
+      --text:  #e8eaf0;
+      --text2: #9ca3b8;
+      --text3: #5a6180;
+      --green: #4ecb71;
+      --gold:  #c8a050;
+      --red:   #e05050;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 40px;
+    }
+
+    /* ── Header ── */
+    .demo-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .demo-header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--text);
+    }
+    .demo-header p {
+      font-size: 13px;
+      color: var(--text3);
+      margin-top: 6px;
+    }
+
+    /* ── Step indicator ── */
+    .step-bar {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 28px;
+      width: min(600px, 100%);
+    }
+    .step-dot {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.06);
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: var(--text3);
+      flex-shrink: 0;
+      transition: background .3s, border-color .3s, color .3s;
+    }
+    .step-dot.active {
+      background: rgba(60,120,220,.3);
+      border-color: rgba(80,140,255,.7);
+      color: #8ab4ff;
+    }
+    .step-dot.done {
+      background: rgba(60,180,100,.2);
+      border-color: rgba(60,180,100,.6);
+      color: var(--green);
+    }
+    .step-line {
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+      transition: background .3s;
+    }
+    .step-line.done { background: rgba(60,180,100,.5); }
+
+    /* ── Phones ── */
+    .phones-wrap {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      flex-wrap: wrap;
+      width: 100%;
+      max-width: 780px;
+    }
+    .phone-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .phone-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text2);
+      letter-spacing: .5px;
+    }
+    .phone-sub { font-size: 11px; color: var(--text3); }
+    .phone {
+      width: 320px;
+      height: 560px;
+      border: 2px solid rgba(100,130,200,.3);
+      border-radius: 28px;
+      background: #08090e;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 12px 40px rgba(0,0,0,.6);
+    }
+
+    /* ── Phone inner ── */
+    .phone-topbar {
+      background: #0a0d16;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,.05);
+      flex-shrink: 0;
+    }
+    .phone-topbar-left { font-size: 11px; color: var(--text3); }
+    .phone-topbar-right { display: flex; gap: 8px; font-size: 14px; }
+
+    .phone-story {
+      flex: 1;
+      padding: 10px 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* story messages */
+    .msg-model {
+      background: rgba(255,255,255,.04);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.6;
+      border-left: 3px solid rgba(80,100,180,.4);
+    }
+    .msg-user {
+      background: rgba(40,60,120,.15);
+      border: 1px solid rgba(60,80,160,.2);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--text2);
+    }
+    .msg-user .msg-user-name {
+      font-size: 10px;
+      color: var(--text3);
+      font-weight: 600;
+      letter-spacing: .5px;
+      margin-bottom: 3px;
+      text-transform: uppercase;
+    }
+    .msg-trade-card {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text2);
+      background: rgba(60,130,80,.1);
+      border: 1px solid rgba(60,180,100,.25);
+      border-radius: 8px;
+      padding: 9px 12px;
+      animation: fadeSlideIn .4s ease;
+    }
+    .msg-trade-card .t-icon { font-size: 16px; flex-shrink: 0; }
+    .msg-trade-card .t-txt strong { color: var(--text); }
+    .msg-trade-card .t-txt em { color: #7ecb95; font-style: normal; }
+
+    /* action bar */
+    .phone-action {
+      border-top: 1px solid rgba(255,255,255,.07);
+      background: #0a0d16;
+      padding: 8px 10px;
+      flex-shrink: 0;
+    }
+    .action-btns {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .aq-btn {
+      flex: 1;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      color: var(--text2);
+      border-radius: 8px;
+      padding: 6px 4px;
+      font-size: 10px;
+      cursor: pointer;
+      text-align: center;
+      transition: background .15s;
+    }
+    .aq-btn:hover { background: rgba(255,255,255,.1); }
+    .aq-btn.hl {
+      background: rgba(60,120,220,.25);
+      border-color: rgba(80,140,255,.4);
+      color: #8ab4ff;
+    }
+    .action-input-row {
+      display: flex;
+      gap: 6px;
+    }
+    .action-ta {
+      flex: 1;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text2);
+      font-size: 11px;
+      padding: 6px 8px;
+      resize: none;
+      font-family: inherit;
+    }
+    .action-send {
+      background: rgba(60,120,220,.3);
+      border: none;
+      border-radius: 8px;
+      color: #8ab4ff;
+      width: 36px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    /* ── Overlay ── */
+    .phone-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(3,5,10,.88);
+      backdrop-filter: blur(6px);
+      z-index: 10;
+      animation: fadeIn .2s ease;
+    }
+    .phone-overlay.hidden { display: none; }
+
+    .troca-modal {
+      width: 90%;
+      max-height: 90%;
+      overflow-y: auto;
+      background: linear-gradient(160deg, #0d111e 0%, #0a0e1a 100%);
+      border: 1px solid rgba(100,130,200,.25);
+      border-radius: 18px;
+      animation: troca-in .22s cubic-bezier(.22,.68,0,1.2);
+    }
+    @keyframes troca-in {
+      from { opacity:0; transform: scale(.88) translateY(16px); }
+      to   { opacity:1; transform: scale(1) translateY(0); }
+    }
+    .troca-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid rgba(100,130,200,.15);
+      position: sticky; top: 0; background: #0d111e; z-index: 2;
+    }
+    .troca-hdr h3 { font-size: 14px; font-weight: 600; letter-spacing:.5px; }
+    .troca-x {
+      background: none; border: none; color: var(--text3);
+      font-size: 16px; cursor: pointer; padding: 2px 6px; border-radius: 5px;
+    }
+    .troca-x:hover { color: var(--text); background: rgba(255,255,255,.07); }
+
+    /* Player list */
+    .player-list { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+    .player-card {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,.04); border: 1px solid rgba(100,130,200,.2);
+      border-radius: 10px; padding: 10px 12px; cursor: pointer;
+      transition: background .15s, border-color .15s, transform .1s;
+    }
+    .player-card:hover { background: rgba(100,140,255,.1); border-color: rgba(100,140,255,.4); transform: translateX(2px); }
+    .player-card.selected { background: rgba(100,140,255,.15); border-color: rgba(100,140,255,.5); }
+    .pc-icon { font-size: 22px; }
+    .pc-info { flex: 1; }
+    .pc-nome { font-size: 13px; font-weight: 600; color: var(--text); }
+    .pc-classe { font-size: 10px; color: var(--text3); letter-spacing: .5px; }
+
+    /* Invite */
+    .invite-body { padding: 16px 16px 8px; text-align: center; }
+    .inv-avatar { font-size: 42px; margin-bottom: 6px; }
+    .inv-txt { font-size: 12px; color: var(--text2); line-height: 1.6; margin-bottom: 16px; }
+    .inv-txt strong { color: var(--text); font-weight: 700; }
+    .inv-actions { display: flex; gap: 8px; justify-content: center; }
+    .btn-accept {
+      background: linear-gradient(135deg, #1a5c2a, #22803a); border: none;
+      color: #fff; border-radius: 9px; padding: 9px 20px;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: opacity .15s;
+    }
+    .btn-accept:hover { opacity:.85; }
+    .btn-decline {
+      background: rgba(180,40,40,.15); border: 1px solid rgba(180,40,40,.3);
+      color: #e06060; border-radius: 9px; padding: 9px 20px;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    .btn-decline:hover { opacity:.85; }
+
+    /* Waiting */
+    .waiting-body { padding: 24px 16px; text-align: center; }
+    .wait-icon { font-size: 34px; margin-bottom: 10px; animation: pulse-wait 1.5s ease-in-out infinite; }
+    @keyframes pulse-wait {
+      0%,100% { opacity:.4; transform: scale(.95); }
+      50%     { opacity:1;  transform: scale(1.05); }
+    }
+    .wait-txt { font-size: 12px; color: var(--text3); line-height: 1.6; }
+    .wait-txt strong { color: var(--text2); }
+
+    /* Items grid */
+    .section-lbl { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text3); padding: 6px 16px 2px; }
+    .items-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 4px 12px 10px; }
+    .item-slot {
+      background: rgba(255,255,255,.04); border: 1px solid rgba(100,130,200,.15);
+      border-radius: 9px; padding: 9px 5px; text-align: center; cursor: pointer;
+      transition: background .15s, border-color .15s; position: relative;
+    }
+    .item-slot:hover { background: rgba(100,140,255,.08); border-color: rgba(100,140,255,.3); }
+    .item-slot.sel { background: rgba(60,180,100,.15); border-color: rgba(60,180,100,.5); }
+    .item-slot.sel::after {
+      content:'✓'; position:absolute; top:2px; right:4px;
+      font-size:9px; color:var(--green); font-weight:700;
+    }
+    .it-icon { font-size: 18px; margin-bottom: 2px; }
+    .it-nome { font-size: 9px; color: var(--text2); line-height: 1.3; word-break: break-word; }
+    .it-qtd  { font-size: 9px; color: var(--text3); }
+    .sel-count { font-size: 10px; color: var(--green); padding: 2px 12px 4px; }
+
+    /* Footer */
+    .troca-footer {
+      display: flex; gap: 8px; padding: 10px 12px 12px;
+      border-top: 1px solid rgba(100,130,200,.12);
+    }
+    .btn-confirm {
+      flex: 1; background: linear-gradient(135deg, #1a3a6c, #1d4fa0);
+      border: none; color: #fff; border-radius: 9px; padding: 10px;
+      font-size: 12px; font-weight: 600; cursor: pointer; transition: opacity .15s;
+    }
+    .btn-confirm:hover { opacity:.88; }
+    .btn-confirm:disabled { opacity:.35; cursor: not-allowed; }
+    .btn-cancel {
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+      color: var(--text3); border-radius: 9px; padding: 10px 14px;
+      font-size: 12px; cursor: pointer;
+    }
+    .btn-cancel:hover { opacity:.75; }
+
+    /* ── Nav controls ── */
+    .nav-wrap {
+      margin-top: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      width: min(600px, 100%);
+    }
+    .step-desc {
+      font-size: 13px;
+      color: var(--text2);
+      text-align: center;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 18px;
+      line-height: 1.6;
+      width: 100%;
+    }
+    .step-desc strong { color: var(--text); }
+    .nav-btns { display: flex; gap: 10px; }
+    .nav-btn {
+      background: rgba(255,255,255,.07);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      border-radius: 10px;
+      padding: 10px 22px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .nav-btn:hover { background: rgba(255,255,255,.12); color: var(--text); }
+    .nav-btn.primary {
+      background: linear-gradient(135deg, #1a3a6c, #1d4fa0);
+      border-color: rgba(80,140,255,.4);
+      color: #fff;
+    }
+    .nav-btn.primary:hover { opacity:.88; }
+    .nav-btn:disabled { opacity:.3; cursor: not-allowed; }
+
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+    @keyframes fadeSlideIn {
+      from { opacity:0; transform: translateY(6px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+
+    /* Players bar */
+    .players-bar {
+      display: flex; gap: 6px; flex-wrap: wrap;
+      padding: 6px 10px;
+      background: rgba(0,0,0,.3);
+      border-bottom: 1px solid rgba(255,255,255,.05);
+      flex-shrink: 0;
+    }
+    .pchip {
+      display: flex; align-items: center; gap: 4px;
+      background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+      border-radius: 20px; padding: 3px 9px; font-size: 10px; color: var(--text2);
+    }
+    .pchip.me { border-color: rgba(80,140,255,.4); color: #8ab4ff; }
+  </style>
+</head>
+<body>
+
+<div class="demo-header">
+  <h1>🤝 Simulação — Troca de Itens</h1>
+  <p>Clique em <strong>Próximo passo</strong> para avançar a simulação</p>
+</div>
+
+<!-- Step bar -->
+<div class="step-bar" id="step-bar">
+  <div class="step-dot active" id="sdot-0">1</div>
+  <div class="step-line" id="sline-0"></div>
+  <div class="step-dot" id="sdot-1">2</div>
+  <div class="step-line" id="sline-1"></div>
+  <div class="step-dot" id="sdot-2">3</div>
+  <div class="step-line" id="sline-2"></div>
+  <div class="step-dot" id="sdot-3">4</div>
+  <div class="step-line" id="sline-3"></div>
+  <div class="step-dot" id="sdot-4">5</div>
+</div>
+
+<!-- Phones -->
+<div class="phones-wrap">
+
+  <!-- Igor's phone -->
+  <div class="phone-col">
+    <div class="phone-label">⚔️ Igor <span class="phone-sub">— Guerreiro</span></div>
+    <div class="phone" id="phone-igor">
+      <div class="phone-topbar">
+        <span class="phone-topbar-left">🏰 Sala XKPQ5 · Rodada 3</span>
+        <span class="phone-topbar-right">🔊 📜 ↺ 🚪</span>
+      </div>
+      <div class="players-bar">
+        <div class="pchip me">⚔️ Igor</div>
+        <div class="pchip">🔮 Afonso</div>
+      </div>
+      <div class="phone-story" id="story-igor">
+        <div class="msg-model">O corredor escuro range sob seus pés. À frente, vultos se movem entre as colunas de pedra. Afonso percebe que seus componentes de feitiço estão quase esgotados — sem eles, suas magias mais poderosas falharão.</div>
+        <div class="msg-user">
+          <div class="msg-user-name">Afonso</div>
+          Preciso de componentes antes que avancemos. Alguém tem algo?
+        </div>
+        <div class="msg-user">
+          <div class="msg-user-name">Igor</div>
+          Tenho poções e tochas sobrando. Deixa eu te passar.
+        </div>
+      </div>
+      <div class="phone-action">
+        <div class="action-btns">
+          <div class="aq-btn">💬 Falar</div>
+          <div class="aq-btn">📋 Ficha</div>
+          <div class="aq-btn">📜 Skills</div>
+          <div class="aq-btn hl" id="btn-troca-igor" onclick="step1()">🤝 Troca</div>
+        </div>
+        <div class="action-input-row">
+          <textarea class="action-ta" rows="2" placeholder="Declare a ação do seu personagem..."></textarea>
+          <button class="action-send">✦</button>
+        </div>
+      </div>
+      <!-- Igor overlay -->
+      <div class="phone-overlay hidden" id="overlay-igor"></div>
+    </div>
+  </div>
+
+  <!-- Afonso's phone -->
+  <div class="phone-col">
+    <div class="phone-label">🔮 Afonso <span class="phone-sub">— Mago</span></div>
+    <div class="phone" id="phone-afonso">
+      <div class="phone-topbar">
+        <span class="phone-topbar-left">🏰 Sala XKPQ5 · Rodada 3</span>
+        <span class="phone-topbar-right">🔊 📜 ↺ 🚪</span>
+      </div>
+      <div class="players-bar">
+        <div class="pchip">⚔️ Igor</div>
+        <div class="pchip me">🔮 Afonso</div>
+      </div>
+      <div class="phone-story" id="story-afonso">
+        <div class="msg-model">O corredor escuro range sob seus pés. À frente, vultos se movem entre as colunas de pedra. Afonso percebe que seus componentes de feitiço estão quase esgotados — sem eles, suas magias mais poderosas falharão.</div>
+        <div class="msg-user">
+          <div class="msg-user-name">Afonso</div>
+          Preciso de componentes antes que avancemos. Alguém tem algo?
+        </div>
+        <div class="msg-user">
+          <div class="msg-user-name">Igor</div>
+          Tenho poções e tochas sobrando. Deixa eu te passar.
+        </div>
+      </div>
+      <div class="phone-action">
+        <div class="action-btns">
+          <div class="aq-btn">💬 Falar</div>
+          <div class="aq-btn">📋 Ficha</div>
+          <div class="aq-btn">📜 Skills</div>
+          <div class="aq-btn">🤝 Troca</div>
+        </div>
+        <div class="action-input-row">
+          <textarea class="action-ta" rows="2" placeholder="Declare a ação do seu personagem..."></textarea>
+          <button class="action-send">✦</button>
+        </div>
+      </div>
+      <!-- Afonso overlay -->
+      <div class="phone-overlay hidden" id="overlay-afonso"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Nav -->
+<div class="nav-wrap">
+  <div class="step-desc" id="step-desc">
+    <strong>Passo 1 de 5</strong> — Igor quer passar itens para Afonso. Clique no botão <strong>🤝 Troca</strong> no telefone do Igor (ou clique em Próximo passo).
+  </div>
+  <div class="nav-btns">
+    <button class="nav-btn" id="btn-prev" onclick="prevStep()" disabled>◀ Voltar</button>
+    <button class="nav-btn primary" id="btn-next" onclick="nextStep()">Próximo passo ▶</button>
+  </div>
+</div>
+
+<script>
+  let currentStep = 0;
+  const TOTAL = 5;
+
+  // Item inventory for Igor
+  const IGOR_MOCHILA = [
+    { slug: 'pocao_de_cura',  nome: 'Poção de Cura',  icon: '⚗️', qtd: 2 },
+    { slug: 'tocha',          nome: 'Tocha',           icon: '🔦', qtd: 3 },
+    { slug: 'corda',          nome: 'Corda',           icon: '🪢', qtd: 1 },
+    { slug: 'racao',          nome: 'Ração de Viagem', icon: '🍖', qtd: 2 },
+    { slug: 'pedra_amolar',   nome: 'Pedra de Amolar', icon: '🔧', qtd: 1 },
+  ];
+
+  let selectedItems = new Set(['pocao_de_cura', 'tocha']);
+
+  const STEPS = [
+    {
+      desc: '<strong>Passo 1 de 5</strong> — Igor quer passar itens para Afonso. Clique em <strong>🤝 Troca</strong> no telefone do Igor ou clique em Próximo passo.',
+      igor: 'idle',
+      afonso: 'idle',
+    },
+    {
+      desc: '<strong>Passo 2 de 5</strong> — Igor vê a lista de jogadores disponíveis para trocar. Ele seleciona <strong>Afonso</strong>.',
+      igor: 'player-select',
+      afonso: 'idle',
+    },
+    {
+      desc: '<strong>Passo 3 de 5</strong> — Igor aguarda. <strong>Afonso recebe o convite</strong> na tela dele e pode aceitar ou recusar.',
+      igor: 'waiting-accept',
+      afonso: 'invite',
+    },
+    {
+      desc: '<strong>Passo 4 de 5</strong> — Afonso aceitou! Igor vê sua mochila e <strong>seleciona os itens</strong> para enviar (Poção de Cura e Tocha já marcados).',
+      igor: 'item-select',
+      afonso: 'waiting-items',
+    },
+    {
+      desc: '<strong>Passo 5 de 5 — Troca concluída! ✓</strong> — Igor confirmou. Os itens foram transferidos. O card de troca aparece na história de ambos.',
+      igor: 'done',
+      afonso: 'done',
+    },
+  ];
+
+  function renderStepBar() {
+    for (let i = 0; i < TOTAL; i++) {
+      const dot = document.getElementById(`sdot-${i}`);
+      dot.className = 'step-dot' + (i < currentStep ? ' done' : i === currentStep ? ' active' : '');
+      if (i < TOTAL - 1) {
+        const line = document.getElementById(`sline-${i}`);
+        line.className = 'step-line' + (i < currentStep ? ' done' : '');
+      }
+    }
+  }
+
+  function renderPhones() {
+    const s = STEPS[currentStep];
+    document.getElementById('step-desc').innerHTML = s.desc;
+    renderIgor(s.igor);
+    renderAfonso(s.afonso);
+    document.getElementById('btn-prev').disabled = currentStep === 0;
+    document.getElementById('btn-next').disabled = currentStep === TOTAL - 1;
+    renderStepBar();
+  }
+
+  function renderIgor(state) {
+    const ov = document.getElementById('overlay-igor');
+    if (state === 'idle' || state === 'done') {
+      ov.classList.add('hidden');
+      ov.innerHTML = '';
+      if (state === 'done') addTradeCard('igor');
+    } else if (state === 'player-select') {
+      ov.classList.remove('hidden');
+      ov.innerHTML = `<div class="troca-modal">
+        <div class="troca-hdr">
+          <h3>🤝 Iniciar Troca</h3>
+          <button class="troca-x">✕</button>
+        </div>
+        <p style="font-size:11px;color:var(--text3);padding:10px 14px 4px">Selecione um jogador para oferecer itens:</p>
+        <div class="player-list">
+          <div class="player-card selected" onclick="nextStep()">
+            <div class="pc-icon">🔮</div>
+            <div class="pc-info">
+              <div class="pc-nome">Afonso</div>
+              <div class="pc-classe">Mago — Nv 2</div>
+            </div>
+            <span style="color:var(--text3);font-size:16px">›</span>
+          </div>
+        </div>
+      </div>`;
+    } else if (state === 'waiting-accept') {
+      ov.classList.remove('hidden');
+      ov.innerHTML = `<div class="troca-modal">
+        <div class="troca-hdr">
+          <h3>🤝 Aguardando...</h3>
+          <button class="troca-x" onclick="prevStep()">✕</button>
+        </div>
+        <div class="waiting-body">
+          <div class="wait-icon">⏳</div>
+          <p class="wait-txt">Aguardando <strong>Afonso</strong><br>aceitar o convite de troca...</p>
+        </div>
+        <div class="troca-footer">
+          <button class="btn-cancel" onclick="prevStep()">Cancelar</button>
+        </div>
+      </div>`;
+    } else if (state === 'item-select') {
+      ov.classList.remove('hidden');
+      ov.innerHTML = buildItemSelectHTML();
+    }
+  }
+
+  function buildItemSelectHTML() {
+    const selCount = selectedItems.size;
+    let items = IGOR_MOCHILA.map(it => {
+      const sel = selectedItems.has(it.slug);
+      return `<div class="item-slot ${sel ? 'sel' : ''}" onclick="toggleItem('${it.slug}')">
+        <div class="it-icon">${it.icon}</div>
+        <div class="it-nome">${it.nome}</div>
+        <div class="it-qtd">×${it.qtd}</div>
+      </div>`;
+    }).join('');
+
+    return `<div class="troca-modal">
+      <div class="troca-hdr">
+        <h3>🤝 Selecionar Itens</h3>
+        <button class="troca-x" onclick="prevStep()">✕</button>
+      </div>
+      <p class="section-lbl">Enviar para <strong style="color:var(--text2)">Afonso</strong></p>
+      ${selCount > 0 ? `<div class="sel-count">${selCount} item${selCount>1?'s':''} selecionado${selCount>1?'s':''}</div>` : ''}
+      <div class="items-grid">${items}</div>
+      <div class="troca-footer">
+        <button class="btn-confirm" ${!selCount ? 'disabled' : ''} onclick="nextStep()">
+          Enviar ${selCount ? selCount + ' item' + (selCount > 1 ? 's' : '') : ''}
+        </button>
+        <button class="btn-cancel" onclick="prevStep()">Cancelar</button>
+      </div>
+    </div>`;
+  }
+
+  function renderAfonso(state) {
+    const ov = document.getElementById('overlay-afonso');
+    if (state === 'idle' || state === 'done') {
+      ov.classList.add('hidden');
+      ov.innerHTML = '';
+      if (state === 'done') addTradeCard('afonso');
+    } else if (state === 'invite') {
+      ov.classList.remove('hidden');
+      ov.innerHTML = `<div class="troca-modal">
+        <div class="troca-hdr">
+          <h3>🤝 Convite de Troca</h3>
+          <button class="troca-x" onclick="prevStep()">✕</button>
+        </div>
+        <div class="invite-body">
+          <div class="inv-avatar">⚔️</div>
+          <p class="inv-txt"><strong>Igor</strong> quer iniciar uma troca de itens com você.<br>Deseja participar da negociação?</p>
+          <div class="inv-actions">
+            <button class="btn-accept" onclick="nextStep()">✓ Aceitar</button>
+            <button class="btn-decline" onclick="prevStep()">✕ Recusar</button>
+          </div>
+        </div>
+      </div>`;
+    } else if (state === 'waiting-items') {
+      ov.classList.remove('hidden');
+      ov.innerHTML = `<div class="troca-modal">
+        <div class="troca-hdr">
+          <h3>🤝 Negociação em Curso</h3>
+          <button class="troca-x" onclick="prevStep()">✕</button>
+        </div>
+        <div class="waiting-body">
+          <div class="wait-icon">📦</div>
+          <p class="wait-txt"><strong>Igor</strong><br>está selecionando os itens para enviar...</p>
+        </div>
+        <div class="troca-footer">
+          <button class="btn-cancel" onclick="prevStep()">Cancelar</button>
+        </div>
+      </div>`;
+    }
+  }
+
+  let tradeCardAdded = { igor: false, afonso: false };
+
+  function addTradeCard(player) {
+    if (tradeCardAdded[player]) return;
+    tradeCardAdded[player] = true;
+    const story = document.getElementById(`story-${player}`);
+    const card = document.createElement('div');
+    card.className = 'msg-trade-card';
+    card.innerHTML = `<span class="t-icon">🤝</span><span class="t-txt"><strong>Igor</strong> entregou <em>Poção de Cura ×2, Tocha ×3</em> para <strong>Afonso</strong>.</span>`;
+    story.appendChild(card);
+    story.scrollTop = story.scrollHeight;
+  }
+
+  window.toggleItem = function(slug) {
+    if (selectedItems.has(slug)) selectedItems.delete(slug);
+    else selectedItems.add(slug);
+    document.getElementById('overlay-igor').innerHTML = buildItemSelectHTML();
+  };
+
+  window.step1 = function() { if (currentStep === 0) nextStep(); };
+
+  function nextStep() {
+    if (currentStep < TOTAL - 1) {
+      if (currentStep === TOTAL - 2) {
+        tradeCardAdded = { igor: false, afonso: false };
+      }
+      currentStep++;
+      renderPhones();
+    }
+  }
+
+  function prevStep() {
+    if (currentStep > 0) {
+      if (currentStep === TOTAL - 1) {
+        tradeCardAdded = { igor: false, afonso: false };
+        // Remove trade cards
+        ['igor','afonso'].forEach(p => {
+          const story = document.getElementById(`story-${p}`);
+          story.querySelector('.msg-trade-card')?.remove();
+        });
+      }
+      currentStep--;
+      renderPhones();
+    }
+  }
+
+  // Init
+  renderPhones();
+</script>
+</body>
+</html>
