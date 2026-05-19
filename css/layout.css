@@ -2236,3 +2236,272 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   0%,100% { opacity: .3; transform: translateX(0); }
   50%      { opacity: .8; transform: translateX(3px); }
 }
+
+/* ══════════════════════════════════════════════════════
+   TROCA DE ITENS
+══════════════════════════════════════════════════════ */
+#troca-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 160;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(3,5,10,.88);
+  backdrop-filter: blur(6px);
+}
+.troca-modal {
+  position: relative;
+  background: linear-gradient(160deg, #0d111e 0%, #0a0e1a 100%);
+  border: 1px solid rgba(100,130,200,.25);
+  border-radius: 18px;
+  width: min(400px, 94vw);
+  max-height: 86vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  animation: troca-in .22s cubic-bezier(.22,.68,0,1.2);
+  padding: 0 0 16px;
+}
+@keyframes troca-in {
+  from { opacity:0; transform: scale(.88) translateY(16px); }
+  to   { opacity:1; transform: scale(1) translateY(0); }
+}
+.troca-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 12px;
+  border-bottom: 1px solid rgba(100,130,200,.15);
+  position: sticky;
+  top: 0;
+  background: #0d111e;
+  z-index: 2;
+}
+.troca-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  color: var(--text);
+}
+.troca-close {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 18px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: color .15s, background .15s;
+}
+.troca-close:hover { color: var(--text); background: rgba(255,255,255,.07); }
+
+/* Player list for selection */
+.troca-player-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 20px;
+}
+.troca-player-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(100,130,200,.2);
+  border-radius: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, transform .1s;
+}
+.troca-player-card:hover {
+  background: rgba(100,140,255,.1);
+  border-color: rgba(100,140,255,.4);
+  transform: translateX(2px);
+}
+.troca-player-icon {
+  font-size: 26px;
+  line-height: 1;
+}
+.troca-player-info { flex: 1; }
+.troca-player-nome {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.troca-player-classe {
+  font-size: 11px;
+  color: var(--text3);
+  letter-spacing: .5px;
+}
+
+/* Invite screen */
+.troca-invite-body {
+  padding: 20px 20px 8px;
+  text-align: center;
+}
+.troca-invite-avatar {
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+.troca-invite-txt {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+.troca-invite-nome {
+  color: var(--text);
+  font-weight: 700;
+}
+.troca-invite-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.troca-btn-accept {
+  background: linear-gradient(135deg, #1a5c2a, #22803a);
+  border: none;
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 24px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .15s, transform .1s;
+}
+.troca-btn-accept:hover { opacity:.88; transform: scale(1.03); }
+.troca-btn-decline {
+  background: rgba(180,40,40,.18);
+  border: 1px solid rgba(180,40,40,.3);
+  color: #e06060;
+  border-radius: 10px;
+  padding: 10px 24px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .15s, transform .1s;
+}
+.troca-btn-decline:hover { opacity:.88; transform: scale(1.03); }
+
+/* Waiting screen */
+.troca-waiting {
+  padding: 32px 20px;
+  text-align: center;
+}
+.troca-waiting-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+  animation: troca-pulse 1.5s ease-in-out infinite;
+}
+@keyframes troca-pulse {
+  0%,100% { opacity:.4; transform: scale(.95); }
+  50%     { opacity:1;  transform: scale(1.05); }
+}
+.troca-waiting-txt {
+  font-size: 13px;
+  color: var(--text3);
+  line-height: 1.6;
+}
+.troca-waiting-nome { color: var(--text2); font-weight: 600; }
+
+/* Item selection */
+.troca-section-lbl {
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 8px 20px 4px;
+}
+.troca-itens-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 4px 16px 12px;
+}
+.troca-item-slot {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(100,130,200,.15);
+  border-radius: 10px;
+  padding: 10px 6px;
+  text-align: center;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+  position: relative;
+}
+.troca-item-slot:hover {
+  background: rgba(100,140,255,.08);
+  border-color: rgba(100,140,255,.3);
+}
+.troca-item-slot.selecionado {
+  background: rgba(60,180,100,.15);
+  border-color: rgba(60,180,100,.5);
+}
+.troca-item-slot.selecionado::after {
+  content: '✓';
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  font-size: 10px;
+  color: #4ecb71;
+  font-weight: 700;
+}
+.troca-item-icon { font-size: 20px; margin-bottom: 2px; }
+.troca-item-nome {
+  font-size: 10px;
+  color: var(--text2);
+  word-break: break-word;
+  line-height: 1.3;
+}
+.troca-item-qtd {
+  font-size: 10px;
+  color: var(--text3);
+}
+.troca-vazio-msg {
+  padding: 24px 20px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text3);
+}
+
+/* Confirm/cancel bar */
+.troca-footer {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px 4px;
+  border-top: 1px solid rgba(100,130,200,.12);
+  margin-top: 4px;
+}
+.troca-btn-confirm {
+  flex: 1;
+  background: linear-gradient(135deg, #1a3a6c, #1d4fa0);
+  border: none;
+  color: #fff;
+  border-radius: 10px;
+  padding: 11px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.troca-btn-confirm:hover { opacity:.88; }
+.troca-btn-confirm:disabled { opacity:.4; cursor: not-allowed; }
+.troca-btn-cancel {
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1);
+  color: var(--text3);
+  border-radius: 10px;
+  padding: 11px 18px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.troca-btn-cancel:hover { opacity:.75; }
+
+.troca-selected-count {
+  font-size: 11px;
+  color: #4ecb71;
+  padding: 2px 16px 6px;
+}
+

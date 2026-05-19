@@ -190,6 +190,7 @@
       <button id="btn-falar" class="action-quick-btn" onclick="abrirFalar()">💬 Falar</button>
       <button id="btn-ficha" class="action-quick-btn" onclick="toggleSkillsPanel()">📋 Ficha</button>
       <button id="btn-skills" class="action-quick-btn" onclick="togglePericiasPanel()">📜 Skills</button>
+      <button id="btn-troca" class="action-quick-btn" onclick="abrirTroca()">🤝 Troca</button>
       <button id="btn-avançar-hist" class="action-quick-btn" onclick="querAvançarHistoria()" style="display:none">⏩ Avançar</button>
     </div>
     <div id="action-wrap">
@@ -236,12 +237,13 @@
 <div id="mochila-overlay" style="display:none"></div>
 <div id="teste-overlay" style="display:none"></div>
 <div id="falar-overlay" style="display:none"></div>
+<div id="troca-overlay" style="display:none"></div>
 
 <!-- Three.js para animação 3D de dados -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <!-- Firebase SDK via script tags (mais confiável em mobile que ES module imports) -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-<script src="js/main.js?v=6"></script>
+<script src="js/main.js?v=7"></script>
 </body>
 </html>

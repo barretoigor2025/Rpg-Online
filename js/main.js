@@ -175,6 +175,8 @@ let _afterNarrationCb = null;
 let _jogadoresCache   = {};
 let _ultimoNpc        = null; // último NPC que falou, usado como ouvinte quando jogador responde
 let _regras           = {};
+let _trocaItens       = new Set(); // slugs selecionados para troca
+let _trocaAtual       = null;     // snapshot atual do nó salas/${sala}/troca
 
 // ═══════════════════════════════════════════════════════════════
 //  HELPERS
@@ -1221,6 +1223,245 @@ window.adicionarMochila = async function() {
 };
 
 // ═══════════════════════════════════════════════════════════════
+//  SISTEMA DE TROCA DE ITENS
+// ═══════════════════════════════════════════════════════════════
+
+function _itemIconTroca(it) {
+  const n = (it.nome||'').toLowerCase();
+  if (n.includes('espada')||n.includes('sabre')) return '⚔️';
+  if (n.includes('arco')) return '🏹';
+  if (n.includes('escudo')) return '🛡️';
+  if (n.includes('poção')||n.includes('pocao')) return '⚗️';
+  if (n.includes('tocha')) return '🔦';
+  if (n.includes('corda')) return '🪢';
+  if (n.includes('flecha')||n.includes('seta')) return '🏹';
+  if (n.includes('faca')) return '🗡️';
+  if (n.includes('erva')) return '🌿';
+  if (n.includes('componente')) return '💎';
+  if (n.includes('água')||n.includes('agua')) return '💧';
+  if (n.includes('ferramenta')) return '🔧';
+  if (n.includes('racao')||n.includes('ração')) return '🍖';
+  if (n.includes('livro')||n.includes('grimório')) return '📖';
+  if (n.includes('amuleto')) return '🧿';
+  if (n.includes('maça')) return '🔨';
+  return '🎁';
+}
+
+window.abrirTroca = function() {
+  if (!mySala) return;
+  const outros = Object.values(_jogadoresCache).filter(j => j.uid !== myUid && j.ativo !== false && !j.ausente);
+  if (!outros.length) {
+    toast('Nenhum outro jogador disponível para troca.', 2500); return;
+  }
+  const el = document.getElementById('troca-overlay');
+  if (!el) return;
+  _trocaItens.clear();
+
+  let h = `<div class="troca-modal">
+    <div class="troca-header">
+      <h3>🤝 Iniciar Troca</h3>
+      <button class="troca-close" onclick="fecharTroca()">✕</button>
+    </div>
+    <p style="font-size:12px;color:var(--text3);padding:12px 20px 4px">Selecione um jogador para oferecer itens:</p>
+    <div class="troca-player-list">`;
+
+  outros.forEach(j => {
+    const cls = CLASSES[j.classe];
+    h += `<div class="troca-player-card" onclick="proporTroca('${j.uid}')">
+      <div class="troca-player-icon">${cls?.icon || '⚔️'}</div>
+      <div class="troca-player-info">
+        <div class="troca-player-nome">${j.nome}</div>
+        <div class="troca-player-classe">${cls?.nome || j.classe} — Nv${j.nivel || 1}</div>
+      </div>
+      <span style="color:var(--text3);font-size:18px">›</span>
+    </div>`;
+  });
+
+  h += `</div></div>`;
+  el.innerHTML = h;
+  el.style.display = 'flex';
+};
+
+window.proporTroca = async function(targetUid) {
+  if (!mySala) return;
+  const troca = { estado: 'pendente', iniciador: myUid, alvo: targetUid, ts: Date.now() };
+  await update(ref(db, `salas/${mySala}/troca`), troca);
+  // overlay will re-render via Firebase listener
+};
+
+window.responderTroca = async function(aceitar) {
+  if (!mySala || !_trocaAtual) return;
+  if (aceitar) {
+    await update(ref(db, `salas/${mySala}/troca`), { estado: 'ativa' });
+  } else {
+    await set(ref(db, `salas/${mySala}/troca`), null);
+    fecharTroca();
+  }
+};
+
+window.toggleItemTroca = function(slug) {
+  if (_trocaItens.has(slug)) _trocaItens.delete(slug);
+  else _trocaItens.add(slug);
+  _renderTrocaOverlay(_trocaAtual);
+};
+
+window.confirmarTroca = async function() {
+  if (!mySala || !_trocaAtual) return;
+  const alvoUid = _trocaAtual.alvo;
+  const eu = _jogadoresCache[myUid];
+  const mochila = eu?.mochila || {};
+  const alvo = _jogadoresCache[alvoUid];
+  if (!alvo) { toast('Jogador alvo não encontrado.', 2000); return; }
+
+  if (!_trocaItens.size) { toast('Selecione pelo menos um item.', 2000); return; }
+
+  // Check target mochila capacity
+  const alvoBag = alvo.mochila || {};
+  const alvoCount = Object.keys(alvoBag).filter(k => k !== 'dinheiro').length;
+  if (alvoCount + _trocaItens.size > MOCHILA_ITENS) {
+    toast(`Mochila de ${alvo.nome} está cheia!`, 2500); return;
+  }
+
+  const ups = {};
+  _trocaItens.forEach(slug => {
+    const item = mochila[slug];
+    if (!item) return;
+    // Remove from initiator
+    ups[`salas/${mySala}/jogadores/${myUid}/mochila/${slug}`] = null;
+    ups[`personagens/${myUid}/mochila/${slug}`] = null;
+    // Add to target (merge qty if exists)
+    const jaExiste = !!alvoBag[slug];
+    if (jaExiste) {
+      const qtdAtual = alvoBag[slug].qtd || 1;
+      ups[`salas/${mySala}/jogadores/${alvoUid}/mochila/${slug}/qtd`] = qtdAtual + (item.qtd || 1);
+      ups[`personagens/${alvoUid}/mochila/${slug}/qtd`] = qtdAtual + (item.qtd || 1);
+    } else {
+      ups[`salas/${mySala}/jogadores/${alvoUid}/mochila/${slug}`] = { ...item };
+      ups[`personagens/${alvoUid}/mochila/${slug}`] = { ...item };
+    }
+  });
+
+  // Clear trade node
+  ups[`salas/${mySala}/troca`] = null;
+
+  await update(ref(db), ups);
+  toast(`Itens enviados para ${alvo.nome}! ✓`, 2500);
+  fecharTroca();
+};
+
+window.cancelarTroca = async function() {
+  if (!mySala) return;
+  await set(ref(db, `salas/${mySala}/troca`), null);
+  fecharTroca();
+};
+
+window.fecharTroca = function() {
+  const el = document.getElementById('troca-overlay');
+  if (el) { el.style.display = 'none'; el.innerHTML = ''; }
+  _trocaItens.clear();
+};
+
+function _renderTrocaOverlay(troca) {
+  _trocaAtual = troca;
+  const el = document.getElementById('troca-overlay');
+  if (!el) return;
+
+  if (!troca) {
+    el.style.display = 'none'; el.innerHTML = ''; _trocaItens.clear(); return;
+  }
+
+  const amIniciador = troca.iniciador === myUid;
+  const amAlvo      = troca.alvo === myUid;
+  if (!amIniciador && !amAlvo) return; // não envolvido nesta troca
+
+  const parcUid  = amIniciador ? troca.alvo : troca.iniciador;
+  const parc     = _jogadoresCache[parcUid];
+  const parcNome = parc?.nome || 'Jogador';
+  const parcCls  = CLASSES[parc?.classe];
+
+  let h = `<div class="troca-modal"><div class="troca-header">`;
+
+  if (troca.estado === 'pendente') {
+    if (amAlvo) {
+      // Target sees invite
+      h += `<h3>🤝 Convite de Troca</h3>
+        <button class="troca-close" onclick="responderTroca(false)">✕</button>
+      </div>
+      <div class="troca-invite-body">
+        <div class="troca-invite-avatar">${parcCls?.icon || '⚔️'}</div>
+        <p class="troca-invite-txt"><span class="troca-invite-nome">${parcNome}</span> quer iniciar uma troca de itens com você.<br>Deseja participar da negociação?</p>
+        <div class="troca-invite-actions">
+          <button class="troca-btn-accept" onclick="responderTroca(true)">✓ Aceitar</button>
+          <button class="troca-btn-decline" onclick="responderTroca(false)">✕ Recusar</button>
+        </div>
+      </div>`;
+    } else {
+      // Initiator waits
+      h += `<h3>🤝 Aguardando...</h3>
+        <button class="troca-close" onclick="cancelarTroca()">✕</button>
+      </div>
+      <div class="troca-waiting">
+        <div class="troca-waiting-icon">⏳</div>
+        <p class="troca-waiting-txt">Aguardando <span class="troca-waiting-nome">${parcNome}</span><br>aceitar o convite de troca...</p>
+      </div>
+      <div class="troca-footer">
+        <button class="troca-btn-cancel" onclick="cancelarTroca()">Cancelar</button>
+      </div>`;
+    }
+  } else if (troca.estado === 'ativa') {
+    if (amIniciador) {
+      // Initiator selects items
+      const eu = _jogadoresCache[myUid];
+      const mochila = eu?.mochila || {};
+      const items = Object.entries(mochila).filter(([k]) => k !== 'dinheiro');
+      const selCount = _trocaItens.size;
+
+      h += `<h3>🤝 Selecionar Itens</h3>
+        <button class="troca-close" onclick="cancelarTroca()">✕</button>
+      </div>
+      <p class="troca-section-lbl">Enviar para <strong style="color:var(--text2)">${parcNome}</strong></p>`;
+
+      if (!items.length) {
+        h += `<div class="troca-vazio-msg">Sua mochila está vazia — nada para trocar.</div>`;
+      } else {
+        if (selCount > 0) h += `<div class="troca-selected-count">${selCount} item${selCount>1?'s':''} selecionado${selCount>1?'s':''}</div>`;
+        h += `<div class="troca-itens-grid">`;
+        items.forEach(([slug, it]) => {
+          const sel = _trocaItens.has(slug);
+          h += `<div class="troca-item-slot ${sel?'selecionado':''}" onclick="toggleItemTroca('${slug}')">
+            <div class="troca-item-icon">${_itemIconTroca(it)}</div>
+            <div class="troca-item-nome">${it.nome}</div>
+            <div class="troca-item-qtd">×${it.qtd||1}</div>
+          </div>`;
+        });
+        h += `</div>`;
+      }
+
+      h += `<div class="troca-footer">
+        <button class="troca-btn-confirm" onclick="confirmarTroca()" ${!selCount?'disabled':''}>Enviar ${selCount?selCount+' item'+(selCount>1?'s':''):''}</button>
+        <button class="troca-btn-cancel" onclick="cancelarTroca()">Cancelar</button>
+      </div>`;
+    } else {
+      // Target waits for initiator
+      h += `<h3>🤝 Negociação em Curso</h3>
+        <button class="troca-close" onclick="cancelarTroca()">✕</button>
+      </div>
+      <div class="troca-waiting">
+        <div class="troca-waiting-icon">📦</div>
+        <p class="troca-waiting-txt"><span class="troca-waiting-nome">${parcNome}</span><br>está selecionando os itens para enviar...</p>
+      </div>
+      <div class="troca-footer">
+        <button class="troca-btn-cancel" onclick="cancelarTroca()">Cancelar</button>
+      </div>`;
+    }
+  }
+
+  h += `</div>`;
+  el.innerHTML = h;
+  el.style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  PAINEL DE PERÍCIAS
 // ═══════════════════════════════════════════════════════════════
 window.toggleSkillsPanel = function() {
@@ -2177,6 +2418,14 @@ function irParaJogo(codigo) {
     if (rodEl) rodEl.textContent = config.rodada ? `Rodada ${config.rodada}` : '';
 
     _jogadoresCache = jogadores;
+
+    // Troca de itens: renderizar overlay para jogadores envolvidos
+    const trocaData = data.troca || null;
+    if (trocaData && (trocaData.iniciador === myUid || trocaData.alvo === myUid)) {
+      _renderTrocaOverlay(trocaData);
+    } else if (!trocaData && _trocaAtual) {
+      _renderTrocaOverlay(null);
+    }
 
     // Migração: preencher slots/mochila vazios com o kit iniciante
     const eu = jogadores[myUid];
