@@ -1230,13 +1230,12 @@ window.toggleSkillsPanel = function() {
   const eu = _jogadoresCache[myUid];
   if (!eu) return;
   const cls = CLASSES[eu.classe];
-  const hab = cls?.habilidade;
   const fmt = v => (v >= 0 ? '+' : '') + v;
   const sexo = eu.sexo || 'm';
 
   let html = `<div class="skills-header"><span class="skills-title">${cls?.icon||'⚔️'} ${cls?.nome||eu.classe}</span><button class="skills-close" onclick="toggleSkillsPanel()">✕</button></div>`;
 
-  // Top row: avatar + stats compacted
+  // Top row: avatar + stats
   html += `<div class="skills-top-row">`;
   html += `<img class="skills-avatar" src="sprites/${eu.classe}_${sexo}.png" alt="${cls?.nome||eu.classe}" onerror="this.src='sprites/${eu.classe}.png'">`;
   html += `<div class="skills-stats-col">`;
@@ -1250,27 +1249,19 @@ window.toggleSkillsPanel = function() {
   const nivelStr = eu.nivel > 1 ? `Nv${eu.nivel}` : '';
   const xpStr    = eu.xp != null ? `⭐${eu.xp} XP` : '';
   if (nivelStr || xpStr) html += `<div class="skills-xp">${[nivelStr,xpStr].filter(Boolean).join(' · ')}</div>`;
-  html += `</div>`; // skills-stats-col
-  html += `</div>`; // skills-top-row
-  // For classes with spell selection, show only chosen spells; fallback to full poderes list
-  let poderes;
-  if (cls?.poderes_pool?.length && eu.poderes_escolhidos?.length) {
-    poderes = eu.poderes_escolhidos
-      .map(id => cls.poderes_pool.find(p => p.id === id))
-      .filter(Boolean);
-  } else {
-    poderes = cls?.poderes?.length ? cls.poderes : (hab ? [hab] : []);
-  }
-  if (poderes.length) {
-    html += `<div class="skills-section-header">⚡ Habilidades & Magias</div><div class="skills-poderes-list">`;
-    poderes.forEach(p => {
-      html += `<div class="skills-poder">
-        <div class="skills-poder-top"><span class="skills-poder-icon">${p.icon||'⚡'}</span><strong class="skills-poder-nome">${p.nome}</strong></div>
-        <div class="skills-poder-desc">${p.desc}</div>
-      </div>`;
+  html += `</div></div>`; // stats-col + top-row
+
+  // Péricias do personagem
+  const pericias = Array.isArray(eu.pericias) ? eu.pericias : Object.values(eu.pericias || {});
+  if (pericias.length) {
+    html += `<div class="skills-section-header">📜 Perícias</div><div class="skills-pericia-list">`;
+    pericias.forEach(k => {
+      const p = PERICIAS[k];
+      if (p) html += `<div class="skills-pericia"><span class="per-icon">${p.icon}</span><div><strong>${p.nome}</strong> <small style="color:rgba(200,160,80,.6)">${p.attr}</small><div class="per-desc">${p.desc}</div></div></div>`;
     });
     html += `</div>`;
   }
+
   const lesoesArr = Object.values(eu.lesoes || {});
   if (lesoesArr.length) {
     html += `<div class="skills-lesoes-header">⚠️ Lesões Permanentes</div><div class="skills-lesao-list">`;
@@ -1324,10 +1315,18 @@ window.toggleSkillsPanel = function() {
   });
   html += `</div>`;
 
-
   panel.innerHTML = html;
   panel.style.display = 'flex';
 };
+
+function _badgeAbilidade(desc) {
+  if (/passivo/i.test(desc))                             return { txt:'PASSIVO',    cls:'ab-badge-passive' };
+  if (/uma vez por combate|1×\s*por\s*combate/i.test(desc)) return { txt:'1× COMBATE', cls:'ab-badge-combat'  };
+  if (/(\d+)\s*usos?\s*por\s*dia/i.test(desc))          { const m=desc.match(/(\d+)\s*usos?\s*por\s*dia/i); return { txt:`${m[1]}× DIA`, cls:'ab-badge-daily' }; }
+  if (/ritual|10\s*min/i.test(desc))                     return { txt:'RITUAL',     cls:'ab-badge-ritual'  };
+  if (/por\s*rodada/i.test(desc))                        return { txt:'TEMPORÁRIO', cls:'ab-badge-temp'    };
+  return { txt:'ATIVO', cls:'ab-badge-active' };
+}
 
 window.togglePericiasPanel = function() {
   let overlay = document.getElementById('pericias-overlay');
@@ -1335,19 +1334,62 @@ window.togglePericiasPanel = function() {
   if (!overlay) { overlay = document.createElement('div'); overlay.id = 'pericias-overlay'; document.body.appendChild(overlay); }
   const eu = _jogadoresCache[myUid];
   if (!eu) return;
+  const cls = CLASSES[eu.classe];
+
+  // Monta lista de habilidades/magias da classe
+  let poderes;
+  if (cls?.poderes_pool?.length && eu.poderes_escolhidos?.length) {
+    poderes = eu.poderes_escolhidos.map(id => cls.poderes_pool.find(p => p.id === id)).filter(Boolean);
+  } else {
+    poderes = cls?.poderes?.length ? cls.poderes : (cls?.habilidade ? [cls.habilidade] : []);
+  }
+
   const pericias = Array.isArray(eu.pericias) ? eu.pericias : Object.values(eu.pericias || {});
-  let html = `<div class="pericias-card">
-    <div class="pericias-header"><span>📜 Perícias</span><button onclick="document.getElementById('pericias-overlay').style.display='none'">✕</button></div>`;
+  const isMago = cls?.poderes_pool?.length > 0;
+  const secaoLabel = isMago ? '✨ Magias' : '⚡ Habilidades de Classe';
+
+  let html = `<div class="ab-modal-backdrop" onclick="togglePericiasPanel()"></div>
+  <div class="ab-modal">
+    <div class="ab-modal-header">
+      <span class="ab-modal-title">${cls?.icon||'⚡'} ${cls?.nome||eu.classe}</span>
+      <button class="ab-modal-close" onclick="togglePericiasPanel()">✕</button>
+    </div>`;
+
+  if (poderes.length) {
+    html += `<div class="ab-section-label">${secaoLabel}</div>`;
+    poderes.forEach(p => {
+      const badge = _badgeAbilidade(p.desc || '');
+      html += `<div class="ab-card">
+        <div class="ab-card-top">
+          <span class="ab-card-icon">${p.icon||'⚡'}</span>
+          <span class="ab-card-nome">${p.nome}</span>
+          <span class="ab-badge ${badge.cls}">${badge.txt}</span>
+        </div>
+        <div class="ab-card-desc">${p.desc}</div>
+      </div>`;
+    });
+  }
+
   if (pericias.length) {
-    html += `<div class="skills-pericia-list">`;
+    html += `<div class="ab-section-label">📜 Perícias</div>`;
     pericias.forEach(k => {
       const p = PERICIAS[k];
-      if (p) html += `<div class="skills-pericia"><span class="per-icon">${p.icon}</span><div><strong>${p.nome}</strong> <small style="color:rgba(200,160,80,.6)">${p.attr}</small><div class="per-desc">${p.desc}</div></div></div>`;
+      if (!p) return;
+      html += `<div class="ab-card">
+        <div class="ab-card-top">
+          <span class="ab-card-icon">${p.icon}</span>
+          <span class="ab-card-nome">${p.nome}</span>
+          <span class="ab-badge ab-badge-pericia">${p.attr}</span>
+        </div>
+        <div class="ab-card-desc">${p.desc}</div>
+      </div>`;
     });
-    html += `</div>`;
-  } else {
-    html += `<div class="pericias-empty">Nenhuma perícia selecionada.</div>`;
   }
+
+  if (!poderes.length && !pericias.length) {
+    html += `<div class="ab-empty">Nenhuma habilidade registrada.</div>`;
+  }
+
   html += `</div>`;
   overlay.innerHTML = html;
   overlay.style.display = 'flex';
