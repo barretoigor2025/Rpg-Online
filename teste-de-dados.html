@@ -5,566 +5,489 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Teste de Dados — Oráculo RPG</title>
 <style>
-  :root {
-    --dado-cor: #c0180c;
-    --dado-cor2: #8c0e06;
-    --dado-borda: #ff4433;
-    --numero-cor: #ffffff;
-    --fundo: #0a0c14;
-    --gold: #c8a050;
+  :root { --gold:#c8a050; --red:#bf1a0c; --red2:#8c0e06; --fundo:#07090f; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--fundo);
+    color:#e8e0d0;
+    font-family:'Georgia',serif;
+    display:flex;flex-direction:column;align-items:center;
+    min-height:100vh;padding:24px 16px 48px;gap:18px;
   }
+  h1{font-size:17px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-top:8px;}
+  p.sub{font-size:11px;color:rgba(200,160,80,.5);letter-spacing:1px;text-align:center;}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--fundo);
-    color: #e8e0d0;
-    font-family: 'Georgia', serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: 100vh;
-    padding: 24px 16px 40px;
-    gap: 20px;
+  .btn-grid{
+    display:grid;grid-template-columns:repeat(3,1fr);
+    gap:8px;width:100%;max-width:400px;
   }
-
-  h1 {
-    font-size: 18px;
-    color: var(--gold);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-top: 8px;
+  .btn-dado{
+    background:rgba(191,26,12,.1);border:1px solid rgba(191,26,12,.4);
+    color:#ff7060;border-radius:8px;font-size:14px;padding:10px 6px;
+    cursor:pointer;font-family:'Georgia',serif;
+    transition:background .15s,border-color .15s;
+    display:flex;flex-direction:column;align-items:center;gap:3px;
   }
-  p.sub {
-    font-size: 12px;
-    color: rgba(200,160,80,.55);
-    letter-spacing: 1px;
-    text-align: center;
+  .btn-dado:hover{background:rgba(191,26,12,.22);border-color:rgba(255,68,51,.6);}
+  .btn-dado span{font-size:9px;color:rgba(255,110,90,.5);letter-spacing:.5px;text-transform:uppercase;}
+  .btn-cena{
+    grid-column:span 3;
+    background:rgba(200,160,80,.07);border:1px solid rgba(200,160,80,.2);
+    color:rgba(200,160,80,.75);border-radius:8px;font-size:12px;padding:10px;
+    cursor:pointer;font-family:'Georgia',serif;transition:background .15s;
   }
-
-  /* ── BOTÕES DE TESTE ── */
-  .btn-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    width: 100%;
-    max-width: 400px;
-  }
-  .btn-dado {
-    background: rgba(192,24,12,.12);
-    border: 1px solid rgba(192,24,12,.5);
-    color: #ff8870;
-    border-radius: 8px;
-    font-size: 13px;
-    padding: 10px 6px;
-    cursor: pointer;
-    font-family: 'Georgia', serif;
-    transition: background .15s, border-color .15s;
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-  }
-  .btn-dado:hover { background: rgba(192,24,12,.25); border-color: rgba(255,68,51,.7); }
-  .btn-dado span { font-size: 9px; color: rgba(255,136,112,.6); letter-spacing: .5px; text-transform: uppercase; }
-  .btn-cena {
-    grid-column: span 3;
-    background: rgba(200,160,80,.08);
-    border: 1px solid rgba(200,160,80,.25);
-    color: rgba(200,160,80,.8);
-    border-radius: 8px;
-    font-size: 12px;
-    padding: 10px;
-    cursor: pointer;
-    font-family: 'Georgia', serif;
-    transition: background .15s;
-  }
-  .btn-cena:hover { background: rgba(200,160,80,.15); }
+  .btn-cena:hover{background:rgba(200,160,80,.14);}
 
   /* ── OVERLAY ── */
-  #dado-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 100;
-    background: rgba(4,6,12,.88);
-    backdrop-filter: blur(6px);
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 0;
-    cursor: pointer;
+  #dado-overlay{
+    display:none;position:fixed;inset:0;z-index:100;
+    background:rgba(3,5,10,.92);backdrop-filter:blur(8px);
+    align-items:center;justify-content:center;cursor:pointer;
   }
-  #dado-overlay.ativo { display: flex; }
+  #dado-overlay.ativo{display:flex;}
 
-  #dado-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
-    padding: 28px 32px 24px;
-    background: rgba(10,8,18,.85);
-    border: 1px solid rgba(192,24,12,.35);
-    border-radius: 16px;
-    min-width: 240px;
-    max-width: 320px;
-    width: 90vw;
-    position: relative;
+  #dado-card{
+    display:flex;flex-direction:column;align-items:center;gap:10px;
+    padding:22px 28px 20px;
+    background:rgba(8,10,20,.9);
+    border:1px solid rgba(191,26,12,.3);
+    border-radius:18px;min-width:240px;max-width:320px;width:90vw;
+    cursor:default;box-shadow:0 8px 48px rgba(0,0,0,.7),0 0 60px rgba(191,26,12,.1);
   }
 
-  #dado-meta {
-    font-size: 10px;
-    color: rgba(200,160,80,.6);
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    text-align: center;
-    min-height: 14px;
+  #dado-meta{
+    font-size:10px;color:rgba(200,160,80,.55);
+    letter-spacing:1.5px;text-transform:uppercase;text-align:center;min-height:14px;
   }
 
-  /* ── CONTAINER DE DADO ── */
-  #dado-stage {
-    width: 160px;
-    height: 160px;
-    perspective: 600px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
+  #dice-canvas{
+    border-radius:12px;display:block;
+    /* canvas size set by JS */
   }
 
-  /* ════ D4 ════ */
-  .d4-wrap {
-    position: relative;
-    width: 130px;
-    height: 130px;
-    display: flex; align-items: center; justify-content: center;
-    animation: queda-dado 1.1s cubic-bezier(.15,.85,.25,1) forwards;
+  #dado-resultado{
+    display:flex;flex-direction:column;align-items:center;gap:5px;
+    opacity:0;transform:scale(.65) translateY(8px);
+    transition:opacity .4s ease,transform .4s cubic-bezier(.15,.9,.3,1.15);
+    min-height:70px;justify-content:center;
   }
-  .d4-svg { width: 130px; height: 130px; filter: drop-shadow(0 4px 20px rgba(192,24,12,.7)); }
+  #dado-resultado.visivel{opacity:1;transform:scale(1) translateY(0);}
 
-  /* ════ D6 (CSS 3D cubo) ════ */
-  .cubo-wrap {
-    width: 120px; height: 120px;
-    transform-style: preserve-3d;
-    position: relative;
+  #dado-numero{
+    font-size:64px;font-weight:900;color:#fff;line-height:1;
+    text-shadow:0 0 30px rgba(255,60,40,.8),0 2px 6px rgba(0,0,0,.7);
+    letter-spacing:-3px;
   }
-  .face {
-    position: absolute;
-    width: 120px; height: 120px;
-    background: var(--dado-cor);
-    border: 3px solid var(--dado-borda);
-    border-radius: 14px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 52px;
-    font-weight: 900;
-    color: var(--numero-cor);
-    text-shadow: 0 2px 4px rgba(0,0,0,.5);
-    backface-visibility: hidden;
+  #dado-detalhe{font-size:13px;color:rgba(255,255,255,.45);font-style:italic;min-height:18px;}
+  #dado-veredicto{
+    font-size:12px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;
+    padding:3px 16px;border-radius:4px;min-height:22px;
   }
-  .face-pips { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; padding: 18px; }
-  .pip { width: 16px; height: 16px; border-radius: 50%; background: var(--numero-cor); flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+  #dado-veredicto.acerto{color:#7adc7a;background:rgba(80,180,80,.1);border:1px solid rgba(100,200,100,.25);}
+  #dado-veredicto.falha{color:#e06060;background:rgba(180,50,50,.1);border:1px solid rgba(200,80,80,.25);}
 
-  .face.frente  { transform: translateZ(60px); }
-  .face.tras    { transform: rotateY(180deg) translateZ(60px); }
-  .face.esq     { transform: rotateY(-90deg) translateZ(60px); }
-  .face.dir     { transform: rotateY(90deg)  translateZ(60px); }
-  .face.topo    { transform: rotateX(90deg)  translateZ(60px); }
-  .face.baixo   { transform: rotateX(-90deg) translateZ(60px); }
+  #dado-hint{
+    font-size:10px;color:rgba(200,160,80,.3);letter-spacing:1px;
+    animation:piscar 1.6s ease infinite;
+  }
+  @keyframes piscar{0%,100%{opacity:.3}50%{opacity:.75}}
 
-  /* ════ D8 ════ */
-  .d8-wrap {
-    width: 130px; height: 130px;
-    display: flex; align-items: center; justify-content: center;
-    animation: queda-dado 1.1s cubic-bezier(.15,.85,.25,1) forwards;
+  .info-box{
+    max-width:400px;width:100%;
+    background:rgba(12,15,26,.7);border:1px solid rgba(200,160,80,.1);
+    border-radius:10px;padding:14px 16px;
+    font-size:12px;color:rgba(220,210,190,.55);line-height:1.75;
   }
-  .d8-svg { width: 120px; height: 120px; filter: drop-shadow(0 4px 20px rgba(192,24,12,.7)); }
-
-  /* ════ D10 ════ */
-  .d10-wrap {
-    width: 130px; height: 130px;
-    display: flex; align-items: center; justify-content: center;
-    animation: queda-dado 1.1s cubic-bezier(.15,.85,.25,1) forwards;
-  }
-
-  /* ════ D12 ════ */
-  .d12-wrap {
-    width: 130px; height: 130px;
-    display: flex; align-items: center; justify-content: center;
-    animation: queda-dado 1.1s cubic-bezier(.15,.85,.25,1) forwards;
-  }
-
-  /* ════ D20 ════ */
-  .d20-wrap {
-    width: 150px; height: 150px;
-    display: flex; align-items: center; justify-content: center;
-    animation: queda-dado 1.3s cubic-bezier(.12,.88,.22,1) forwards;
-  }
-  .d20-svg { width: 150px; height: 150px; filter: drop-shadow(0 4px 24px rgba(192,24,12,.8)); }
-
-  /* ════ ANIMAÇÕES ════ */
-  @keyframes queda-dado {
-    0%   { transform: translateY(-280px) rotate(-720deg) scale(.3); opacity: 0; }
-    45%  { transform: translateY(12px)   rotate(-30deg)  scale(1.06); opacity: 1; }
-    62%  { transform: translateY(-6px)   rotate(-20deg)  scale(.97); }
-    78%  { transform: translateY(4px)    rotate(-10deg)  scale(1.02); }
-    100% { transform: translateY(0)      rotate(0deg)    scale(1); opacity: 1; }
-  }
-
-  @keyframes rolar-cubo {
-    0%   { transform: translateY(-260px) rotateX(0deg)    rotateY(0deg)    rotateZ(0deg); opacity: 0; }
-    15%  { opacity: 1; }
-    55%  { transform: translateY(14px)   rotateX(580deg)  rotateY(420deg)  rotateZ(200deg); }
-    70%  { transform: translateY(-8px)   rotateX(576deg)  rotateY(418deg)  rotateZ(200deg); }
-    84%  { transform: translateY(5px)    rotateX(578deg)  rotateY(419deg)  rotateZ(200deg); }
-    100% { transform: translateY(0px)    var(--cubo-fim);  opacity: 1; }
-  }
-
-  /* Resultado */
-  #dado-resultado {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    opacity: 0;
-    transform: scale(.7);
-    transition: opacity .35s ease, transform .35s cubic-bezier(.2,.9,.3,1.2);
-    min-height: 64px;
-    justify-content: center;
-  }
-  #dado-resultado.visivel { opacity: 1; transform: scale(1); }
-
-  #dado-numero {
-    font-size: 56px;
-    font-weight: 900;
-    color: var(--numero-cor);
-    line-height: 1;
-    text-shadow: 0 0 20px rgba(255,68,51,.8), 0 2px 4px rgba(0,0,0,.6);
-    letter-spacing: -2px;
-  }
-  #dado-mod {
-    font-size: 14px;
-    color: rgba(255,255,255,.5);
-    font-style: italic;
-    min-height: 18px;
-  }
-  #dado-veredicto {
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 2.5px;
-    text-transform: uppercase;
-    padding: 3px 14px;
-    border-radius: 4px;
-    min-height: 22px;
-  }
-  #dado-veredicto.acerto {
-    color: #7adc7a;
-    background: rgba(80,180,80,.12);
-    border: 1px solid rgba(100,200,100,.3);
-  }
-  #dado-veredicto.falha {
-    color: #e06060;
-    background: rgba(180,50,50,.12);
-    border: 1px solid rgba(200,80,80,.3);
-  }
-
-  #dado-tap-hint {
-    font-size: 10px;
-    color: rgba(200,160,80,.35);
-    letter-spacing: 1px;
-    margin-top: 4px;
-    animation: piscar 1.5s ease infinite;
-  }
-  @keyframes piscar { 0%,100%{opacity:.35} 50%{opacity:.8} }
-
-  /* ── SEÇÃO DE EXPLICAÇÃO ── */
-  .info-box {
-    max-width: 400px;
-    width: 100%;
-    background: rgba(15,18,30,.7);
-    border: 1px solid rgba(200,160,80,.12);
-    border-radius: 10px;
-    padding: 14px 16px;
-    font-size: 12px;
-    color: rgba(220,210,190,.65);
-    line-height: 1.7;
-  }
-  .info-box h3 { font-size: 11px; color: var(--gold); letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 8px; }
-  .info-box code { background: rgba(200,160,80,.1); color: rgba(200,160,80,.9); padding: 0 4px; border-radius: 3px; font-family: monospace; font-size: 11px; }
+  .info-box h3{font-size:10px;color:var(--gold);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px;}
+  code{background:rgba(200,160,80,.1);color:rgba(200,160,80,.85);padding:0 4px;border-radius:3px;font-family:monospace;font-size:11px;}
 </style>
 </head>
 <body>
 
 <h1>⚄ Teste de Dados</h1>
-<p class="sub">Demonstração da animação — Oráculo RPG</p>
+<p class="sub">Animação 3D — Oráculo RPG</p>
 
 <div class="btn-grid">
-  <button class="btn-dado" onclick="lancarDado(4)">
-    d4
-    <span>Triangular</span>
+  <button class="btn-dado" onclick="lancar(4)">d4<span>tetraedro</span></button>
+  <button class="btn-dado" onclick="lancar(6)">d6<span>cubo</span></button>
+  <button class="btn-dado" onclick="lancar(8)">d8<span>octaedro</span></button>
+  <button class="btn-dado" onclick="lancar(10)">d10<span>trapezoedro</span></button>
+  <button class="btn-dado" onclick="lancar(12)">d12<span>dodecaedro</span></button>
+  <button class="btn-dado" onclick="lancar(20)">d20<span>icosaedro</span></button>
+  <button class="btn-cena" onclick="cenaTestar('Aldric','Golpe de espada','FOR',3,13)">
+    ⚔ Simular TESTAR — Aldric · Golpe de espada · FOR+3 vs CD 13
   </button>
-  <button class="btn-dado" onclick="lancarDado(6)">
-    d6
-    <span>Cubo 3D</span>
-  </button>
-  <button class="btn-dado" onclick="lancarDado(8)">
-    d8
-    <span>Octaedro</span>
-  </button>
-  <button class="btn-dado" onclick="lancarDado(10)">
-    d10
-    <span>Losango</span>
-  </button>
-  <button class="btn-dado" onclick="lancarDado(12)">
-    d12
-    <span>Pentágono</span>
-  </button>
-  <button class="btn-dado" onclick="lancarDado(20)">
-    d20
-    <span>Icosaedro</span>
-  </button>
-
-  <button class="btn-cena" onclick="cenaTestar('Aldric', 'Golpe de espada', 'FOR', '+3', 13)">
-    ⚔ Simular TESTAR: Aldric — Golpe de espada — FOR+3 vs CD 13
-  </button>
-  <button class="btn-cena" onclick="cenaTestar('Jufôncio', 'Corrida furtiva', 'DES', '-1', 15)">
-    🌑 Simular TESTAR: Jufôncio — Corrida furtiva — DES-1 vs CD 15
+  <button class="btn-cena" onclick="cenaTestar('Jufôncio','Corrida furtiva','DES',-1,15)">
+    🌑 Simular TESTAR — Jufôncio · Corrida furtiva · DES-1 vs CD 15
   </button>
 </div>
 
-<!-- OVERLAY -->
-<div id="dado-overlay" onclick="fecharOverlay()">
+<div id="dado-overlay" onclick="fechar()">
   <div id="dado-card" onclick="event.stopPropagation()">
-    <div id="dado-meta">—</div>
-    <div id="dado-stage"></div>
+    <div id="dado-meta"></div>
+    <canvas id="dice-canvas"></canvas>
     <div id="dado-resultado">
-      <div id="dado-numero">—</div>
-      <div id="dado-mod"></div>
+      <div id="dado-numero"></div>
+      <div id="dado-detalhe"></div>
       <div id="dado-veredicto"></div>
     </div>
-    <div id="dado-tap-hint">toque para fechar</div>
+    <div id="dado-hint">toque para fechar</div>
   </div>
 </div>
 
 <div class="info-box">
   <h3>Como funciona no jogo</h3>
-  Quando a IA narra uma ação arriscada, usa a tag <code>TESTAR: [Jogador|Ação|Atributo|CD]</code>.
-  O sistema rola um <strong>d20</strong>, soma o modificador do atributo e compara com a CD.
-  Esta animação aparece no overlay antes de revelar o resultado narrativo.
+  A IA usa <code>TESTAR: [Jogador|Ação|Atributo|CD]</code> para ações arriscadas.
+  O sistema rola um <strong>d20</strong> + modificador vs CD — esta animação
+  aparece antes de revelar o desfecho narrativo.
 </div>
 
+<!-- Three.js via CDN -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
-// ══ GERAÇÃO DOS DADOS ══
+// ════════════════════════════════════════════════════════
+//  SETUP THREE.JS
+// ════════════════════════════════════════════════════════
+const SIZE = Math.min(window.innerWidth * .72, 240) | 0;
+const canvas = document.getElementById('dice-canvas');
+canvas.width = canvas.height = SIZE;
 
-function svgD4(num) {
-  const cor = '#c0180c';
-  const borda = '#ff4433';
-  const textoCor = '#ffffff';
-  return `<svg viewBox="0 0 130 130" xmlns="http://www.w3.org/2000/svg" class="d4-svg">
-    <defs>
-      <filter id="sombra4">
-        <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="rgba(0,0,0,.5)"/>
-      </filter>
-    </defs>
-    <polygon points="65,8 122,112 8,112" fill="${cor}" stroke="${borda}" stroke-width="3" stroke-linejoin="round" filter="url(#sombra4)"/>
-    <line x1="65" y1="8" x2="65" y2="112" stroke="${borda}" stroke-width="1.5" opacity=".3"/>
-    <line x1="8" y1="112" x2="93.5" y2="60" stroke="${borda}" stroke-width="1.5" opacity=".3"/>
-    <line x1="122" y1="112" x2="36.5" y2="60" stroke="${borda}" stroke-width="1.5" opacity=".3"/>
-    <text x="65" y="98" text-anchor="middle" font-size="38" font-weight="900" font-family="Georgia,serif" fill="${textoCor}" dy="0">${num}</text>
-  </svg>`;
-}
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(SIZE, SIZE);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setClearColor(0x000000, 0);
 
-function svgD8(num) {
-  const cor = '#c0180c'; const borda = '#ff4433';
-  return `<svg viewBox="0 0 130 130" xmlns="http://www.w3.org/2000/svg" class="d8-svg">
-    <defs><filter id="sombra8"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="rgba(0,0,0,.5)"/></filter></defs>
-    <polygon points="65,6 120,65 65,124 10,65" fill="${cor}" stroke="${borda}" stroke-width="3" stroke-linejoin="round" filter="url(#sombra8)"/>
-    <line x1="65" y1="6" x2="65" y2="124" stroke="${borda}" stroke-width="1.5" opacity=".3"/>
-    <line x1="10" y1="65" x2="120" y2="65" stroke="${borda}" stroke-width="1.5" opacity=".3"/>
-    <text x="65" y="76" text-anchor="middle" font-size="44" font-weight="900" font-family="Georgia,serif" fill="#fff">${num}</text>
-  </svg>`;
-}
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(38, 1, 1, 2000);
+camera.position.set(0, 0, 340);
+camera.lookAt(0, 0, 0);
 
-function svgD10(num) {
-  const cor = '#c0180c'; const borda = '#ff4433';
-  // Forma de losango alongado (d10 clássico)
-  return `<svg viewBox="0 0 130 130" xmlns="http://www.w3.org/2000/svg">
-    <defs><filter id="sombra10"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="rgba(0,0,0,.5)"/></filter></defs>
-    <polygon points="65,5 118,52 95,118 35,118 12,52" fill="${cor}" stroke="${borda}" stroke-width="3" stroke-linejoin="round" filter="url(#sombra10)"/>
-    <line x1="65" y1="5" x2="65" y2="118" stroke="${borda}" stroke-width="1.5" opacity=".3"/>
-    <text x="65" y="84" text-anchor="middle" font-size="46" font-weight="900" font-family="Georgia,serif" fill="#fff">${num}</text>
-  </svg>`;
-}
+// Lights
+const ambient = new THREE.AmbientLight(0xffffff, 0.55);
+scene.add(ambient);
 
-function svgD12(num) {
-  const cor = '#c0180c'; const borda = '#ff4433';
-  // Pentágono (d12 — 12 faces pentagonais)
-  const pts = [];
-  for (let i = 0; i < 5; i++) {
-    const a = (Math.PI * 2 * i / 5) - Math.PI / 2;
-    pts.push(`${65 + 58 * Math.cos(a)},${65 + 58 * Math.sin(a)}`);
-  }
-  return `<svg viewBox="0 0 130 130" xmlns="http://www.w3.org/2000/svg">
-    <defs><filter id="sombra12"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="rgba(0,0,0,.5)"/></filter></defs>
-    <polygon points="${pts.join(' ')}" fill="${cor}" stroke="${borda}" stroke-width="3" stroke-linejoin="round" filter="url(#sombra12)"/>
-    <text x="65" y="76" text-anchor="middle" font-size="42" font-weight="900" font-family="Georgia,serif" fill="#fff">${num}</text>
-  </svg>`;
-}
+const keyLight = new THREE.DirectionalLight(0xffddc8, 1.1);
+keyLight.position.set(80, 160, 120);
+keyLight.castShadow = true;
+keyLight.shadow.mapSize.width = 512;
+keyLight.shadow.mapSize.height = 512;
+scene.add(keyLight);
 
-function svgD20(num) {
-  const cor = '#c0180c'; const borda = '#ff4433';
-  // Hexágono com triângulo interno (d20 clássico simplificado)
-  const pts6 = [];
-  for (let i = 0; i < 6; i++) {
-    const a = (Math.PI * 2 * i / 6) - Math.PI / 6;
-    pts6.push(`${65 + 62 * Math.cos(a)},${65 + 62 * Math.sin(a)}`);
-  }
-  const pts3 = [];
-  for (let i = 0; i < 3; i++) {
-    const a = (Math.PI * 2 * i / 3) - Math.PI / 2;
-    pts3.push(`${65 + 42 * Math.cos(a)},${65 + 42 * Math.sin(a)}`);
-  }
-  return `<svg viewBox="0 0 130 130" xmlns="http://www.w3.org/2000/svg" class="d20-svg">
-    <defs><filter id="sombra20"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="rgba(0,0,0,.6)"/></filter></defs>
-    <polygon points="${pts6.join(' ')}" fill="${cor}" stroke="${borda}" stroke-width="3" stroke-linejoin="round" filter="url(#sombra20)"/>
-    <polygon points="${pts3.join(' ')}" fill="none" stroke="${borda}" stroke-width="1.5" opacity=".45"/>
-    <text x="65" y="76" text-anchor="middle" font-size="46" font-weight="900" font-family="Georgia,serif" fill="#fff"
-          text-rendering="geometricPrecision">${num}</text>
-  </svg>`;
-}
+const fillLight = new THREE.DirectionalLight(0xaaccff, 0.35);
+fillLight.position.set(-80, 40, 60);
+scene.add(fillLight);
 
-// ══ PIPAS DO D6 ══
-const PIPS_LAYOUT = {
-  1: [[50,50]],
-  2: [[25,25],[75,75]],
-  3: [[25,25],[50,50],[75,75]],
-  4: [[25,25],[75,25],[25,75],[75,75]],
-  5: [[25,25],[75,25],[50,50],[25,75],[75,75]],
-  6: [[25,22],[75,22],[25,50],[75,50],[25,78],[75,78]]
-};
+const rimLight = new THREE.PointLight(0xff4422, 0.5, 800);
+rimLight.position.set(-120, 60, -200);
+scene.add(rimLight);
 
-function htmlPips(n) {
-  const ps = PIPS_LAYOUT[n] || PIPS_LAYOUT[1];
-  const svgPips = ps.map(([x,y]) =>
-    `<circle cx="${x}" cy="${y}" r="9" fill="#fff" opacity=".92" filter="url(#ps)"/>`
-  ).join('');
-  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;">
-    <defs><filter id="ps"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="rgba(0,0,0,.4)"/></filter></defs>
-    ${svgPips}
-  </svg>`;
-}
+// Shadow plane (invisible, just receives shadow)
+const planeGeo = new THREE.PlaneGeometry(600, 600);
+const planeMat = new THREE.ShadowMaterial({ opacity: 0.28 });
+const plane = new THREE.Mesh(planeGeo, planeMat);
+plane.rotation.x = -Math.PI / 2;
+plane.position.y = -90;
+plane.receiveShadow = true;
+scene.add(plane);
 
-// Face values for cube rotation end positions
-// We want face N to face the viewer (translateZ(60px) faces front)
-// Maps result number to CSS transform for the cube
-function cuboFimTransform(n) {
-  // Face layout: frente=1, dir=2, topo=3, baixo=4, esq=5, tras=6
-  const map = {
-    1: 'rotateX(0deg) rotateY(0deg)',
-    6: 'rotateX(0deg) rotateY(180deg)',
-    2: 'rotateX(0deg) rotateY(-90deg)',
-    5: 'rotateX(0deg) rotateY(90deg)',
-    3: 'rotateX(-90deg) rotateY(0deg)',
-    4: 'rotateX(90deg) rotateY(0deg)',
+// ════════════════════════════════════════════════════════
+//  TEXTURAS DE FACES (d6 com pips, outros com número)
+// ════════════════════════════════════════════════════════
+function texturaPip(n) {
+  const sz = 256;
+  const c = document.createElement('canvas');
+  c.width = c.height = sz;
+  const ctx = c.getContext('2d');
+
+  // Fundo vermelho
+  const grad = ctx.createRadialGradient(sz*.4,sz*.35,0, sz*.5,sz*.5,sz*.7);
+  grad.addColorStop(0, '#d42010');
+  grad.addColorStop(1, '#7a0a05');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, sz, sz);
+
+  // Borda
+  ctx.strokeStyle = 'rgba(255,80,60,.7)';
+  ctx.lineWidth = 10;
+  const r = 28;
+  ctx.beginPath();
+  ctx.moveTo(r, 8); ctx.lineTo(sz-r, 8);
+  ctx.quadraticCurveTo(sz-8, 8, sz-8, r);
+  ctx.lineTo(sz-8, sz-r);
+  ctx.quadraticCurveTo(sz-8, sz-8, sz-r, sz-8);
+  ctx.lineTo(r, sz-8);
+  ctx.quadraticCurveTo(8, sz-8, 8, sz-r);
+  ctx.lineTo(8, r);
+  ctx.quadraticCurveTo(8, 8, r, 8);
+  ctx.closePath();
+  ctx.stroke();
+
+  // Pips
+  const pos = {
+    1:[[128,128]],
+    2:[[72,72],[184,184]],
+    3:[[72,72],[128,128],[184,184]],
+    4:[[72,72],[184,72],[72,184],[184,184]],
+    5:[[72,72],[184,72],[128,128],[72,184],[184,184]],
+    6:[[72,64],[184,64],[72,128],[184,128],[72,192],[184,192]]
   };
-  return map[n] || 'rotateX(0deg) rotateY(0deg)';
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0,0,0,.4)';
+  ctx.shadowBlur = 6;
+  (pos[n]||pos[1]).forEach(([x,y]) => {
+    ctx.beginPath();
+    ctx.arc(x, y, 22, 0, Math.PI*2);
+    ctx.fill();
+  });
+  return new THREE.CanvasTexture(c);
 }
 
-// ══ LÓGICA PRINCIPAL ══
-let _overlayTimer = null;
+function texturaNumero(n, lados) {
+  const sz = 256;
+  const c = document.createElement('canvas');
+  c.width = c.height = sz;
+  const ctx = c.getContext('2d');
 
-function lancarDado(lados, opcoes = {}) {
+  const grad = ctx.createRadialGradient(sz*.4,sz*.35,0, sz*.5,sz*.5,sz*.72);
+  grad.addColorStop(0, '#d42010');
+  grad.addColorStop(1, '#6a0804');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, sz, sz);
+
+  ctx.fillStyle = 'rgba(255,255,255,.85)';
+  ctx.font = `900 ${n >= 10 ? 100 : 120}px Georgia,serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = 'rgba(0,0,0,.5)';
+  ctx.shadowBlur = 8;
+  ctx.fillText(String(n), sz/2, sz/2 + 6);
+
+  return new THREE.CanvasTexture(c);
+}
+
+// Cache de texturas
+const _texCache = {};
+function getTex(key, fn) {
+  if (!_texCache[key]) _texCache[key] = fn();
+  return _texCache[key];
+}
+
+// ════════════════════════════════════════════════════════
+//  MATERIAIS E GEOMETRIAS
+// ════════════════════════════════════════════════════════
+const MAT_VERMELHO = new THREE.MeshStandardMaterial({
+  color: 0xbf1a0c, roughness: 0.28, metalness: 0.08,
+  envMapIntensity: 0.4
+});
+
+function criarMesh(lados, resultado) {
+  let geo, mat;
+
+  if (lados === 6) {
+    geo = new THREE.BoxGeometry(110, 110, 110);
+    // 6 faces com pips individuais
+    const mats = [2,5,3,4,1,6].map(n =>
+      new THREE.MeshStandardMaterial({
+        map: getTex(`pip_${n}`, () => texturaPip(n)),
+        roughness: 0.3, metalness: 0.08
+      })
+    );
+    mat = mats;
+  } else {
+    let r = 70;
+    if (lados === 4)  { geo = new THREE.TetrahedronGeometry(r); }
+    else if (lados === 8)  { geo = new THREE.OctahedronGeometry(r); }
+    else if (lados === 12) { geo = new THREE.DodecahedronGeometry(r); }
+    else if (lados === 20) { geo = new THREE.IcosahedronGeometry(r, 0); }
+    else if (lados === 10) {
+      // d10: aproximado com DodecaedroGeometry smaller
+      geo = new THREE.CylinderGeometry(0, 72, 100, 10, 1);
+    }
+    mat = new THREE.MeshStandardMaterial({
+      color: 0xbf1a0c, roughness: 0.26, metalness: 0.1,
+    });
+  }
+
+  const mesh = Array.isArray(mat)
+    ? new THREE.Mesh(geo, mat)
+    : new THREE.Mesh(geo, mat);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+// ════════════════════════════════════════════════════════
+//  ANIMAÇÃO
+// ════════════════════════════════════════════════════════
+let _mesh = null;
+let _rafId = null;
+let _animStart = null;
+let _animDuration = 0;
+let _spinVelX = 0, _spinVelY = 0, _spinVelZ = 0;
+let _phase = 'idle'; // 'falling' | 'landing' | 'done'
+let _autoCloseTimer = null;
+let _afterAnimCb = null;
+let _camShake = 0;
+
+function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+function easeOutBounce(t) {
+  if (t < 1/2.75) return 7.5625*t*t;
+  if (t < 2/2.75) { t-=1.5/2.75; return 7.5625*t*t+.75; }
+  if (t < 2.5/2.75) { t-=2.25/2.75; return 7.5625*t*t+.9375; }
+  t-=2.625/2.75; return 7.5625*t*t+.984375;
+}
+
+function animLoop(ts) {
+  if (!_animStart) _animStart = ts;
+  const t = (ts - _animStart) / 1000;
+  const prog = Math.min(t / _animDuration, 1);
+
+  if (_mesh) {
+    if (_phase === 'falling') {
+      // Queda da parte de cima + rotação rápida
+      const yStart = 350, yEnd = 0;
+      const fallProg = easeOutBounce(prog);
+      _mesh.position.y = yStart + (yEnd - yStart) * fallProg;
+      _mesh.position.z = -50 * (1 - prog);
+
+      // Rotação vai desacelerando com o tempo
+      const spinDecay = Math.max(0, 1 - prog * 1.4);
+      _mesh.rotation.x += _spinVelX * spinDecay * 0.016;
+      _mesh.rotation.y += _spinVelY * spinDecay * 0.016;
+      _mesh.rotation.z += _spinVelZ * spinDecay * 0.016;
+
+      // Camera shake no impacto (70-80% da animação)
+      if (prog > 0.68 && prog < 0.82) {
+        _camShake = (0.82 - prog) / 0.14;
+        camera.position.x = (Math.random() - .5) * 8 * _camShake;
+        camera.position.y = (Math.random() - .5) * 6 * _camShake;
+      } else {
+        camera.position.x = 0; camera.position.y = 0;
+      }
+
+      if (prog >= 1) {
+        _phase = 'done';
+        camera.position.set(0, 0, 340);
+        if (_afterAnimCb) { _afterAnimCb(); _afterAnimCb = null; }
+      }
+    }
+  }
+
+  renderer.render(scene, camera);
+  if (_phase !== 'done' || _mesh) {
+    _rafId = requestAnimationFrame(animLoop);
+  }
+}
+
+// Loop idle (para não parar o renderer após animação)
+function idleLoop() {
+  if (_mesh) {
+    _mesh.rotation.x += 0.004;
+    _mesh.rotation.y += 0.007;
+  }
+  renderer.render(scene, camera);
+  _rafId = requestAnimationFrame(idleLoop);
+}
+
+// ════════════════════════════════════════════════════════
+//  INTERFACE PÚBLICA
+// ════════════════════════════════════════════════════════
+let _overlayTimer2 = null;
+
+function lancar(lados, opcoes = {}) {
   const resultado = Math.floor(Math.random() * lados) + 1;
   const mod = opcoes.mod || 0;
-  const cd = opcoes.cd || null;
+  const cd = opcoes.cd != null ? opcoes.cd : null;
   const label = opcoes.label || null;
 
-  const meta = document.getElementById('dado-meta');
-  const stage = document.getElementById('dado-stage');
+  // Limpar cena anterior
+  if (_mesh) { scene.remove(_mesh); _mesh = null; }
+  if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
+  if (_overlayTimer2) { clearTimeout(_overlayTimer2); _overlayTimer2 = null; }
+
+  // Reset UI
   const resDiv = document.getElementById('dado-resultado');
-  const numEl = document.getElementById('dado-numero');
-  const modEl = document.getElementById('dado-mod');
-  const vered = document.getElementById('dado-veredicto');
-
-  // Reset resultado
+  const numEl  = document.getElementById('dado-numero');
+  const detEl  = document.getElementById('dado-detalhe');
+  const vered  = document.getElementById('dado-veredicto');
+  const metaEl = document.getElementById('dado-meta');
   resDiv.classList.remove('visivel');
-  numEl.textContent = resultado;
-  modEl.textContent = mod !== 0 ? `${resultado} ${mod >= 0 ? '+' : ''}${mod} = ${resultado + mod}` : '';
+  numEl.textContent = '';
+  detEl.textContent = '';
   vered.textContent = '';
-  vered.className = '';
+  vered.className   = '';
+  metaEl.textContent = label || `Rolando d${lados}…`;
 
-  // Meta
-  meta.textContent = label || `Rolando d${lados}…`;
+  // Criar dado 3D
+  _mesh = criarMesh(lados, resultado);
+  _mesh.position.set(0, 350, 0);
+  scene.add(_mesh);
 
-  // Montar dado no stage
-  stage.innerHTML = '';
-  if (lados === 6) {
-    const wrap = document.createElement('div');
-    wrap.className = 'cubo-wrap';
-    const fim = cuboFimTransform(resultado);
-    wrap.style.setProperty('--cubo-fim', fim);
-    wrap.style.animation = `rolar-cubo 1.35s cubic-bezier(.12,.88,.2,1) forwards`;
-    // Faces: frente=1, dir=2, topo=3, baixo=4, esq=5, tras=6
-    const faceMap = ['frente','dir','topo','baixo','esq','tras'];
-    [1,2,3,4,5,6].forEach((n, i) => {
-      const f = document.createElement('div');
-      f.className = `face ${faceMap[i]}`;
-      f.innerHTML = htmlPips(n);
-      f.style.padding = '0';
-      wrap.appendChild(f);
-    });
-    stage.appendChild(wrap);
-  } else {
-    const wrap = document.createElement('div');
-    wrap.className = `d${lados === 20 ? '20' : lados >= 10 ? lados <= 12 ? lados : '8' : lados}-wrap`;
-    if (lados === 4)  wrap.innerHTML = svgD4(resultado);
-    else if (lados === 8)  wrap.innerHTML = svgD8(resultado);
-    else if (lados === 10) wrap.innerHTML = svgD10(resultado);
-    else if (lados === 12) wrap.innerHTML = svgD12(resultado);
-    else if (lados === 20) wrap.innerHTML = svgD20(resultado);
-    else wrap.innerHTML = svgD20(resultado); // fallback
-    stage.appendChild(wrap);
-  }
+  // Velocidades de spin aleatórias
+  _spinVelX = (Math.random() - .5) * 28 + 12;
+  _spinVelY = (Math.random() - .5) * 24 + 10;
+  _spinVelZ = (Math.random() - .5) * 16;
 
-  // Mostrar overlay
-  document.getElementById('dado-overlay').classList.add('ativo');
+  // Duração da animação
+  _animDuration = lados === 6 ? 1.4 : lados === 20 ? 1.55 : 1.3;
+  _animStart = null;
+  _phase = 'falling';
 
-  // Mostrar resultado após animação
-  const tempoAnim = lados === 6 ? 1350 : lados === 20 ? 1300 : 1100;
-  if (_overlayTimer) clearTimeout(_overlayTimer);
-  _overlayTimer = setTimeout(() => {
+  // Callback pós-animação: mostrar resultado
+  _afterAnimCb = () => {
     const total = resultado + mod;
-    numEl.textContent = cd !== null ? String(total) : String(resultado);
-    if (cd !== null) {
-      const acertou = total >= cd;
-      modEl.textContent = mod !== 0
+    numEl.textContent = String(cd != null ? total : resultado);
+
+    if (cd != null) {
+      const ok = total >= cd;
+      detEl.textContent = mod !== 0
         ? `${resultado} ${mod >= 0 ? '+' : ''}${mod} = ${total}  ·  CD ${cd}`
         : `${resultado}  ·  CD ${cd}`;
-      vered.textContent = acertou ? '✦ ACERTO ✦' : '✕ FALHA ✕';
-      vered.className = acertou ? 'acerto' : 'falha';
-      if (acertou) numEl.style.textShadow = '0 0 28px rgba(120,220,120,.9), 0 2px 4px rgba(0,0,0,.6)';
-      else         numEl.style.textShadow = '0 0 28px rgba(220,80,80,.9), 0 2px 4px rgba(0,0,0,.6)';
+      vered.textContent = ok ? '✦ ACERTO ✦' : '✕ FALHA ✕';
+      vered.className   = ok ? 'acerto' : 'falha';
+      numEl.style.textShadow = ok
+        ? '0 0 32px rgba(100,230,100,.9),0 2px 6px rgba(0,0,0,.7)'
+        : '0 0 32px rgba(230,80,80,.9),0 2px 6px rgba(0,0,0,.7)';
+    } else {
+      numEl.style.textShadow = '0 0 30px rgba(255,60,40,.8),0 2px 6px rgba(0,0,0,.7)';
     }
+
     resDiv.classList.add('visivel');
 
-    // Auto-fechar após 4s
-    _overlayTimer = setTimeout(fecharOverlay, 4000);
-  }, tempoAnim);
+    // Trocar para idle loop após revelar
+    setTimeout(() => {
+      if (_rafId) cancelAnimationFrame(_rafId);
+      _phase = 'idle';
+      _rafId = requestAnimationFrame(idleLoop);
+    }, 100);
+
+    // Auto-fechar após 4.5s
+    _overlayTimer2 = setTimeout(fechar, 4500);
+  };
+
+  // Abrir overlay e iniciar animação
+  document.getElementById('dado-overlay').classList.add('ativo');
+  _rafId = requestAnimationFrame(animLoop);
 }
 
-function cenaTestar(nome, acao, attr, modStr, cd) {
-  const mod = parseInt(modStr, 10);
-  lancarDado(20, {
-    mod,
-    cd,
-    label: `${nome} — ${acao} — ${attr}${modStr}`
+function cenaTestar(nome, acao, attr, mod, cd) {
+  lancar(20, {
+    mod, cd,
+    label: `${nome} · ${acao} · ${attr}${mod >= 0 ? '+' : ''}${mod}`
   });
 }
 
-function fecharOverlay() {
-  if (_overlayTimer) { clearTimeout(_overlayTimer); _overlayTimer = null; }
+function fechar() {
+  if (_overlayTimer2) { clearTimeout(_overlayTimer2); _overlayTimer2 = null; }
   document.getElementById('dado-overlay').classList.remove('ativo');
+  if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
+  if (_mesh) { scene.remove(_mesh); _mesh = null; }
+  renderer.render(scene, camera);
 }
 
-// Fechar com ESC
-document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharOverlay(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fechar(); });
 </script>
-
 </body>
 </html>
