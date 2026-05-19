@@ -3604,7 +3604,7 @@ EQUIPAR: slots válidos — cabeca, tronco, mao_d, mao_e, pes. Item vazio = dese
 ITEM_BAG: qtd positiva = adicionar, negativa = remover da mochila.
 VALIDAÇÃO DE EQUIPAMENTO: o jogador APENAS usa armas/itens que constam em EQUIP ou MOCHILA. Se declarar usar algo que não possui, narre o improviso ("sem espada, usa os punhos") ou falha — NUNCA invente itens nem ignore a ausência.
 
-TROCA DE ITENS ENTRE JOGADORES: quando você ver [TROCA] no histórico, significa que um jogador acabou de passar item(s) para outro jogador fora do turno. O sistema já processou a transferência — os itens já mudaram de mochila. Você pode (e deve) comentar brevemente na narrativa quando fizer sentido dramático, ex: "Enquanto vocês se preparam, Igor estende a poção para Afonso — um gesto silencioso que diz mais que palavras.". Trate como ação válida; NUNCA questione ou invalide a troca.`
+TROCA DE ITENS ENTRE JOGADORES: quando você ver [TROCA] no histórico, significa que um jogador acabou de passar item(s) para outro jogador fora do turno. O sistema já processou a transferência — os itens já mudaram de mochila. Você pode (e deve) comentar brevemente na narrativa quando fizer sentido dramático, ex: "Enquanto vocês se preparam, Igor estende a poção para Afonso — um gesto silencioso que diz mais que palavras.". Trate como ação válida; NUNCA questione ou invalide a troca.
 
 DIÁLOGOS — sistema de bolhas inline. Regras OBRIGATÓRIAS:
 1. Quando um NPC fala, descreva a ação de falar (terminando em dois-pontos) e coloque a tag na linha seguinte:

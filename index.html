@@ -33,7 +33,7 @@
         }
       };
 
-      // ── Partículas mágicas (fagulhas/vagalumes) na tela home ──
+      // ── Vagalumes azuis suaves na tela home ──
       (function initParticles(){
         function start(){
           var cv=document.getElementById('home-canvas');
@@ -43,32 +43,47 @@
           function resize(){W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;}
           resize();
           window.addEventListener('resize',resize);
-          var CORES=[[255,180,55],[255,140,30],[255,215,90],[180,150,255],[100,190,255],[255,100,120]];
+          // Azul suave do ORÁCULO: ~122,192,240 com variação mínima
           function mk(){
-            var c=CORES[Math.floor(Math.random()*CORES.length)];
-            var life=Math.floor(Math.random()*220);
-            var max=150+Math.floor(Math.random()*200);
-            return{x:Math.random()*W,y:H-Math.random()*H*0.7,
-              sz:0.8+Math.random()*2.2,sp:0.25+Math.random()*0.9,
-              dx:(Math.random()-0.5)*0.25,ph:Math.random()*6.28,
-              a:0,ma:0.35+Math.random()*0.55,life:life,max:max,r:c[0],g:c[1],b:c[2]};
+            var b=210+Math.floor(Math.random()*30); // azul 210-240
+            var g=170+Math.floor(Math.random()*25); // verde 170-195
+            var r=100+Math.floor(Math.random()*30); // vermelho 100-130
+            var maxLife=300+Math.floor(Math.random()*400);
+            return{
+              x:Math.random()*W, y:Math.random()*H,
+              sz:1.0+Math.random()*1.4,
+              vx:(Math.random()-0.5)*0.18, vy:(Math.random()-0.5)*0.15,
+              ph:Math.random()*6.28, phV:0.008+Math.random()*0.012,
+              a:0, ma:0.22+Math.random()*0.28,
+              life:Math.floor(Math.random()*maxLife), max:maxLife,
+              r:r, g:g, b:b
+            };
           }
-          for(var i=0;i<75;i++)pts.push(mk());
+          for(var i=0;i<18;i++)pts.push(mk());
           function draw(){
             ctx.clearRect(0,0,W,H);
             for(var i=0;i<pts.length;i++){
               var p=pts[i];
-              p.life++;p.y-=p.sp;p.x+=p.dx+Math.sin(p.ph+p.life*0.025)*0.18;
+              p.life++;
+              p.ph+=p.phV;
+              // Gentle wandering drift — no fast upward rise
+              p.x+=p.vx+Math.sin(p.ph)*0.22;
+              p.y+=p.vy+Math.cos(p.ph*0.7)*0.15;
+              // Wrap around edges
+              if(p.x<-10)p.x=W+10; if(p.x>W+10)p.x=-10;
+              if(p.y<-10)p.y=H+10; if(p.y>H+10)p.y=-10;
               var prog=p.life/p.max;
-              p.a=prog<0.18?prog/0.18*p.ma:prog>0.72?(1-prog)/0.28*p.ma:p.ma;
+              // Slow fade in/out (pulse-like)
+              var pulse=0.75+0.25*Math.sin(p.ph*2);
+              p.a=prog<0.15?prog/0.15*p.ma*pulse:prog>0.8?(1-prog)/0.2*p.ma*pulse:p.ma*pulse;
               // Core dot
               ctx.beginPath();ctx.arc(p.x,p.y,p.sz,0,6.28);
               ctx.fillStyle='rgba('+p.r+','+p.g+','+p.b+','+p.a+')';ctx.fill();
-              // Glow halo
-              var gr=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.sz*5);
-              gr.addColorStop(0,'rgba('+p.r+','+p.g+','+p.b+','+(p.a*0.35)+')');
+              // Soft glow
+              var gr=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.sz*6);
+              gr.addColorStop(0,'rgba('+p.r+','+p.g+','+p.b+','+(p.a*0.28)+')');
               gr.addColorStop(1,'rgba(0,0,0,0)');
-              ctx.beginPath();ctx.arc(p.x,p.y,p.sz*5,0,6.28);
+              ctx.beginPath();ctx.arc(p.x,p.y,p.sz*6,0,6.28);
               ctx.fillStyle=gr;ctx.fill();
               if(p.life>=p.max)pts[i]=mk();
             }
@@ -293,6 +308,6 @@
 <!-- Firebase SDK via script tags (mais confiável em mobile que ES module imports) -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-<script src="js/main.js?v=10"></script>
+<script src="js/main.js?v=11"></script>
 </body>
 </html>
