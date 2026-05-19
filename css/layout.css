@@ -1495,103 +1495,123 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 }
 .slot-picker-cancel:hover { color: var(--gold); }
 
-/* ══ TESTES SEQUENCIAIS ══ */
+/* ══ OVERLAY DE DADOS 3D ══ */
 #teste-overlay {
   position: fixed;
   inset: 0;
-  z-index: 100;
-  background: rgba(4,6,12,.85);
+  z-index: 200;
+  background: rgba(3,5,10,.93);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(3px);
 }
-.teste-card {
-  background: rgba(8,10,22,.98);
-  border: 1px solid rgba(200,160,80,.4);
-  border-radius: 12px;
-  width: min(380px, 92vw);
-  padding: 28px 24px 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  box-shadow: 0 12px 48px rgba(0,0,0,.8);
-  animation: teste-in .25s cubic-bezier(.22,.68,0,1.2);
-}
-@keyframes teste-in {
-  from { transform: scale(.88); opacity: 0; }
-  to   { transform: scale(1);   opacity: 1; }
-}
-.teste-card-nome {
-  font-size: 10px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: rgba(200,160,80,.65);
-}
-.teste-card-acao {
-  font-size: 16px;
-  color: #e8dfc8;
-  text-align: center;
-  font-weight: 600;
-  line-height: 1.3;
-}
-.teste-card-atributo {
-  font-size: 11px;
-  color: rgba(200,160,80,.7);
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-.teste-mod { color: rgba(200,160,80,.45); }
-.teste-dice-area {
+.dado-card-jogo {
+  background: rgba(8,10,20,.96);
+  border: 1px solid rgba(191,26,12,.3);
+  border-radius: 18px;
+  width: min(340px, 90vw);
+  max-height: 88vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 16px 0 10px;
-  width: 100%;
-  border-top: 1px solid rgba(200,160,80,.1);
-  border-bottom: 1px solid rgba(200,160,80,.1);
+  padding: 14px 18px 16px;
+  box-shadow: 0 8px 48px rgba(0,0,0,.8), 0 0 60px rgba(191,26,12,.08);
+  overflow: hidden;
 }
-.teste-d20-face {
-  width: 72px;
-  height: 72px;
-  border-radius: 12px;
-  background: rgba(200,160,80,.1);
-  border: 2px solid rgba(200,160,80,.35);
+.dado-titulo-acao {
+  font-size: 10px;
+  color: rgba(200,160,80,.65);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-align: center;
+  min-height: 14px;
+}
+.dado-label-atual {
+  font-size: 9px;
+  color: rgba(200,160,80,.38);
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  text-align: center;
+  min-height: 12px;
+}
+#dado-canvas-jogo { border-radius: 8px; display: block; }
+.dado-resultado-atual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-height: 68px;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(.65);
+  transition: opacity .35s ease, transform .35s cubic-bezier(.15,.9,.25,1.2);
+}
+.dado-resultado-atual.visivel { opacity: 1; transform: scale(1); }
+.dado-num-jogo {
+  font-size: 62px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1;
+  letter-spacing: -3px;
+  text-shadow: 0 0 32px rgba(255,60,40,.85), 0 2px 6px rgba(0,0,0,.7);
+}
+.dado-detalhe-jogo {
+  font-size: 11px;
+  color: rgba(255,255,255,.38);
+  font-style: italic;
+  min-height: 15px;
+}
+.dado-veredicto-jogo {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  padding: 2px 14px;
+  border-radius: 4px;
+  min-height: 22px;
+  opacity: 0;
+  transform: scale(.7);
+  transition: opacity .28s ease .05s, transform .28s cubic-bezier(.15,.9,.25,1.2) .05s;
+}
+.dado-veredicto-jogo.visivel { opacity: 1; transform: scale(1); }
+.dado-veredicto-jogo.sucesso { color:#7adc7a; background:rgba(80,180,80,.1); border:1px solid rgba(100,200,100,.25); }
+.dado-veredicto-jogo.falha   { color:#e06060; background:rgba(180,50,50,.1);  border:1px solid rgba(200,80,80,.25);  }
+.dado-veredicto-jogo.critico { color:#ffd700; background:rgba(255,215,0,.1);  border:1px solid rgba(255,215,0,.4);   text-shadow:0 0 12px rgba(255,215,0,.7);  }
+.dado-veredicto-jogo.catastrofe { color:#ff4444; background:rgba(200,20,20,.15); border:1px solid rgba(200,30,30,.5); text-shadow:0 0 12px rgba(255,50,50,.8); }
+.dado-historico {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 150px;
+  overflow-y: auto;
+  margin-top: 2px;
+}
+.dado-hist-linha {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 36px;
-  font-weight: 700;
-  color: var(--gold);
-  box-shadow: 0 0 20px rgba(200,160,80,.15);
-}
-.teste-formula {
-  font-size: 13px;
-  color: #b0a880;
-  letter-spacing: .5px;
-}
-.teste-formula strong { color: #e8dfc8; font-size: 16px; }
-.teste-resultado {
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-.teste-avancar-btn {
-  margin-top: 4px;
-  background: rgba(200,160,80,.12);
-  border: 1px solid rgba(200,160,80,.35);
-  color: var(--gold);
-  font-size: 13px;
-  padding: 10px 24px;
+  gap: 5px;
+  font-size: 11px;
+  padding: 4px 8px;
   border-radius: 6px;
-  cursor: pointer;
-  letter-spacing: .5px;
-  transition: background .15s;
+  background: rgba(255,255,255,.04);
+  animation: dado-hist-in .22s ease both;
 }
-.teste-avancar-btn:hover { background: rgba(200,160,80,.25); }
+@keyframes dado-hist-in {
+  from { opacity:0; transform:translateY(5px); }
+  to   { opacity:1; transform:translateY(0);   }
+}
+.dado-hist-icone { flex-shrink:0; font-size:12px; }
+.dado-hist-label { flex:1; color:rgba(220,210,190,.6); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dado-hist-roll  { font-size:9px; color:rgba(200,160,80,.45); flex-shrink:0; }
+.dado-hist-vered { font-size:10px; font-weight:700; letter-spacing:1px; flex-shrink:0; }
+.dado-hist-vered.s  { color:#6dc86d; }
+.dado-hist-vered.f  { color:#d46060; }
+.dado-hist-vered.c  { color:#ffd700; }
+.dado-hist-vered.ct { color:#ff4444; }
+.dado-hist-vered.d  { color:rgba(200,160,80,.75); }
 
 /* ══ FICHA — AVATAR + STATS TOP ROW ══ */
 .skills-top-row {

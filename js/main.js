@@ -309,6 +309,29 @@ function extrairTestes(txt) {
   return testes;
 }
 
+function extrairRoles(txt) {
+  const roles = [];
+  const re = /^\s*ROLAR:\s*\[([^\|]+)\|([^\|]+)\|([^\|]+)(?:\|([^\]]+))?\]/gim;
+  let m;
+  while ((m = re.exec(txt)) !== null) {
+    roles.push({ nomeJog: m[1].trim(), label: m[2].trim(), notacao: m[3].trim(), alvo: m[4] ? m[4].trim() : null });
+  }
+  return roles;
+}
+
+function parsearNotacaoDados(notacao) {
+  const m = notacao.replace(/\s/g,'').match(/^(\d*)d(\d+)([+-]\d+)?$/i);
+  if (!m) return { qtd:1, lados:20, bonus:0 };
+  return { qtd: m[1] ? +m[1] : 1, lados: +m[2], bonus: m[3] ? +m[3] : 0 };
+}
+
+function rolarDados(notacao) {
+  const { qtd, lados, bonus } = parsearNotacaoDados(notacao);
+  let total = bonus;
+  for (let i = 0; i < qtd; i++) total += Math.floor(Math.random() * lados) + 1;
+  return total;
+}
+
 function getAttrMod(jog, attr) {
   const map = { FOR:'STR', STR:'STR', DES:'DEX', DEX:'DEX', CON:'CON', INT:'INT', SAB:'WIS', WIS:'WIS', CAR:'CHA', CHA:'CHA' };
   const salvas = { FORT:'fort', REF:'ref', VON:'will', WILL:'will' };
@@ -319,67 +342,291 @@ function getAttrMod(jog, attr) {
 
 let _testeResultados = [];
 
-function iniciarTestes(testes, jogadores, afterCb) {
-  if (!testes.length) { afterCb([]); return; }
+// ═══════════════════════════════════════════════════════════════
+//  OVERLAY 3D DE DADOS — Three.js
+// ═══════════════════════════════════════════════════════════════
+const DiceOverlay = (function () {
+  let _rend = null, _scene = null, _cam = null;
+  let _mesh = null, _raf = null, _t0 = null, _lastTS = null;
+  let _svx = 0, _svy = 0, _svz = 0, _resultShown = false, _onStop = null;
+  const FE = 1.15, SF = 1.8, SS = 2.35;
 
-  // Rola todos os testes de uma vez
-  const resultados = testes.map(t => {
-    const jog = Object.values(jogadores).find(j => j.nome === t.nomeJog) || null;
-    const mod = getAttrMod(jog, t.attr);
-    const d20 = Math.floor(Math.random() * 20) + 1;
-    const total = d20 + mod;
-    const sucesso = total >= t.dc;
-    const modStr = mod >= 0 ? `+${mod}` : `${mod}`;
-    return { ...t, jog, mod, d20, total, sucesso, modStr };
-  });
-  _testeResultados = resultados;
-
-  // Portrait do atacante (jogador que age)
-  const eu = _jogadoresCache[myUid];
-  const pAtac = eu
-    ? { src: `sprites/${eu.classe}_${eu.sexo || 'm'}.png`, icon: '🧑', cor: '#4a7090' }
-    : { src: '', icon: '🧑', cor: '#4a7090' };
-
-  // Portrait do alvo (inimigo/NPC, do campo alvo do 1º teste)
-  const alvoNome = resultados[0].alvo || null;
-  const pAlvo = alvoNome ? getPortraitAtaque(alvoNome, false) : null;
-
-  const _phc = (p, espelhar) =>
-    `<div class="combate-teste-portrait" style="background:${p.cor}22;border-color:${p.cor}55">
-      ${p.src ? `<img src="${p.src}" alt=""${espelhar ? ' class="espelhado"' : ''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
-      <span class="combate-teste-icon-fb"${p.src ? ' style="display:none"' : ''}>${p.icon}</span>
-    </div>`;
-
-  const linhasHTML = resultados.map((r, i) => {
-    const cor = r.sucesso ? '#5a9a5a' : '#c05050';
-    return `<div class="combate-teste-linha" style="color:${cor}">
-      <span class="combate-teste-num">${i + 1}.</span>
-      <span class="combate-teste-resultado">${r.sucesso ? 'ACERTO' : 'FALHA'}</span>
-      <span class="combate-teste-roll">${r.d20}${r.modStr}=${r.total} <span class="combate-teste-cd">CD${r.dc}</span></span>
-    </div>`;
-  }).join('');
-
-  const el = document.getElementById('story-content');
-  if (el) {
-    const card = document.createElement('div');
-    card.className = 'combate-teste-card';
-    card.innerHTML = `
-      ${_phc(pAtac, true)}
-      <div class="combate-teste-centro">
-        <div class="combate-teste-acao">${resultados[0].acao}</div>
-        ${linhasHTML}
+  function _buildDOM() {
+    const ov = document.getElementById('teste-overlay');
+    if (!ov || ov.querySelector('.dado-card-jogo')) return ov;
+    const SZ = Math.min(window.innerWidth * 0.68, 200) | 0;
+    ov.innerHTML = `<div class="dado-card-jogo">
+      <div id="dado-titulo-acao" class="dado-titulo-acao"></div>
+      <div id="dado-label-atual" class="dado-label-atual"></div>
+      <canvas id="dado-canvas-jogo" width="${SZ}" height="${SZ}"></canvas>
+      <div id="dado-resultado-atual" class="dado-resultado-atual">
+        <div id="dado-num-jogo" class="dado-num-jogo"></div>
+        <div id="dado-detalhe-jogo" class="dado-detalhe-jogo"></div>
+        <div id="dado-veredicto-jogo" class="dado-veredicto-jogo"></div>
       </div>
-      ${pAlvo ? _phc(pAlvo, false) : `<div class="combate-teste-portrait combate-teste-sem-alvo"></div>`}`;
-    el.appendChild(card);
-    const btn = document.createElement('button');
-    btn.className = 'btn-continuar-narr';
-    btn.textContent = '▶ Ver resultado';
-    btn.onclick = () => { btn.remove(); afterCb(_testeResultados); };
-    el.appendChild(btn);
-    scrollDown();
-  } else {
-    afterCb(resultados);
+      <div id="dado-historico" class="dado-historico"></div>
+    </div>`;
+    return ov;
   }
+
+  function _initThree() {
+    if (_rend) return true;
+    if (typeof THREE === 'undefined') return false;
+    const cv = document.getElementById('dado-canvas-jogo');
+    if (!cv) return false;
+    const SZ = cv.width;
+    _rend = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true });
+    _rend.setPixelRatio(Math.min(devicePixelRatio, 2));
+    _rend.setSize(SZ, SZ);
+    _rend.setClearColor(0x000000, 0);
+    _scene = new THREE.Scene();
+    _cam = new THREE.PerspectiveCamera(38, 1, 1, 2000);
+    _cam.position.set(0, 0, 350);
+    _scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const key = new THREE.DirectionalLight(0xffe8cc, 1.15);
+    key.position.set(100, 180, 120);
+    _scene.add(key);
+    const fill = new THREE.DirectionalLight(0xaad0ff, 0.38);
+    fill.position.set(-80, 40, 60);
+    _scene.add(fill);
+    const rim = new THREE.PointLight(0xff3311, 0.55, 900);
+    rim.position.set(-150, 80, -220);
+    _scene.add(rim);
+    return true;
+  }
+
+  function _geoD10() {
+    const v = [0,95,0, 0,-95,0];
+    for (let i=0;i<5;i++){const a=(Math.PI*2*i/5)-Math.PI/2;v.push(74*Math.cos(a),0,74*Math.sin(a));}
+    const idx=[];
+    for(let i=0;i<5;i++){idx.push(0,2+i,2+(i+1)%5);idx.push(1,2+(i+1)%5,2+i);}
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));
+    g.setIndex(idx);g.computeVertexNormals();return g;
+  }
+
+  function _geo(lados) {
+    if (lados===4)  return new THREE.TetrahedronGeometry(72);
+    if (lados===6)  return new THREE.BoxGeometry(105,105,105);
+    if (lados===8)  return new THREE.OctahedronGeometry(72);
+    if (lados===10) return _geoD10();
+    if (lados===12) return new THREE.DodecahedronGeometry(68);
+    return new THREE.IcosahedronGeometry(72,0);
+  }
+
+  function _makeMesh(lados) {
+    const g = _geo(lados);
+    const mat = new THREE.MeshStandardMaterial({ color:0xbf1a0c, roughness:0.28, metalness:0.08, side:THREE.DoubleSide });
+    const m = new THREE.Mesh(g, mat);
+    m.castShadow = true;
+    const edges = new THREE.EdgesGeometry(g, lados<=6?20:30);
+    m.add(new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color:0xffffff, transparent:true, opacity:0.45 })));
+    return m;
+  }
+
+  function _bounce(t) {
+    if(t<1/2.75)return 7.5625*t*t;
+    if(t<2/2.75){t-=1.5/2.75;return 7.5625*t*t+.75;}
+    if(t<2.5/2.75){t-=2.25/2.75;return 7.5625*t*t+.9375;}
+    t-=2.625/2.75;return 7.5625*t*t+.984375;
+  }
+
+  function _loop(ts) {
+    if (!_t0) _t0 = ts;
+    const dt = _lastTS ? (ts-_lastTS)/1000 : 0;
+    _lastTS = ts;
+    const t = (ts-_t0)/1000;
+    if (_mesh) {
+      _mesh.position.y = 300 - 300*_bounce(Math.min(t/FE,1));
+      const fp = Math.min(t/FE,1);
+      if (fp>0.70&&fp<0.88){const i=(0.88-fp)/0.18;_cam.position.x=(Math.random()-.5)*7*i;_cam.position.y=(Math.random()-.5)*5*i;}
+      else{_cam.position.x*=0.85;_cam.position.y*=0.85;}
+      let sm;
+      if(t<SF) sm=1;
+      else if(t<SS) sm=Math.pow(1-(t-SF)/(SS-SF),2.5);
+      else {
+        sm=0;
+        if(!_resultShown){_resultShown=true;_rend.render(_scene,_cam);if(_onStop)_onStop();}
+        return;
+      }
+      _mesh.rotation.x+=_svx*sm*dt;
+      _mesh.rotation.y+=_svy*sm*dt;
+      _mesh.rotation.z+=_svz*sm*dt;
+    }
+    _rend.render(_scene,_cam);
+    _raf=requestAnimationFrame(_loop);
+  }
+
+  function _launch(lados, onStop) {
+    if (!_initThree()) { onStop(); return; }
+    if (_mesh){_scene.remove(_mesh);_mesh=null;}
+    if (_raf){cancelAnimationFrame(_raf);_raf=null;}
+    _mesh=_makeMesh(lados);_mesh.position.set(0,300,0);_scene.add(_mesh);
+    const b=18;
+    _svx=(Math.random()-.5)*b+(Math.random()>.5?8:-8);
+    _svy=(Math.random()-.5)*b+(Math.random()>.5?8:-8);
+    _svz=(Math.random()-.5)*(b*.7);
+    _t0=null;_lastTS=null;_resultShown=false;_onStop=onStop;
+    _raf=requestAnimationFrame(_loop);
+  }
+
+  function _clean() {
+    if(_raf){cancelAnimationFrame(_raf);_raf=null;}
+    if(_mesh&&_scene){_scene.remove(_mesh);_mesh=null;}
+    if(_rend&&_cam&&_scene){_cam.position.set(0,0,350);_rend.render(_scene,_cam);}
+  }
+
+  function mostrar(rolls, afterCb) {
+    const ov = _buildDOM();
+    if (!ov) { afterCb(rolls); return; }
+    // Reset Three.js if canvas was rebuilt
+    const cv = document.getElementById('dado-canvas-jogo');
+    if (cv && (!_rend || _rend.domElement !== cv)) _rend = null;
+    ov.style.display = 'flex';
+
+    const titulo = document.getElementById('dado-titulo-acao');
+    const label  = document.getElementById('dado-label-atual');
+    const resDiv = document.getElementById('dado-resultado-atual');
+    const numEl  = document.getElementById('dado-num-jogo');
+    const detEl  = document.getElementById('dado-detalhe-jogo');
+    const vered  = document.getElementById('dado-veredicto-jogo');
+    const hist   = document.getElementById('dado-historico');
+
+    titulo.textContent = rolls[0]?.nomeJog || '';
+    hist.innerHTML = '';
+
+    function addHist(r) {
+      let ic,vc,vt,rs;
+      if(r.tipo==='testar'){
+        if(r.catastrofe){ic='💀';vc='ct';vt='CATÁSTROFE';}
+        else if(r.critico){ic='⭐';vc='c';vt='CRÍTICO';}
+        else if(r.sucesso){ic='✓';vc='s';vt='ACERTO';}
+        else{ic='✕';vc='f';vt='FALHA';}
+        rs=`${r.d20}${r.modStr}=${r.total} CD${r.dc}`;
+      } else {ic='🎲';vc='d';vt=String(r.resultado);rs=r.notacao;}
+      const ln=document.createElement('div');
+      ln.className='dado-hist-linha';
+      ln.innerHTML=`<span class="dado-hist-icone">${ic}</span><span class="dado-hist-label">${r.label}</span><span class="dado-hist-roll">${rs}</span><span class="dado-hist-vered ${vc}">${vt}</span>`;
+      hist.appendChild(ln);
+      hist.scrollTop=hist.scrollHeight;
+    }
+
+    function next(idx) {
+      if (idx >= rolls.length) {
+        setTimeout(() => { ov.style.display='none'; _clean(); afterCb(rolls); }, 1200);
+        return;
+      }
+      const r = rolls[idx];
+      // Dado de dano cancelado se ataque pai errou
+      if (r.condicionalDe !== undefined && rolls[r.condicionalDe] && !rolls[r.condicionalDe].sucesso) {
+        const sk=document.createElement('div');
+        sk.className='dado-hist-linha';
+        sk.innerHTML=`<span class="dado-hist-icone">—</span><span class="dado-hist-label">${r.label}</span><span class="dado-hist-roll" style="opacity:.35">ataque errou</span><span class="dado-hist-vered f">CANCELADO</span>`;
+        hist.appendChild(sk);
+        setTimeout(()=>next(idx+1),700);
+        return;
+      }
+
+      resDiv.classList.remove('visivel');
+      numEl.textContent='';detEl.textContent='';
+      vered.textContent='';vered.className='dado-veredicto-jogo';
+      label.textContent = r.label;
+
+      const lados = r.tipo==='testar' ? 20 : (r.dados||20);
+      _launch(lados, () => {
+        resDiv.classList.add('visivel');
+        if (r.tipo==='testar') {
+          numEl.textContent=String(r.total);
+          const glow=r.critico?'rgba(255,215,0,.9)':r.catastrofe?'rgba(255,40,40,.9)':r.sucesso?'rgba(100,230,100,.9)':'rgba(230,80,80,.9)';
+          numEl.style.textShadow=`0 0 34px ${glow},0 2px 6px rgba(0,0,0,.7)`;
+          detEl.textContent=`${r.d20}${r.modStr} = ${r.total} · CD ${r.dc}`;
+        } else {
+          numEl.textContent=String(r.resultado);
+          numEl.style.textShadow='0 0 32px rgba(255,160,40,.85),0 2px 6px rgba(0,0,0,.7)';
+          detEl.textContent=r.notacao;
+        }
+        // +0.5s → veredicto
+        setTimeout(() => {
+          if(r.tipo==='testar'){
+            if(r.catastrofe){vered.textContent='💀 CATÁSTROFE!';vered.className='dado-veredicto-jogo catastrofe visivel';}
+            else if(r.critico){vered.textContent='⭐ CRÍTICO!';vered.className='dado-veredicto-jogo critico visivel';}
+            else if(r.sucesso){vered.textContent='✦ ACERTO ✦';vered.className='dado-veredicto-jogo sucesso visivel';}
+            else{vered.textContent='✕ FALHA ✕';vered.className='dado-veredicto-jogo falha visivel';}
+          } else {
+            vered.textContent=`🎲 ${r.resultado}`;
+            vered.className='dado-veredicto-jogo critico visivel';
+          }
+          // +1.0s → historico + próximo
+          setTimeout(() => { addHist(r); setTimeout(()=>next(idx+1), 900); }, 1000);
+        }, 500);
+      });
+    }
+    next(0);
+  }
+
+  return { mostrar };
+})();
+
+function iniciarTestes(testes, roles, jogadores, afterCb) {
+  if (!testes.length && !roles.length) { afterCb([]); return; }
+
+  // Rola todos os d20 imediatamente (resultado determinístico)
+  const testeRes = testes.map((t, ti) => {
+    const jog = Object.values(jogadores).find(j => j.nome === t.nomeJog) || null;
+    const mod  = getAttrMod(jog, t.attr);
+    const d20  = Math.floor(Math.random() * 20) + 1;
+    const total = d20 + mod;
+    const critico    = d20 === 20;
+    const catastrofe = d20 === 1;
+    const sucesso    = critico ? true : catastrofe ? false : total >= t.dc;
+    const modStr = mod >= 0 ? `+${mod}` : `${mod}`;
+    return { tipo:'testar', idx:ti, ...t, jog, mod, d20, total, sucesso, critico, catastrofe, modStr, label:t.acao };
+  });
+
+  // Rola dados de efeito (ROLAR)
+  const rolarRes = roles.map(r => {
+    const { lados } = (function(n){const m=n.replace(/\s/g,'').match(/^(\d*)d(\d+)/i);return m?{lados:+m[2]}:{lados:20};})(r.notacao);
+    const resultado = rolarDados(r.notacao);
+    // Associar ao TESTAR com alvo mais recente do mesmo jogador
+    const parentIdx = testeRes.slice().reverse().findIndex(t => t.nomeJog === r.nomeJog && t.alvo);
+    const condicionalDe = parentIdx >= 0 ? (testeRes.length - 1 - parentIdx) : undefined;
+    return { tipo:'rolar', ...r, resultado, dados:lados, condicionalDe };
+  });
+
+  // Intercalar: TESTAR seguido de seus ROLARs associados
+  const playlist = [];
+  const usados = new Set();
+  testeRes.forEach((t, ti) => {
+    playlist.push(t);
+    rolarRes.forEach((r, ri) => { if (!usados.has(ri) && r.condicionalDe === ti) { playlist.push(r); usados.add(ri); } });
+  });
+  rolarRes.forEach((r, ri) => { if (!usados.has(ri)) playlist.push(r); });
+
+  _testeResultados = testeRes;
+  DiceOverlay.mostrar(playlist, () => {
+    // Registrar card resumo no story
+    const el = document.getElementById('story-content');
+    if (el) {
+      const card = document.createElement('div');
+      card.className = 'combate-teste-card';
+      const linhasHTML = testeRes.map((r, i) => {
+        const cor = r.sucesso ? '#5a9a5a' : '#c05050';
+        const badge = r.critico ? ' ⭐' : r.catastrofe ? ' 💀' : '';
+        return `<div class="combate-teste-linha" style="color:${cor}">
+          <span class="combate-teste-num">${i+1}.</span>
+          <span class="combate-teste-resultado">${r.sucesso?'ACERTO':'FALHA'}${badge}</span>
+          <span class="combate-teste-roll">${r.d20}${r.modStr}=${r.total} <span class="combate-teste-cd">CD${r.dc}</span></span>
+        </div>`;
+      }).join('');
+      card.innerHTML = `<div class="combate-teste-centro" style="width:100%">
+        <div class="combate-teste-acao">${testeRes[0]?.acao||''}</div>
+        ${linhasHTML}
+      </div>`;
+      el.appendChild(card);
+      scrollDown();
+    }
+    afterCb(testeRes);
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1972,7 +2219,11 @@ function irParaJogo(codigo) {
     if (amIHost && config.estado === 'aguardando') {
       const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
       const todosEnviaram = ativos.length > 0 && ativos.every(j => j.acao1 != null);
-      if (todosEnviaram && !chamandoIA) chamarIA(jogadores, data);
+      if (todosEnviaram && !chamandoIA) {
+        const todosAvançar = ativos.every(j => j.acao1 === '__avançar__');
+        if (todosAvançar) chamarIA_jogadoresAvançam(jogadores, data);
+        else chamarIA(jogadores, data);
+      }
     }
   });
 }
@@ -2694,6 +2945,39 @@ function cancelarAutoAvancar() {
   if (_autoAvancarTimer) { clearTimeout(_autoAvancarTimer); _autoAvancarTimer = null; }
 }
 
+async function chamarIA_jogadoresAvançam(jogadores, data) {
+  if (chamandoIA) return;
+  if (!getApiKey()) { pedirApiKey(() => {}); return; }
+  chamandoIA = true;
+  try {
+    const { config = {}, inimigos = {}, historia = {} } = data;
+    const rodada = config.rodada || 1;
+    await update(ref(db, `salas/${mySala}/config`), { estado: 'narrando' });
+    const ups = {};
+    Object.keys(jogadores).forEach(uid => { ups[`salas/${mySala}/jogadores/${uid}/acao1`] = null; });
+    await update(ref(db), ups);
+    const hist = Object.values(historia)
+      .sort((a,b)=>(a.ts||0)-(b.ts||0))
+      .filter(e=>e.role==='model'||e.role==='user')
+      .slice(-10);
+    const msg = `Rodada ${rodada}.\n\n[Os aventureiros estão prontos para prosseguir. Como Mestre, retome a cena — aja como NPCs presentes, descreva o que acontece ao redor, ou introduza um novo elemento. Máximo 80 palavras. Não mencione que os jogadores pediram para avançar.]`;
+    const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), hist, msg, mostrarRetryUI);
+    ocultarRetryUI();
+    if (!resposta) {
+      await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando', rodada: rodada + 1 });
+      return;
+    }
+    const temAvançar = extrairAvançar(resposta);
+    const respostaFinal = temAvançar ? removerAvançar(resposta) : resposta;
+    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(respostaFinal), falas: extrairFalas(respostaFinal), ataques: extrairAtaques(respostaFinal), ts: Date.now() });
+    await processarStats(respostaFinal, jogadores, inimigos);
+    await update(ref(db, `salas/${mySala}/config`), { estado: temAvançar ? 'avançando' : 'aguardando', rodada: rodada + 1 });
+  } finally {
+    chamandoIA = false;
+    ocultarRetryUI();
+  }
+}
+
 async function chamarIA_continuar() {
   if (chamandoIA) return;
   if (!getApiKey()) { pedirApiKey(() => {}); return; }
@@ -2777,22 +3061,20 @@ async function chamarIA(jogadores, data) {
       return;
     }
 
-    // Verificar se a IA pediu testes sequenciais
+    // Verificar se a IA pediu testes sequenciais e/ou dados de dano
     const testes = extrairTestes(resposta);
+    const roles  = extrairRoles(resposta);
 
-    if (testes.length && amIHost) {
-      // Apenas o texto ANTES da primeira linha TESTAR vai para a história agora
-      // (tudo depois é descartado — a narrativa real vem da segunda chamada IA)
-      const primeiroTestar = resposta.search(/^\s*TESTAR:/im);
-      const textoAntes = primeiroTestar >= 0 ? resposta.substring(0, primeiroTestar) : '';
+    if ((testes.length || roles.length) && amIHost) {
+      // Apenas o texto ANTES da primeira tag de dado vai para a história agora
+      const primeiroTag = resposta.search(/^\s*(TESTAR|ROLAR):/im);
+      const textoAntes = primeiroTag >= 0 ? resposta.substring(0, primeiroTag) : '';
       const preamble = limparTags(textoAntes);
       if (preamble) {
         await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: preamble, falas: extrairFalas(textoAntes), ataques: extrairAtaques(textoAntes), ts: Date.now() });
       }
-      // Limpar ações agora; estado/rodada avançam após todos os testes
       await update(ref(db), ups);
-      // Mostrar cards de teste; segunda chamada IA narra o resultado
-      iniciarTestes(testes, jogadores, async (resultados) => {
+      iniciarTestes(testes, roles, jogadores, async (resultados) => {
         const upsPos = {};
         await narrarResultadoTestes(resultados, jogadores, inimigos, hist, rodada, upsPos);
       });
@@ -2886,6 +3168,11 @@ Exemplo — "Carne quer correr, sacar a faca e arremessá-la nas costas do gobli
   TESTAR: [Carne|Corrida pelas barracas|DES|10]
 Após listar os TESTAR, escreva apenas uma frase curtíssima de suspense (sem revelar o resultado). NÃO narre o desfecho — ele depende dos dados.
 Se a ação for simples (atacar de frente, falar com NPC, mover-se para adjacente), não use TESTAR — narre diretamente.
+Para danos ou efeitos com dados específicos após um ataque (TESTAR com Alvo), acrescente na linha seguinte:
+  ROLAR: [NomeExato|Descrição curta do dano|NotaçãoDados|Alvo]
+Exemplo: ROLAR: [Carne|Dano da faca|1d6+2|Espantalho 1]
+Notação: 1d20, 2d6, 1d8+3, 1d4-1, etc. O sistema mostra o dado animado e cancela automaticamente se o ataque errou.
+Use ROLAR somente quando o dano for relevante para a cena (ataque, magia, armadilha). Não use em testes de perícia.
 
 TAGS MECÂNICAS — SOMENTE na última linha da resposta:
 STATS: [INIMIGO:nome:hp:hpMax:ícone] [HP:nome:novoHp] [MATAR:nome] [JOGADOR:nome:novoHp] [AUSENTE:nome] [PRESENTE:nome] [LESAO:nome:descrição] [XP:nome:pontos] [TITULO:nome:título] [POSSE:nome:descrição] [REPUTACAO:nome:local:valor] [EQUIPAR:nome:slot:item] [ITEM_BAG:nome:item:qtd]
