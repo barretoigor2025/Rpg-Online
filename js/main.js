@@ -835,10 +835,10 @@ function renderizarSegmentos(container, segs, falas, noTTS) {
   let idx = 0;
   function proxItem() {
     if (idx >= items.length) {
-      // Narração completa — liberar card de ação
+      // Narração completa — re-habilitar botão e mostrar card de ação
       _narracaoAtiva = Math.max(0, _narracaoAtiva - 1);
       const eu = _jogadoresCache?.[myUid];
-      if (eu && _lastConfig) atualizarPromptAcao(eu, _lastConfig);
+      if (eu && _lastConfig) atualizarInputArea(eu, _lastConfig);
       return;
     }
     const it = items[idx++];
