@@ -127,6 +127,21 @@ Só na última linha. Tags disponíveis:
 ### Falar ✅
 - Overlay de bolha de NPC/jogador — `abrirFalar()`
 
+### Sistema de Criaturas ✅
+**Bestiário:** `campanhas/beast-of-black-keep/inimigos.json` — 21 criaturas com campos canônicos:
+- `stats_dnd: { FOR, DES, CON, INT, SAB, CAR, CA }` — usados em combate via `getEnemyAttrMod(ini, attr)`
+- `comportamento` — `bestial | agressivo | sadico | calculista | covarde_em_grupo | berserk | oportunista | territorial_perturbado | hostil_calculista | agressivo_desesperado`
+- `pode_dialogar` — boolean; se true, IA pode pausar combate para roleplay usando a `fraqueza_social`
+- `fraqueza_social` — o que faz a criatura baixar a guarda (null se bestial)
+- `motivacao` — o que move a criatura narrativamente
+- `ataques_principais` — array de strings com notação de dano; IA usa esses ataques no combate
+- `poderes_especiais` — habilidades especiais que a IA deve usar
+- `resistencias` — tipos de dano com resistência
+
+**Em combate:** `getEnemyAttrMod(ini, attr)` converte `stats_dnd` em modificador D&D. `iniciarTestes` chama `getInimigo(t.nomeJog)` quando o atacante não é um jogador, e usa `getEnemyAttrMod` para o roll.
+
+**No system prompt:** `iniList` inclui CA, comportamento, PODE NEGOCIAR, fraqueza social, ataques e poderes — tudo que a IA precisa para narrar cada criatura com identidade única.
+
 ### Sistema de Avançar ✅
 - Ação especial `'__avançar__'`
 - Todos os jogadores ativos devem clicar para acionar `chamarIA_jogadoresAvançam()`
@@ -194,4 +209,4 @@ await update(ref(db), ups);  // atômico
 ## Versão do cache JS
 
 Incrementar `?v=N` em `index.html` a cada deploy que altere `main.js` ou `layout.css`.  
-Versão atual: `?v=17`
+Versão atual: `?v=18`

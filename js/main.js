@@ -253,6 +253,20 @@ function getInimigo(nome) {
   }) || null;
 }
 
+function getEnemyAttrMod(ini, attr) {
+  const s = ini?.stats_dnd;
+  if (!s) {
+    // Fallback: mapear GURPS → D&D (ST→FOR, DX→DES, HT→CON, IQ→resto)
+    const g = ini?.stats || {};
+    const gmap = { FOR:'ST', STR:'ST', DES:'DX', DEX:'DX', CON:'HT', INT:'IQ', SAB:'IQ', WIS:'IQ', CAR:'IQ', CHA:'IQ', FORT:'HT', REF:'DX', VON:'IQ', WILL:'IQ' };
+    const val = g[gmap[attr] || 'ST'] ?? 10;
+    return Math.floor((val - 10) / 2);
+  }
+  const map = { FOR:'FOR', STR:'FOR', DES:'DES', DEX:'DES', CON:'CON', INT:'INT', SAB:'SAB', WIS:'SAB', CAR:'CAR', CHA:'CAR', FORT:'CON', REF:'DES', VON:'SAB', WILL:'SAB' };
+  const key = map[attr] || 'FOR';
+  return Math.floor(((s[key] ?? 10) - 10) / 2);
+}
+
 function getPortraitAtaque(nome, costas = false) {
   const jog = Object.values(_jogadoresCache).find(j =>
     j.nome && (nome.toLowerCase().includes(j.nome.toLowerCase()) || j.nome.toLowerCase().includes(nome.toLowerCase()))
@@ -608,7 +622,8 @@ function iniciarTestes(testes, roles, jogadores, afterCb) {
   // Rola todos os d20 imediatamente (resultado determinístico)
   const testeRes = testes.map((t, ti) => {
     const jog = Object.values(jogadores).find(j => j.nome === t.nomeJog) || null;
-    const mod  = getAttrMod(jog, t.attr);
+    const iniAtac = jog ? null : getInimigo(t.nomeJog);
+    const mod  = iniAtac ? getEnemyAttrMod(iniAtac, t.attr) : getAttrMod(jog, t.attr);
     const d20  = Math.floor(Math.random() * 20) + 1;
     const total = d20 + mod;
     const critico    = d20 === 20;
@@ -3619,9 +3634,17 @@ function buildSystemPrompt(jogadores, inimigos) {
     return `${j.nome} (${cls?.nome||j.classe}${nivelStr}) — FOR:${j.STR} DES:${j.DEX} CON:${j.CON} INT:${j.INT} SAB:${j.WIS} CAR:${j.CHA} | PV:${j.hp}/${j.maxHp} CA:${j.ac} Init:${fmt(j.init)}${habStr ? ` | ${habStr}` : ''}${perStr ? ` | Perícias:${perStr}` : ''}${lesoesStr}${titulosStr}${possesStr}${repStr}${equipStr}${mochilaStr}`;
   }).join('\n');
 
-  const iniList = Object.values(inimigos).filter(i => i.hp > 0).map(i =>
-    `${i.icon||'👹'} ${i.nome} — HP:${i.hp}/${i.maxHp}`
-  ).join('\n');
+  const iniList = Object.values(inimigos).filter(i => i.hp > 0).map(i => {
+    const tmpl = getInimigo(i.nome);
+    let linha = `${i.icon||'👹'} ${i.nome} — HP:${i.hp}/${i.maxHp}`;
+    if (tmpl?.stats_dnd?.CA) linha += ` CA:${tmpl.stats_dnd.CA}`;
+    if (tmpl?.comportamento) linha += ` | ${tmpl.comportamento.toUpperCase()}`;
+    if (tmpl?.pode_dialogar) linha += ` | PODE NEGOCIAR`;
+    if (tmpl?.fraqueza_social) linha += ` | fraqueza: ${tmpl.fraqueza_social}`;
+    if (tmpl?.ataques_principais?.length) linha += `\n  → Ataques: ${tmpl.ataques_principais.join(' / ')}`;
+    if (tmpl?.poderes_especiais?.length) linha += `\n  → Poderes: ${tmpl.poderes_especiais.join('; ')}`;
+    return linha;
+  }).join('\n');
 
   const campCtx = buildCampaignContext();
 
@@ -3631,7 +3654,7 @@ ${campCtx}
 VOZ:
 - Verbos fortes e sensoriais: "rasga", "despenca", "estala", "cheira a enxofre".
 - Foque no RESULTADO das ações, não na preparação.
-- ${iniList ? 'COMBATE ATIVO — máximo 40 palavras de narração (após testes). JAMAIS mencione dados, modificadores, CD ou cálculos no texto. Após narrar o resultado das ações dos jogadores, os INIMIGOS REAGEM E CONTRA-ATACAM imediatamente na mesma resposta: use TESTAR para cada inimigo vivo que atacar (nome exato do inimigo no primeiro campo, nome do jogador alvo no campo Alvo), seguido de ROLAR de dano. Inclua STATS:[JOGADOR:nome:novoHp] para atualizar o HP dos jogadores atingidos. Descreva sons, impactos e o caos da batalha em 1–2 frases sensoriais.' : 'EXPLORAÇÃO — máximo 70 palavras por bloco narrativo (tags FALA não contam no limite).'}
+- ${iniList ? 'COMBATE ATIVO — máximo 40 palavras de narração (após testes). JAMAIS mencione dados, modificadores, CD ou cálculos no texto. Após narrar o resultado das ações dos jogadores, os INIMIGOS REAGEM E CONTRA-ATACAM imediatamente na mesma resposta: use TESTAR para cada inimigo vivo que atacar (nome exato do inimigo no primeiro campo, nome do jogador alvo no campo Alvo), seguido de ROLAR de dano. Inclua STATS:[JOGADOR:nome:novoHp] para atualizar o HP dos jogadores atingidos. Descreva sons, impactos e o caos da batalha em 1–2 frases sensoriais. Use os ataques e poderes especiais listados para cada criatura — cada inimigo tem identidade única. Criaturas com PODE NEGOCIAR podem pausar o combate para diálogo dramático se o jogador tentar conversar — use a fraqueza social indicada para guiar a reação. Criaturas BESTIAL ou BERSERK jamais param para conversar.' : 'EXPLORAÇÃO — máximo 70 palavras por bloco narrativo (tags FALA não contam no limite).'}
 - Mantenha o tom: a floresta observa, os NPCs têm segredos, nada é seguro.
 - NUNCA termine com pergunta ao jogador. A narração termina com a consequência da cena.
 - Use AVANÇAR (sozinho, última linha da resposta) quando a cena não exige decisão do jogador — ex: consequência já resolvida, transição narrativa natural, momento puramente descritivo, NPC despedindo-se, multidão dispersando. O sistema continuará automaticamente. Não use AVANÇAR se o jogador precisar escolher algo. Em combate, use AVANÇAR SOMENTE quando o último inimigo morrer nesta resposta (todos receberem MATAR nesta mesma resposta) — sinaliza fim de combate e o sistema narrará o desfecho automaticamente.
