@@ -361,7 +361,10 @@ const DiceOverlay = (function() {
   }
 
   function _initThree(cv, SZ) {
-    if (_rend && _rend.domElement === cv) return true;
+    if (_rend && _rend.domElement === cv) {
+      _rend.setSize(SZ, SZ);
+      return true;
+    }
     _rend = new THREE.WebGLRenderer({ canvas:cv, antialias:true, alpha:true });
     _rend.setPixelRatio(Math.min(devicePixelRatio,2));
     _rend.setSize(SZ,SZ);
@@ -379,8 +382,6 @@ const DiceOverlay = (function() {
   function _launch(lados, onStop, SZ) {
     const cv = document.getElementById('dado-canvas-jogo');
     if (!cv) { onStop(); return; }
-    cv.width = SZ; cv.height = SZ;
-    cv.style.width = SZ + 'px'; cv.style.height = SZ + 'px';
     if (!_initThree(cv, SZ)) { onStop(); return; }
     if (_mesh){_scene.remove(_mesh);_mesh=null;}
     if (_raf){cancelAnimationFrame(_raf);_raf=null;}
