@@ -210,8 +210,9 @@ function setActionStatus(msg) {
 function limparTags(txt) {
   return txt
     .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV|JOGADOR|AUSENTE|PRESENTE|LESAO|XP|TITULO|POSSE|REPUTACAO|EQUIPAR|ITEM_BAG)[^\]]*\]\s*)*/gi, '')
-    .replace(/\[(?:INIMIGO|MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR|LESAO|XP|TITULO|POSSE|REPUTACAO|EQUIPAR|ITEM_BAG):[^\]]+\]/gi, '')
+    .replace(/\[(?:INIMIGO|MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR|LESAO|XP|TITULO|POSSE|REPUTACAO|EQUIPAR|ITEM_BAG):[^\]\n]*/gi, '')
     .replace(/^\s*TESTAR:\s*\[.*\]\s*$/gim, '')
+    .replace(/^\s*ROLAR:\s*\[.*\]\s*$/gim, '')
     .replace(/^\s*AVANÇAR\s*$/im, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -3031,10 +3032,10 @@ function calcularNivel(xp) {
 async function processarStats(resposta, jogadores, inimigos) {
   const ups = {};
 
-  // Criar/atualizar inimigos
-  for (const [, nome, hp, maxHp, icon] of resposta.matchAll(/\[INIMIGO:([^:]+):(\d+):(\d+):([^\]]+)\]/gi)) {
+  // Criar/atualizar inimigos (ícone opcional — fallback 👹)
+  for (const [, nome, hp, maxHp, icon] of resposta.matchAll(/\[INIMIGO:([^:]+):(\d+):(\d+)(?::([^\]\n]+))?\]/gi)) {
     const key = nome.trim().replace(/\W/g,'_');
-    ups[`salas/${mySala}/inimigos/${key}`] = { nome: nome.trim(), hp: +hp, maxHp: +maxHp, icon: icon.trim() };
+    ups[`salas/${mySala}/inimigos/${key}`] = { nome: nome.trim(), hp: +hp, maxHp: +maxHp, icon: (icon||'👹').trim() };
   }
 
   // Atualizar HP inimigo
@@ -3606,9 +3607,13 @@ Exemplo: ROLAR: [Carne|Dano da faca|1d6+2|Espantalho 1]
 Notação: 1d20, 2d6, 1d8+3, 1d4-1, etc. O sistema mostra o dado animado e cancela automaticamente se o ataque errou.
 Use ROLAR somente quando o dano for relevante para a cena (ataque, magia, armadilha). Não use em testes de perícia.
 
-TAGS MECÂNICAS — SOMENTE na última linha da resposta:
+TAGS MECÂNICAS — REGRAS ABSOLUTAS:
+⚠ As tags STATS NUNCA aparecem dentro do texto narrativo. SOMENTE na ÚLTIMA linha da resposta, sozinha, sem nenhum texto depois.
+⚠ Formato EXATO obrigatório — STATS: seguido dos colchetes com os campos corretos.
+⚠ INIMIGO exige TODOS os 4 campos: nome, hp, hpMax e ícone emoji. Ex: [INIMIGO:Espantalho 1:10:10:🌾]
 STATS: [INIMIGO:nome:hp:hpMax:ícone] [HP:nome:novoHp] [MATAR:nome] [JOGADOR:nome:novoHp] [AUSENTE:nome] [PRESENTE:nome] [LESAO:nome:descrição] [XP:nome:pontos] [TITULO:nome:título] [POSSE:nome:descrição] [REPUTACAO:nome:local:valor] [EQUIPAR:nome:slot:item] [ITEM_BAG:nome:item:qtd]
 Exemplos:
+  Introduzir inimigos: "STATS: [INIMIGO:Espantalho 1:10:10:🌾] [INIMIGO:Espantalho 2:10:10:🌾]"
   Fim de combate: "STATS: [MATAR:Espantalho 1] [JOGADOR:Aldric:8] [XP:Aldric:25]"
   Recompensa: "STATS: [TITULO:Carne:Cavaleiro de Mhoried] [POSSE:Carne:100 hectares em Mhoried] [REPUTACAO:Carne:Mhoried:3]"
   Lesão: "STATS: [LESAO:Carne:braço direito decepado]"
