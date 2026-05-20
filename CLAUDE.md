@@ -147,6 +147,18 @@ Só na última linha. Tags disponíveis:
 - Todos os jogadores ativos devem clicar para acionar `chamarIA_jogadoresAvançam()`
 - Prompt especial: Mestre entra em cena, máximo 80 palavras
 
+### Dados Multiplayer Sincronizados ✅
+**Firebase node:** `salas/${id}/rolagem: { rolls: [...], ts } | null`
+**Fluxo:**
+1. Host calcula toda a playlist em `iniciarTestes` (d20s + ROLARs intercalados)
+2. Serializa via `serializeRoll(r)` — strip do campo `jog` (objeto player não-serializável)
+3. Escreve `salas/${mySala}/rolagem: { rolls, ts }` atomicamente antes de mostrar os dados localmente
+4. Non-hosts: `onValue` em `salas/${codigo}/rolagem` → `DiceOverlay.mostrar(data.rolls, () => {})`
+5. Host: afterCb do `DiceOverlay.mostrar` limpa `rolagem: null` antes de `narrarResultadoTestes`
+6. `unsubRolagem` gerenciado junto com `unsubSala` (criado em `irParaJogo`, destruído em `deixarSala`)
+- Todos os jogadores veem os mesmos dados girando com retratos de atacante/alvo em tempo real
+- `amIHost` guard no listener: host não aciona `DiceOverlay` pelo Firebase (usa path direto)
+
 ---
 
 ## Firebase Schema (principais nós)
@@ -158,6 +170,7 @@ salas/${codigo}/
   historia/${push}/ { role, content, ts, falas?, ataques?, de?, para?, itens? }
   inimigos/${push}/ { nome, hp, maxHp, icon }
   troca/           { estado, iniciador, alvo, ts }  ← null quando não há troca ativa
+  rolagem/         { rolls: [...serialized], ts }   ← null quando não há rolagem ativa
 
 personagens/${uid}/  ← espelho do jogador ativo (lido pelo host para builds dos outros)
 chars/${uid}/s${0..7}/  ← slots de personagem salvos
@@ -209,4 +222,4 @@ await update(ref(db), ups);  // atômico
 ## Versão do cache JS
 
 Incrementar `?v=N` em `index.html` a cada deploy que altere `main.js` ou `layout.css`.  
-Versão atual: `?v=18`
+Versão atual: `?v=19`

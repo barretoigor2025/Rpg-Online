@@ -157,6 +157,7 @@ let _charSlots   = new Array(4).fill(null);
 let amIHost     = false;
 let chamandoIA  = false;
 let unsubSala   = null;
+let unsubRolagem = null;
 let _apiKeyPendingCb = null;
 let voiceEnabled = localStorage.getItem('rpg_voice') !== '0';
 let voiceQueue  = [];
@@ -616,6 +617,12 @@ const DiceOverlay = (function () {
   return { mostrar };
 })();
 
+function serializeRoll(r) {
+  // Strip non-serializable player snapshot objects; all other fields are primitives
+  const { jog, ...rest } = r;
+  return rest;
+}
+
 function iniciarTestes(testes, roles, jogadores, afterCb) {
   if (!testes.length && !roles.length) { afterCb([]); return; }
 
@@ -652,8 +659,15 @@ function iniciarTestes(testes, roles, jogadores, afterCb) {
   });
   rolarRes.forEach((r, ri) => { if (!usados.has(ri)) playlist.push(r); });
 
+  // Broadcast roll playlist to all clients so everyone sees the same dice animation
+  if (mySala) {
+    update(ref(db), { [`salas/${mySala}/rolagem`]: { rolls: playlist.map(serializeRoll), ts: Date.now() } });
+  }
+
   _testeResultados = testeRes;
   DiceOverlay.mostrar(playlist, () => {
+    // Clear broadcast node before processing results
+    if (mySala) update(ref(db), { [`salas/${mySala}/rolagem`]: null });
     // Registrar card resumo no story
     const el = document.getElementById('story-content');
     if (el) {
@@ -2182,6 +2196,7 @@ window.deixarSala = function() {
   if (!confirm('Sair da sala? Você poderá entrar novamente pelo código.')) return;
   localStorage.removeItem(`rpg_sala_s${_activeSlot}`);
   if (unsubSala) { unsubSala(); unsubSala = null; }
+  if (unsubRolagem) { unsubRolagem(); unsubRolagem = null; }
   mySala = null; amIHost = false; _kitMigrado = false;
   _jogadoresCache = {};
   // Para narração em andamento
@@ -2604,6 +2619,16 @@ function irParaJogo(codigo) {
 
   _kitMigrado = false;
   if (unsubSala) unsubSala();
+  if (unsubRolagem) { unsubRolagem(); unsubRolagem = null; }
+
+  // Non-host clients watch this node to trigger dice animation in sync
+  unsubRolagem = onValue(ref(db, `salas/${codigo}/rolagem`), snap => {
+    if (!snap.exists() || amIHost) return;
+    const data = snap.val();
+    if (!data?.rolls?.length) return;
+    DiceOverlay.mostrar(data.rolls, () => {});
+  });
+
   unsubSala = onValue(ref(db, `salas/${codigo}`), snap => {
     if (!snap.exists()) return;
     const data = snap.val();
