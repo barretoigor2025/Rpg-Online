@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <title>Demo — Dado Versus</title>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0a0c14;color:#e8e0d0;font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:24px 16px 40px;}
+    h1{font-size:15px;letter-spacing:3px;text-transform:uppercase;color:rgba(200,160,80,.7);margin-bottom:6px;text-align:center;}
+    p.sub{font-size:11px;color:rgba(255,255,255,.3);text-align:center;margin-bottom:24px;letter-spacing:.5px;}
+
+    /* ── Phone mockup ── */
+    .phone{width:340px;background:#0d0f1a;border:1.5px solid rgba(150,110,200,.25);border-radius:32px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.8);position:relative;}
+    .phone-notch{height:28px;background:#08090f;display:flex;align-items:center;justify-content:center;}
+    .phone-notch span{width:60px;height:5px;background:#1a1c26;border-radius:3px;}
+    .phone-screen{background:#0d0f1a;min-height:520px;position:relative;overflow:hidden;}
+
+    /* ── Topbar ── */
+    .topbar{background:#080a14;height:38px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-bottom:1px solid rgba(255,255,255,.06);}
+    .topbar-code{font-size:11px;font-weight:700;letter-spacing:2px;color:rgba(200,160,80,.8);}
+    .topbar-round{font-size:10px;color:rgba(255,255,255,.35);margin-left:6px;}
+    .topbar-icons{display:flex;gap:8px;font-size:15px;opacity:.5;}
+
+    /* ── Player bar ── */
+    .players-bar{padding:6px 10px;background:rgba(0,0,0,.3);border-bottom:1px solid rgba(255,255,255,.05);}
+    .player-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:3px 10px 3px 7px;font-size:11px;}
+    .chip-hp{color:#6dbf6d;font-size:10px;}
+    .chip-ca{color:#7ac0f0;font-size:10px;}
+
+    /* ── Story area ── */
+    .story{padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-height:220px;}
+    .msg-gm{border-left:3px solid rgba(150,100,200,.4);padding:8px 10px;background:rgba(255,255,255,.02);border-radius:0 6px 6px 0;}
+    .msg-gm p{font-size:13px;line-height:1.6;color:#d8cfc0;}
+    .msg-user{background:rgba(80,100,160,.12);border:1px solid rgba(80,100,200,.2);border-radius:8px;padding:7px 10px;font-size:12px;color:rgba(200,190,170,.7);}
+    .msg-user-label{font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(120,160,220,.5);margin-bottom:2px;}
+
+    /* ── Enemies bar ── */
+    .enemies-bar{background:rgba(100,20,20,.18);border-top:1px solid rgba(180,40,40,.2);border-bottom:1px solid rgba(180,40,40,.2);padding:5px 10px;display:flex;gap:8px;flex-wrap:wrap;}
+    .enemy-chip{display:flex;align-items:center;gap:5px;font-size:11px;}
+    .hp-bar-wrap{width:50px;height:5px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden;}
+    .hp-bar{height:100%;background:#c03030;border-radius:3px;transition:width .6s;}
+
+    /* ── Action bar ── */
+    .action-bar{background:#080a14;border-top:1px solid rgba(255,255,255,.07);padding:8px 10px 10px;}
+    .action-btns{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;}
+    .action-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:4px 10px;font-size:10px;color:rgba(200,190,170,.7);cursor:pointer;letter-spacing:.5px;}
+    .action-btn:hover{background:rgba(255,255,255,.12);}
+    .action-btn.primary{background:rgba(191,26,12,.22);border-color:rgba(191,26,12,.4);color:#e88;}
+    .action-input-row{display:flex;gap:8px;align-items:center;}
+    .action-input{flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:7px 10px;font-size:12px;color:#d0c8b8;outline:none;}
+    .action-send{width:36px;height:36px;background:rgba(191,26,12,.8);border:none;border-radius:10px;cursor:pointer;font-size:15px;color:#fff;display:flex;align-items:center;justify-content:center;}
+    .action-send:hover{background:rgba(220,40,20,.9);}
+
+    /* ── Teste overlay ── */
+    #teste-overlay{
+      position:absolute;inset:0;z-index:200;
+      background:rgba(3,5,10,.93);backdrop-filter:blur(8px);
+      display:none;align-items:center;justify-content:center;
+    }
+    .dado-card-jogo{
+      background:rgba(8,10,20,.96);border:1px solid rgba(191,26,12,.3);border-radius:18px;
+      width:min(310px,90%);max-height:85vh;
+      display:flex;flex-direction:column;align-items:center;gap:8px;
+      padding:14px 16px 16px;box-shadow:0 8px 48px rgba(0,0,0,.8),0 0 60px rgba(191,26,12,.08);
+      overflow:hidden;
+    }
+    .dado-titulo-acao{font-size:10px;color:rgba(200,160,80,.65);letter-spacing:2px;text-transform:uppercase;text-align:center;min-height:14px;}
+    .dado-label-atual{font-size:9px;color:rgba(200,160,80,.38);letter-spacing:2.5px;text-transform:uppercase;text-align:center;min-height:12px;}
+
+    /* Versus row */
+    .dado-versus-row{display:flex;align-items:flex-end;justify-content:center;gap:8px;width:100%;}
+    .dado-portrait-vs{
+      flex-shrink:0;width:72px;display:flex;flex-direction:column;align-items:center;
+      border-radius:8px;border:1px solid rgba(255,255,255,.12);overflow:hidden;
+      background:rgba(255,255,255,.04);transition:background .3s,border-color .3s;
+    }
+    .dado-portrait-vs img{width:100%;height:100px;object-fit:cover;object-position:top center;display:block;}
+    .dado-portrait-vs span{font-size:26px;margin:10px 0 4px;}
+    .dado-portrait-nome{font-size:7px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;text-align:center;padding:3px 2px;background:rgba(0,0,0,.45);width:100%;}
+    #dado-canvas-jogo{border-radius:8px;display:block;}
+
+    .dado-resultado-atual{
+      display:flex;flex-direction:column;align-items:center;gap:2px;
+      opacity:0;transform:scale(.85);transition:opacity .35s,transform .35s;
+    }
+    .dado-resultado-atual.visivel{opacity:1;transform:scale(1);}
+    .dado-num-jogo{font-size:42px;font-weight:900;line-height:1;color:#fff;}
+    .dado-detalhe-jogo{font-size:10px;color:rgba(200,160,80,.55);letter-spacing:1.5px;}
+    .dado-veredicto-jogo{
+      font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+      padding:4px 14px;border-radius:20px;margin-top:2px;
+      opacity:0;transform:scale(.8);transition:opacity .3s,transform .3s;
+    }
+    .dado-veredicto-jogo.visivel{opacity:1;transform:scale(1);}
+    .dado-veredicto-jogo.sucesso{color:#7adc7a;background:rgba(80,180,80,.1);border:1px solid rgba(100,200,100,.25);}
+    .dado-veredicto-jogo.falha{color:#e06060;background:rgba(180,50,50,.1);border:1px solid rgba(200,80,80,.25);}
+    .dado-veredicto-jogo.critico{color:#ffd700;background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.4);text-shadow:0 0 12px rgba(255,215,0,.7);}
+    .dado-veredicto-jogo.catastrofe{color:#ff4444;background:rgba(200,20,20,.15);border:1px solid rgba(200,30,30,.5);text-shadow:0 0 12px rgba(255,50,50,.8);}
+    .dado-historico{width:100%;display:flex;flex-direction:column;gap:3px;max-height:90px;overflow-y:auto;}
+    .dado-hist-linha{display:flex;align-items:center;gap:5px;font-size:10px;padding:2px 4px;border-radius:4px;background:rgba(255,255,255,.03);}
+    .dado-hist-icone{font-size:11px;flex-shrink:0;}
+    .dado-hist-label{flex:1;color:rgba(200,185,160,.55);font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .dado-hist-roll{color:rgba(200,160,80,.5);font-size:9px;flex-shrink:0;}
+    .dado-hist-vered{font-size:9px;font-weight:700;letter-spacing:.5px;flex-shrink:0;}
+    .dado-hist-vered.s{color:#7adc7a;}.dado-hist-vered.f{color:#e06060;}
+    .dado-hist-vered.c{color:#ffd700;}.dado-hist-vered.ct{color:#ff4444;}
+    .dado-hist-vered.d{color:#ffaa44;}
+
+    /* ── Result card ── */
+    .combate-teste-card{
+      display:flex;align-items:stretch;margin:6px 0 4px;
+      background:rgba(10,6,24,.88);border:1px solid rgba(150,110,200,.35);
+      border-radius:8px;overflow:hidden;animation:fi .3s ease both;
+    }
+    @keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    .combate-teste-portrait{
+      flex-shrink:0;width:56px;height:84px;display:flex;align-items:center;justify-content:center;
+      font-size:22px;border-right:1px solid rgba(150,110,200,.15);
+    }
+    .combate-teste-portrait:last-child{border-right:none;border-left:1px solid rgba(150,110,200,.15);}
+    .combate-teste-portrait img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block;}
+    .combate-teste-portrait img.espelhado{transform:scaleX(-1);}
+    .combate-teste-icon-fb{display:flex;align-items:center;justify-content:center;width:100%;height:100%;}
+    .combate-teste-centro{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:8px 6px;}
+    .combate-teste-acao{font-size:9px;color:rgba(180,140,220,.55);letter-spacing:1.2px;text-transform:uppercase;text-align:center;margin-bottom:2px;}
+    .combate-teste-linha{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;letter-spacing:.5px;}
+    .combate-teste-num{opacity:.45;font-size:9px;font-weight:400;}
+    .combate-teste-resultado{letter-spacing:1.5px;text-transform:uppercase;}
+    .combate-teste-roll{font-size:9px;opacity:.55;font-weight:400;}
+    .combate-teste-cd{opacity:.5;}
+    .combate-teste-dano{color:#ffaa44;font-size:10px;font-weight:700;margin-left:2px;}
+
+    /* ── Scenario buttons ── */
+    .scenarios{display:flex;flex-direction:column;gap:10px;width:340px;margin-top:20px;}
+    .scenarios h2{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(200,160,80,.5);text-align:center;}
+    .scenario-btn{
+      background:rgba(191,26,12,.15);border:1px solid rgba(191,26,12,.35);
+      border-radius:10px;padding:10px 14px;cursor:pointer;text-align:left;
+      transition:background .2s;
+    }
+    .scenario-btn:hover{background:rgba(191,26,12,.28);}
+    .scenario-btn strong{font-size:12px;color:#e8d0a0;display:block;margin-bottom:2px;}
+    .scenario-btn span{font-size:10px;color:rgba(200,180,150,.5);}
+    .scenario-btn.s2{background:rgba(191,26,12,.1);border-color:rgba(191,26,12,.25);}
+    .scenario-btn.s3{background:rgba(80,130,200,.12);border-color:rgba(80,130,200,.3);}
+    .scenario-btn.s3:hover{background:rgba(80,130,200,.22);}
+    .scenario-btn.s4{background:rgba(150,50,200,.1);border-color:rgba(150,50,200,.3);}
+    .scenario-btn.s4:hover{background:rgba(150,50,200,.2);}
+  </style>
+</head>
+<body>
+
+<h1>Demo — Dado com Versus</h1>
+<p class="sub">Clique num cenário abaixo para ver a animação completa</p>
+
+<div class="phone">
+  <div class="phone-notch"><span></span></div>
+  <div class="phone-screen" id="phone-screen">
+
+    <div class="topbar">
+      <div><span class="topbar-code">CJ8QC</span><span class="topbar-round">Rodada 3</span></div>
+      <div class="topbar-icons">🔊 📜 ↺ 🚪</div>
+    </div>
+
+    <div class="players-bar">
+      <div class="player-chip">
+        🏹 <span>Bromo</span>
+        <span class="chip-hp">PV 9/9</span>
+        <span class="chip-ca">CA 17</span>
+      </div>
+    </div>
+
+    <div class="story" id="story">
+      <div class="msg-gm">
+        <p>Espantalhos emergem das sombras da feira, seus olhos de madeira cravados em Bromo com intenção assassina.</p>
+      </div>
+      <div class="msg-user">
+        <div class="msg-user-label">Bromo</div>
+        Preparo uma flechada no olho direito do espantalho
+      </div>
+    </div>
+
+    <div class="enemies-bar">
+      <div class="enemy-chip">
+        🌾 Espantalho 1
+        <div class="hp-bar-wrap"><div class="hp-bar" id="hp-bar-1" style="width:100%"></div></div>
+        <span id="hp-txt-1" style="font-size:10px;color:rgba(200,100,100,.7)">10/10</span>
+      </div>
+      <div class="enemy-chip">
+        🌾 Espantalho 2
+        <div class="hp-bar-wrap"><div class="hp-bar" id="hp-bar-2" style="width:100%"></div></div>
+        <span id="hp-txt-2" style="font-size:10px;color:rgba(200,100,100,.7)">10/10</span>
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <div class="action-btns">
+        <div class="action-btn">💬 Falar</div>
+        <div class="action-btn">📋 Ficha</div>
+        <div class="action-btn">📜 Skills</div>
+        <div class="action-btn">🤝 Troca</div>
+      </div>
+      <div class="action-input-row">
+        <input class="action-input" placeholder="Declare a ação do seu personagem..." readonly>
+        <button class="action-send">✦</button>
+      </div>
+    </div>
+
+    <!-- Overlay -->
+    <div id="teste-overlay">
+      <div class="dado-card-jogo">
+        <div id="dado-titulo-acao" class="dado-titulo-acao"></div>
+        <div id="dado-label-atual" class="dado-label-atual"></div>
+        <div class="dado-versus-row">
+          <div id="dado-portrait-esq" class="dado-portrait-vs"></div>
+          <canvas id="dado-canvas-jogo"></canvas>
+          <div id="dado-portrait-dir" class="dado-portrait-vs" style="display:none"></div>
+        </div>
+        <div id="dado-resultado-atual" class="dado-resultado-atual">
+          <div id="dado-num-jogo" class="dado-num-jogo"></div>
+          <div id="dado-detalhe-jogo" class="dado-detalhe-jogo"></div>
+          <div id="dado-veredicto-jogo" class="dado-veredicto-jogo"></div>
+        </div>
+        <div id="dado-historico" class="dado-historico"></div>
+      </div>
+    </div>
+
+  </div><!-- /phone-screen -->
+</div><!-- /phone -->
+
+<div class="scenarios">
+  <h2>Escolha um cenário</h2>
+
+  <button class="scenario-btn" onclick="rodar('critico')">
+    <strong>⭐ Ataque Crítico — 1d8+3 de dano</strong>
+    <span>Bromo (Arqueiro) ataca Espantalho 1 · d20=20 CRÍTICO · dano dobrado</span>
+  </button>
+
+  <button class="scenario-btn s2" onclick="rodar('acerto')">
+    <strong>✦ Acerto Normal — 1d8+3 de dano</strong>
+    <span>Bromo ataca Espantalho 1 · d20=15 ACERTO · dano normal</span>
+  </button>
+
+  <button class="scenario-btn s2" onclick="rodar('falha')">
+    <strong>✕ Falha — Ataque Errou</strong>
+    <span>Bromo ataca Espantalho 1 · d20=4 FALHA · ROLAR cancelado</span>
+  </button>
+
+  <button class="scenario-btn s3" onclick="rodar('inimigo')">
+    <strong>💀 Inimigo Contra-ataca</strong>
+    <span>Espantalho 1 ataca Bromo · d20=14 · dano 1d6</span>
+  </button>
+
+  <button class="scenario-btn s4" onclick="rodar('sequencia')">
+    <strong>⚔ Sequência Completa</strong>
+    <span>Bromo ataca + Espantalho 1 contra-ataca · dois testes seguidos</span>
+  </button>
+</div>
+
+<script>
+// ─── Dados fixos para demo ───────────────────────────────────────────────────
+
+const PORTRAITS = {
+  bromo:       { src:'sprites/arqueiro_m.png',                    icon:'🏹', cor:'#4a7090', nome:'Bromo'       },
+  espantalho1: { src:'sprites/inimigo_espantalho_assombrado.png', icon:'🌾', cor:'#8b5e3c', nome:'Espantalho 1'},
+  espantalho2: { src:'sprites/inimigo_espantalho_assombrado.png', icon:'🌾', cor:'#7a5030', nome:'Espantalho 2'},
+};
+
+// HP state
+const hp = { esp1: 10, esp2: 10, bromo: 9 };
+
+// ─── Dice helpers ────────────────────────────────────────────────────────────
+
+function rolarDado(lados) { return Math.floor(Math.random() * lados) + 1; }
+
+function rolarNotacao(notacao) {
+  const m = notacao.replace(/\s/g,'').match(/^(\d*)d(\d+)([+-]\d+)?$/i);
+  if (!m) return 0;
+  const qtd = m[1] ? +m[1] : 1;
+  const lados = +m[2];
+  const bonus = m[3] ? +m[3] : 0;
+  let total = bonus;
+  for (let i = 0; i < qtd; i++) total += rolarDado(lados);
+  return total;
+}
+
+// ─── Three.js DiceOverlay ────────────────────────────────────────────────────
+
+const DiceOverlay = (function() {
+  let _rend = null, _scene = null, _cam = null;
+  let _mesh = null, _raf = null, _t0 = null, _lastTS = null;
+  let _svx = 0, _svy = 0, _svz = 0, _onStop = null;
+  const FE = 1.15, SF = 1.8, SS = 2.35;
+
+  function _geoD10() {
+    const v = [0,95,0, 0,-95,0];
+    for (let i=0;i<5;i++){const a=(Math.PI*2*i/5)-Math.PI/2;v.push(74*Math.cos(a),0,74*Math.sin(a));}
+    const idx=[];
+    for(let i=0;i<5;i++){idx.push(0,2+i,2+(i+1)%5);idx.push(1,2+(i+1)%5,2+i);}
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));
+    g.setIndex(idx);g.computeVertexNormals();return g;
+  }
+
+  function _geo(lados) {
+    if (lados===4)  return new THREE.TetrahedronGeometry(72);
+    if (lados===6)  return new THREE.BoxGeometry(105,105,105);
+    if (lados===8)  return new THREE.OctahedronGeometry(72);
+    if (lados===10) return _geoD10();
+    if (lados===12) return new THREE.DodecahedronGeometry(68);
+    return new THREE.IcosahedronGeometry(72,0); // d20
+  }
+
+  function _makeMesh(lados) {
+    const g = _geo(lados);
+    const mat = new THREE.MeshStandardMaterial({ color:0xbf1a0c, roughness:0.28, metalness:0.08, side:THREE.DoubleSide });
+    const m = new THREE.Mesh(g, mat);
+    const edges = new THREE.EdgesGeometry(g, lados<=6?20:30);
+    m.add(new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color:0xffffff, transparent:true, opacity:0.45 })));
+    return m;
+  }
+
+  function _bounce(t) {
+    if(t<1/2.75)return 7.5625*t*t;
+    if(t<2/2.75){t-=1.5/2.75;return 7.5625*t*t+.75;}
+    if(t<2.5/2.75){t-=2.25/2.75;return 7.5625*t*t+.9375;}
+    t-=2.625/2.75;return 7.5625*t*t+.984375;
+  }
+
+  function _loop(ts) {
+    if (!_t0) _t0 = ts;
+    const dt = _lastTS ? (ts-_lastTS)/1000 : 0;
+    _lastTS = ts;
+    const t = (ts-_t0)/1000;
+    if (_mesh) {
+      _mesh.position.y = 300 - 300*_bounce(Math.min(t/FE,1));
+      const fp = Math.min(t/FE,1);
+      if (fp>0.70&&fp<0.88){const i=(0.88-fp)/0.18;_cam.position.x=(Math.random()-.5)*7*i;_cam.position.y=(Math.random()-.5)*5*i;}
+      else{_cam.position.x*=0.85;_cam.position.y*=0.85;}
+      let sm;
+      if(t<SF) sm=1;
+      else if(t<SS) sm=Math.pow(1-(t-SF)/(SS-SF),2.5);
+      else { sm=0; if(_onStop){const cb=_onStop;_onStop=null;cb();} }
+      if(sm>0){_mesh.rotation.x+=_svx*sm*dt;_mesh.rotation.y+=_svy*sm*dt;_mesh.rotation.z+=_svz*sm*dt;}
+      _rend.render(_scene,_cam);
+    }
+    _raf = requestAnimationFrame(_loop);
+  }
+
+  function _initThree(cv, SZ) {
+    if (_rend && _rend.domElement === cv) return true;
+    _rend = new THREE.WebGLRenderer({ canvas:cv, antialias:true, alpha:true });
+    _rend.setPixelRatio(Math.min(devicePixelRatio,2));
+    _rend.setSize(SZ,SZ);
+    _rend.setClearColor(0x000000,0);
+    _scene = new THREE.Scene();
+    _cam = new THREE.PerspectiveCamera(38,1,1,2000);
+    _cam.position.set(0,0,350);
+    _scene.add(new THREE.AmbientLight(0xffffff,0.5));
+    const key=new THREE.DirectionalLight(0xffe8cc,1.15);key.position.set(100,180,120);_scene.add(key);
+    const fill=new THREE.DirectionalLight(0xaad0ff,0.38);fill.position.set(-80,40,60);_scene.add(fill);
+    const rim=new THREE.PointLight(0xff3311,0.55,900);rim.position.set(-150,80,-220);_scene.add(rim);
+    return true;
+  }
+
+  function _launch(lados, onStop, SZ) {
+    const cv = document.getElementById('dado-canvas-jogo');
+    if (!cv) { onStop(); return; }
+    cv.width = SZ; cv.height = SZ;
+    cv.style.width = SZ + 'px'; cv.style.height = SZ + 'px';
+    if (!_initThree(cv, SZ)) { onStop(); return; }
+    if (_mesh){_scene.remove(_mesh);_mesh=null;}
+    if (_raf){cancelAnimationFrame(_raf);_raf=null;}
+    _mesh=_makeMesh(lados);_mesh.position.set(0,300,0);_scene.add(_mesh);
+    const b=18;
+    _svx=(Math.random()-.5)*b+(Math.random()>.5?8:-8);
+    _svy=(Math.random()-.5)*b+(Math.random()>.5?8:-8);
+    _svz=(Math.random()-.5)*(b*.7);
+    _t0=null;_lastTS=null;_onStop=onStop;
+    _raf=requestAnimationFrame(_loop);
+  }
+
+  function _setPortrait(elId, p, mirror) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.style.cssText = `background:${p.cor}22;border-color:${p.cor}55;display:flex;`;
+    el.innerHTML = p.src
+      ? `<img src="${p.src}"${mirror?' style="transform:scaleX(-1)"':''} onerror="this.style.opacity='.15'"><div class="dado-portrait-nome">${p.nome}</div>`
+      : `<span>${p.icon}</span><div class="dado-portrait-nome">${p.nome}</div>`;
+  }
+
+  function mostrar(rolls, afterCb) {
+    const ov = document.getElementById('teste-overlay');
+    if (!ov) { afterCb(rolls); return; }
+    ov.style.display = 'flex';
+
+    const SZ = Math.min(window.innerWidth * 0.25, 110) | 0;
+    const titulo = document.getElementById('dado-titulo-acao');
+    const label  = document.getElementById('dado-label-atual');
+    const resDiv = document.getElementById('dado-resultado-atual');
+    const numEl  = document.getElementById('dado-num-jogo');
+    const detEl  = document.getElementById('dado-detalhe-jogo');
+    const vered  = document.getElementById('dado-veredicto-jogo');
+    const hist   = document.getElementById('dado-historico');
+
+    titulo.textContent = rolls[0]?.atac?.nome || '';
+    hist.innerHTML = '';
+
+    function addHist(r) {
+      let ic, vc, vt, rs;
+      if (r.tipo==='testar') {
+        if(r.catastrofe){ic='💀';vc='ct';vt='CATÁSTROFE';}
+        else if(r.critico){ic='⭐';vc='c';vt='CRÍTICO';}
+        else if(r.sucesso){ic='✓';vc='s';vt='ACERTO';}
+        else{ic='✕';vc='f';vt='FALHA';}
+        rs=`${r.d20}${r.modStr}=${r.total} CD${r.dc}`;
+      } else { ic='🎲';vc='d';vt=String(r.resultado);rs=r.notacao; }
+      const ln=document.createElement('div');
+      ln.className='dado-hist-linha';
+      ln.innerHTML=`<span class="dado-hist-icone">${ic}</span><span class="dado-hist-label">${r.label||r.acao}</span><span class="dado-hist-roll">${rs}</span><span class="dado-hist-vered ${vc}">${vt}</span>`;
+      hist.appendChild(ln);
+      hist.scrollTop=hist.scrollHeight;
+    }
+
+    function next(idx) {
+      if (idx >= rolls.length) {
+        setTimeout(() => { ov.style.display='none'; afterCb(rolls); }, 1200);
+        return;
+      }
+      const r = rolls[idx];
+
+      // Cancelado se pai falhou
+      if (r.condicionalDe !== undefined && rolls[r.condicionalDe] && !rolls[r.condicionalDe].sucesso) {
+        const sk=document.createElement('div');
+        sk.className='dado-hist-linha';
+        sk.innerHTML=`<span class="dado-hist-icone">—</span><span class="dado-hist-label">${r.label||r.acao}</span><span class="dado-hist-roll" style="opacity:.35">ataque errou</span><span class="dado-hist-vered f">CANCELADO</span>`;
+        hist.appendChild(sk);
+        setTimeout(()=>next(idx+1),700);
+        return;
+      }
+
+      // Portraits
+      if (r.atac) _setPortrait('dado-portrait-esq', r.atac, true);
+      const dirEl = document.getElementById('dado-portrait-dir');
+      if (r.alvoP) {
+        _setPortrait('dado-portrait-dir', r.alvoP, false);
+        if (dirEl) dirEl.style.display = 'flex';
+      } else {
+        if (dirEl) dirEl.style.display = 'none';
+      }
+
+      resDiv.classList.remove('visivel');
+      numEl.textContent=''; detEl.textContent='';
+      vered.textContent=''; vered.className='dado-veredicto-jogo';
+      label.textContent = r.label || r.acao || '';
+
+      const lados = r.tipo==='testar' ? 20 : (r.dados||20);
+      _launch(lados, () => {
+        resDiv.classList.add('visivel');
+        if (r.tipo==='testar') {
+          numEl.textContent = String(r.total);
+          const glow = r.critico?'rgba(255,215,0,.9)':r.catastrofe?'rgba(255,40,40,.9)':r.sucesso?'rgba(100,230,100,.9)':'rgba(230,80,80,.9)';
+          numEl.style.textShadow = `0 0 34px ${glow},0 2px 6px rgba(0,0,0,.7)`;
+          detEl.textContent = `${r.d20}${r.modStr} = ${r.total} · CD ${r.dc}`;
+        } else {
+          numEl.textContent = String(r.resultado);
+          numEl.style.textShadow = '0 0 32px rgba(255,160,40,.85),0 2px 6px rgba(0,0,0,.7)';
+          detEl.textContent = r.notacao;
+        }
+        setTimeout(() => {
+          if (r.tipo==='testar') {
+            if(r.catastrofe){vered.textContent='💀 CATÁSTROFE!';vered.className='dado-veredicto-jogo catastrofe visivel';}
+            else if(r.critico){vered.textContent='⭐ CRÍTICO!';vered.className='dado-veredicto-jogo critico visivel';}
+            else if(r.sucesso){vered.textContent='✦ ACERTO ✦';vered.className='dado-veredicto-jogo sucesso visivel';}
+            else{vered.textContent='✕ FALHA ✕';vered.className='dado-veredicto-jogo falha visivel';}
+          } else {
+            vered.textContent = `🎲 ${r.resultado}`;
+            vered.className = 'dado-veredicto-jogo critico visivel';
+          }
+          setTimeout(() => { addHist(r); setTimeout(()=>next(idx+1), 900); }, 1000);
+        }, 500);
+      }, SZ);
+    }
+    next(0);
+  }
+
+  return { mostrar };
+})();
+
+// ─── Result card ─────────────────────────────────────────────────────────────
+
+function adicionarCard(testeRes, rolarRes) {
+  const el = document.getElementById('story');
+  const card = document.createElement('div');
+  card.className = 'combate-teste-card';
+
+  const linhasHTML = testeRes.map((r, i) => {
+    const cor = r.sucesso ? '#5a9a5a' : '#c05050';
+    const badge = r.critico ? ' ⭐' : r.catastrofe ? ' 💀' : '';
+    const danos = (rolarRes||[]).filter(d => d.condicionalDe === i && r.sucesso);
+    const danoTotal = danos.reduce((s, d) => s + d.resultado, 0);
+    const danoFinal = r.critico ? danoTotal * 2 : danoTotal;
+    const danoStr = danoFinal > 0 ? `<span class="combate-teste-dano">💥${danoFinal}</span>` : '';
+    return `<div class="combate-teste-linha" style="color:${cor}">
+      <span class="combate-teste-num">${i+1}.</span>
+      <span class="combate-teste-resultado">${r.sucesso?'ACERTO':'FALHA'}${badge}</span>
+      <span class="combate-teste-roll">${r.d20}${r.modStr}=${r.total} <span class="combate-teste-cd">CD${r.dc}</span></span>
+      ${danoStr}
+    </div>`;
+  }).join('');
+
+  const pAtac = testeRes[0]?.atac;
+  const pAlvo = testeRes.find(r => r.alvoP)?.alvoP;
+
+  const _ph = (p, mirror) =>
+    `<div class="combate-teste-portrait" style="background:${p.cor}22;border-color:${p.cor}55">
+      ${p.src ? `<img src="${p.src}"${mirror?' class="espelhado"':''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+      <div class="combate-teste-icon-fb"${p.src?' style="display:none"':''}>${p.icon}</div>
+    </div>`;
+
+  card.innerHTML = `${pAtac?_ph(pAtac,true):''}
+    <div class="combate-teste-centro">
+      <div class="combate-teste-acao">${testeRes[0]?.acao||''}</div>
+      ${linhasHTML}
+    </div>
+    ${pAlvo?_ph(pAlvo,false):''}`;
+
+  el.appendChild(card);
+  card.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+// ─── Atualizar HP ─────────────────────────────────────────────────────────────
+
+function aplicarDano(alvoNome, dano) {
+  if (alvoNome === 'Espantalho 1') {
+    hp.esp1 = Math.max(0, hp.esp1 - dano);
+    const pct = (hp.esp1 / 10) * 100;
+    document.getElementById('hp-bar-1').style.width = pct + '%';
+    document.getElementById('hp-txt-1').textContent = hp.esp1 + '/10';
+    if (hp.esp1 === 0) document.getElementById('hp-txt-1').style.color = '#c03030';
+  } else if (alvoNome === 'Espantalho 2') {
+    hp.esp2 = Math.max(0, hp.esp2 - dano);
+    const pct = (hp.esp2 / 10) * 100;
+    document.getElementById('hp-bar-2').style.width = pct + '%';
+    document.getElementById('hp-txt-2').textContent = hp.esp2 + '/10';
+  }
+}
+
+// ─── Cenários ─────────────────────────────────────────────────────────────────
+
+function rodar(cenario) {
+  const d20 = cenario === 'critico' ? 20
+            : cenario === 'acerto'  ? 15
+            : cenario === 'falha'   ? 4
+            : cenario === 'inimigo' ? 14
+            : null; // sequencia usa valores aleatórios
+
+  if (cenario === 'critico' || cenario === 'acerto' || cenario === 'falha') {
+    const roll = d20;
+    const mod = 3;
+    const total = roll + mod;
+    const dc = 12;
+    const sucesso = total >= dc;
+    const critico = roll === 20;
+    const catastrofe = roll === 1;
+    const modStr = mod >= 0 ? '+'+mod : String(mod);
+
+    const danoRoll = rolarNotacao('1d8+3');
+    const danoFinal = critico ? danoRoll * 2 : danoRoll;
+
+    const testeRes = [{
+      tipo:'testar', acao:'Precisão do Tiro',
+      nomeJog:'Bromo', alvo:'Espantalho 1',
+      atac: PORTRAITS.bromo, alvoP: PORTRAITS.espantalho1,
+      d20:roll, mod, modStr, total, dc, sucesso, critico, catastrofe,
+      label:'Precisão do Tiro'
+    }];
+    const rolarRes = sucesso ? [{
+      tipo:'rolar', acao:'Dano da flecha', label:'Dano da flecha',
+      nomeJog:'Bromo', alvo:'Espantalho 1',
+      atac: PORTRAITS.bromo, alvoP: PORTRAITS.espantalho1,
+      notacao:'1d8+3', resultado:danoRoll, dados:8, condicionalDe:0
+    }] : [];
+
+    const playlist = [...testeRes, ...rolarRes];
+    DiceOverlay.mostrar(playlist, () => {
+      adicionarCard(testeRes, rolarRes);
+      if (sucesso) {
+        const dano = critico ? danoRoll * 2 : danoRoll;
+        aplicarDano('Espantalho 1', dano);
+      }
+    });
+  }
+
+  else if (cenario === 'inimigo') {
+    const roll = 14;
+    const mod = 2;
+    const total = roll + mod;
+    const dc = 17; // CA do Bromo
+    const sucesso = total >= dc;
+    const modStr = '+2';
+
+    const danoRoll = rolarNotacao('1d6');
+
+    const testeRes = [{
+      tipo:'testar', acao:'Garras de palha',
+      nomeJog:'Espantalho 1', alvo:'Bromo',
+      atac: PORTRAITS.espantalho1, alvoP: PORTRAITS.bromo,
+      d20:roll, mod, modStr, total, dc, sucesso, critico:false, catastrofe:false,
+      label:'Garras de palha'
+    }];
+    const rolarRes = sucesso ? [{
+      tipo:'rolar', acao:'Dano das garras', label:'Dano das garras',
+      nomeJog:'Espantalho 1', alvo:'Bromo',
+      atac: PORTRAITS.espantalho1, alvoP: PORTRAITS.bromo,
+      notacao:'1d6', resultado:danoRoll, dados:6, condicionalDe:0
+    }] : [];
+
+    const playlist = [...testeRes, ...rolarRes];
+    DiceOverlay.mostrar(playlist, () => {
+      adicionarCard(testeRes, rolarRes);
+    });
+  }
+
+  else if (cenario === 'sequencia') {
+    const r1 = rolarDado(20), r2 = rolarDado(20);
+    const m1 = 3, m2 = 2;
+    const t1 = r1 + m1, t2 = r2 + m2;
+    const dc1 = 12, dc2 = 17;
+    const s1 = t1 >= dc1, s2 = t2 >= dc2;
+    const crit1 = r1 === 20;
+    const dano1 = rolarNotacao('1d8+3');
+    const dano2 = rolarNotacao('1d6');
+
+    const testeRes = [
+      { tipo:'testar', acao:'Precisão do Tiro', nomeJog:'Bromo', alvo:'Espantalho 1',
+        atac:PORTRAITS.bromo, alvoP:PORTRAITS.espantalho1,
+        d20:r1, mod:m1, modStr:'+3', total:t1, dc:dc1, sucesso:s1, critico:crit1, catastrofe:r1===1, label:'Precisão do Tiro' },
+      { tipo:'testar', acao:'Garras de palha', nomeJog:'Espantalho 1', alvo:'Bromo',
+        atac:PORTRAITS.espantalho1, alvoP:PORTRAITS.bromo,
+        d20:r2, mod:m2, modStr:'+2', total:t2, dc:dc2, sucesso:s2, critico:r2===20, catastrofe:r2===1, label:'Garras de palha' }
+    ];
+    const rolarRes = [];
+    if (s1) rolarRes.push({ tipo:'rolar', acao:'Dano da flecha', label:'Dano da flecha',
+      nomeJog:'Bromo', alvo:'Espantalho 1', atac:PORTRAITS.bromo, alvoP:PORTRAITS.espantalho1,
+      notacao:'1d8+3', resultado:dano1, dados:8, condicionalDe:0 });
+    if (s2) rolarRes.push({ tipo:'rolar', acao:'Dano das garras', label:'Dano das garras',
+      nomeJog:'Espantalho 1', alvo:'Bromo', atac:PORTRAITS.espantalho1, alvoP:PORTRAITS.bromo,
+      notacao:'1d6', resultado:dano2, dados:6, condicionalDe:1 });
+
+    // Interleave: t0 + rolar0, t1 + rolar1
+    const playlist = [];
+    testeRes.forEach((t, ti) => {
+      playlist.push(t);
+      rolarRes.filter(r => r.condicionalDe === ti).forEach(r => playlist.push(r));
+    });
+
+    DiceOverlay.mostrar(playlist, () => {
+      adicionarCard(testeRes, rolarRes);
+      if (s1) { const d = crit1 ? dano1*2 : dano1; aplicarDano('Espantalho 1', d); }
+    });
+  }
+}
+</script>
+</body>
+</html>
