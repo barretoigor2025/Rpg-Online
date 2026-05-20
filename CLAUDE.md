@@ -96,14 +96,18 @@ Só na última linha. Tags disponíveis:
 
 ### Rolagem de Dados 3D (Three.js) ✅
 **IIFE:** `DiceOverlay` em `js/main.js`  
-**Demo:** `https://barretoigor2025.github.io/Rpg-Online/teste-de-dados.html`  
+**Demo:** `https://barretoigor2025.github.io/Rpg-Online/versus-demo.html`  
 - Dados: d4 (tetraedro), d6 (cubo), d8 (octaedro), d10 (bipiramide pentagonal custom), d12 (dodecaedro), d20 (icosaedro)
 - Vermelhos sólidos `MeshStandardMaterial({ color:0xbf1a0c, side:THREE.DoubleSide })`
 - Linhas brancas nas arestas via `EdgesGeometry + LineSegments`
-- Animação: queda + spin rápido 18rad/s → desaceleração quadrática → para ao mostrar resultado
-- Resultado: número + veredicto ACERTO/FALHA/CRÍTICO/CATÁSTROFE
+- Animação: queda de y=140 → y=0 (bounce) + spin rápido 18rad/s → desaceleração quadrática → para
+- Die começa em `y=140` (câmera vê ±120 unidades — dado entra pelo topo do frame sem corte)
+- Número do resultado aparece **sobreposto no rosto do dado** via `.dado-canvas-wrap { position:relative }` + `.dado-num-jogo { position:absolute; inset:0 }` — com glow colorido (verde=acerto, vermelho=falha, dourado=crítico) e sombra escura para legibilidade
+- Veredicto ACERTO/FALHA/CRÍTICO/CATÁSTROFE aparece 500ms depois, abaixo do dado
+- Retratos de atacante e alvo flanqueiam o dado (`.dado-portrait-vs`) — `.dado-versus-row { align-items:center }`
 - Sequencial: playlist de rolls com histórico acumulado na tela
 - ROLAR condicional: se TESTAR pai falhou → mostra CANCELADO sem animar
+- **CRÍTICO em canvas multi-roll:** `_initThree` SEMPRE chama `_rend.setSize(SZ,SZ)` mesmo no early-return — NUNCA fazer `cv.width = SZ` manualmente antes de cada roll (destrói o framebuffer WebGL e corta o dado a partir do 2º roll)
 
 ---
 
