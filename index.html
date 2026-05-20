@@ -94,6 +94,111 @@
         if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);
         else start();
       })();
+
+      // ── Voz cavernosa do Oráculo ──
+      (function initVozOraculo(){
+        var _played=false;
+        function _play(){
+          if(_played)return; _played=true;
+          var Ctx=window.AudioContext||window.webkitAudioContext;
+          if(!Ctx)return;
+          var ctx=new Ctx(), t=ctx.currentTime+0.08, sr=ctx.sampleRate;
+
+          // Cave reverb (impulse response sintético)
+          var rDur=7, rDecay=2.8, rLen=sr*rDur;
+          var rBuf=ctx.createBuffer(2,rLen,sr);
+          for(var c=0;c<2;c++){var rd=rBuf.getChannelData(c);for(var i=0;i<rLen;i++)rd[i]=(Math.random()*2-1)*Math.pow(1-i/rLen,rDecay);}
+          var rev=ctx.createConvolver(); rev.buffer=rBuf;
+
+          // Delay (eco cavernoso)
+          var dly=ctx.createDelay(2.5); dly.delayTime.value=0.62;
+          var dlFb=ctx.createGain(); dlFb.gain.value=0.32;
+          dly.connect(dlFb); dlFb.connect(dly);
+
+          // Master gain
+          var mst=ctx.createGain(); mst.gain.value=0.6;
+          rev.connect(mst); dly.connect(mst); mst.connect(ctx.destination);
+
+          // Curva de distorção (rouquidão de Nazgul)
+          function mkDist(amt){
+            var ws=ctx.createWaveShaper(),cv=new Float32Array(512);
+            for(var i=0;i<512;i++){var x=i*2/512-1;cv[i]=(Math.PI+amt)*x/(Math.PI+amt*Math.abs(x));}
+            ws.curve=cv; return ws;
+          }
+
+          // Sílabas: O(0.0-0.85) · RÁ(0.95-1.65) · CU(1.75-2.25) · LO(2.35-3.9)
+          // Formantes: [F1 Hz, F2 Hz] por vogal (voz muito grave → frequências comprimidas)
+          var syls=[
+            [0.00,0.85, 54, 390, 720],   // O
+            [0.95,1.65, 58, 720,1100],   // RÁ
+            [1.75,2.25, 51, 270, 540],   // CU (U grave)
+            [2.35,3.90, 49, 370, 680],   // LO
+          ];
+
+          syls.forEach(function(s){
+            var st=s[0],en=s[1],hz=s[2],f1=s[3],f2=s[4];
+            var ts=t+st, dur=en-st;
+            // Dois osciladores levemente desafinados para espessura coral
+            [hz, hz*1.006, hz*0.5].forEach(function(freq,oi){
+              var osc=ctx.createOscillator();
+              osc.type=oi===2?'sine':'sawtooth';
+              osc.frequency.value=freq;
+              // LFO leve (vibrato sombrio)
+              var lfo=ctx.createOscillator(); lfo.type='sine'; lfo.frequency.value=2.8+oi*0.4;
+              var lfog=ctx.createGain(); lfog.gain.value=0.6;
+              lfo.connect(lfog); lfog.connect(osc.frequency);
+              lfo.start(ts); lfo.stop(ts+dur+0.1);
+              var dist=mkDist(oi===2?20:90);
+              // Filtros formânticos (F1 + F2 em paralelo)
+              var bf1=ctx.createBiquadFilter(); bf1.type='bandpass'; bf1.frequency.value=f1; bf1.Q.value=oi===2?3:5;
+              var bf2=ctx.createBiquadFilter(); bf2.type='bandpass'; bf2.frequency.value=f2; bf2.Q.value=oi===2?2:3;
+              var lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=oi===2?400:750;
+              var fmix=ctx.createGain(); fmix.gain.value=oi===2?0.18:0.38;
+              // Envelope de amplitude (ataque lento, sustain, fade)
+              var sg=ctx.createGain();
+              sg.gain.setValueAtTime(0,ts);
+              sg.gain.linearRampToValueAtTime(0.3,ts+dur*0.14);
+              sg.gain.setValueAtTime(0.28,ts+dur*0.68);
+              sg.gain.linearRampToValueAtTime(0,ts+dur);
+              osc.connect(dist);
+              dist.connect(bf1); dist.connect(bf2);
+              bf1.connect(lp); bf2.connect(lp);
+              lp.connect(fmix); fmix.connect(sg);
+              sg.connect(rev); sg.connect(dly);
+              osc.start(ts); osc.stop(ts+dur+0.08);
+            });
+          });
+
+          // Halo de respiração (sussurro espectral entre as sílabas)
+          var nLen=sr*5, nBuf=ctx.createBuffer(1,nLen,sr), nd=nBuf.getChannelData(0);
+          for(var ni=0;ni<nLen;ni++) nd[ni]=Math.random()*2-1;
+          var nSrc=ctx.createBufferSource(); nSrc.buffer=nBuf;
+          var nFlt=ctx.createBiquadFilter(); nFlt.type='bandpass'; nFlt.frequency.value=280; nFlt.Q.value=1.2;
+          var nGain=ctx.createGain();
+          nGain.gain.setValueAtTime(0,t);
+          nGain.gain.linearRampToValueAtTime(0.035,t+0.6);
+          nGain.gain.setValueAtTime(0.03,t+3.4);
+          nGain.gain.linearRampToValueAtTime(0,t+4.8);
+          nSrc.connect(nFlt); nFlt.connect(nGain); nGain.connect(rev);
+          nSrc.start(t); nSrc.stop(t+5);
+
+          setTimeout(function(){try{ctx.close();}catch(e){}},12000);
+        }
+
+        // Tenta autoplay; fallback na primeira interação do usuário
+        function _tryAuto(){setTimeout(function(){
+          try{var c=new(window.AudioContext||window.webkitAudioContext||function(){})();
+            if(c.state==='running'){c.close();_play();}
+            else{c.close();}
+          }catch(e){}
+        },1400);}
+        if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_tryAuto);
+        else _tryAuto();
+        ['click','touchstart'].forEach(function(ev){document.addEventListener(ev,_play,{once:true,passive:true});});
+
+        // Expor para chamar ao retornar à home
+        window._vozOraculo=_play;
+      })();
     })();
   </script>
 </head>
