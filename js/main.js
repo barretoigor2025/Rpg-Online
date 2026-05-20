@@ -365,11 +365,13 @@ const DiceOverlay = (function () {
       <div id="dado-label-atual" class="dado-label-atual"></div>
       <div class="dado-versus-row">
         <div id="dado-portrait-esq" class="dado-portrait-vs"></div>
-        <canvas id="dado-canvas-jogo" width="${SZ}" height="${SZ}"></canvas>
+        <div class="dado-canvas-wrap">
+          <canvas id="dado-canvas-jogo" width="${SZ}" height="${SZ}"></canvas>
+          <div id="dado-num-jogo" class="dado-num-jogo"></div>
+        </div>
         <div id="dado-portrait-dir" class="dado-portrait-vs" style="display:none"></div>
       </div>
       <div id="dado-resultado-atual" class="dado-resultado-atual">
-        <div id="dado-num-jogo" class="dado-num-jogo"></div>
         <div id="dado-detalhe-jogo" class="dado-detalhe-jogo"></div>
         <div id="dado-veredicto-jogo" class="dado-veredicto-jogo"></div>
       </div>
@@ -446,7 +448,7 @@ const DiceOverlay = (function () {
     _lastTS = ts;
     const t = (ts-_t0)/1000;
     if (_mesh) {
-      _mesh.position.y = 300 - 300*_bounce(Math.min(t/FE,1));
+      _mesh.position.y = 140 - 140*_bounce(Math.min(t/FE,1));
       const fp = Math.min(t/FE,1);
       if (fp>0.70&&fp<0.88){const i=(0.88-fp)/0.18;_cam.position.x=(Math.random()-.5)*7*i;_cam.position.y=(Math.random()-.5)*5*i;}
       else{_cam.position.x*=0.85;_cam.position.y*=0.85;}
@@ -470,7 +472,7 @@ const DiceOverlay = (function () {
     if (!_initThree()) { onStop(); return; }
     if (_mesh){_scene.remove(_mesh);_mesh=null;}
     if (_raf){cancelAnimationFrame(_raf);_raf=null;}
-    _mesh=_makeMesh(lados);_mesh.position.set(0,300,0);_scene.add(_mesh);
+    _mesh=_makeMesh(lados);_mesh.position.set(0,140,0);_scene.add(_mesh);
     const b=18;
     _svx=(Math.random()-.5)*b+(Math.random()>.5?8:-8);
     _svy=(Math.random()-.5)*b+(Math.random()>.5?8:-8);
@@ -536,6 +538,7 @@ const DiceOverlay = (function () {
         return;
       }
 
+      numEl.classList.remove('visivel');
       resDiv.classList.remove('visivel');
       numEl.textContent='';detEl.textContent='';
       vered.textContent='';vered.className='dado-veredicto-jogo';
@@ -565,17 +568,18 @@ const DiceOverlay = (function () {
 
       const lados = r.tipo==='testar' ? 20 : (r.dados||20);
       _launch(lados, () => {
-        resDiv.classList.add('visivel');
         if (r.tipo==='testar') {
           numEl.textContent=String(r.total);
           const glow=r.critico?'rgba(255,215,0,.9)':r.catastrofe?'rgba(255,40,40,.9)':r.sucesso?'rgba(100,230,100,.9)':'rgba(230,80,80,.9)';
-          numEl.style.textShadow=`0 0 34px ${glow},0 2px 6px rgba(0,0,0,.7)`;
+          numEl.style.textShadow=`0 2px 10px rgba(0,0,0,.95),0 0 24px ${glow}`;
           detEl.textContent=`${r.d20}${r.modStr} = ${r.total} · CD ${r.dc}`;
         } else {
           numEl.textContent=String(r.resultado);
-          numEl.style.textShadow='0 0 32px rgba(255,160,40,.85),0 2px 6px rgba(0,0,0,.7)';
+          numEl.style.textShadow='0 2px 10px rgba(0,0,0,.95),0 0 24px rgba(255,160,40,.85)';
           detEl.textContent=r.notacao;
         }
+        numEl.classList.add('visivel');
+        resDiv.classList.add('visivel');
         // +0.5s → veredicto
         setTimeout(() => {
           if(r.tipo==='testar'){
