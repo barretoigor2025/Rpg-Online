@@ -144,7 +144,9 @@ Só na última linha. Tags disponíveis:
 
 ### Sistema de Avançar ✅
 - Ação especial `'__avançar__'`
-- Todos os jogadores ativos devem clicar para acionar `chamarIA_jogadoresAvançam()`
+- **Em estado `'aguardando'`:** todos clicam ⏩ Avançar → aciona `chamarIA_jogadoresAvançam()` (skip de turno)
+- **Em estado `'avançando'`** (após tag AVANÇAR da IA): botão muda para "▶ Continuar" e fica visível a todos. Cada jogador clica → seta `acao1:'__avançar__'`. Quando TODOS confirmam, host dispara `chamarIA_continuar()` imediatamente. Fallback: auto-timer de 45s caso alguém fique AFK.
+- `chamarIA_continuar` limpa `acao1` de todos ao iniciar (evita re-trigger do listener)
 - Prompt especial: Mestre entra em cena, máximo 80 palavras
 
 ### Dados Multiplayer Sincronizados ✅
@@ -222,4 +224,4 @@ await update(ref(db), ups);  // atômico
 ## Versão do cache JS
 
 Incrementar `?v=N` em `index.html` a cada deploy que altere `main.js` ou `layout.css`.  
-Versão atual: `?v=19`
+Versão atual: `?v=20`

@@ -860,6 +860,11 @@ function parsearSegmentos(txt) {
 }
 
 function chuncarTexto(txt, maxWords = 50) {
+  // Respect double-newlines as paragraph breaks before word-count chunking
+  const paragrafos = txt.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
+  if (paragrafos.length > 1) {
+    return paragrafos.flatMap(p => chuncarTexto(p, maxWords));
+  }
   const palavras = txt.split(/\s+/).filter(Boolean);
   if (palavras.length <= maxWords) return [txt];
   const chunks = [];
@@ -2707,13 +2712,17 @@ function irParaJogo(codigo) {
     // Cancelar timer se saiu do estado avançando
     if (config.estado !== 'avançando') cancelarAutoAvancar();
 
-    // Auto-avançar quando IA sinalizou AVANÇAR
+    // Auto-avançar quando IA sinalizou AVANÇAR — espera todos os jogadores confirmarem
     if (amIHost && config.estado === 'avançando' && !chamandoIA) {
       const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
-      const alguemAgiu = ativos.some(j => j.acao1 != null);
-      if (alguemAgiu) {
+      const alguemComAcaoReal = ativos.some(j => j.acao1 != null && j.acao1 !== '__avançar__');
+      const todosConfirmaram = ativos.length > 0 && ativos.every(j => j.acao1 === '__avançar__');
+      if (alguemComAcaoReal) {
         cancelarAutoAvancar();
         update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
+      } else if (todosConfirmaram) {
+        cancelarAutoAvancar();
+        chamarIA_continuar();
       } else {
         iniciarAutoAvancar();
       }
@@ -2905,17 +2914,20 @@ function atualizarInputArea(eu, config) {
   if (btnAv) {
     const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
     const querAvCount = ativos.filter(j => j.acao1 === '__avançar__').length;
-    const mostrar = !narrando && !morto && config.estado === 'aguardando' && !temContinuar;
+    const estaAvançando = config.estado === 'avançando';
+    const mostrar = !narrando && !morto && (config.estado === 'aguardando' || estaAvançando) && !temContinuar;
     btnAv.style.display = mostrar ? '' : 'none';
     const euQuer = eu?.acao1 === '__avançar__';
     btnAv.classList.toggle('ativo', euQuer);
     btnAv.disabled = euQuer || narrando || morto;
+    const icone = estaAvançando ? '▶' : '⏩';
+    const labelBase = estaAvançando ? '▶ Continuar' : '⏩ Avançar';
     if (euQuer) {
-      btnAv.textContent = `⏩ ${querAvCount}/${ativos.length}`;
+      btnAv.textContent = `${icone} ${querAvCount}/${ativos.length}`;
     } else if (ativos.length > 1 && querAvCount > 0) {
-      btnAv.textContent = `⏩ Avançar (${querAvCount}/${ativos.length})`;
+      btnAv.textContent = `${labelBase} (${querAvCount}/${ativos.length})`;
     } else {
-      btnAv.textContent = '⏩ Avançar';
+      btnAv.textContent = labelBase;
     }
   }
 }
@@ -3454,7 +3466,7 @@ window.chamarIAInicio = async function() {
 // ═══════════════════════════════════════════════════════════════
 //  AUTO-AVANÇO — timer e continuação sem input do jogador
 // ═══════════════════════════════════════════════════════════════
-const DELAY_AUTO_AVANCAR = 7000;
+const DELAY_AUTO_AVANCAR = 45000;
 let _autoAvancarTimer = null;
 
 function iniciarAutoAvancar() {
@@ -3515,6 +3527,10 @@ async function chamarIA_continuar() {
     const { config = {}, jogadores = {}, inimigos = {}, historia = {} } = data;
     const rodada = config.rodada || 1;
     await update(ref(db, `salas/${mySala}/config`), { estado: 'narrando' });
+    // Limpar flags __avançar__ de todos os jogadores (deixados pelo fluxo de confirmação)
+    const acao1Ups = {};
+    Object.keys(jogadores).forEach(uid => { acao1Ups[`salas/${mySala}/jogadores/${uid}/acao1`] = null; });
+    if (Object.keys(acao1Ups).length) await update(ref(db), acao1Ups);
     const hist = Object.values(historia)
       .sort((a,b) => (a.ts||0)-(b.ts||0))
       .filter(e => e.role === 'model' || e.role === 'user' || e.role === 'trade')
@@ -3679,7 +3695,8 @@ ${campCtx}
 VOZ:
 - Verbos fortes e sensoriais: "rasga", "despenca", "estala", "cheira a enxofre".
 - Foque no RESULTADO das ações, não na preparação.
-- ${iniList ? 'COMBATE ATIVO — máximo 40 palavras de narração (após testes). JAMAIS mencione dados, modificadores, CD ou cálculos no texto. Após narrar o resultado das ações dos jogadores, os INIMIGOS REAGEM E CONTRA-ATACAM imediatamente na mesma resposta: use TESTAR para cada inimigo vivo que atacar (nome exato do inimigo no primeiro campo, nome do jogador alvo no campo Alvo), seguido de ROLAR de dano. Inclua STATS:[JOGADOR:nome:novoHp] para atualizar o HP dos jogadores atingidos. Descreva sons, impactos e o caos da batalha em 1–2 frases sensoriais. Use os ataques e poderes especiais listados para cada criatura — cada inimigo tem identidade única. Criaturas com PODE NEGOCIAR podem pausar o combate para diálogo dramático se o jogador tentar conversar — use a fraqueza social indicada para guiar a reação. Criaturas BESTIAL ou BERSERK jamais param para conversar.' : 'EXPLORAÇÃO — máximo 70 palavras por bloco narrativo (tags FALA não contam no limite).'}
+- Separe blocos temáticos distintos com linha em branco (\n\n) entre eles.
+- ${iniList ? 'COMBATE ATIVO — máximo 40 palavras de narração (após testes). JAMAIS mencione dados, modificadores, CD ou cálculos no texto. Após narrar o resultado das ações dos jogadores, os INIMIGOS REAGEM E CONTRA-ATACAM imediatamente na mesma resposta: use TESTAR para cada inimigo vivo que atacar (nome exato do inimigo no primeiro campo, nome do jogador alvo no campo Alvo), seguido de ROLAR de dano. Inclua STATS:[JOGADOR:nome:novoHp] para atualizar o HP dos jogadores atingidos. Tom de batalha: objetivo e seco — narre o resultado em 1–2 frases diretas, sem exclamações desnecessárias. EXCEÇÃO: em ACERTO CRÍTICO ou CATÁSTROFE, libere narração detalhada e dramática como fazia antes. Use os ataques e poderes especiais listados para cada criatura — cada inimigo tem identidade única. Criaturas com PODE NEGOCIAR podem pausar o combate para diálogo dramático se o jogador tentar conversar — use a fraqueza social indicada para guiar a reação. Criaturas BESTIAL ou BERSERK jamais param para conversar.' : 'EXPLORAÇÃO — máximo 70 palavras por bloco narrativo (tags FALA não contam no limite). Em diálogos, negociações, missões e conversas com NPCs: seja expressivo e detalhado, sem limite de palavras — desenvolva personalidade, emoção e contexto.'}
 - Mantenha o tom: a floresta observa, os NPCs têm segredos, nada é seguro.
 - NUNCA termine com pergunta ao jogador. A narração termina com a consequência da cena.
 - Use AVANÇAR (sozinho, última linha da resposta) quando a cena não exige decisão do jogador — ex: consequência já resolvida, transição narrativa natural, momento puramente descritivo, NPC despedindo-se, multidão dispersando. O sistema continuará automaticamente. Não use AVANÇAR se o jogador precisar escolher algo. Em combate, use AVANÇAR SOMENTE quando o último inimigo morrer nesta resposta (todos receberem MATAR nesta mesma resposta) — sinaliza fim de combate e o sistema narrará o desfecho automaticamente.
