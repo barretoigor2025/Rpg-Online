@@ -359,11 +359,15 @@ const DiceOverlay = (function () {
   function _buildDOM() {
     const ov = document.getElementById('teste-overlay');
     if (!ov || ov.querySelector('.dado-card-jogo')) return ov;
-    const SZ = Math.min(window.innerWidth * 0.68, 200) | 0;
+    const SZ = Math.min(window.innerWidth * 0.32, 130) | 0;
     ov.innerHTML = `<div class="dado-card-jogo">
       <div id="dado-titulo-acao" class="dado-titulo-acao"></div>
       <div id="dado-label-atual" class="dado-label-atual"></div>
-      <canvas id="dado-canvas-jogo" width="${SZ}" height="${SZ}"></canvas>
+      <div class="dado-versus-row">
+        <div id="dado-portrait-esq" class="dado-portrait-vs"></div>
+        <canvas id="dado-canvas-jogo" width="${SZ}" height="${SZ}"></canvas>
+        <div id="dado-portrait-dir" class="dado-portrait-vs" style="display:none"></div>
+      </div>
       <div id="dado-resultado-atual" class="dado-resultado-atual">
         <div id="dado-num-jogo" class="dado-num-jogo"></div>
         <div id="dado-detalhe-jogo" class="dado-detalhe-jogo"></div>
@@ -537,6 +541,28 @@ const DiceOverlay = (function () {
       vered.textContent='';vered.className='dado-veredicto-jogo';
       label.textContent = r.label;
 
+      // Atualizar portraits versus
+      const _esq = document.getElementById('dado-portrait-esq');
+      const _dir = document.getElementById('dado-portrait-dir');
+      if (_esq) {
+        const _p = getPortraitAtaque(r.nomeJog || '', false);
+        _esq.style.cssText += `;background:${_p.cor}22;border-color:${_p.cor}55`;
+        _esq.innerHTML = _p.src
+          ? `<img src="${_p.src}" class="espelhado" onerror="this.style.opacity='.15'"><div class="dado-portrait-nome">${r.nomeJog||''}</div>`
+          : `<span>${_p.icon}</span><div class="dado-portrait-nome">${r.nomeJog||''}</div>`;
+      }
+      if (_dir) {
+        if (r.alvo) {
+          const _p = getPortraitAtaque(r.alvo, false);
+          _dir.style.cssText += `;display:flex;background:${_p.cor}22;border-color:${_p.cor}55`;
+          _dir.innerHTML = _p.src
+            ? `<img src="${_p.src}" onerror="this.style.opacity='.15'"><div class="dado-portrait-nome">${r.alvo}</div>`
+            : `<span>${_p.icon}</span><div class="dado-portrait-nome">${r.alvo}</div>`;
+        } else {
+          _dir.style.display = 'none';
+        }
+      }
+
       const lados = r.tipo==='testar' ? 20 : (r.dados||20);
       _launch(lados, () => {
         resDiv.classList.add('visivel');
@@ -617,20 +643,34 @@ function iniciarTestes(testes, roles, jogadores, afterCb) {
       const linhasHTML = testeRes.map((r, i) => {
         const cor = r.sucesso ? '#5a9a5a' : '#c05050';
         const badge = r.critico ? ' ⭐' : r.catastrofe ? ' 💀' : '';
+        const danos = rolarRes.filter(d => d.condicionalDe === i && r.sucesso);
+        const danoTotal = danos.reduce((s, d) => s + d.resultado, 0);
+        const danoFinal = r.critico ? danoTotal * 2 : danoTotal;
+        const danoStr = danoFinal > 0 ? `<span class="combate-teste-dano">💥${danoFinal}</span>` : '';
         return `<div class="combate-teste-linha" style="color:${cor}">
           <span class="combate-teste-num">${i+1}.</span>
           <span class="combate-teste-resultado">${r.sucesso?'ACERTO':'FALHA'}${badge}</span>
           <span class="combate-teste-roll">${r.d20}${r.modStr}=${r.total} <span class="combate-teste-cd">CD${r.dc}</span></span>
+          ${danoStr}
         </div>`;
       }).join('');
-      card.innerHTML = `<div class="combate-teste-centro" style="width:100%">
+      // Portraits
+      const pAtac = getPortraitAtaque(testeRes[0]?.nomeJog || '', false);
+      const alvoPrincipal = testeRes.find(r => r.alvo)?.alvo || '';
+      const pAlvo = alvoPrincipal ? getPortraitAtaque(alvoPrincipal, false) : null;
+      const _ph = (p, mirror) =>
+        `<div class="combate-teste-portrait" style="background:${p.cor}22;border-color:${p.cor}55">
+          ${p.src ? `<img src="${p.src}"${mirror?' class="espelhado"':''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+          <div class="combate-teste-icon-fb"${p.src?' style="display:none"':''}>${p.icon}</div>
+        </div>`;
+      card.innerHTML = `${_ph(pAtac,true)}<div class="combate-teste-centro">
         <div class="combate-teste-acao">${testeRes[0]?.acao||''}</div>
         ${linhasHTML}
-      </div>`;
+      </div>${pAlvo?_ph(pAlvo,false):''}`;
       el.appendChild(card);
       scrollDown();
     }
-    afterCb(testeRes);
+    afterCb(testeRes, rolarRes);
   });
 }
 
@@ -733,12 +773,20 @@ window.querAvançarHistoria = async function() {
   await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), { acao1: '__avançar__' });
 };
 
-async function narrarResultadoTestes(resultados, jogadores, inimigos, hist, rodada, ups) {
-  const resumo = resultados.map(r =>
-    `${r.nomeJog} — ${r.acao}: ${r.sucesso ? 'SUCESSO' : 'FALHA'} (rolou ${r.d20}${r.mod >= 0 ? '+' + r.mod : r.mod} = ${r.total} vs CD ${r.dc})`
-  ).join('\n');
+async function narrarResultadoTestes(resultados, rolarRes, jogadores, inimigos, hist, rodada, ups) {
+  const resumo = resultados.map((r, ti) => {
+    const danos = (rolarRes || []).filter(d => d.condicionalDe === ti);
+    let danoStr = '';
+    if (danos.length && r.sucesso && r.alvo) {
+      const total = danos.reduce((s, d) => s + d.resultado, 0);
+      const final = r.critico ? total * 2 : total;
+      danoStr = ` | DANO: ${final}${r.critico ? ' (crítico×2)' : ''}`;
+    }
+    const status = r.catastrofe ? 'CATÁSTROFE' : r.critico ? 'CRÍTICO' : r.sucesso ? 'SUCESSO' : 'FALHA';
+    return `${r.nomeJog} — ${r.acao}${r.alvo ? ` vs ${r.alvo}` : ''}: ${status} (${r.d20}${r.modStr}=${r.total} CD${r.dc})${danoStr}`;
+  }).join('\n');
 
-  const msg = `Resultados dos testes de ação:\n${resumo}\n\nCom base nesses resultados, narre o que DE FATO aconteceu — máximo 60 palavras, sem mencionar números, dados ou cálculos, apenas o resultado dramático.`;
+  const msg = `Resultados dos testes de ação:\n${resumo}\n\nNarre o que DE FATO aconteceu — máximo 60 palavras, sem mencionar números ou cálculos. OBRIGATÓRIO: inclua STATS na última linha atualizando HP dos inimigos atingidos (HP atual listado em INIMIGOS EM CENA menos o DANO acima). Se HP ≤ 0, use MATAR. Se CATÁSTROFE, aplique dano ao próprio atacante.`;
 
   const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), hist, msg, mostrarRetryUI, 250);
   ocultarRetryUI();
@@ -3507,9 +3555,9 @@ async function chamarIA(jogadores, data) {
         await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: preamble, falas: extrairFalas(textoAntes), ataques: extrairAtaques(textoAntes), noTTS: true, ts: Date.now() });
       }
       await update(ref(db), ups);
-      iniciarTestes(testes, roles, jogadores, async (resultados) => {
+      iniciarTestes(testes, roles, jogadores, async (resultados, rolarRes) => {
         const upsPos = {};
-        await narrarResultadoTestes(resultados, jogadores, inimigos, hist, rodada, upsPos);
+        await narrarResultadoTestes(resultados, rolarRes, jogadores, inimigos, hist, rodada, upsPos);
       });
     } else {
       // Fluxo normal sem testes

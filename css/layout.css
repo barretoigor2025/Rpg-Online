@@ -1665,6 +1665,52 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 .dado-veredicto-jogo.falha   { color:#e06060; background:rgba(180,50,50,.1);  border:1px solid rgba(200,80,80,.25);  }
 .dado-veredicto-jogo.critico { color:#ffd700; background:rgba(255,215,0,.1);  border:1px solid rgba(255,215,0,.4);   text-shadow:0 0 12px rgba(255,215,0,.7);  }
 .dado-veredicto-jogo.catastrofe { color:#ff4444; background:rgba(200,20,20,.15); border:1px solid rgba(200,30,30,.5); text-shadow:0 0 12px rgba(255,50,50,.8); }
+/* Versus row with portraits flanking the dice */
+.dado-versus-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+.dado-portrait-vs {
+  flex-shrink: 0;
+  width: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.12);
+  overflow: hidden;
+  background: rgba(255,255,255,.04);
+  transition: background .3s, border-color .3s;
+}
+.dado-portrait-vs img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+}
+.dado-portrait-vs span { font-size: 26px; margin: 10px 0 4px; }
+.dado-portrait-nome {
+  font-size: 7px;
+  color: rgba(255,255,255,.5);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  text-align: center;
+  padding: 3px 2px;
+  background: rgba(0,0,0,.45);
+  width: 100%;
+}
+/* Dano badge on test result card */
+.combate-teste-dano {
+  color: #ffaa44;
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
 .dado-historico {
   width: 100%;
   display: flex;
