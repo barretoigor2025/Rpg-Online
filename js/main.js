@@ -186,7 +186,42 @@ let _carregandoHistoriaInicial = false; // true durante a primeira carga da hist
 // ═══════════════════════════════════════════════════════════════
 //  HELPERS
 // ═══════════════════════════════════════════════════════════════
-function getApiKey() { return localStorage.getItem('rpg_groq_key') || ''; }
+// ── Provedores de IA ──────────────────────────────────────────────
+const PROVIDERS = {
+  groq: {
+    nome:'Groq', modelo:'llama-3.3-70b-versatile',
+    keyName:'rpg_groq_key', placeholder:'gsk_...',
+    url:'https://api.groq.com/openai/v1/chat/completions',
+    ttsUrl:'https://api.groq.com/openai/v1/audio/speech',
+    ttsModel:'playai-tts', ttsVoice:'Dorian-PlayAI', ttsSpeed:1.35,
+  },
+  openai: {
+    nome:'OpenAI', modelo:'gpt-4o',
+    keyName:'rpg_openai_key', placeholder:'sk-...',
+    url:'https://api.openai.com/v1/chat/completions',
+    ttsUrl:'https://api.openai.com/v1/audio/speech',
+    ttsModel:'tts-1', ttsVoice:'onyx', ttsSpeed:null,
+  },
+  gemini: {
+    nome:'Gemini', modelo:'gemini-2.0-flash',
+    keyName:'rpg_gemini_key', placeholder:'AIza...',
+    url:null, ttsUrl:null, // TTS via WebSpeech
+  },
+};
+let _provider = localStorage.getItem('rpg_provider') || 'groq';
+
+function getApiKey() { return localStorage.getItem(PROVIDERS[_provider].keyName) || ''; }
+
+window.selecionarProvider = function(prov, btn) {
+  _provider = prov;
+  localStorage.setItem('rpg_provider', prov);
+  document.querySelectorAll('.provider-chip').forEach(b => b.classList.toggle('active', b.dataset.prov === prov));
+  const p = PROVIDERS[prov];
+  const inp = document.getElementById('api-input');
+  if (inp) { inp.placeholder = p.placeholder; inp.value = localStorage.getItem(p.keyName) || ''; }
+  const st = document.getElementById('api-status');
+  if (st) st.textContent = inp?.value ? '✓ Chave salva' : '';
+};
 
 function toast(msg, ms = 3000) {
   const el = document.getElementById('toast');
@@ -1894,20 +1929,24 @@ document.querySelectorAll('.class-btn').forEach(btn => {
 window.salvarApiKey = function() {
   const val = document.getElementById('api-input')?.value?.trim();
   if (!val) return;
-  localStorage.setItem('rpg_groq_key', val);
+  localStorage.setItem(PROVIDERS[_provider].keyName, val);
   const st = document.getElementById('api-status');
   if (st) { st.textContent = '✓ Salva'; setTimeout(() => st.textContent = '', 2000); }
 };
 
 function pedirApiKey(cb) {
   _apiKeyPendingCb = cb;
+  const lbl = document.getElementById('modal-api-label');
+  const inp = document.getElementById('modal-api-input');
+  if (lbl) lbl.textContent = `Insira sua chave ${PROVIDERS[_provider].nome} para continuar:`;
+  if (inp) inp.placeholder = PROVIDERS[_provider].placeholder;
   document.getElementById('modal-apikey').style.display = 'flex';
 }
 
 window.confirmarApiKeyModal = function() {
   const val = document.getElementById('modal-api-input')?.value?.trim();
   if (!val) return;
-  localStorage.setItem('rpg_groq_key', val);
+  localStorage.setItem(PROVIDERS[_provider].keyName, val);
   document.getElementById('modal-apikey').style.display = 'none';
   if (_apiKeyPendingCb) { _apiKeyPendingCb(); _apiKeyPendingCb = null; }
 };
@@ -2093,13 +2132,15 @@ function buildRegrasContext() {
   return sec.length ? `\n═══ REGRAS CANÔNICAS DO SISTEMA ═══\n${sec.join('\n\n')}\n═══════════════════════════════════\n` : '';
 }
 
-// Preenche input se já tiver chave
+// Preenche input e seletor de provider salvos
 window.addEventListener('DOMContentLoaded', () => {
-  const k = getApiKey();
+  // Restaurar provider selecionado
+  document.querySelectorAll('.provider-chip').forEach(b => b.classList.toggle('active', b.dataset.prov === _provider));
+  const p = PROVIDERS[_provider];
   const el = document.getElementById('api-input');
-  if (el && k) { el.value = k; }
+  if (el) { el.placeholder = p.placeholder; const k = getApiKey(); if (k) el.value = k; }
   const st = document.getElementById('api-status');
-  if (st && k) st.textContent = '✓ Chave salva';
+  if (st && getApiKey()) st.textContent = '✓ Chave salva';
 
   document.getElementById('action-input')?.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarAcao(); }
@@ -3154,12 +3195,18 @@ function _nextUtterance() {
   const apiKey = getApiKey();
   if (!apiKey) { _narrarWebSpeech(limpo); return; }
 
+  const prov = PROVIDERS[_provider];
+  if (!prov.ttsUrl) { _narrarWebSpeech(limpo); return; }  // Gemini: sem TTS API
+
+  const ttsBody = { model: prov.ttsModel, input: limpo, voice: prov.ttsVoice, response_format:'mp3' };
+  if (prov.ttsSpeed) ttsBody.speed = prov.ttsSpeed;
+
   const _ttsCtrl = new AbortController();
   const _ttsTimer = setTimeout(() => _ttsCtrl.abort(), 10000);
-  fetch('https://api.groq.com/openai/v1/audio/speech', {
+  fetch(prov.ttsUrl, {
     method: 'POST',
     headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
-    body: JSON.stringify({ model:'playai-tts', input: limpo, voice:'Dorian-PlayAI', response_format:'mp3', speed:1.35 }),
+    body: JSON.stringify(ttsBody),
     signal: _ttsCtrl.signal
   }).then(async res => {
     clearTimeout(_ttsTimer);
@@ -3385,14 +3432,16 @@ async function processarStats(resposta, jogadores, inimigos) {
 async function chamarOpenAI(systemPrompt, history, userMsg, onRetry, maxTokens = 600) {
   const apiKey = getApiKey();
   if (!apiKey) return null;
+  if (_provider === 'gemini') return _chamarGemini(apiKey, systemPrompt, history, userMsg, onRetry, maxTokens);
 
+  // Groq e OpenAI usam formato OpenAI-compatível
+  const prov = PROVIDERS[_provider];
   const messages = [
     { role:'system', content: systemPrompt },
     ...history.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.role === 'trade' ? `[TROCA] ${m.content}` : (m.content || '') })),
     { role:'user', content: userMsg }
   ];
-
-  const body = JSON.stringify({ model:'llama-3.3-70b-versatile', messages, temperature:0.85, max_tokens: maxTokens });
+  const body = JSON.stringify({ model: prov.modelo, messages, temperature:0.85, max_tokens: maxTokens });
 
   for (let t = 1; t <= 10; t++) {
     if (t > 1) {
@@ -3401,7 +3450,7 @@ async function chamarOpenAI(systemPrompt, history, userMsg, onRetry, maxTokens =
       await new Promise(r => setTimeout(r, wait));
     }
     try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      const res = await fetch(prov.url, {
         method:'POST',
         headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
         body
@@ -3413,6 +3462,43 @@ async function chamarOpenAI(systemPrompt, history, userMsg, onRetry, maxTokens =
         return null;
       }
       return d.choices?.[0]?.message?.content || '';
+    } catch {
+      if (t === 10) { toast('Erro de conexão após 10 tentativas'); return null; }
+    }
+  }
+  return null;
+}
+
+async function _chamarGemini(apiKey, systemPrompt, history, userMsg, onRetry, maxTokens) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const contents = [
+    ...history.map(m => ({
+      role: m.role === 'model' ? 'model' : 'user',
+      parts: [{ text: m.role === 'trade' ? `[TROCA] ${m.content}` : (m.content || ' ') }]
+    })),
+    { role:'user', parts:[{ text: userMsg }] }
+  ];
+  const body = JSON.stringify({
+    system_instruction: { parts:[{ text: systemPrompt }] },
+    contents,
+    generationConfig: { maxOutputTokens: maxTokens, temperature: 0.85 }
+  });
+
+  for (let t = 1; t <= 10; t++) {
+    if (t > 1) {
+      const wait = Math.min(t * 2000, 16000);
+      if (onRetry) onRetry(t, wait);
+      await new Promise(r => setTimeout(r, wait));
+    }
+    try {
+      const res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body });
+      const d = await res.json();
+      if (d.error) {
+        if (/quota|overload|503|429/i.test(JSON.stringify(d.error)) && t < 10) continue;
+        toast(`Erro Gemini: ${(d.error.message||'').substring(0,80)}`);
+        return null;
+      }
+      return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
     } catch {
       if (t === 10) { toast('Erro de conexão após 10 tentativas'); return null; }
     }

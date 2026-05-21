@@ -287,8 +287,19 @@
     </div>
 
     <div class="field-group" id="api-section">
-      <label class="field-lbl">Chave API Groq</label>
-      <div class="row-input">
+      <label class="field-lbl">Provedor de IA</label>
+      <div class="provider-chips">
+        <button class="provider-chip active" data-prov="groq" onclick="selecionarProvider('groq',this)">
+          <strong>⚡ Groq</strong><small>llama-3.3</small>
+        </button>
+        <button class="provider-chip" data-prov="openai" onclick="selecionarProvider('openai',this)">
+          <strong>🤖 OpenAI</strong><small>gpt-4o</small>
+        </button>
+        <button class="provider-chip" data-prov="gemini" onclick="selecionarProvider('gemini',this)">
+          <strong>✦ Gemini</strong><small>2.0 flash</small>
+        </button>
+      </div>
+      <div class="row-input" style="margin-top:8px">
         <input type="password" id="api-input" placeholder="gsk_...">
         <button class="btn-sm" onclick="salvarApiKey()">Salvar</button>
       </div>
@@ -356,7 +367,7 @@
 <!-- ══ MODAL API KEY ══ -->
 <div id="modal-apikey" style="display:none">
   <div class="modal-box">
-    <p>Insira sua chave Groq para continuar:</p>
+    <p id="modal-api-label">Insira sua chave API para continuar:</p>
     <input type="password" id="modal-api-input" placeholder="gsk_...">
     <button class="btn-primary" onclick="confirmarApiKeyModal()">Confirmar</button>
   </div>
@@ -391,6 +402,6 @@
 <!-- Firebase SDK via script tags (mais confiável em mobile que ES module imports) -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-<script src="js/main.js?v=27"></script>
+<script src="js/main.js?v=28"></script>
 </body>
 </html>
