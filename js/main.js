@@ -960,7 +960,7 @@ function renderizarSegmentos(container, segs, falas, noTTS) {
           scrollDown();
         });
       } else {
-        narrarTexto(it.texto);
+        narrarTexto(it.texto, proxItem);
       }
     } else if (it.tipo === 'fala') {
       // Bolha inline: FALANTE à esquerda (espelhado → olha pra direita) | OUVINTE à direita (normal → olha pra esquerda)
