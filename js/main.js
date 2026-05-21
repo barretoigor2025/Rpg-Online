@@ -2240,7 +2240,11 @@ function tocarVinhetaArcana() {
   } catch(e) { /* autoplay bloqueado — silencioso */ }
 }
 
-window.irParaHome = function() { mostrarTela('screen-home'); _atualizarBotaoRetomarHome(); };
+window.irParaHome = function() {
+  mostrarTela('screen-home');
+  _atualizarBotaoRetomarHome();
+  setTimeout(function(){ try{ window._vozOraculo?.(); }catch(e){} }, 200);
+};
 
 window.irParaPersonagens = async function() {
   tocarVinhetaArcana();
