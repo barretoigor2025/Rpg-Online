@@ -168,6 +168,7 @@ let _selectedAdvs   = new Set();
 let _selectedPoderes = new Set();
 let _selectedGender = 'm';
 let _campanha   = null;
+let _parteAtual = 'parte1'; // ato/parte atual da campanha
 let _introSlides = [];
 let _introIdx    = 0;
 let _introAtivo  = false;
@@ -215,8 +216,17 @@ function limparTags(txt) {
     .replace(/^\s*TESTAR:\s*\[.*\]\s*$/gim, '')
     .replace(/^\s*ROLAR:\s*\[.*\]\s*$/gim, '')
     .replace(/^\s*AVANÇAR\s*$/im, '')
+    .replace(/^\s*FECHAR_ATO:\s*\[[^\]]*\]\s*$/im, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+function extrairFacharAto(txt) {
+  const m = txt.match(/^\s*FECHAR_ATO:\s*\[([^\]]+)\]\s*$/im);
+  return m ? m[1].trim() : null;
+}
+function removerFacharAto(txt) {
+  return txt.replace(/^\s*FECHAR_ATO:\s*\[[^\]]*\]\s*$/im, '').trim();
 }
 
 function extrairAvançar(txt) {
@@ -825,8 +835,13 @@ async function narrarResultadoTestes(resultados, rolarRes, jogadores, inimigos, 
   ocultarRetryUI();
 
   if (resposta) {
-    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(resposta), falas: extrairFalas(resposta), ataques: extrairAtaques(resposta), ts: Date.now() });
-    await processarStats(resposta, jogadores, inimigos);
+    const atoTitulo = extrairFacharAto(resposta);
+    const respostaLimpa = atoTitulo ? removerFacharAto(resposta) : resposta;
+    const temAvançarNarr = extrairAvançar(respostaLimpa);
+    await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(respostaLimpa), falas: extrairFalas(respostaLimpa), ataques: extrairAtaques(respostaLimpa), ts: Date.now() });
+    await processarStats(respostaLimpa, jogadores, inimigos);
+    if (atoTitulo) mostrarCinematicaAto(atoTitulo);
+    if (temAvançarNarr) { ups[`salas/${mySala}/config/estado`] = 'avançando'; ups[`salas/${mySala}/config/rodada`] = (ups[`salas/${mySala}/config/rodada`] || 0); return await update(ref(db), ups); }
   }
   ups[`salas/${mySala}/config/estado`] = 'aguardando';
   ups[`salas/${mySala}/config/rodada`] = rodada + 1;
@@ -1945,6 +1960,11 @@ function buildCampaignContext() {
 
   const regras = _campanha.regras_narracao.map(r => '• ' + r).join('\n');
 
+  const parteData = _campanha.estrutura?.[_parteAtual];
+  const atoInfo = parteData
+    ? `\nATO ATUAL — "${parteData.nome}": ${parteData.resumo}\nUse FECHAR_ATO: [Título evocativo do ato] quando o objetivo central deste ato se resolver — obstáculos principais vencidos E um gancho narrativo surgir (nova missão, revelação, partida). Após FECHAR_ATO use sempre AVANÇAR.`
+    : '';
+
   return `
 ═══ CAMPANHA: "${_campanha.titulo}" ═══
 ${_campanha.prompt_sistema}
@@ -1971,6 +1991,7 @@ IDENTIFICAR OSWALD:
 • Pó de Sabedoria ou chá de greybane: memórias retornam brevemente
 
 ESTADO INICIAL DA CAMPANHA: ${_campanha.estado_inicial.localizacao} — ${_campanha.estado_inicial.momento}
+${atoInfo}
 `;
 }
 
@@ -2099,6 +2120,38 @@ function mostrarTela(id) {
     .forEach(s => { const el = document.getElementById(s); if (el) el.style.display = 'none'; });
   const el = document.getElementById(id);
   if (el) el.style.display = '';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CINEMATICA DE ATO
+// ═══════════════════════════════════════════════════════════════
+function mostrarCinematicaAto(titulo) {
+  // Avança a parte no Firebase (host only)
+  if (amIHost && mySala) {
+    const partes = ['parte1','parte2','parte3'];
+    const idx = partes.indexOf(_parteAtual);
+    const proxima = partes[idx + 1] || _parteAtual;
+    if (proxima !== _parteAtual) {
+      update(ref(db, `salas/${mySala}/config`), { parte: proxima });
+      _parteAtual = proxima;
+    }
+  }
+
+  const ol = document.createElement('div');
+  ol.className = 'ato-fim-overlay';
+  ol.innerHTML = `
+    <div class="ato-fim-content">
+      <div class="ato-fim-ornamento">✦ &nbsp; ✦ &nbsp; ✦</div>
+      <div class="ato-fim-label">FIM DO CAPÍTULO</div>
+      <div class="ato-fim-titulo">${titulo}</div>
+      <div class="ato-fim-ornamento">― ✦ ―</div>
+    </div>`;
+  document.body.appendChild(ol);
+  requestAnimationFrame(() => { requestAnimationFrame(() => { ol.classList.add('visivel'); }); });
+  setTimeout(() => {
+    ol.classList.remove('visivel');
+    setTimeout(() => ol.remove(), 1200);
+  }, 5500);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2649,6 +2702,7 @@ function irParaJogo(codigo) {
     if (rodEl) rodEl.textContent = config.rodada ? `Rodada ${config.rodada}` : '';
 
     _jogadoresCache = jogadores;
+    if (config.parte) _parteAtual = config.parte;
 
     // Troca de itens: renderizar overlay para jogadores envolvidos
     const trocaData = data.troca || null;
@@ -3507,11 +3561,14 @@ async function chamarIA_jogadoresAvançam(jogadores, data) {
       await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando', rodada: rodada + 1 });
       return;
     }
-    const temAvançar = extrairAvançar(resposta);
-    const respostaFinal = temAvançar ? removerAvançar(resposta) : resposta;
+    const atoTituloAv = extrairFacharAto(resposta);
+    const semAtoAv = atoTituloAv ? removerFacharAto(resposta) : resposta;
+    const temAvançar = extrairAvançar(semAtoAv);
+    const respostaFinal = temAvançar ? removerAvançar(semAtoAv) : semAtoAv;
     await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(respostaFinal), falas: extrairFalas(respostaFinal), ataques: extrairAtaques(respostaFinal), ts: Date.now() });
     await processarStats(respostaFinal, jogadores, inimigos);
     await update(ref(db, `salas/${mySala}/config`), { estado: temAvançar ? 'avançando' : 'aguardando', rodada: rodada + 1 });
+    if (atoTituloAv) mostrarCinematicaAto(atoTituloAv);
   } finally {
     chamandoIA = false;
     ocultarRetryUI();
@@ -3548,13 +3605,16 @@ async function chamarIA_continuar() {
       await update(ref(db), ups);
       return;
     }
-    const temAvançar = extrairAvançar(resposta);
-    const respostaFinal = temAvançar ? removerAvançar(resposta) : resposta;
+    const atoTituloCont = extrairFacharAto(resposta);
+    const semAtoCont = atoTituloCont ? removerFacharAto(resposta) : resposta;
+    const temAvançar = extrairAvançar(semAtoCont);
+    const respostaFinal = temAvançar ? removerAvançar(semAtoCont) : semAtoCont;
     ups[`salas/${mySala}/config/estado`] = temAvançar ? 'avançando' : 'aguardando';
     ups[`salas/${mySala}/config/rodada`] = rodada + 1;
     await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(respostaFinal), falas: extrairFalas(respostaFinal), ataques: extrairAtaques(respostaFinal), ts: Date.now() });
     await processarStats(respostaFinal, jogadores, inimigos);
     await update(ref(db), ups);
+    if (atoTituloCont) mostrarCinematicaAto(atoTituloCont);
   } finally {
     chamandoIA = false;
     ocultarRetryUI();
@@ -3624,13 +3684,16 @@ async function chamarIA(jogadores, data) {
       });
     } else {
       // Fluxo normal sem testes
-      const temAvançar = extrairAvançar(resposta);
-      const respostaFinal = temAvançar ? removerAvançar(resposta) : resposta;
+      const atoTitulo = extrairFacharAto(resposta);
+      const semAto = atoTitulo ? removerFacharAto(resposta) : resposta;
+      const temAvançar = extrairAvançar(semAto);
+      const respostaFinal = temAvançar ? removerAvançar(semAto) : semAto;
       ups[`salas/${mySala}/config/estado`] = temAvançar ? 'avançando' : 'aguardando';
       ups[`salas/${mySala}/config/rodada`] = rodada + 1;
       await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(respostaFinal), falas: extrairFalas(respostaFinal), ataques: extrairAtaques(respostaFinal), ts: Date.now() });
       await processarStats(respostaFinal, jogadores, inimigos);
       await update(ref(db), ups);
+      if (atoTitulo) mostrarCinematicaAto(atoTitulo);
     }
   } finally {
     chamandoIA = false;
@@ -3699,10 +3762,13 @@ VOZ:
 - Verbos fortes e sensoriais: "rasga", "despenca", "estala", "cheira a enxofre".
 - Foque no RESULTADO das ações, não na preparação.
 - Separe blocos temáticos distintos com linha em branco (\n\n) entre eles.
-- ${iniList ? 'COMBATE ATIVO — máximo 40 palavras de narração (após testes). JAMAIS mencione dados, modificadores, CD ou cálculos no texto. Após narrar o resultado das ações dos jogadores, os INIMIGOS REAGEM E CONTRA-ATACAM imediatamente na mesma resposta: use TESTAR para cada inimigo vivo que atacar (nome exato do inimigo no primeiro campo, nome do jogador alvo no campo Alvo), seguido de ROLAR de dano. Inclua STATS:[JOGADOR:nome:novoHp] para atualizar o HP dos jogadores atingidos. Tom de batalha: objetivo e seco — narre o resultado em 1–2 frases diretas, sem exclamações desnecessárias. EXCEÇÃO: em ACERTO CRÍTICO ou CATÁSTROFE, libere narração detalhada e dramática como fazia antes. Use os ataques e poderes especiais listados para cada criatura — cada inimigo tem identidade única. Criaturas com PODE NEGOCIAR podem pausar o combate para diálogo dramático se o jogador tentar conversar — use a fraqueza social indicada para guiar a reação. Criaturas BESTIAL ou BERSERK jamais param para conversar.' : 'EXPLORAÇÃO — máximo 70 palavras por bloco narrativo (tags FALA não contam no limite). Em diálogos, negociações, missões e conversas com NPCs: seja expressivo e detalhado, sem limite de palavras — desenvolva personalidade, emoção e contexto.'}
+- ${iniList
+  ? `COMBATE ATIVO — inimigos são entidades VIVAS com instintos, táticas e emoções próprias. Eles não esperam. Regras:\n  • Após QUALQUER ação dos jogadores (incluindo quando passaram o turno sem agir), os inimigos REAGEM IMEDIATAMENTE — atacam, usam poderes, se reposicionam ou agem conforme seu comportamento e motivação.\n  • Se o jogador passou o turno sem ação específica: os inimigos APROVEITAM A ABERTURA — pressionam com força total, gritam bravatas, usam poderes especiais.\n  • Expresse o estado emocional dos inimigos: raiva ao ver companheiros cair, euforia quando dominam, desespero quando acuados, determinação fria se forem calculistas. Use o campo comportamento de cada criatura.\n  • Use TESTAR para cada ataque inimigo (nome exato | ação | atributo | CD | jogador alvo), seguido de ROLAR de dano. Inclua STATS:[JOGADOR:nome:novoHp] ao acertar.\n  • CRÍTICO/CATÁSTROFE: narração dramática e detalhada.\n  • Criaturas com PODE NEGOCIAR podem pausar para diálogo — use fraqueza_social como gatilho. BESTIAL e BERSERK jamais param.\n  • NUNCA mencione dados, modificadores ou CD. Tom seco e direto, máximo 60 palavras de narração.`
+  : 'EXPLORAÇÃO — máximo 70 palavras por bloco narrativo (tags FALA não contam no limite). Em diálogos, negociações, missões e conversas com NPCs: seja expressivo e detalhado, sem limite de palavras — desenvolva personalidade, emoção e contexto.'}
 - Mantenha o tom: a floresta observa, os NPCs têm segredos, nada é seguro.
 - NUNCA termine com pergunta ao jogador. A narração termina com a consequência da cena.
 - Use AVANÇAR (sozinho, última linha da resposta) quando a cena não exige decisão do jogador — ex: consequência já resolvida, transição narrativa natural, momento puramente descritivo, NPC despedindo-se, multidão dispersando. O sistema continuará automaticamente. Não use AVANÇAR se o jogador precisar escolher algo. Em combate, use AVANÇAR SOMENTE quando o último inimigo morrer nesta resposta (todos receberem MATAR nesta mesma resposta) — sinaliza fim de combate e o sistema narrará o desfecho automaticamente.
+- Use FECHAR_ATO: [Título] (penúltima linha, seguido de AVANÇAR) quando o objetivo central do ato atual se resolver: todos os inimigos principais derrotados E um novo gancho surgir (missão aceita, revelação feita, partida iminente). Isso exibe uma cinematica de encerramento do capítulo.
 - Se jogadores estiverem em locais diferentes, use [AUSENTE:nome] e [PRESENTE:nome].
 - AÇÕES INDIVIDUAIS: cada jogador age de forma INDEPENDENTE. Narre SOMENTE o que CADA UM declarou. NUNCA aplique a ação de um jogador ao grupo todo nem a outros jogadores.
 

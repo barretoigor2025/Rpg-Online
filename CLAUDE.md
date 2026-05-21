@@ -31,6 +31,16 @@ ROLAR: [NomeExato|Descrição do dano|NotaçãoDados|Alvo?]
 - Notação: `1d20`, `2d6`, `1d8+3`, `1d4-1` etc.
 - Usa dado animado Three.js; dados de dano usam geometria d4/d6/d8/d10/d12/d20 correspondente
 
+### FECHAR_ATO
+```
+FECHAR_ATO: [Título evocativo do ato]
+```
+- Penúltima linha (antes de AVANÇAR), sozinha
+- Dispara cinematica de encerramento de capítulo: tela preta com título dourado (5.5s)
+- Avança `config.parte` para o próximo (`parte1→parte2→parte3`)
+- Deve ser seguido de `AVANÇAR` para o sistema narrar a abertura do próximo capítulo
+- Usar quando: objetivo central do ato resolvido + novo gancho narrativo surgindo
+
 ### AVANÇAR
 ```
 AVANÇAR
@@ -224,4 +234,4 @@ await update(ref(db), ups);  // atômico
 ## Versão do cache JS
 
 Incrementar `?v=N` em `index.html` a cada deploy que altere `main.js` ou `layout.css`.  
-Versão atual: `?v=20`
+Versão atual: `?v=22`
