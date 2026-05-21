@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
   <title>Oráculo RPG</title>
-  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/layout.css?v=29">
   <script>
     // Navegação básica inline — roda ANTES de qualquer script externo.
     // Garante que os botões funcionem mesmo se o Firebase demorar a carregar.
@@ -194,6 +194,32 @@
     <p id="home-desc">A inteligência artificial conduz a narrativa, interpreta NPCs, controla inimigos e adapta a campanha em tempo real conforme suas escolhas.</p>
     <button id="home-play-btn" onclick="irParaPersonagens()">Jogar</button>
     <button id="home-retomar-btn" style="display:none" onclick="retomarUltimaSessao()">▶ Retomar Campanha</button>
+
+    <div id="api-section" class="field-group">
+      <label class="field-lbl">Provedor de IA</label>
+      <div class="provider-chips">
+        <button class="provider-chip active" data-prov="groq" onclick="selecionarProvider('groq',this)">
+          <strong>⚡ Groq</strong><small>llama-3.3 · voz</small>
+        </button>
+        <button class="provider-chip" data-prov="openai" onclick="selecionarProvider('openai',this)">
+          <strong>🤖 OpenAI</strong><small>gpt-4o · voz</small>
+        </button>
+        <button class="provider-chip" data-prov="gemini" onclick="selecionarProvider('gemini',this)">
+          <strong>✦ Gemini</strong><small>2.0 flash · grátis</small>
+        </button>
+        <button class="provider-chip" data-prov="openrouter" onclick="selecionarProvider('openrouter',this)">
+          <strong>🌐 Router</strong><small>llama-4 · grátis</small>
+        </button>
+        <button class="provider-chip" data-prov="cerebras" onclick="selecionarProvider('cerebras',this)">
+          <strong>🧠 Cerebras</strong><small>llama-3.3 · grátis</small>
+        </button>
+      </div>
+      <div class="row-input" style="margin-top:8px">
+        <input type="password" id="api-input" placeholder="gsk_...">
+        <button class="btn-sm" onclick="salvarApiKey()">Salvar</button>
+      </div>
+      <span id="api-status" class="hint"></span>
+    </div>
   </div>
 </div>
 
@@ -285,34 +311,6 @@
     <div id="campaign-banner">
       <span id="campaign-name">📖 Carregando campanha...</span>
     </div>
-
-    <div class="field-group" id="api-section">
-      <label class="field-lbl">Provedor de IA</label>
-      <div class="provider-chips">
-        <button class="provider-chip active" data-prov="groq" onclick="selecionarProvider('groq',this)">
-          <strong>⚡ Groq</strong><small>llama-3.3 · voz</small>
-        </button>
-        <button class="provider-chip" data-prov="openai" onclick="selecionarProvider('openai',this)">
-          <strong>🤖 OpenAI</strong><small>gpt-4o · voz</small>
-        </button>
-        <button class="provider-chip" data-prov="gemini" onclick="selecionarProvider('gemini',this)">
-          <strong>✦ Gemini</strong><small>2.0 flash · grátis</small>
-        </button>
-        <button class="provider-chip" data-prov="openrouter" onclick="selecionarProvider('openrouter',this)">
-          <strong>🌐 Router</strong><small>llama-4 · grátis</small>
-        </button>
-        <button class="provider-chip" data-prov="cerebras" onclick="selecionarProvider('cerebras',this)">
-          <strong>🧠 Cerebras</strong><small>llama-3.3 · grátis</small>
-        </button>
-      </div>
-      <div class="row-input" style="margin-top:8px">
-        <input type="password" id="api-input" placeholder="gsk_...">
-        <button class="btn-sm" onclick="salvarApiKey()">Salvar</button>
-      </div>
-      <span id="api-status" class="hint"></span>
-    </div>
-
-    <hr class="divider">
 
     <div class="room-actions">
       <button class="btn-primary" onclick="criarSala()">Criar Sala</button>

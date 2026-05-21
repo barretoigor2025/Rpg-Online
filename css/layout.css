@@ -2086,6 +2086,19 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 }
 #home-play-btn:active { transform: translateY(0); opacity: 1; }
 
+#screen-home #api-section {
+  width: 100%;
+  text-align: left;
+  background: rgba(10,20,45,.6);
+  border: 1px solid rgba(200,160,80,.15);
+  border-radius: 10px;
+  padding: 14px 16px;
+  backdrop-filter: blur(4px);
+}
+#screen-home #api-section .field-lbl {
+  color: rgba(120,160,220,.6);
+}
+
 /* ══════════════════════════════════════════════════════
    TELA PERSONAGENS
 ══════════════════════════════════════════════════════ */
