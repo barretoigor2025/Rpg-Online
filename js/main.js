@@ -181,6 +181,7 @@ let _trocaItens       = new Set(); // slugs selecionados para troca
 let _trocaAtual       = null;     // snapshot atual do nó salas/${sala}/troca
 let _lastConfig       = {};       // último snapshot de config (para re-check de prompt)
 let _narracaoAtiva    = 0;        // contagem de segmentos sendo narrados (com Continuar buttons)
+let _carregandoHistoriaInicial = false; // true durante a primeira carga da história (entradas antigas = sem TTS)
 
 // ═══════════════════════════════════════════════════════════════
 //  HELPERS
@@ -2679,6 +2680,11 @@ function irParaJogo(codigo) {
   mostrarTela('screen-game');
   document.getElementById('room-code').textContent = codigo;
 
+  // Resetar estado de renderização para evitar TTS de entradas antigas no reload
+  _renderedKeys = new Set();
+  _narracaoAtiva = 0;
+  _carregandoHistoriaInicial = true;
+
   _kitMigrado = false;
   if (unsubSala) unsubSala();
   if (unsubRolagem) { unsubRolagem(); unsubRolagem = null; }
@@ -2858,6 +2864,13 @@ function renderizarHistoria(historia, jogadores) {
   const el = document.getElementById('story-content');
   if (!el) return;
   const entries = Object.entries(historia).sort(([,a],[,b]) => (a.ts||0)-(b.ts||0));
+
+  // Na primeira carga (reload/entrada na sala), todas as entradas existentes
+  // são renderizadas em silêncio — evita TTS para histórico antigo e
+  // impede _narracaoAtiva de crescer sem nunca decrementar.
+  const silenciarTudo = _carregandoHistoriaInicial;
+  if (_carregandoHistoriaInicial) _carregandoHistoriaInicial = false;
+
   let adicionou = false;
 
   entries.forEach(([key, entry]) => {
@@ -2870,7 +2883,7 @@ function renderizarHistoria(historia, jogadores) {
       div.className = 'msg msg-gm';
       const falas = normalizarFalas(entry.falas);
       const segs  = parsearSegmentos(entry.content);
-      renderizarSegmentos(div, segs, falas, entry.noTTS);
+      renderizarSegmentos(div, segs, falas, silenciarTudo || entry.noTTS);
     } else if (entry.role === 'user') {
       const j = Object.values(jogadores).find(j => j.uid === entry.uid);
       const cls = CLASSES[j?.classe] || {};
@@ -3066,6 +3079,8 @@ window.resetarSala = async function() {
   if (!mySala || !amIHost) { toast('Só o host pode resetar.'); return; }
   if (!confirm('Resetar a sala?')) return;
   _renderedKeys = new Set();
+  _narracaoAtiva = 0;
+  _carregandoHistoriaInicial = false;
   const jogadores = (await get(ref(db, `salas/${mySala}/jogadores`))).val() || {};
   const ups = {};
   ups[`salas/${mySala}/historia`]  = null;
@@ -3139,11 +3154,15 @@ function _nextUtterance() {
   const apiKey = getApiKey();
   if (!apiKey) { _narrarWebSpeech(limpo); return; }
 
+  const _ttsCtrl = new AbortController();
+  const _ttsTimer = setTimeout(() => _ttsCtrl.abort(), 10000);
   fetch('https://api.groq.com/openai/v1/audio/speech', {
     method: 'POST',
     headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
-    body: JSON.stringify({ model:'playai-tts', input: limpo, voice:'Dorian-PlayAI', response_format:'mp3', speed:1.35 })
+    body: JSON.stringify({ model:'playai-tts', input: limpo, voice:'Dorian-PlayAI', response_format:'mp3', speed:1.35 }),
+    signal: _ttsCtrl.signal
   }).then(async res => {
+    clearTimeout(_ttsTimer);
     if (!res.ok) { _narrarWebSpeech(limpo); return; }
     const blob = await res.blob();
     const url  = URL.createObjectURL(blob);
@@ -3152,7 +3171,7 @@ function _nextUtterance() {
     audio.onended = () => { URL.revokeObjectURL(url); _currentAudio = null; _nextUtterance(); };
     audio.onerror = () => _nextUtterance();
     audio.play().catch(() => _narrarWebSpeech(limpo));
-  }).catch(() => _narrarWebSpeech(limpo));
+  }).catch(() => { clearTimeout(_ttsTimer); _narrarWebSpeech(limpo); });
 }
 
 function _narrarWebSpeech(texto) {
