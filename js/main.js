@@ -3569,6 +3569,9 @@ async function chamarIA_jogadoresAvançam(jogadores, data) {
     await processarStats(respostaFinal, jogadores, inimigos);
     await update(ref(db, `salas/${mySala}/config`), { estado: temAvançar ? 'avançando' : 'aguardando', rodada: rodada + 1 });
     if (atoTituloAv) mostrarCinematicaAto(atoTituloAv);
+  } catch(e) {
+    console.warn('[chamarIA_jogadoresAvançam] exceção:', e);
+    try { await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' }); } catch(_) {}
   } finally {
     chamandoIA = false;
     ocultarRetryUI();
@@ -3615,6 +3618,9 @@ async function chamarIA_continuar() {
     await processarStats(respostaFinal, jogadores, inimigos);
     await update(ref(db), ups);
     if (atoTituloCont) mostrarCinematicaAto(atoTituloCont);
+  } catch(e) {
+    console.warn('[chamarIA_continuar] exceção:', e);
+    try { await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' }); } catch(_) {}
   } finally {
     chamandoIA = false;
     ocultarRetryUI();
@@ -3695,6 +3701,9 @@ async function chamarIA(jogadores, data) {
       await update(ref(db), ups);
       if (atoTitulo) mostrarCinematicaAto(atoTitulo);
     }
+  } catch(e) {
+    console.warn('[chamarIA] exceção:', e);
+    try { await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' }); } catch(_) {}
   } finally {
     chamandoIA = false;
     ocultarRetryUI();
