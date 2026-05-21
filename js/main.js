@@ -3776,7 +3776,7 @@ VOZ:
 - Foque no RESULTADO das ações, não na preparação.
 - Separe blocos temáticos distintos com linha em branco (\n\n) entre eles.
 - ${iniList
-  ? `COMBATE ATIVO — inimigos são entidades VIVAS com instintos, táticas e emoções próprias. Eles não esperam. Regras:\n  • Após QUALQUER ação dos jogadores (incluindo quando passaram o turno sem agir), os inimigos REAGEM IMEDIATAMENTE — atacam, usam poderes, se reposicionam ou agem conforme seu comportamento e motivação.\n  • Se o jogador passou o turno sem ação específica: os inimigos APROVEITAM A ABERTURA — pressionam com força total, gritam bravatas, usam poderes especiais.\n  • Expresse o estado emocional dos inimigos: raiva ao ver companheiros cair, euforia quando dominam, desespero quando acuados, determinação fria se forem calculistas. Use o campo comportamento de cada criatura.\n  • Use TESTAR para cada ataque inimigo (nome exato | ação | atributo | CD | jogador alvo), seguido de ROLAR de dano. Inclua STATS:[JOGADOR:nome:novoHp] ao acertar.\n  • CRÍTICO/CATÁSTROFE: narração dramática e detalhada.\n  • Criaturas com PODE NEGOCIAR podem pausar para diálogo — use fraqueza_social como gatilho. BESTIAL e BERSERK jamais param.\n  • NUNCA mencione dados, modificadores ou CD. Tom seco e direto, máximo 60 palavras de narração.`
+  ? `COMBATE ATIVO — inimigos são entidades VIVAS com instintos, táticas e emoções próprias. Eles não esperam. Regras:\n  • Após QUALQUER ação dos jogadores (incluindo quando passaram o turno sem agir), os inimigos REAGEM IMEDIATAMENTE — atacam, usam poderes, se reposicionam ou agem conforme seu comportamento e motivação.\n  • Se o jogador passou o turno sem ação específica: os inimigos APROVEITAM A ABERTURA — pressionam com força total, gritam bravatas, usam poderes especiais.\n  • Expresse o estado emocional dos inimigos: raiva ao ver companheiros cair, euforia quando dominam, desespero quando acuados, determinação fria se forem calculistas. Use o campo comportamento de cada criatura.\n  • Use TESTAR para cada ataque inimigo (nome exato | ação | atributo | CD | jogador alvo), seguido de ROLAR de dano. Inclua STATS:[JOGADOR:nome:novoHp] ao acertar.\n  • CRÍTICO/CATÁSTROFE: narração dramática e detalhada.\n  • Criaturas com PODE NEGOCIAR podem pausar para diálogo — use fraqueza_social como gatilho. BESTIAL e BERSERK jamais param.\n  • NUNCA mencione dados, modificadores ou CD. Tom seco e direto, máximo 60 palavras de narração.\n  • ORDEM OBRIGATÓRIA: TESTAR/ROLAR vêm PRIMEIRO. Texto antes dos dados = apenas contexto de cena. NUNCA descreva impacto, som de golpe ou contato físico antes de rolar — isso só aparece na narração pós-dado de narrarResultadoTestes.`
   : 'EXPLORAÇÃO — máximo 70 palavras por bloco narrativo (tags FALA não contam no limite). Em diálogos, negociações, missões e conversas com NPCs: seja expressivo e detalhado, sem limite de palavras — desenvolva personalidade, emoção e contexto.'}
 - Mantenha o tom: a floresta observa, os NPCs têm segredos, nada é seguro.
 - NUNCA termine com pergunta ao jogador. A narração termina com a consequência da cena.
@@ -3789,7 +3789,7 @@ JOGADORES ATIVOS:
 ${jogList}
 ${iniList ? `\nINIMIGOS EM CENA:\n${iniList}` : ''}
 
-TESTES DE AÇÃO — quando a ação de um jogador for complexa ou arriscada (correr, saltar, sacar em movimento, atacar pelas costas, etc.), determine quais testes são necessários e liste-os ANTES de narrar qualquer resultado. O sistema rola os dados e você narra depois.
+TESTES DE AÇÃO — quando a ação de um jogador for complexa ou arriscada (correr, saltar, sacar em movimento, atacar pelas costas, etc.), determine quais testes são necessários e liste-os PRIMEIRO, antes de qualquer narrativa. O sistema rola os dados e você narra DEPOIS.
 Formato obrigatório (uma linha por teste, na ordem em que ocorrem):
   TESTAR: [NomeExato|Descrição curta da ação|Atributo|CD|Alvo]
 Onde Alvo é o nome do inimigo ou NPC que está sendo atacado (opcional, omitir em testes não-combativos).
@@ -3798,7 +3798,7 @@ CD típicas: fácil=8, médio=12, difícil=15, muito difícil=18, heróico=22
 Exemplo — "Carne quer correr, sacar a faca e arremessá-la nas costas do goblin":
   TESTAR: [Carne|Golpe de espada|FOR|13|Espantalho 1]
   TESTAR: [Carne|Corrida pelas barracas|DES|10]
-Após listar os TESTAR, escreva apenas uma frase curtíssima de suspense (sem revelar o resultado). NÃO narre o desfecho — ele depende dos dados.
+⚠ REGRA CRÍTICA: escreva os TESTAR/ROLAR NA PRIMEIRA LINHA da resposta — NUNCA depois de texto narrativo. Qualquer texto escrito ANTES dos TESTAR aparece na tela ANTES dos dados serem rolados; por isso esse texto deve descrever apenas o CENÁRIO e a INTENÇÃO do personagem, NUNCA o impacto, o contato físico ou o som do golpe ("metal corta", "punho acerta", "espada rasga", "madeira estala", "lâmina penetra"). Esses detalhes só existem depois que os dados decidirem. NÃO narre o desfecho — ele depende dos dados.
 Se a ação for simples (atacar de frente, falar com NPC, mover-se para adjacente), não use TESTAR — narre diretamente.
 Para danos ou efeitos com dados específicos após um ataque (TESTAR com Alvo), acrescente na linha seguinte:
   ROLAR: [NomeExato|Descrição curta do dano|NotaçãoDados|Alvo]
