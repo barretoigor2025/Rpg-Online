@@ -207,6 +207,18 @@ const PROVIDERS = {
     keyName:'rpg_gemini_key', placeholder:'AIza...',
     url:null, ttsUrl:null, // TTS via WebSpeech
   },
+  openrouter: {
+    nome:'OpenRouter', modelo:'meta-llama/llama-4-maverick:free',
+    keyName:'rpg_openrouter_key', placeholder:'sk-or-v1-...',
+    url:'https://openrouter.ai/api/v1/chat/completions',
+    ttsUrl:null,
+  },
+  cerebras: {
+    nome:'Cerebras', modelo:'llama-3.3-70b',
+    keyName:'rpg_cerebras_key', placeholder:'csk-...',
+    url:'https://api.cerebras.ai/v1/chat/completions',
+    ttsUrl:null,
+  },
 };
 let _provider = localStorage.getItem('rpg_provider') || 'groq';
 
@@ -3450,11 +3462,12 @@ async function chamarOpenAI(systemPrompt, history, userMsg, onRetry, maxTokens =
       await new Promise(r => setTimeout(r, wait));
     }
     try {
-      const res = await fetch(prov.url, {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
-        body
-      });
+      const hdrs = { 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` };
+      if (_provider === 'openrouter') {
+        hdrs['HTTP-Referer'] = 'https://barretoigor2025.github.io/Rpg-Online/';
+        hdrs['X-Title'] = 'Oráculo RPG';
+      }
+      const res = await fetch(prov.url, { method:'POST', headers: hdrs, body });
       const d = await res.json();
       if (d.error) {
         if (/rate.limit|overload|529|503/i.test(d.error.message||'') && t < 10) continue;

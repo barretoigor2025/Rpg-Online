@@ -290,13 +290,19 @@
       <label class="field-lbl">Provedor de IA</label>
       <div class="provider-chips">
         <button class="provider-chip active" data-prov="groq" onclick="selecionarProvider('groq',this)">
-          <strong>⚡ Groq</strong><small>llama-3.3</small>
+          <strong>⚡ Groq</strong><small>llama-3.3 · voz</small>
         </button>
         <button class="provider-chip" data-prov="openai" onclick="selecionarProvider('openai',this)">
-          <strong>🤖 OpenAI</strong><small>gpt-4o</small>
+          <strong>🤖 OpenAI</strong><small>gpt-4o · voz</small>
         </button>
         <button class="provider-chip" data-prov="gemini" onclick="selecionarProvider('gemini',this)">
-          <strong>✦ Gemini</strong><small>2.0 flash</small>
+          <strong>✦ Gemini</strong><small>2.0 flash · grátis</small>
+        </button>
+        <button class="provider-chip" data-prov="openrouter" onclick="selecionarProvider('openrouter',this)">
+          <strong>🌐 Router</strong><small>llama-4 · grátis</small>
+        </button>
+        <button class="provider-chip" data-prov="cerebras" onclick="selecionarProvider('cerebras',this)">
+          <strong>🧠 Cerebras</strong><small>llama-3.3 · grátis</small>
         </button>
       </div>
       <div class="row-input" style="margin-top:8px">
@@ -402,6 +408,6 @@
 <!-- Firebase SDK via script tags (mais confiável em mobile que ES module imports) -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-<script src="js/main.js?v=28"></script>
+<script src="js/main.js?v=29"></script>
 </body>
 </html>
