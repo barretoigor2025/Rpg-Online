@@ -2734,7 +2734,10 @@ function irParaJogo(codigo) {
       const todosEnviaram = ativos.length > 0 && ativos.every(j => j.acao1 != null);
       if (todosEnviaram && !chamandoIA) {
         const todosAvançar = ativos.every(j => j.acao1 === '__avançar__');
-        if (todosAvançar) chamarIA_jogadoresAvançam(jogadores, data);
+        const haInimigos = Object.values(inimigos).some(i => (i.hp || 0) > 0);
+        // Em combate chamarIA processa TESTAR/ROLAR corretamente;
+        // fora de combate chamarIA_jogadoresAvançam usa o prompt de "mestre entra em cena"
+        if (todosAvançar && !haInimigos) chamarIA_jogadoresAvançam(jogadores, data);
         else chamarIA(jogadores, data);
       }
     }
