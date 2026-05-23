@@ -163,6 +163,7 @@ let voiceEnabled = localStorage.getItem('rpg_voice') !== '0';
 let voiceQueue  = [];
 let voiceBusy   = false;
 let _currentAudio = null;
+let _audioCtx = null;
 let _selectedClass  = 'guerreiro';
 let _selectedAdvs   = new Set();
 let _selectedPoderes = new Set();
@@ -2316,7 +2317,7 @@ window.deixarSala = function() {
   mySala = null; amIHost = false; _kitMigrado = false;
   _jogadoresCache = {};
   // Para narração em andamento
-  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
+  _stopCurrentAudio();
   if (window.speechSynthesis) speechSynthesis.cancel();
   voiceQueue = []; voiceBusy = false;
   irParaPersonagens();
@@ -3166,7 +3167,7 @@ window.toggleVoz = function() {
   if (!voiceEnabled) {
     voiceQueue = []; voiceBusy = false;
     setVoiceIndicator(false);
-    if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
+    _stopCurrentAudio();
     if (window.speechSynthesis) speechSynthesis.cancel();
   }
   toast(voiceEnabled ? '🔊 Narração ativada' : '🔇 Narração desativada', 2000);
@@ -3177,6 +3178,24 @@ function setVoiceIndicator(on) {
   if (el) el.className = on ? 'speaking' : '';
 }
 
+// Desbloqueia AudioContext no primeiro gesto do usuário (política de autoplay mobile)
+function _resumeAudioCtx() {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (_audioCtx.state === 'suspended') _audioCtx.resume().catch(() => {});
+}
+['click','touchend','keydown'].forEach(ev =>
+  document.addEventListener(ev, _resumeAudioCtx, { capture: true, passive: true })
+);
+
+function _stopCurrentAudio() {
+  if (!_currentAudio) return;
+  try {
+    if (typeof _currentAudio.pause === 'function') _currentAudio.pause();
+    else if (typeof _currentAudio.stop === 'function') _currentAudio.stop();
+  } catch(e) {}
+  _currentAudio = null;
+}
+
 function narrarTexto(texto, afterCb) {
   _afterNarrationCb = afterCb || null;
   if (!voiceEnabled) {
@@ -3184,7 +3203,7 @@ function narrarTexto(texto, afterCb) {
     return;
   }
   voiceQueue = [];
-  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
+  _stopCurrentAudio();
   if (window.speechSynthesis) speechSynthesis.cancel();
   voiceBusy = false;
   voiceQueue.push(texto);
@@ -3224,7 +3243,24 @@ function _nextUtterance() {
     clearTimeout(_ttsTimer);
     if (!res.ok) { _narrarWebSpeech(limpo); return; }
     const blob = await res.blob();
-    const url  = URL.createObjectURL(blob);
+
+    // AudioContext: uma vez desbloqueado por gesto do usuário, funciona em qualquer contexto async
+    // (resolve o bloqueio de autoplay do Chrome no Android/tablet)
+    if (_audioCtx && _audioCtx.state === 'running') {
+      try {
+        const arrayBuf = await blob.arrayBuffer();
+        const audioBuf = await _audioCtx.decodeAudioData(arrayBuf);
+        const src = _audioCtx.createBufferSource();
+        src.buffer = audioBuf;
+        src.connect(_audioCtx.destination);
+        src.onended = () => { _currentAudio = null; _nextUtterance(); };
+        _currentAudio = src;
+        src.start(0);
+        return;
+      } catch(e) { /* fallback para Audio element */ }
+    }
+
+    const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
     _currentAudio = audio;
     audio.onended = () => { URL.revokeObjectURL(url); _currentAudio = null; _nextUtterance(); };
@@ -3625,7 +3661,7 @@ function fecharIntro() {
   _introAtivo = false;
   const el = document.getElementById('intro-overlay');
   if (el) el.style.display = 'none';
-  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
+  _stopCurrentAudio();
   if (window.speechSynthesis) speechSynthesis.cancel();
   voiceQueue = []; voiceBusy = false;
 }
