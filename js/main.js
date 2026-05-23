@@ -163,6 +163,8 @@ let voiceEnabled = localStorage.getItem('rpg_voice') !== '0';
 let voiceQueue  = [];
 let voiceBusy   = false;
 let _currentAudio = null;
+let _ttsCtx = null;       // AudioContext — desbloqueado no primeiro gesto (iOS)
+let _currentSource = null; // AudioBufferSourceNode atual
 let _selectedClass  = 'guerreiro';
 let _selectedAdvs   = new Set();
 let _selectedPoderes = new Set();
@@ -2146,6 +2148,11 @@ function buildRegrasContext() {
 
 // Preenche input e seletor de provider salvos
 window.addEventListener('DOMContentLoaded', () => {
+  // Desbloquear AudioContext no primeiro gesto (obrigatório no iOS)
+  const _unlockAudio = () => { try { _getTtsCtx(); } catch(e) {} };
+  document.addEventListener('touchstart', _unlockAudio, { passive: true });
+  document.addEventListener('mousedown',  _unlockAudio, { passive: true });
+
   // Restaurar provider selecionado
   document.querySelectorAll('.provider-chip').forEach(b => b.classList.toggle('active', b.dataset.prov === _provider));
   const p = PROVIDERS[_provider];
@@ -2316,7 +2323,7 @@ window.deixarSala = function() {
   mySala = null; amIHost = false; _kitMigrado = false;
   _jogadoresCache = {};
   // Para narração em andamento
-  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
+  _stopCurrentAudio();
   if (window.speechSynthesis) speechSynthesis.cancel();
   voiceQueue = []; voiceBusy = false;
   irParaPersonagens();
@@ -3166,7 +3173,7 @@ window.toggleVoz = function() {
   if (!voiceEnabled) {
     voiceQueue = []; voiceBusy = false;
     setVoiceIndicator(false);
-    if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
+    _stopCurrentAudio();
     if (window.speechSynthesis) speechSynthesis.cancel();
   }
   toast(voiceEnabled ? '🔊 Narração ativada' : '🔇 Narração desativada', 2000);
@@ -3177,6 +3184,20 @@ function setVoiceIndicator(on) {
   if (el) el.className = on ? 'speaking' : '';
 }
 
+function _getTtsCtx() {
+  if (!_ttsCtx) _ttsCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (_ttsCtx.state === 'suspended') _ttsCtx.resume().catch(() => {});
+  return _ttsCtx;
+}
+
+function _stopCurrentAudio() {
+  if (_currentSource) {
+    try { _currentSource.stop(); } catch(e) {}
+    _currentSource = null;
+  }
+  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
+}
+
 function narrarTexto(texto, afterCb) {
   _afterNarrationCb = afterCb || null;
   if (!voiceEnabled) {
@@ -3184,7 +3205,7 @@ function narrarTexto(texto, afterCb) {
     return;
   }
   voiceQueue = [];
-  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
+  _stopCurrentAudio();
   if (window.speechSynthesis) speechSynthesis.cancel();
   voiceBusy = false;
   voiceQueue.push(texto);
@@ -3224,12 +3245,16 @@ function _nextUtterance() {
     clearTimeout(_ttsTimer);
     if (!res.ok) { _narrarWebSpeech(limpo); return; }
     const blob = await res.blob();
-    const url  = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    _currentAudio = audio;
-    audio.onended = () => { URL.revokeObjectURL(url); _currentAudio = null; _nextUtterance(); };
-    audio.onerror = () => _nextUtterance();
-    audio.play().catch(() => _narrarWebSpeech(limpo));
+    const arrayBuf = await blob.arrayBuffer();
+    const ctx = _getTtsCtx();
+    ctx.decodeAudioData(arrayBuf, (audioBuf) => {
+      const source = ctx.createBufferSource();
+      source.buffer = audioBuf;
+      source.connect(ctx.destination);
+      _currentSource = source;
+      source.onended = () => { _currentSource = null; _nextUtterance(); };
+      source.start(0);
+    }, () => { _narrarWebSpeech(limpo); });
   }).catch(() => { clearTimeout(_ttsTimer); _narrarWebSpeech(limpo); });
 }
 
@@ -3625,7 +3650,7 @@ function fecharIntro() {
   _introAtivo = false;
   const el = document.getElementById('intro-overlay');
   if (el) el.style.display = 'none';
-  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
+  _stopCurrentAudio();
   if (window.speechSynthesis) speechSynthesis.cancel();
   voiceQueue = []; voiceBusy = false;
 }
