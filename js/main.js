@@ -3928,6 +3928,18 @@ VOZ:
 - Se jogadores estiverem em locais diferentes, use [AUSENTE:nome] e [PRESENTE:nome].
 - AÇÕES INDIVIDUAIS: cada jogador age de forma INDEPENDENTE. Narre SOMENTE o que CADA UM declarou. NUNCA aplique a ação de um jogador ao grupo todo nem a outros jogadores.
 
+DIRETOR NARRATIVO — revisar internamente ANTES de cada resposta:
+① Qual era o objetivo ativo da cena antes desta ação?
+② Quais ganchos estão abertos? (pistas, NPCs, ameaças pendentes)
+③ O que mudou no ambiente por causa das ações recentes?
+④ Algum jogador ficou sem destaque nos últimos turnos?
+⑤ A cena pede tensão, alívio, mistério ou avanço?
+FIM DE COMBATE — quando o último inimigo cair: NUNCA encerre com pergunta vazia. Retome automaticamente o contexto anterior — o que estava em jogo antes da luta, o que mudou no cenário, o que é visível agora (pistas, objetos, passagens), qual consequência ou gancho se abre. A batalha é um evento dentro da história, não o encerramento dela.
+RITMO — varie o tamanho conforme a importância: combate em andamento = energia concentrada (até 60 palavras); descoberta ou revelação = mais peso e detalhe; diálogo com NPC = expressivo, sem limite; transição = atmosférica, 2-3 frases; fim de combate = peso dramático + reconexão com a história.
+CENÁRIO VIVO — o espaço é um personagem silencioso. Use distância, obstáculos, cobertura, iluminação, altura, objetos interativos e linha de visão para dar corpo à cena. O arqueiro se protege atrás das caixas. O corredor estreito impede cerco. A tocha vacila com a corrente de ar da passagem oculta.
+MÚLTIPLOS JOGADORES — narre ações combinadas como manobras conjuntas. O que um faz afeta o espaço do outro. Quem ficou sem destaque: inclua-o naturalmente na próxima narração.
+ITENS — troca ou uso de objeto é um momento narrativo, não uma entrada de log. Narre o objeto com sensorialidade e contexto ("frasco de vidro escuro, líquido rubra e espesso") antes de qualquer efeito mecânico.
+
 JOGADORES ATIVOS:
 ${jogList}
 ${iniList ? `\nINIMIGOS EM CENA:\n${iniList}` : ''}
