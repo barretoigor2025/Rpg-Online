@@ -158,6 +158,8 @@ let amIHost     = false;
 let chamandoIA  = false;
 let unsubSala   = null;
 let unsubRolagem = null;
+let _processingStartTs = null;
+let _processingInterval = null;
 let _apiKeyPendingCb = null;
 let voiceEnabled = localStorage.getItem('rpg_voice') !== '0';
 let voiceQueue  = [];
@@ -257,6 +259,28 @@ function scrollDown() {
 function setActionStatus(msg) {
   const el = document.getElementById('action-status');
   if (el) el.textContent = msg;
+}
+
+function _startProcessingTimer() {
+  _processingStartTs = Date.now();
+  if (_processingInterval) clearInterval(_processingInterval);
+  _processingInterval = setInterval(() => {
+    if (!_processingStartTs) { clearInterval(_processingInterval); _processingInterval = null; return; }
+    const secs = Math.floor((Date.now() - _processingStartTs) / 1000);
+    if (secs < 4) return;
+    const el = document.getElementById('action-status');
+    if (!el) return;
+    const prov = PROVIDERS[_provider]?.nome || 'IA';
+    if (el.textContent.includes('Processando') || el.textContent.includes('Aguardando os outros')) {
+      const base = el.textContent.includes('outros') ? '⏳ Aguardando os outros jogadores' : `⏳ Aguardando ${prov}`;
+      el.textContent = `${base}… ${secs}s`;
+    }
+  }, 1000);
+}
+
+function _stopProcessingTimer() {
+  _processingStartTs = null;
+  if (_processingInterval) { clearInterval(_processingInterval); _processingInterval = null; }
 }
 
 function limparTags(txt) {
@@ -3035,6 +3059,7 @@ function atualizarInputArea(eu, config) {
 
   const totalAtivos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente).length;
   const soloMode    = totalAtivos <= 1;
+  if (!jaEnviou) _stopProcessingTimer();
   if (morto)         setActionStatus('Seu personagem está fora de combate.');
   else if (narrando) setActionStatus('⏳ Narrando...');
   else if (jaEnviou) setActionStatus(soloMode ? '⏳ Processando ação...' : '⏳ Aguardando os outros jogadores...');
@@ -3119,6 +3144,7 @@ window.enviarAcao = async function() {
   if (!acao || !mySala) return;
 
   input.value = '';
+  _startProcessingTimer();
   await push(ref(db, `salas/${mySala}/historia`), { role:'user', content: acao, uid: myUid, ts: Date.now() });
   await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), { acao1: acao });
 
