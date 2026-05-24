@@ -3735,20 +3735,41 @@ window.abrirGerenciarHistorico = async function() {
   const modal = document.getElementById('modal-historico');
   const lista = document.getElementById('hist-lista');
   if (!modal || !lista) return;
-  lista.innerHTML = '<div style="color:#888;text-align:center;padding:20px">Carregando...</div>';
+  lista.innerHTML = '<div style="color:#888;text-align:center;padding:24px">⏳ Carregando histórico...</div>';
   modal.style.display = 'flex';
 
-  const snap = await db.ref(`salas/${mySala}/historia`).orderByKey().limitToLast(40).once('value');
+  // Busca TODAS as entradas sem limite para garantir que apareçam
+  const snap = await db.ref(`salas/${mySala}/historia`).once('value');
   _histEntradas = [];
-  snap.forEach(c => _histEntradas.push({ key: c.key, role: c.val().role, content: c.val().content || '', ts: c.val().ts || 0 }));
+  snap.forEach(c => {
+    const v = c.val();
+    if (v && v.role) _histEntradas.push({ key: c.key, role: v.role, content: v.content || '', ts: v.ts || 0 });
+  });
 
-  lista.innerHTML = _histEntradas.map((e, i) => {
-    const icon   = e.role === 'model' ? '🤖' : (e.role === 'trade' ? '🤝' : '👤');
-    const cor    = e.role === 'model' ? '#1a2a1a' : '#1a1a2a';
-    const resumo = e.content.replace(/<[^>]+>/g,'').substring(0, 90) + (e.content.length > 90 ? '…' : '');
-    return `<label style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05);background:${cor};cursor:pointer">
-      <input type="checkbox" data-idx="${i}" checked style="margin-top:3px;flex-shrink:0">
-      <span style="font-size:11px;color:#aaa;line-height:1.5">${icon} <em style="color:#666">[${e.role}]</em> ${resumo}</span>
+  if (!_histEntradas.length) {
+    lista.innerHTML = '<div style="color:#888;text-align:center;padding:24px">Histórico vazio.</div>';
+    return;
+  }
+
+  // Mais recente primeiro
+  const ordenado = [..._histEntradas].reverse();
+
+  const header = document.getElementById('hist-modal-header');
+  if (header) header.textContent = `🗂️ Editar Histórico (${_histEntradas.length} entradas)`;
+
+  lista.innerHTML = ordenado.map((e) => {
+    const idxOriginal = _histEntradas.indexOf(e);
+    const icon  = e.role === 'model' ? '🤖' : (e.role === 'trade' ? '🤝' : '👤');
+    const label = e.role === 'model' ? 'narrador' : e.role === 'trade' ? 'troca' : 'jogador';
+    const cor   = e.role === 'model' ? 'rgba(30,60,30,.6)' : 'rgba(20,20,50,.6)';
+    const borda = e.role === 'model' ? 'rgba(80,160,80,.2)' : 'rgba(80,80,200,.2)';
+    const resumo = e.content.replace(/<[^>]+>/g, '').replace(/\s+/g,' ').trim().substring(0, 100);
+    return `<label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;margin:4px 8px;border-radius:8px;border:1px solid ${borda};background:${cor};cursor:pointer;-webkit-tap-highlight-color:transparent">
+      <input type="checkbox" data-idx="${idxOriginal}" checked style="width:18px;height:18px;margin-top:2px;flex-shrink:0;accent-color:#c8a050">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:10px;color:#666;margin-bottom:3px">${icon} ${label}</div>
+        <div style="font-size:12px;color:#ccc;line-height:1.5;word-break:break-word">${resumo || '<em style="color:#555">sem conteúdo</em>'}</div>
+      </div>
     </label>`;
   }).join('');
 };
@@ -3756,6 +3777,10 @@ window.abrirGerenciarHistorico = async function() {
 window.fecharGerenciarHistorico = function() {
   const modal = document.getElementById('modal-historico');
   if (modal) modal.style.display = 'none';
+};
+
+window.histSelecionarTodos = function(marcar) {
+  document.querySelectorAll('#hist-lista input[type=checkbox]').forEach(cb => { cb.checked = marcar; });
 };
 
 window.confirmarLimpezaHistorico = async function() {
