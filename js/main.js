@@ -800,16 +800,24 @@ let _falarAlvo = 'Todos';
 function detectarAlvosContexto() {
   const alvos = ['Todos'];
   Object.values(_jogadoresCache).forEach(j => { if (j.uid !== myUid && j.ativo) alvos.push(j.nome); });
+
   const textoRecente = Array.from(document.querySelectorAll('.msg-gm')).slice(-8).map(el => el.textContent).join(' ');
+  // Remove texto dentro de aspas — personagens MENCIONADOS em diálogo não estão fisicamente presentes
+  const textoSemFalas = textoRecente.replace(/"[^"]*"/g, ' ').replace(/«[^»]*»/g, ' ');
+
+  // NPCs de NPC_DATA cujo nome aparece no texto FORA de aspas (presença narrativa real)
   Object.keys(NPC_DATA).forEach(npc => {
-    if (textoRecente.toLowerCase().includes(npc.toLowerCase())) alvos.push(npc);
+    if (textoSemFalas.toLowerCase().includes(npc.toLowerCase())) alvos.push(npc);
   });
+
+  // Nomes seguidos de verbo de ação/fala fora de aspas
   const reNome = /([A-ZÁÉÍÓÚÀÃÕÂÊÔ][a-záéíóúàãõâêô]+(?:\s+[A-ZÁÉÍÓÚÀÃÕÂÊÔ][a-záéíóúàãõâêô]+)*)\s+(?:disse|falou|gritou|sussurrou|respondeu|perguntou|murmurou|exclamou)/g;
   let m;
-  while ((m = reNome.exec(textoRecente)) !== null) {
+  while ((m = reNome.exec(textoSemFalas)) !== null) {
     const nome = m[1].trim();
     if (nome.length > 2 && nome.length < 35) alvos.push(nome);
   }
+
   return [...new Set(alvos)];
 }
 
