@@ -3079,6 +3079,8 @@ function atualizarInputArea(eu, config) {
 
   const btnUndo = document.getElementById('btn-undo-turno');
   if (btnUndo) btnUndo.style.display = amIHost ? 'inline-flex' : 'none';
+  const btnHist = document.getElementById('btn-editar-hist');
+  if (btnHist) btnHist.style.display = amIHost ? 'inline-flex' : 'none';
 
   const btnAv = document.getElementById('btn-avançar-hist');
   if (btnAv) {
@@ -3722,6 +3724,58 @@ function iniciarAutoAvancar() {
 function cancelarAutoAvancar() {
   if (_autoAvancarTimer) { clearTimeout(_autoAvancarTimer); _autoAvancarTimer = null; }
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  GERENCIAR HISTÓRICO (host only)
+// ═══════════════════════════════════════════════════════════════
+let _histEntradas = [];
+
+window.abrirGerenciarHistorico = async function() {
+  if (!amIHost || !mySala) return;
+  const modal = document.getElementById('modal-historico');
+  const lista = document.getElementById('hist-lista');
+  if (!modal || !lista) return;
+  lista.innerHTML = '<div style="color:#888;text-align:center;padding:20px">Carregando...</div>';
+  modal.style.display = 'flex';
+
+  const snap = await db.ref(`salas/${mySala}/historia`).orderByKey().limitToLast(40).once('value');
+  _histEntradas = [];
+  snap.forEach(c => _histEntradas.push({ key: c.key, role: c.val().role, content: c.val().content || '', ts: c.val().ts || 0 }));
+
+  lista.innerHTML = _histEntradas.map((e, i) => {
+    const icon   = e.role === 'model' ? '🤖' : (e.role === 'trade' ? '🤝' : '👤');
+    const cor    = e.role === 'model' ? '#1a2a1a' : '#1a1a2a';
+    const resumo = e.content.replace(/<[^>]+>/g,'').substring(0, 90) + (e.content.length > 90 ? '…' : '');
+    return `<label style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05);background:${cor};cursor:pointer">
+      <input type="checkbox" data-idx="${i}" checked style="margin-top:3px;flex-shrink:0">
+      <span style="font-size:11px;color:#aaa;line-height:1.5">${icon} <em style="color:#666">[${e.role}]</em> ${resumo}</span>
+    </label>`;
+  }).join('');
+};
+
+window.fecharGerenciarHistorico = function() {
+  const modal = document.getElementById('modal-historico');
+  if (modal) modal.style.display = 'none';
+};
+
+window.confirmarLimpezaHistorico = async function() {
+  const checkboxes = document.querySelectorAll('#hist-lista input[type=checkbox]');
+  const aRemover = [];
+  checkboxes.forEach(cb => { if (!cb.checked) aRemover.push(parseInt(cb.dataset.idx)); });
+  if (!aRemover.length) { fecharGerenciarHistorico(); return; }
+  if (!confirm(`Remover ${aRemover.length} entrada(s) do histórico permanentemente?`)) return;
+
+  const ups = {};
+  aRemover.forEach(i => { if (_histEntradas[i]) ups[`salas/${mySala}/historia/${_histEntradas[i].key}`] = null; });
+  await update(ref(db), ups);
+
+  // Re-renderiza do zero
+  _renderedKeys = new Set();
+  document.getElementById('story-content').innerHTML = '';
+
+  fecharGerenciarHistorico();
+  toast(`🗂️ ${aRemover.length} entrada(s) removida(s)`, 2500);
+};
 
 // ═══════════════════════════════════════════════════════════════
 //  DESFAZER ÚLTIMO TURNO (host only)
