@@ -3077,6 +3077,9 @@ function atualizarInputArea(eu, config) {
 
   if (iniciarWrap && config.estado !== 'lobby') iniciarWrap.style.display = 'none';
 
+  const btnUndo = document.getElementById('btn-undo-turno');
+  if (btnUndo) btnUndo.style.display = amIHost ? 'inline-flex' : 'none';
+
   const btnAv = document.getElementById('btn-avançar-hist');
   if (btnAv) {
     const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
@@ -3719,6 +3722,51 @@ function iniciarAutoAvancar() {
 function cancelarAutoAvancar() {
   if (_autoAvancarTimer) { clearTimeout(_autoAvancarTimer); _autoAvancarTimer = null; }
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  DESFAZER ÚLTIMO TURNO (host only)
+// ═══════════════════════════════════════════════════════════════
+window.desfazerUltimoTurno = async function() {
+  if (!amIHost || !mySala) return;
+  if (!confirm('Desfazer o último turno?\nAs últimas ações e resposta do narrador serão removidas.')) return;
+
+  // Pega as últimas 20 entradas da história ordenadas por key
+  const snap = await db.ref(`salas/${mySala}/historia`).orderByKey().limitToLast(20).once('value');
+  const entries = [];
+  snap.forEach(child => entries.push({ key: child.key, role: child.val().role }));
+
+  // Caminha do fim para trás: deleta o último role:'model' e todos os role:'user' após o model anterior
+  const toDelete = [];
+  let passouModel = false;
+  for (let i = entries.length - 1; i >= 0; i--) {
+    const e = entries[i];
+    if (!passouModel) {
+      toDelete.push(e.key);
+      if (e.role === 'model') passouModel = true;
+    } else {
+      if (e.role === 'model') break; // chegou ao model anterior — para
+      toDelete.push(e.key);          // user/fala entre os dois models — deleta
+    }
+  }
+
+  if (!toDelete.length) { toast('Nada para desfazer.', 2000); return; }
+
+  const ups = {};
+  toDelete.forEach(key => { ups[`salas/${mySala}/historia/${key}`] = null; });
+
+  // Reseta acao1 de todos os jogadores
+  const jogSnap = await db.ref(`salas/${mySala}/jogadores`).once('value');
+  jogSnap.forEach(child => { ups[`salas/${mySala}/jogadores/${child.key}/acao1`] = null; });
+
+  // Retrocede rodada e volta ao estado aguardando
+  const cfgSnap = await db.ref(`salas/${mySala}/config`).once('value');
+  const rodadaAtual = cfgSnap.val()?.rodada || 1;
+  ups[`salas/${mySala}/config/estado`]  = 'aguardando';
+  ups[`salas/${mySala}/config/rodada`]  = Math.max(1, rodadaAtual - 1);
+
+  await update(ref(db), ups);
+  toast('↩ Último turno desfeito', 2500);
+};
 
 async function chamarIA_jogadoresAvançam(jogadores, data) {
   if (chamandoIA) return;
