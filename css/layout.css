@@ -288,6 +288,10 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 .btn-confirmar-leitura:hover { background: rgba(76,175,80,.3); }
 .leitura-hint { font-size: 0.75rem; color: #666; font-style: italic; margin-top: 4px; }
 
+/* Retry countdown */
+#retry-countdown-panel { padding: 4px 0; font-size: 0.82rem; color: #8090a8; }
+#retry-countdown-panel #retry-countdown-time { color: var(--gold); font-weight: bold; }
+
 /* Story area */
 #story-area {
   flex: 1;

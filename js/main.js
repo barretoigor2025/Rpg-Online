@@ -185,6 +185,7 @@ let _trocaItens       = new Set(); // slugs selecionados para troca
 let _trocaAtual       = null;     // snapshot atual do nó salas/${sala}/troca
 let _lastConfig       = {};       // último snapshot de config (para re-check de prompt)
 let _skipTimers       = {};       // uid → timeoutId | 'ready' — timers para botão "Pular turno"
+let _retryCountdownTimer = null;  // intervalo do countdown de retryPendente
 let _leituraCache     = null;     // snapshot do nó salas/${sala}/leitura — confirmação de leitura multiplayer
 let _narracaoAtiva    = 0;        // contagem de segmentos sendo narrados (com Continuar buttons)
 let _carregandoHistoriaInicial = false; // true durante a primeira carga da história (entradas antigas = sem TTS)
@@ -2967,8 +2968,8 @@ function irParaJogo(codigo) {
       // Sem iniciarAutoAvancar() — a história só avança quando TODOS confirmarem manualmente
     }
 
-    // Host narra quando estado = 'aguardando' e todos enviaram ação
-    if (amIHost && config.estado === 'aguardando') {
+    // Host narra quando estado = 'aguardando' e todos enviaram ação (sem retry pendente)
+    if (amIHost && config.estado === 'aguardando' && !config.retryPendente) {
       const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && !j.ausente);
       const todosEnviaram = ativos.length > 0 && ativos.every(j => j.acao1 != null);
       if (todosEnviaram && !chamandoIA) {
@@ -2979,6 +2980,42 @@ function irParaJogo(codigo) {
         if (todosAvançar && !haInimigos) chamarIA_jogadoresAvançam(jogadores, data);
         else chamarIA(jogadores, data);
       }
+    }
+
+    // Auto-retry quando servidor estava sobrecarregado
+    if (amIHost && config.retryPendente && !chamandoIA) {
+      const agora = Date.now();
+      if (agora >= config.retryPendente.em) {
+        const tipo = config.retryPendente.tipo;
+        update(ref(db, `salas/${mySala}/config`), { retryPendente: null });
+        if (tipo === 'turno' && config.estado === 'aguardando') {
+          const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && !j.ausente);
+          const todosEnviaram = ativos.length > 0 && ativos.every(j => j.acao1 != null);
+          if (todosEnviaram) chamarIA(jogadores, data);
+        } else if (tipo === 'continuar' && config.estado === 'avançando') {
+          chamarIA_continuar();
+        } else if (tipo === 'avançam' && config.estado === 'aguardando') {
+          chamarIA_jogadoresAvançam(jogadores, data);
+        }
+      } else {
+        // Agendar verificação local quando o countdown expirar
+        if (!_retryCountdownTimer) {
+          _retryCountdownTimer = setInterval(() => {
+            const el = document.getElementById('retry-countdown-time');
+            if (!el) { clearInterval(_retryCountdownTimer); _retryCountdownTimer = null; return; }
+            const rem = (_lastConfig?.retryPendente?.em || 0) - Date.now();
+            if (rem <= 0) { el.textContent = '0s'; clearInterval(_retryCountdownTimer); _retryCountdownTimer = null; }
+            else {
+              const m = Math.floor(rem / 60000);
+              const s = Math.floor((rem % 60000) / 1000);
+              el.textContent = m > 0 ? `${m}m${String(s).padStart(2,'0')}s` : `${s}s`;
+            }
+          }, 1000);
+        }
+      }
+    } else if (!config.retryPendente && _retryCountdownTimer) {
+      clearInterval(_retryCountdownTimer);
+      _retryCountdownTimer = null;
     }
   });
 }
@@ -3153,6 +3190,24 @@ function atualizarInputArea(eu, config) {
   const narracaoLocalTerminou = !temContinuar && _narracaoAtiva <= 0;
   const euJaLi    = !leitura || leitura.confirmados?.[myUid] !== false;
   const leituraGateAtiva = !!(leitura && !narrando && !morto);
+
+  // Painel de retry pendente — servidor sobrecarregado, aguardando auto-retry
+  if (config.retryPendente && !narrando) {
+    if (btn) btn.disabled = true;
+    _stopProcessingTimer();
+    const rem = config.retryPendente.em - Date.now();
+    const m = Math.floor(Math.max(0, rem) / 60000);
+    const s = Math.floor((Math.max(0, rem) % 60000) / 1000);
+    const timeStr = m > 0 ? `${m}m${String(s).padStart(2,'0')}s` : `${s}s`;
+    const statusEl = document.getElementById('action-status');
+    if (statusEl) statusEl.innerHTML = `<div id="retry-countdown-panel">⏳ Servidor ocupado — nova tentativa em <span id="retry-countdown-time">${timeStr}</span></div>`;
+    atualizarPromptAcao(eu, config);
+    if (iniciarWrap && config.estado !== 'lobby') iniciarWrap.style.display = 'none';
+    return;
+  }
+  if (!config.retryPendente && _retryCountdownTimer) {
+    clearInterval(_retryCountdownTimer); _retryCountdownTimer = null;
+  }
 
   if (btn) btn.disabled = jaEnviou || narrando || morto || leituraGateAtiva;
 
@@ -3491,7 +3546,7 @@ function mostrarRetryUI(tentativa, waitMs) {
   const el = document.getElementById('retry-ui');
   if (el) {
     el.style.display = 'block';
-    document.getElementById('retry-msg').textContent = `Tentativa ${tentativa}/10 — aguardando ${waitMs/1000}s...`;
+    document.getElementById('retry-msg').textContent = `Tentativa ${tentativa}/20 — aguardando ${waitMs/1000}s...`;
   }
 }
 function ocultarRetryUI() {
@@ -3696,9 +3751,9 @@ async function chamarOpenAI(systemPrompt, history, userMsg, onRetry, maxTokens =
   ];
   const body = JSON.stringify({ model: prov.modelo, messages, temperature:0.85, max_tokens: maxTokens });
 
-  for (let t = 1; t <= 10; t++) {
+  for (let t = 1; t <= 20; t++) {
     if (t > 1) {
-      const wait = Math.min(t * 2000, 16000);
+      const wait = Math.min(t * 3000, 60000);
       if (onRetry) onRetry(t, wait);
       await new Promise(r => setTimeout(r, wait));
     }
@@ -3714,13 +3769,13 @@ async function chamarOpenAI(systemPrompt, history, userMsg, onRetry, maxTokens =
       clearTimeout(timer);
       const d = await res.json();
       if (d.error) {
-        if (/rate.limit|overload|529|503/i.test(d.error.message||'') && t < 10) continue;
+        if (/rate.limit|overload|529|503/i.test(d.error.message||'') && t < 20) continue;
         toast(`Erro IA: ${(d.error.message||'').substring(0,80)}`);
         return null;
       }
       return d.choices?.[0]?.message?.content || '';
     } catch(err) {
-      if (t === 10) { toast('Erro de conexão após 10 tentativas'); return null; }
+      if (t === 20) { toast('Erro de conexão após 20 tentativas'); return null; }
     }
   }
   return null;
@@ -3741,9 +3796,9 @@ async function _chamarGemini(apiKey, systemPrompt, history, userMsg, onRetry, ma
     generationConfig: { maxOutputTokens: maxTokens, temperature: 0.85 }
   });
 
-  for (let t = 1; t <= 10; t++) {
+  for (let t = 1; t <= 20; t++) {
     if (t > 1) {
-      const wait = Math.min(t * 2000, 16000);
+      const wait = Math.min(t * 3000, 60000);
       if (onRetry) onRetry(t, wait);
       await new Promise(r => setTimeout(r, wait));
     }
@@ -3754,13 +3809,13 @@ async function _chamarGemini(apiKey, systemPrompt, history, userMsg, onRetry, ma
       clearTimeout(timer);
       const d = await res.json();
       if (d.error) {
-        if (/quota|overload|503|429/i.test(JSON.stringify(d.error)) && t < 10) continue;
+        if (/quota|overload|503|429/i.test(JSON.stringify(d.error)) && t < 20) continue;
         toast(`Erro Gemini: ${(d.error.message||'').substring(0,80)}`);
         return null;
       }
       return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
     } catch {
-      if (t === 10) { toast('Erro de conexão após 10 tentativas'); return null; }
+      if (t === 20) { toast('Erro de conexão após 20 tentativas'); return null; }
     }
   }
   return null;
@@ -4066,7 +4121,10 @@ async function chamarIA_jogadoresAvançam(jogadores, data) {
     const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), hist, msg, mostrarRetryUI);
     ocultarRetryUI();
     if (!resposta) {
-      await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando', rodada: rodada + 1 });
+      await update(ref(db, `salas/${mySala}/config`), {
+        estado: 'aguardando',
+        retryPendente: { em: Date.now() + 5 * 60 * 1000, tipo: 'avançam' }
+      });
       return;
     }
     const atoTituloAv = extrairFacharAto(resposta);
@@ -4111,8 +4169,9 @@ async function chamarIA_continuar() {
     ocultarRetryUI();
     const ups = {};
     if (!resposta) {
-      ups[`salas/${mySala}/config/estado`] = 'aguardando';
-      ups[`salas/${mySala}/config/rodada`] = rodada + 1;
+      // Manter estado 'avançando' e agendar retry — jogadores já confirmaram, nada a re-inserir
+      ups[`salas/${mySala}/config/estado`] = 'avançando';
+      ups[`salas/${mySala}/config/retryPendente`] = { em: Date.now() + 5 * 60 * 1000, tipo: 'continuar' };
       await update(ref(db), ups);
       return;
     }
@@ -4150,7 +4209,7 @@ async function chamarIA(jogadores, data) {
     const historia = data.historia || {};
     const rodada  = config.rodada || 1;
 
-    await update(ref(db, `salas/${mySala}/config`), { estado: 'narrando' });
+    await update(ref(db, `salas/${mySala}/config`), { estado: 'narrando', retryPendente: null });
 
     // Monta histórico (últimas 10 entradas)
     const hist = Object.values(historia)
@@ -4169,16 +4228,18 @@ async function chamarIA(jogadores, data) {
     const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), hist, msg, mostrarRetryUI);
     ocultarRetryUI();
 
-    // Sempre limpar acao1 (evita loop infinito em caso de falha da API)
-    const ups = {};
-    Object.keys(jogadores).forEach(uid => { ups[`salas/${mySala}/jogadores/${uid}/acao1`] = null; });
-
     if (!resposta) {
-      ups[`salas/${mySala}/config/estado`] = 'aguardando';
-      ups[`salas/${mySala}/config/rodada`] = rodada + 1;
-      await update(ref(db), ups);
+      // Preservar acao1 — auto-retry após 5 minutos sem exigir nova ação dos jogadores
+      await update(ref(db, `salas/${mySala}/config`), {
+        estado: 'aguardando',
+        retryPendente: { em: Date.now() + 5 * 60 * 1000, tipo: 'turno' }
+      });
       return;
     }
+
+    // Sucesso — limpar acao1 agora
+    const ups = {};
+    Object.keys(jogadores).forEach(uid => { ups[`salas/${mySala}/jogadores/${uid}/acao1`] = null; });
 
     // Verificar se a IA pediu testes sequenciais e/ou dados de dano
     const testes = extrairTestes(resposta);
