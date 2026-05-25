@@ -184,6 +184,7 @@ let _regras           = {};
 let _trocaItens       = new Set(); // slugs selecionados para troca
 let _trocaAtual       = null;     // snapshot atual do nó salas/${sala}/troca
 let _lastConfig       = {};       // último snapshot de config (para re-check de prompt)
+let _skipTimers       = {};       // uid → timeoutId | 'ready' — timers para botão "Pular turno"
 let _narracaoAtiva    = 0;        // contagem de segmentos sendo narrados (com Continuar buttons)
 let _carregandoHistoriaInicial = false; // true durante a primeira carga da história (entradas antigas = sem TTS)
 
@@ -887,6 +888,14 @@ window.enviarFalaPersonagem = async function() {
   if (input) { input.value = acao; }
   await push(ref(db, `salas/${mySala}/historia`), { role:'user', content: acao, uid: myUid, ts: Date.now() });
   await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), { acao1: acao });
+};
+
+window.pularTurnoJogador = async function(uid) {
+  if (!amIHost || !mySala) return;
+  const t = _skipTimers[uid];
+  if (t && t !== 'ready') clearTimeout(t);
+  delete _skipTimers[uid];
+  await update(ref(db, `salas/${mySala}/jogadores/${uid}`), { acao1: '__pular__' });
 };
 
 window.querAvançarHistoria = async function() {
@@ -2898,8 +2907,8 @@ function irParaJogo(codigo) {
     // Auto-avançar quando IA sinalizou AVANÇAR — espera todos os jogadores confirmarem
     if (amIHost && config.estado === 'avançando' && !chamandoIA) {
       const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
-      const alguemComAcaoReal = ativos.some(j => j.acao1 != null && j.acao1 !== '__avançar__');
-      const todosConfirmaram = ativos.length > 0 && ativos.every(j => j.acao1 === '__avançar__');
+      const alguemComAcaoReal = ativos.some(j => j.acao1 != null && j.acao1 !== '__avançar__' && j.acao1 !== '__pular__');
+      const todosConfirmaram = ativos.length > 0 && ativos.every(j => j.acao1 === '__avançar__' || j.acao1 === '__pular__');
       if (alguemComAcaoReal) {
         cancelarAutoAvancar();
         update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
@@ -2916,7 +2925,7 @@ function irParaJogo(codigo) {
       const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
       const todosEnviaram = ativos.length > 0 && ativos.every(j => j.acao1 != null);
       if (todosEnviaram && !chamandoIA) {
-        const todosAvançar = ativos.every(j => j.acao1 === '__avançar__');
+        const todosAvançar = ativos.every(j => j.acao1 === '__avançar__' || j.acao1 === '__pular__');
         const haInimigos = Object.values(inimigos).some(i => (i.hp || 0) > 0);
         // Em combate chamarIA processa TESTAR/ROLAR corretamente;
         // fora de combate chamarIA_jogadoresAvançam usa o prompt de "mestre entra em cena"
@@ -2944,8 +2953,10 @@ function renderizarJogadores(jogadores, config) {
     const lesaoBadge = lesoesArr.length
       ? `<span class="chip-lesao" title="${lesoesArr.map(l=>l.descricao).join(' | ')}">⚠</span>` : '';
     const nivelBadge = j.nivel > 1 ? `<span class="chip-nivel">Nv${j.nivel}</span>` : '';
+    const presenceDot = `<span class="presence-dot ${j.ativo === false ? 'offline' : 'online'}" title="${j.ativo === false ? 'offline' : 'online'}"></span>`;
     return `<div class="player-chip ${isMe ? 'me' : ''} ${j.ativo === false ? 'offline' : ''} ${j.ausente ? 'ausente' : ''}">
       <span>${icon}</span>
+      ${presenceDot}
       <span class="chip-name">${j.nome}</span>
       ${j.ausente ? '<span class="chip-ausente">outra cena</span>' : `<span class="chip-hp ${hpCls}">PV ${j.hp}/${j.maxHp}</span>`}
       ${!j.ausente && j.ac != null ? `<span class="chip-hp" style="color:var(--blue)">CA ${j.ac}</span>` : ''}
@@ -3094,11 +3105,60 @@ function atualizarInputArea(eu, config) {
 
   const totalAtivos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente).length;
   const soloMode    = totalAtivos <= 1;
+
+  // Limpar skip timers quando nova rodada começa ou IA está narrando
+  if (!jaEnviou || narrando) {
+    Object.keys(_skipTimers).forEach(uid => {
+      const t = _skipTimers[uid];
+      if (t && t !== 'ready') clearTimeout(t);
+    });
+    _skipTimers = {};
+  }
+
   if (!jaEnviou) _stopProcessingTimer();
-  if (morto)         setActionStatus('Seu personagem está fora de combate.');
-  else if (narrando) setActionStatus('⏳ Narrando...');
-  else if (jaEnviou) setActionStatus(soloMode ? '⏳ Processando ação...' : '⏳ Aguardando os outros jogadores...');
-  else               setActionStatus('');
+
+  // Painel "quem já agiu" (multiplayer + eu já enviei + não narrando)
+  if (!soloMode && jaEnviou && !narrando && !morto) {
+    _stopProcessingTimer();
+    const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
+    const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    let html = '<div id="action-wait-panel">';
+    for (const j of ativos) {
+      if (j.acao1 != null) {
+        // Limpar timer se esse jogador agiu
+        if (_skipTimers[j.uid]) {
+          const t = _skipTimers[j.uid];
+          if (t && t !== 'ready') clearTimeout(t);
+          delete _skipTimers[j.uid];
+        }
+        const raw = j.acao1;
+        const preview = raw === '__avançar__' ? '(avançar)' : raw === '__pular__' ? '(pulou)' : `"${esc(raw.substring(0, 35))}${raw.length > 35 ? '…' : ''}"`;
+        html += `<div class="wait-player sent">✅ ${esc(j.nome)}: ${preview}</div>`;
+      } else {
+        // Jogador ainda não agiu — gerenciar timer de skip
+        if (amIHost && _skipTimers[j.uid] === undefined) {
+          _skipTimers[j.uid] = setTimeout(() => {
+            _skipTimers[j.uid] = 'ready';
+            const myEu = _jogadoresCache[myUid];
+            if (myEu && _lastConfig) atualizarInputArea(myEu, _lastConfig);
+          }, 60000);
+        }
+        html += `<div class="wait-player waiting">⏳ ${esc(j.nome)}: aguardando ação…`;
+        if (amIHost && _skipTimers[j.uid] === 'ready') {
+          html += ` <button class="btn-pular-turno" onclick="pularTurnoJogador('${j.uid}')">⏭ Pular turno</button>`;
+        }
+        html += `</div>`;
+      }
+    }
+    html += '</div>';
+    const statusEl = document.getElementById('action-status');
+    if (statusEl) statusEl.innerHTML = html;
+  } else {
+    if (morto)         setActionStatus('Seu personagem está fora de combate.');
+    else if (narrando) setActionStatus('⏳ Narrando...');
+    else if (jaEnviou) setActionStatus('⏳ Processando ação...');
+    else               setActionStatus('');
+  }
 
   atualizarPromptAcao(eu, config);
 
@@ -4011,7 +4071,7 @@ async function chamarIA(jogadores, data) {
 
     // Monta mensagem das ações desta rodada
     const acoes = Object.values(jogadores)
-      .filter(j => j.acao1)
+      .filter(j => j.acao1 && j.acao1 !== '__pular__')
       .map(j => `${j.nome}: ${j.acao1 === '__avançar__' ? '(aguardando — sem ação específica, quer que a história avance)' : j.acao1}`)
       .join('\n');
 
