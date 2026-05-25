@@ -2956,7 +2956,7 @@ function irParaJogo(codigo) {
     if (config.estado !== 'avançando') cancelarAutoAvancar();
 
     // Auto-avançar quando IA sinalizou AVANÇAR — espera todos os jogadores confirmarem (sem timer)
-    if (amIHost && config.estado === 'avançando' && !chamandoIA) {
+    if (amIHost && config.estado === 'avançando' && !chamandoIA && !config.retryPendente) {
       const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && !j.ausente);
       const alguemComAcaoReal = ativos.some(j => j.acao1 != null && j.acao1 !== '__avançar__' && j.acao1 !== '__pular__');
       const todosConfirmaram = ativos.length > 0 && ativos.every(j => j.acao1 === '__avançar__' || j.acao1 === '__pular__');
@@ -2994,8 +2994,8 @@ function irParaJogo(codigo) {
           if (todosEnviaram) chamarIA(jogadores, data);
         } else if (tipo === 'continuar' && config.estado === 'avançando') {
           chamarIA_continuar();
-        } else if (tipo === 'avançam' && config.estado === 'aguardando') {
-          chamarIA_jogadoresAvançam(jogadores, data);
+        } else if (tipo === 'avançam' && config.estado === 'avançando') {
+          chamarIA_continuar();
         }
       } else {
         // Agendar verificação local quando o countdown expirar
@@ -4138,10 +4138,13 @@ async function chamarIA_jogadoresAvançam(jogadores, data) {
     const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), hist, msg, mostrarRetryUI);
     ocultarRetryUI();
     if (!resposta) {
-      await update(ref(db, `salas/${mySala}/config`), {
-        estado: 'aguardando',
-        retryPendente: { em: Date.now() + 5 * 60 * 1000, tipo: 'avançam' }
-      });
+      // Restaurar acao1='__avançar__' para manter estado consistente durante retry
+      const upsRetry = {};
+      Object.values(jogadores).filter(j => j.vivo && j.consciente && !j.ausente)
+        .forEach(j => { upsRetry[`salas/${mySala}/jogadores/${j.uid}/acao1`] = '__avançar__'; });
+      upsRetry[`salas/${mySala}/config/estado`] = 'avançando';
+      upsRetry[`salas/${mySala}/config/retryPendente`] = { em: Date.now() + 5 * 60 * 1000, tipo: 'avançam' };
+      await update(ref(db), upsRetry);
       return;
     }
     const atoTituloAv = extrairFacharAto(resposta);
@@ -4186,7 +4189,9 @@ async function chamarIA_continuar() {
     ocultarRetryUI();
     const ups = {};
     if (!resposta) {
-      // Manter estado 'avançando' e agendar retry — jogadores já confirmaram, nada a re-inserir
+      // Restaurar acao1='__avançar__' para manter botão desabilitado e evitar entradas duplicadas
+      const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && !j.ausente);
+      ativos.forEach(j => { ups[`salas/${mySala}/jogadores/${j.uid}/acao1`] = '__avançar__'; });
       ups[`salas/${mySala}/config/estado`] = 'avançando';
       ups[`salas/${mySala}/config/retryPendente`] = { em: Date.now() + 5 * 60 * 1000, tipo: 'continuar' };
       await update(ref(db), ups);
