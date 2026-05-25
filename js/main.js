@@ -985,6 +985,11 @@ function renderizarSegmentos(container, segs, falas, noTTS) {
 
   // Modo silencioso: renderiza tudo de uma vez, sem TTS nem botões Continuar
   if (noTTS) {
+    const _ph = (src, icon, cor, espelhar) =>
+      `<div class="dialogo-inline-portrait" style="background:${cor}22;border-color:${cor}55">
+        ${src ? `<img src="${src}" alt=""${espelhar ? ' class="espelhado"' : ''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+        <span class="dialogo-inline-icon-fb"${src ? ' style="display:none"' : ''}>${icon}</span>
+      </div>`;
     items.forEach(it => {
       if (it.tipo === 'chunk') {
         const p = document.createElement('p');
@@ -992,13 +997,24 @@ function renderizarSegmentos(container, segs, falas, noTTS) {
         p.textContent = it.texto;
         container.appendChild(p);
       } else if (it.tipo === 'fala') {
+        const jogEntry = Object.values(_jogadoresCache).find(j =>
+          j.nome && it.nome.toLowerCase().includes(j.nome.toLowerCase())
+        );
+        let htmlEsq, htmlDir;
+        if (jogEntry) {
+          htmlEsq = _ph(`sprites/${jogEntry.classe}_${jogEntry.sexo || 'm'}.png`, '🧑', '#4a7090', true);
+          const npcOuv = _ultimoNpc || { icon: '👤', cor: '#4a5a70', portrait: null };
+          htmlDir = _ph(npcOuv.portrait ? `sprites/${npcOuv.portrait}.png` : '', npcOuv.icon, npcOuv.cor, false);
+        } else {
+          const npc = getNpcData(it.nome);
+          _ultimoNpc = npc;
+          htmlEsq = _ph(npc.portrait ? `sprites/${npc.portrait}.png` : '', npc.icon, npc.cor, true);
+          const eu = _jogadoresCache[myUid];
+          htmlDir = _ph(eu ? `sprites/${eu.classe}_${eu.sexo || 'm'}.png` : '', '🧑', '#4a7090', false);
+        }
         const bubble = document.createElement('div');
         bubble.className = 'dialogo-inline';
-        const npc = getNpcData(it.nome);
-        bubble.innerHTML = `<div class="dialogo-inline-body">
-          <div class="dialogo-inline-nome">${it.nome}</div>
-          <div class="dialogo-inline-texto">"${it.texto}"</div>
-        </div>`;
+        bubble.innerHTML = `${htmlEsq}<div class="dialogo-inline-body"><div class="dialogo-inline-nome">${it.nome}</div><div class="dialogo-inline-texto">"${it.texto}"</div></div>${htmlDir}`;
         container.appendChild(bubble);
       }
     });
