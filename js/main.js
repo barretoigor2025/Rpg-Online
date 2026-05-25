@@ -895,7 +895,7 @@ window.enviarFalaPersonagem = async function() {
 function buildLeituraGate(jogadores) {
   const confirmados = {};
   Object.entries(jogadores || {}).forEach(([uid, j]) => {
-    if (j.vivo && j.consciente && j.ativo !== false && !j.ausente) confirmados[uid] = false;
+    if (j.vivo && j.consciente && !j.ausente) confirmados[uid] = false;
   });
   return Object.keys(confirmados).length > 1 ? { confirmados, ts: Date.now() } : null;
 }
@@ -914,6 +914,14 @@ window.pularTurnoJogador = async function(uid) {
   if (t && t !== 'ready') clearTimeout(t);
   delete _skipTimers[uid];
   await update(ref(db, `salas/${mySala}/jogadores/${uid}`), { acao1: '__pular__' });
+};
+
+// Host pula a confirmação de leitura de um jogador específico
+window.pularLeituraJogador = async function(uid) {
+  if (!amIHost || !mySala) return;
+  const ups = {};
+  ups[`salas/${mySala}/leitura/confirmados/${uid}`] = true;
+  await update(ref(db), ups);
 };
 
 window.querAvançarHistoria = async function() {
@@ -2918,7 +2926,7 @@ function irParaJogo(codigo) {
     _leituraCache = data.leitura || null;
     // Host verifica se todos confirmaram leitura → libera o jogo
     if (amIHost && _leituraCache) {
-      const ativosL = Object.values(jogadores).filter(j => j.vivo && j.consciente && j.ativo !== false && !j.ausente);
+      const ativosL = Object.values(jogadores).filter(j => j.vivo && j.consciente && !j.ausente);
       const todosLeram = ativosL.length > 0 && ativosL.every(j => _leituraCache.confirmados?.[j.uid] === true);
       if (todosLeram) update(ref(db, `salas/${codigo}`), { leitura: null });
     }
@@ -2948,7 +2956,7 @@ function irParaJogo(codigo) {
 
     // Auto-avançar quando IA sinalizou AVANÇAR — espera todos os jogadores confirmarem (sem timer)
     if (amIHost && config.estado === 'avançando' && !chamandoIA) {
-      const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
+      const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && !j.ausente);
       const alguemComAcaoReal = ativos.some(j => j.acao1 != null && j.acao1 !== '__avançar__' && j.acao1 !== '__pular__');
       const todosConfirmaram = ativos.length > 0 && ativos.every(j => j.acao1 === '__avançar__' || j.acao1 === '__pular__');
       if (alguemComAcaoReal) {
@@ -2961,7 +2969,7 @@ function irParaJogo(codigo) {
 
     // Host narra quando estado = 'aguardando' e todos enviaram ação
     if (amIHost && config.estado === 'aguardando') {
-      const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
+      const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && !j.ausente);
       const todosEnviaram = ativos.length > 0 && ativos.every(j => j.acao1 != null);
       if (todosEnviaram && !chamandoIA) {
         const todosAvançar = ativos.every(j => j.acao1 === '__avançar__' || j.acao1 === '__pular__');
@@ -3148,20 +3156,20 @@ function atualizarInputArea(eu, config) {
 
   if (btn) btn.disabled = jaEnviou || narrando || morto || leituraGateAtiva;
 
-  const totalAtivos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente).length;
+  const totalAtivos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && !j.ausente).length;
   const soloMode    = totalAtivos <= 1;
 
   // Painel de leitura — tem prioridade sobre os demais status
   if (leituraGateAtiva) {
     _stopProcessingTimer();
     const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && j.ativo !== false && !j.ausente);
+    const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && !j.ausente);
     let html = '<div id="leitura-gate-panel">';
     for (const j of ativos) {
       const confirmou = leitura.confirmados?.[j.uid] === true;
       html += confirmou
         ? `<div class="leitura-player leu">✅ ${esc(j.nome)}: leu</div>`
-        : `<div class="leitura-player nao-leu">⏳ ${esc(j.nome)}: não leu ainda</div>`;
+        : `<div class="leitura-player nao-leu">⏳ ${esc(j.nome)}: não leu ainda${amIHost && j.uid !== myUid ? ` <button class="btn-pular-turno" onclick="pularLeituraJogador('${j.uid}')">⏭ Pular</button>` : ''}</div>`;
     }
     if (!euJaLi) {
       if (narracaoLocalTerminou) {
@@ -3200,7 +3208,7 @@ function atualizarInputArea(eu, config) {
   // Painel "quem já agiu" (multiplayer + eu já enviei + não narrando)
   if (!soloMode && jaEnviou && !narrando && !morto) {
     _stopProcessingTimer();
-    const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
+    const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && !j.ausente);
     const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     let html = '<div id="action-wait-panel">';
     for (const j of ativos) {
@@ -3253,7 +3261,7 @@ function atualizarInputArea(eu, config) {
 
   const btnAv = document.getElementById('btn-avançar-hist');
   if (btnAv) {
-    const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
+    const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && !j.ausente);
     const querAvCount = ativos.filter(j => j.acao1 === '__avançar__').length;
     const estaAvançando = config.estado === 'avançando';
     const mostrar = !narrando && !morto && (config.estado === 'aguardando' || estaAvançando) && !temContinuar;
