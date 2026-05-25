@@ -274,6 +274,20 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 }
 .btn-pular-turno:hover { background: rgba(255,255,255,.13); color: #ddd; }
 
+/* Leitura gate — confirmação de leitura sincronizada */
+#leitura-gate-panel { display: flex; flex-direction: column; gap: 4px; padding: 4px 0; }
+.leitura-player { font-size: 0.78rem; padding: 2px 0; }
+.leitura-player.leu     { color: #4caf50; }
+.leitura-player.nao-leu { color: #888; font-style: italic; }
+.btn-confirmar-leitura {
+  margin-top: 8px; padding: 8px 14px; font-size: 0.85rem; font-weight: 600;
+  background: rgba(76,175,80,.18); border: 1px solid rgba(76,175,80,.45);
+  color: #4caf50; border-radius: 6px; cursor: pointer; width: 100%;
+  transition: background .15s;
+}
+.btn-confirmar-leitura:hover { background: rgba(76,175,80,.3); }
+.leitura-hint { font-size: 0.75rem; color: #666; font-style: italic; margin-top: 4px; }
+
 /* Story area */
 #story-area {
   flex: 1;

@@ -185,6 +185,7 @@ let _trocaItens       = new Set(); // slugs selecionados para troca
 let _trocaAtual       = null;     // snapshot atual do nó salas/${sala}/troca
 let _lastConfig       = {};       // último snapshot de config (para re-check de prompt)
 let _skipTimers       = {};       // uid → timeoutId | 'ready' — timers para botão "Pular turno"
+let _leituraCache     = null;     // snapshot do nó salas/${sala}/leitura — confirmação de leitura multiplayer
 let _narracaoAtiva    = 0;        // contagem de segmentos sendo narrados (com Continuar buttons)
 let _carregandoHistoriaInicial = false; // true durante a primeira carga da história (entradas antigas = sem TTS)
 
@@ -890,6 +891,23 @@ window.enviarFalaPersonagem = async function() {
   await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), { acao1: acao });
 };
 
+// Constrói o objeto leitura para o Firebase (null = solo, sem gate)
+function buildLeituraGate(jogadores) {
+  const confirmados = {};
+  Object.entries(jogadores || {}).forEach(([uid, j]) => {
+    if (j.vivo && j.consciente && j.ativo !== false && !j.ausente) confirmados[uid] = false;
+  });
+  return Object.keys(confirmados).length > 1 ? { confirmados, ts: Date.now() } : null;
+}
+
+// Jogador confirma que leu a narração
+window.confirmarLeitura = async function() {
+  if (!mySala || !_leituraCache) return;
+  const ups = {};
+  ups[`salas/${mySala}/leitura/confirmados/${myUid}`] = true;
+  await update(ref(db), ups);
+};
+
 window.pularTurnoJogador = async function(uid) {
   if (!amIHost || !mySala) return;
   const t = _skipTimers[uid];
@@ -936,6 +954,8 @@ async function narrarResultadoTestes(resultados, rolarRes, jogadores, inimigos, 
   }
   ups[`salas/${mySala}/config/estado`] = 'aguardando';
   ups[`salas/${mySala}/config/rodada`] = rodada + 1;
+  const leituraGate = buildLeituraGate(jogadores);
+  ups[`salas/${mySala}/leitura`] = leituraGate;
   await update(ref(db), ups);
 }
 
@@ -2894,6 +2914,15 @@ function irParaJogo(codigo) {
       }
     }
 
+    // Sincronizar cache de leitura
+    _leituraCache = data.leitura || null;
+    // Host verifica se todos confirmaram leitura → libera o jogo
+    if (amIHost && _leituraCache) {
+      const ativosL = Object.values(jogadores).filter(j => j.vivo && j.consciente && j.ativo !== false && !j.ausente);
+      const todosLeram = ativosL.length > 0 && ativosL.every(j => _leituraCache.confirmados?.[j.uid] === true);
+      if (todosLeram) update(ref(db, `salas/${codigo}`), { leitura: null });
+    }
+
     renderizarJogadores(jogadores, config);
     renderizarInimigos(inimigos);
     renderizarHistoria(historia, jogadores);
@@ -3114,10 +3143,51 @@ function atualizarInputArea(eu, config) {
   const narrando    = config.estado === 'narrando' || config.estado === 'iniciando' || temContinuar || _narracaoAtiva > 0;
   const morto       = !eu.vivo || !eu.consciente;
 
-  if (btn) btn.disabled = jaEnviou || narrando || morto;
+  // Leitura gate: bloqueia input até todos confirmarem leitura
+  const leitura = _leituraCache;
+  const narracaoLocalTerminou = !temContinuar && _narracaoAtiva <= 0;
+  const euJaLi    = !leitura || leitura.confirmados?.[myUid] !== false;
+  const leituraGateAtiva = !!(leitura && !narrando && !morto);
+
+  if (btn) btn.disabled = jaEnviou || narrando || morto || leituraGateAtiva;
 
   const totalAtivos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente).length;
   const soloMode    = totalAtivos <= 1;
+
+  // Painel de leitura — tem prioridade sobre os demais status
+  if (leituraGateAtiva) {
+    _stopProcessingTimer();
+    const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && j.ativo !== false && !j.ausente);
+    let html = '<div id="leitura-gate-panel">';
+    for (const j of ativos) {
+      const confirmou = leitura.confirmados?.[j.uid] === true;
+      html += confirmou
+        ? `<div class="leitura-player leu">✅ ${esc(j.nome)}: leu</div>`
+        : `<div class="leitura-player nao-leu">⏳ ${esc(j.nome)}: não leu ainda</div>`;
+    }
+    if (!euJaLi) {
+      if (narracaoLocalTerminou) {
+        html += `<button class="btn-confirmar-leitura" onclick="confirmarLeitura()">✅ Li tudo — continuar</button>`;
+      } else {
+        html += `<div class="leitura-hint">Leia até o final para confirmar...</div>`;
+      }
+    }
+    html += '</div>';
+    const statusEl = document.getElementById('action-status');
+    if (statusEl) statusEl.innerHTML = html;
+    atualizarPromptAcao(eu, config);
+    if (iniciarWrap && config.estado !== 'lobby') iniciarWrap.style.display = 'none';
+    const btnUndo = document.getElementById('btn-undo-turno');
+    if (btnUndo) btnUndo.style.display = amIHost ? 'inline-flex' : 'none';
+    const btnHist = document.getElementById('btn-editar-hist');
+    if (btnHist) btnHist.style.display = amIHost ? 'inline-flex' : 'none';
+    const btnDestravar = document.getElementById('btn-destravar');
+    if (btnDestravar) btnDestravar.style.display = 'none';
+    const btnAvLeit = document.getElementById('btn-avançar-hist');
+    if (btnAvLeit) btnAvLeit.style.display = 'none';
+    return;
+  }
 
   // Limpar skip timers quando nova rodada começa ou IA está narrando
   if (!jaEnviou || narrando) {
@@ -3213,7 +3283,7 @@ function atualizarPromptAcao(eu, config) {
   let card = document.getElementById('action-prompt-card');
   const estadoAvançando  = config.estado === 'avançando';
   const temContinuarBtn  = !!document.querySelector('#story-content .btn-continuar-narr');
-  const deveExibir = eu && (config.estado === 'aguardando' || estadoAvançando) && eu.acao1 == null && eu.vivo && eu.consciente && !temContinuarBtn && _narracaoAtiva <= 0;
+  const deveExibir = eu && (config.estado === 'aguardando' || estadoAvançando) && eu.acao1 == null && eu.vivo && eu.consciente && !temContinuarBtn && _narracaoAtiva <= 0 && !_leituraCache;
 
   if (!deveExibir) {
     if (card) card.remove();
@@ -4047,6 +4117,7 @@ async function chamarIA_continuar() {
     const respostaFinal = temAvançar ? removerAvançar(semAtoCont) : semAtoCont;
     ups[`salas/${mySala}/config/estado`] = temAvançar ? 'avançando' : 'aguardando';
     ups[`salas/${mySala}/config/rodada`] = rodada + 1;
+    if (!temAvançar) ups[`salas/${mySala}/leitura`] = buildLeituraGate(jogadores);
     await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(respostaFinal), falas: extrairFalas(respostaFinal), ataques: extrairAtaques(respostaFinal), ts: Date.now() });
     await processarStats(respostaFinal, jogadores, inimigos);
     await update(ref(db), ups);
@@ -4129,6 +4200,7 @@ async function chamarIA(jogadores, data) {
       const respostaFinal = temAvançar ? removerAvançar(semAto) : semAto;
       ups[`salas/${mySala}/config/estado`] = temAvançar ? 'avançando' : 'aguardando';
       ups[`salas/${mySala}/config/rodada`] = rodada + 1;
+      if (!temAvançar) ups[`salas/${mySala}/leitura`] = buildLeituraGate(jogadores);
       await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(respostaFinal), falas: extrairFalas(respostaFinal), ataques: extrairAtaques(respostaFinal), ts: Date.now() });
       await processarStats(respostaFinal, jogadores, inimigos);
       await update(ref(db), ups);
