@@ -1007,10 +1007,16 @@ function renderizarSegmentos(container, segs, falas, noTTS) {
           htmlDir = _ph(npcOuv.portrait ? `sprites/${npcOuv.portrait}.png` : '', npcOuv.icon, npcOuv.cor, false);
         } else {
           const npc = getNpcData(it.nome);
+          const prevNpc = _ultimoNpc;
           _ultimoNpc = npc;
           htmlEsq = _ph(npc.portrait ? `sprites/${npc.portrait}.png` : '', npc.icon, npc.cor, true);
-          const eu = _jogadoresCache[myUid];
-          htmlDir = _ph(eu ? `sprites/${eu.classe}_${eu.sexo || 'm'}.png` : '', '🧑', '#4a7090', false);
+          const ouvinteNpc = prevNpc && prevNpc.portrait !== npc.portrait ? prevNpc : null;
+          if (ouvinteNpc) {
+            htmlDir = _ph(ouvinteNpc.portrait ? `sprites/${ouvinteNpc.portrait}.png` : '', ouvinteNpc.icon, ouvinteNpc.cor, false);
+          } else {
+            const eu = _jogadoresCache[myUid];
+            htmlDir = _ph(eu ? `sprites/${eu.classe}_${eu.sexo || 'm'}.png` : '', '🧑', '#4a7090', false);
+          }
         }
         const bubble = document.createElement('div');
         bubble.className = 'dialogo-inline';
@@ -1080,13 +1086,18 @@ function renderizarSegmentos(container, segs, falas, noTTS) {
         const npcOuv = _ultimoNpc || { icon: '👤', cor: '#4a5a70', portrait: null };
         htmlDir = _ph(npcOuv.portrait ? `sprites/${npcOuv.portrait}.png` : '', npcOuv.icon, npcOuv.cor, false);
       } else {
-        // NPC fala → NPC ESQUERDA (espelhado), Jogador atual DIREITA (normal)
+        // NPC fala → NPC ESQUERDA (espelhado), ouvinte DIREITA (outro NPC ou jogador)
         const npc = getNpcData(it.nome);
+        const prevNpc = _ultimoNpc;
         _ultimoNpc = npc;
         htmlEsq = _ph(npc.portrait ? `sprites/${npc.portrait}.png` : '', npc.icon, npc.cor, true);
-        const eu = _jogadoresCache[myUid];
-        const src = eu ? `sprites/${eu.classe}_${eu.sexo || 'm'}.png` : '';
-        htmlDir = _ph(src, '🧑', '#4a7090', false);
+        const ouvinteNpc = prevNpc && prevNpc.portrait !== npc.portrait ? prevNpc : null;
+        if (ouvinteNpc) {
+          htmlDir = _ph(ouvinteNpc.portrait ? `sprites/${ouvinteNpc.portrait}.png` : '', ouvinteNpc.icon, ouvinteNpc.cor, false);
+        } else {
+          const eu = _jogadoresCache[myUid];
+          htmlDir = _ph(eu ? `sprites/${eu.classe}_${eu.sexo || 'm'}.png` : '', '🧑', '#4a7090', false);
+        }
       }
 
       const bubble = document.createElement('div');
@@ -4176,7 +4187,27 @@ Exemplos:
   Equipar: "STATS: [EQUIPAR:Carne:mao_d:Espada Longa] [EQUIPAR:Carne:tronco:Cota de Malha]"
   Mochila: "STATS: [ITEM_BAG:Carne:Poção de Cura:2] [ITEM_BAG:Carne:Tocha:-1]"
 LESAO: somente lesões PERMANENTES irreversíveis. Persiste entre campanhas.
-XP: conceda 10-50 pts por vitória ou feito relevante.
+XP — SISTEMA DE MÉRITO POR ATO:
+• XP é concedido SOMENTE na resposta que contém FECHAR_ATO — nunca durante o ato.
+• Na linha STATS do FECHAR_ATO, inclua [XP:nome:pontos] para cada jogador presente.
+• Avalie o ato inteiro de forma holística e individual — quem agiu mais merece mais.
+• Não mencione os pontos no texto narrativo (é silencioso no sistema).
+
+Faixas de referência (total por ato):
+  Participação mínima / passivo: 10–40 XP
+  Bom (participou consistentemente + 1–2 destaques): 80–130 XP
+  Excelente (múltiplos destaques em combate e roleplay): 140–200 XP
+  Épico (ato definidor, momento lendário): 210–280 XP
+
+Bônus que elevam o valor base:
+  Combate eficaz, salvou aliado: +10–25 · Derrubou boss/criatura especial: +25–40
+  Bravura (enfrentou risco voluntariamente): +10–20 · Quase-sacrifício épico: +30–50
+  Roleplay marcante, fiel ao personagem: +10–20 · Diálogo que virou o rumo: +20–30
+  Solução criativa que evitou combate: +10–20 · Revelou segredo/avançou o plot: +15–30
+
+Punições (subtraem — usar só em casos claros):
+  Covardia que prejudicou o grupo: –10 a –20
+  Traiu aliados / dano injustificado: –20 a –40
 TITULO/POSSE/REPUTACAO: use quando a narrativa conferir recompensas concretas ou reconhecimento formal.
 EQUIPAR: slots válidos — cabeca, tronco, mao_d, mao_e, pes. Item vazio = desequipar.
 ITEM_BAG: qtd positiva = adicionar, negativa = remover da mochila.

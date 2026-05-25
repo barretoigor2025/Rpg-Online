@@ -701,7 +701,7 @@
       "historico": "Log de campanhas e salas em que o personagem participou."
     },
     "tags_xp_e_lesao": {
-      "XP": "[XP:nomeJogador:pontos] — concede XP. Use 10-50 pts por vitória ou feito narrativo. Acumula no perfil.",
+      "XP": "[XP:nomeJogador:pontos] — concede XP SOMENTE no FECHAR_ATO, nunca durante o ato. Avalie o ato inteiro de forma holística. Faixas: participação mínima 10–40 · bom 80–130 · excelente 140–200 · épico 210–280. Acumula no perfil.",
       "LESAO": "[LESAO:nomeJogador:descrição] — registra lesão PERMANENTE irreversível. Use SOMENTE para: perda de membro, cegueira, mutilação grave, maldição física permanente. Persiste entre campanhas e aparece no system prompt de futuras sessões.",
       "quando_usar_lesao": [
         "Perda de membro ou órgão (ex: 'braço direito decepado', 'olho esquerdo perdido')",
@@ -714,7 +714,7 @@
     "regras_narracao": [
       "Se um jogador tem LESÕES PERMANENTES listadas no system prompt, a narrativa DEVE reconhecê-las e levá-las em conta durante as cenas.",
       "Lesões físicas afetam o que o personagem pode fazer: braço decepado impede segurar escudo, cegueira parcial dá penalidade em percepção.",
-      "XP deve ser concedido ao final de combates importantes, resolução de enigmas ou decisões narrativas de peso.",
+      "XP é concedido SOMENTE no FECHAR_ATO — nunca durante o ato. O narrador avalia o ato completo de cada jogador individualmente: participação, combate, bravura, roleplay, inteligência e descobertas. Pode também punir covardia ou sabotagem subtraindo pontos. O texto narrativo nunca menciona os pontos — a distribuição é silenciosa.",
       "Lesões permanentes são carimbo do destino do personagem — não devem ser ignoradas ou revertidas sem justificativa narrativa forte."
     ]
   },
