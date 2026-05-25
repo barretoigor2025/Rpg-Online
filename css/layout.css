@@ -294,15 +294,20 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 
 /* Loading overlay — ampulheta (servidor ocupado) */
 #loading-overlay {
-  position: fixed; inset: 0;
-  background: rgba(6,8,15,0.93);
-  display: flex; align-items: center; justify-content: center;
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
   z-index: 850;
-  flex-direction: column;
+  pointer-events: none; /* não bloqueia cliques no jogo */
 }
 .loading-box {
+  pointer-events: auto;
   display: flex; flex-direction: column; align-items: center;
-  gap: 22px; max-width: 300px; padding: 32px 20px; text-align: center;
+  gap: 16px; max-width: 260px; padding: 24px 20px; text-align: center;
+  background: rgba(10,13,24,0.92);
+  border: 1px solid rgba(200,160,80,0.35);
+  border-radius: 12px;
+  box-shadow: 0 0 24px rgba(200,160,80,0.12), 0 4px 32px rgba(0,0,0,0.6);
 }
 .hourglass-svg {
   width: 80px; height: 120px;
