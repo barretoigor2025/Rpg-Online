@@ -334,6 +334,7 @@
     <div id="topbar-right">
       <button id="voice-btn" class="icon-btn" onclick="toggleVoz()" title="Narração">🔊</button>
       <button class="icon-btn" onclick="toggleSkillsPanel()" title="Perícias">📜</button>
+      <button id="btn-destravar" class="icon-btn" onclick="destravaNarracao()" title="Destravar narração travada" style="display:none">🔓</button>
       <button id="btn-undo-turno" class="icon-btn" onclick="desfazerUltimoTurno()" title="Desfazer último turno" style="display:none">↩</button>
       <button id="btn-editar-hist" class="icon-btn" onclick="abrirGerenciarHistorico()" title="Editar histórico" style="display:none">🗂️</button>
       <button class="icon-btn" onclick="resetarSala()" title="Resetar sala">↺</button>
@@ -427,6 +428,6 @@
 <!-- Firebase SDK via script tags (mais confiável em mobile que ES module imports) -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-<script src="js/main.js?v=36"></script>
+<script src="js/main.js?v=37"></script>
 </body>
 </html>

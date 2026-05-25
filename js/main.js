@@ -3081,6 +3081,8 @@ function atualizarInputArea(eu, config) {
   if (btnUndo) btnUndo.style.display = amIHost ? 'inline-flex' : 'none';
   const btnHist = document.getElementById('btn-editar-hist');
   if (btnHist) btnHist.style.display = amIHost ? 'inline-flex' : 'none';
+  const btnDestravar = document.getElementById('btn-destravar');
+  if (btnDestravar) btnDestravar.style.display = (amIHost && narrando) ? 'inline-flex' : 'none';
 
   const btnAv = document.getElementById('btn-avançar-hist');
   if (btnAv) {
@@ -3531,7 +3533,10 @@ async function chamarOpenAI(systemPrompt, history, userMsg, onRetry, maxTokens =
         hdrs['HTTP-Referer'] = 'https://barretoigor2025.github.io/Rpg-Online/';
         hdrs['X-Title'] = 'Oráculo RPG';
       }
-      const res = await fetch(prov.url, { method:'POST', headers: hdrs, body });
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 90000);
+      const res = await fetch(prov.url, { method:'POST', headers: hdrs, body, signal: ctrl.signal });
+      clearTimeout(timer);
       const d = await res.json();
       if (d.error) {
         if (/rate.limit|overload|529|503/i.test(d.error.message||'') && t < 10) continue;
@@ -3539,7 +3544,7 @@ async function chamarOpenAI(systemPrompt, history, userMsg, onRetry, maxTokens =
         return null;
       }
       return d.choices?.[0]?.message?.content || '';
-    } catch {
+    } catch(err) {
       if (t === 10) { toast('Erro de conexão após 10 tentativas'); return null; }
     }
   }
@@ -3568,7 +3573,10 @@ async function _chamarGemini(apiKey, systemPrompt, history, userMsg, onRetry, ma
       await new Promise(r => setTimeout(r, wait));
     }
     try {
-      const res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body });
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 90000);
+      const res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body, signal: ctrl.signal });
+      clearTimeout(timer);
       const d = await res.json();
       if (d.error) {
         if (/quota|overload|503|429/i.test(JSON.stringify(d.error)) && t < 10) continue;
@@ -3800,6 +3808,23 @@ window.confirmarLimpezaHistorico = async function() {
 
   fecharGerenciarHistorico();
   toast(`🗂️ ${aRemover.length} entrada(s) removida(s)`, 2500);
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  DESTRAVAR NARRAÇÃO (host only) — reseta estado preso
+// ═══════════════════════════════════════════════════════════════
+window.destravaNarracao = async function() {
+  if (!amIHost || !mySala) return;
+  chamandoIA = false;
+  _narracaoAtiva = 0;
+  _stopCurrentAudio();
+  await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
+  // Limpar acao1 para evitar re-trigger imediato
+  const snap = await db.ref(`salas/${mySala}/jogadores`).once('value');
+  const ups = {};
+  snap.forEach(c => { ups[`salas/${mySala}/jogadores/${c.key}/acao1`] = null; });
+  if (Object.keys(ups).length) await update(ref(db), ups);
+  toast('🔓 Narração destravada — estado resetado para aguardando', 3000);
 };
 
 // ═══════════════════════════════════════════════════════════════
