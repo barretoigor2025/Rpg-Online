@@ -1012,16 +1012,23 @@ function renderizarSegmentos(container, segs, falas, noTTS) {
         let htmlEsq, htmlDir;
         if (jogEntry) {
           htmlEsq = _ph(`sprites/${jogEntry.classe}_${jogEntry.sexo || 'm'}.png`, '🧑', '#4a7090', true);
-          const npcOuv = _ultimoNpc || { icon: '👤', cor: '#4a5a70', portrait: null };
-          htmlDir = _ph(npcOuv.portrait ? `sprites/${npcOuv.portrait}.png` : '', npcOuv.icon, npcOuv.cor, false);
+          // Prioridade: outro jogador ativo na sala; fallback: último NPC em cena
+          const outroJog = Object.values(_jogadoresCache).find(j => j.uid !== jogEntry.uid && j.ativo !== false && !j.ausente);
+          if (outroJog) {
+            htmlDir = _ph(`sprites/${outroJog.classe}_${outroJog.sexo || 'm'}.png`, '🧑', '#4a7090', false);
+          } else {
+            const npcOuv = _ultimoNpc || { icon: '👤', cor: '#4a5a70', portrait: null };
+            htmlDir = _ph(npcOuv.portrait ? `sprites/${npcOuv.portrait}.png` : '', npcOuv.icon, npcOuv.cor, false);
+          }
         } else {
           const npc = getNpcData(it.nome);
           const prevNpc = _ultimoNpc;
           _ultimoNpc = npc;
           htmlEsq = _ph(npc.portrait ? `sprites/${npc.portrait}.png` : '', npc.icon, npc.cor, true);
-          const ouvinteNpc = prevNpc && prevNpc.portrait !== npc.portrait ? prevNpc : null;
+          // NPC-to-NPC apenas quando AMBOS têm portrait real (evita falso-positivo com jogadores)
+          const ouvinteNpc = prevNpc && prevNpc.portrait && npc.portrait && prevNpc.portrait !== npc.portrait ? prevNpc : null;
           if (ouvinteNpc) {
-            htmlDir = _ph(ouvinteNpc.portrait ? `sprites/${ouvinteNpc.portrait}.png` : '', ouvinteNpc.icon, ouvinteNpc.cor, false);
+            htmlDir = _ph(`sprites/${ouvinteNpc.portrait}.png`, ouvinteNpc.icon, ouvinteNpc.cor, false);
           } else {
             const eu = _jogadoresCache[myUid];
             htmlDir = _ph(eu ? `sprites/${eu.classe}_${eu.sexo || 'm'}.png` : '', '🧑', '#4a7090', false);
@@ -1089,20 +1096,26 @@ function renderizarSegmentos(container, segs, falas, noTTS) {
 
       let htmlEsq, htmlDir;
       if (jogEntry) {
-        // Jogador fala → Jogador ESQUERDA (espelhado), último NPC DIREITA (normal)
+        // Jogador fala → Jogador ESQUERDA (espelhado), outro jogador ou NPC DIREITA
         const sexo = jogEntry.sexo || 'm';
         htmlEsq = _ph(`sprites/${jogEntry.classe}_${sexo}.png`, '🧑', '#4a7090', true);
-        const npcOuv = _ultimoNpc || { icon: '👤', cor: '#4a5a70', portrait: null };
-        htmlDir = _ph(npcOuv.portrait ? `sprites/${npcOuv.portrait}.png` : '', npcOuv.icon, npcOuv.cor, false);
+        const outroJog = Object.values(_jogadoresCache).find(j => j.uid !== jogEntry.uid && j.ativo !== false && !j.ausente);
+        if (outroJog) {
+          htmlDir = _ph(`sprites/${outroJog.classe}_${outroJog.sexo || 'm'}.png`, '🧑', '#4a7090', false);
+        } else {
+          const npcOuv = _ultimoNpc || { icon: '👤', cor: '#4a5a70', portrait: null };
+          htmlDir = _ph(npcOuv.portrait ? `sprites/${npcOuv.portrait}.png` : '', npcOuv.icon, npcOuv.cor, false);
+        }
       } else {
-        // NPC fala → NPC ESQUERDA (espelhado), ouvinte DIREITA (outro NPC ou jogador)
+        // NPC fala → NPC ESQUERDA (espelhado), ouvinte DIREITA (outro NPC com portrait ou jogador)
         const npc = getNpcData(it.nome);
         const prevNpc = _ultimoNpc;
         _ultimoNpc = npc;
         htmlEsq = _ph(npc.portrait ? `sprites/${npc.portrait}.png` : '', npc.icon, npc.cor, true);
-        const ouvinteNpc = prevNpc && prevNpc.portrait !== npc.portrait ? prevNpc : null;
+        // NPC-to-NPC apenas quando AMBOS têm portrait real (evita falso-positivo com jogadores)
+        const ouvinteNpc = prevNpc && prevNpc.portrait && npc.portrait && prevNpc.portrait !== npc.portrait ? prevNpc : null;
         if (ouvinteNpc) {
-          htmlDir = _ph(ouvinteNpc.portrait ? `sprites/${ouvinteNpc.portrait}.png` : '', ouvinteNpc.icon, ouvinteNpc.cor, false);
+          htmlDir = _ph(`sprites/${ouvinteNpc.portrait}.png`, ouvinteNpc.icon, ouvinteNpc.cor, false);
         } else {
           const eu = _jogadoresCache[myUid];
           htmlDir = _ph(eu ? `sprites/${eu.classe}_${eu.sexo || 'm'}.png` : '', '🧑', '#4a7090', false);
