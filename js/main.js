@@ -376,7 +376,7 @@ function getPortraitAtaque(nome, costas = false) {
 
 function extrairFalas(txt) {
   const falas = [];
-  const re = /^\s*FALA:\s*\[([^\|]+)\|"([^"]+)"\]/gim;
+  const re = /^\s*FALA:\s*\[([^\|]+)\|"(.+)"\]\s*$/gim;
   let m;
   while ((m = re.exec(txt)) !== null) {
     falas.push({ nome: m[1].trim(), texto: m[2].trim() });
@@ -935,7 +935,7 @@ function parsearSegmentos(txt) {
   const linhas = txt.split('\n');
   let acum = [];
   linhas.forEach(linha => {
-    const mFala = linha.match(/^\s*FALA:\s*\[([^\|]+)\|"([^"]+)"\]/i);
+    const mFala = linha.match(/^\s*FALA:\s*\[([^\|]+)\|"(.+)"\]\s*$/i);
     const mAtaque = linha.match(/^\s*ATAQUE:\s*\[([^\|]+)\|([^\|]+)\|"([^"]+)"\|(sim|nao)\]/i);
     if (mFala) {
       const t = acum.join('\n').trim();
@@ -4172,7 +4172,13 @@ DIÁLOGOS — sistema de bolhas inline. Regras OBRIGATÓRIAS:
 1. Quando um NPC fala, descreva a ação de falar (terminando em dois-pontos) e coloque a tag na linha seguinte:
    FALA: [NomeExato|"frase completa do NPC"]
 
-2. DIÁLOGO MULTI-TURNO: se a cena for uma conversa, gere múltiplas trocas com narração entre cada fala, até o diálogo se encerrar naturalmente:
+2. FORMATO ESTRITO da tag FALA — uma única linha:
+   FALA: [NomeExato|"frase falada APENAS — sem narração dentro dos colchetes"]
+   ✅ CORRETO: FALA: [Gregoras Pellos|"Vamos ao castelo. A Duquesa precisa saber."]
+   ❌ ERRADO: FALA: [Gregoras Pellos|"Vamos ao castelo." Ele se vira. "A Duquesa precisa saber."]
+   A narração ("Ele se vira.") vai FORA da tag, ANTES ou DEPOIS dela.
+
+3. DIÁLOGO MULTI-TURNO: se a cena for uma conversa, gere múltiplas trocas com narração entre cada fala, até o diálogo se encerrar naturalmente:
    Gregoras olha ao redor antes de falar:
    FALA: [Gregoras Pellos|"As Blackwoods começam a poucas milhas daqui."]
    Ele hesita, escolhendo as palavras:
@@ -4180,8 +4186,8 @@ DIÁLOGOS — sistema de bolhas inline. Regras OBRIGATÓRIAS:
    O guarda-costas fecha os olhos por um momento:
    FALA: [Gregoras Pellos|"Salvem-no se puderem. Se não houver jeito... vocês saberão o que fazer."]
 
-3. RESPOSTA A FALA DE JOGADOR: se um jogador declarou uma fala direta, narre a reação do NPC e use FALA para a resposta dele. Não deixe perguntas sem resposta.
+4. RESPOSTA A FALA DE JOGADOR: se um jogador declarou uma fala direta, narre a reação do NPC e use FALA para a resposta dele. Não deixe perguntas sem resposta.
 
-4. Nunca suprima a fala de um NPC — se o contexto exige que ele fale, ele DEVE falar via tag FALA.
-5. Coloque a fala COMPLETA do NPC na tag, não um resumo.`;
+5. Nunca suprima a fala de um NPC — se o contexto exige que ele fale, ele DEVE falar via tag FALA.
+6. Coloque a fala COMPLETA do NPC na tag, não um resumo.`;
 }
