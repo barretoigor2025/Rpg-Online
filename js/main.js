@@ -887,8 +887,6 @@ window.enviarFalaPersonagem = async function() {
   const acao = `${nome} ${tomLabel}${alvoStr}: "${texto}"`;
 
   fecharFalar();
-  const input = document.getElementById('action-input');
-  if (input) { input.value = acao; }
   await push(ref(db, `salas/${mySala}/historia`), { role:'user', content: acao, uid: myUid, ts: Date.now() });
   await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), { acao1: acao });
 };
