@@ -350,6 +350,29 @@
   <div id="retry-ui" style="display:none">
     <span id="retry-msg"></span>
   </div>
+
+  <!-- Overlay de ampulheta — servidor ocupado / aguardando IA -->
+  <div id="loading-overlay" style="display:none">
+    <div class="loading-box">
+      <svg class="hourglass-svg" viewBox="0 0 80 120" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <clipPath id="hg-clip-top"><polygon points="5,8 75,8 40,60"/></clipPath>
+          <clipPath id="hg-clip-bot"><polygon points="40,60 5,112 75,112"/></clipPath>
+        </defs>
+        <rect x="3" y="4"   width="74" height="5" rx="2" fill="#c8a050"/>
+        <rect x="3" y="111" width="74" height="5" rx="2" fill="#c8a050"/>
+        <line x1="5"  y1="8"   x2="40" y2="60" stroke="#c8a050" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="75" y1="8"   x2="40" y2="60" stroke="#c8a050" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="5"  y1="112" x2="40" y2="60" stroke="#c8a050" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="75" y1="112" x2="40" y2="60" stroke="#c8a050" stroke-width="2.5" stroke-linecap="round"/>
+        <rect class="hg-sand-top" x="0" y="8"  width="80" height="52" clip-path="url(#hg-clip-top)" fill="#c8a050" opacity="0.8"/>
+        <rect class="hg-stream"   x="38.5" y="59" width="3" height="3" fill="#c8a050" rx="1"/>
+        <rect class="hg-sand-bot" x="0" y="60" width="80" height="52" clip-path="url(#hg-clip-bot)" fill="#c8a050" opacity="0.65"/>
+      </svg>
+      <div id="loading-status-txt" class="loading-status">Aguardando servidor...</div>
+      <div id="loading-lore-txt" class="loading-lore"></div>
+    </div>
+  </div>
   <div id="action-bar">
     <div id="action-top-btns">
       <button id="btn-falar" class="action-quick-btn" onclick="abrirFalar()">💬 Falar</button>
@@ -428,6 +451,6 @@
 <!-- Firebase SDK via script tags (mais confiável em mobile que ES module imports) -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-<script src="js/main.js?v=50"></script>
+<script src="js/main.js?v=51"></script>
 </body>
 </html>

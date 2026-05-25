@@ -186,6 +186,27 @@ let _trocaAtual       = null;     // snapshot atual do nó salas/${sala}/troca
 let _lastConfig       = {};       // último snapshot de config (para re-check de prompt)
 let _skipTimers       = {};       // uid → timeoutId | 'ready' — timers para botão "Pular turno"
 let _retryCountdownTimer = null;  // intervalo do countdown de retryPendente
+let _loreTimer           = null;  // intervalo de rotação de curiosidades no overlay de ampulheta
+
+// Curiosidades do mundo — exibidas durante a espera do servidor
+const _LORE_FACTS = [
+  "Mhoried é famosa por suas peras douradas e pela prata lavrada de seus artesãos — ambas consideradas entre as melhores do reino.",
+  "A Arbor Aeterna, a Árvore Eterna de Mhoried, tem raízes tão antigas que não aparecem em nenhum registro histórico — simplesmente sempre esteve lá.",
+  "Aventureiros experientes sabem: nas Blackwoods, a sensação de estar sendo observado não é paranoia. É instinto de sobrevivência.",
+  "Os kobolds das Blackwoods constroem labirintos de túneis tão complexos que até mesmo seus criadores às vezes se perdem.",
+  "A névoa matinal das Blackwoods cheira diferente de qualquer floresta comum — mais antiga, mais úmida, como terra que nunca viu sol.",
+  "Na tradição de Mhoried, deixar uma vela acesa na janela durante a noite de São Phanourius protege a casa de visitantes indesejados.",
+  "Mutter Grimmhaar é tão velha que ninguém em Mhoried se lembra de quando ela chegou à floresta. Dizem que ela sabe coisas que nunca ninguém lhe contou.",
+  "O Forte Negro existe há séculos. Seus construtores originais nunca foram identificados — a arquitetura não corresponde a nenhuma civilização conhecida da região.",
+  "Poções de cura nas Blackwoods são raras e caras. Curandeiros locais raramente fazem perguntas sobre a origem das feridas.",
+  "Os elfos sombrios das Blackwoods não revelam seus nomes verdadeiros a estranhos. Para eles, o nome é parte da alma — e a alma não se empresta.",
+  "Criaturas das Blackwoods raramente atacam sem razão. O problema é que 'razão' para elas pode ser algo tão simples quanto um olhar no momento errado.",
+  "Viajantes que atravessam as Blackwoods à noite relatam sons que não existem de dia: passos que param quando você para, músicas sem origem, sussurros em língua esquecida.",
+  "Diz a lenda que qualquer contrato firmado sob a sombra da Arbor Aeterna é vinculante por algo maior que a lei dos homens.",
+  "A guilda dos mercadores de Mhoried proíbe negócios formais com criaturas das Blackwoods — não por moral, mas por amarga experiência.",
+  "Espantalhos animados não são criaturas vivas — são construtos mágicos. O que os move nunca é exatamente o que parece à primeira vista.",
+];
+let _loreIndex = Math.floor(Math.random() * _LORE_FACTS.length);
 let _leituraCache     = null;     // snapshot do nó salas/${sala}/leitura — confirmação de leitura multiplayer
 let _narracaoAtiva    = 0;        // contagem de segmentos sendo narrados (com Continuar buttons)
 let _carregandoHistoriaInicial = false; // true durante a primeira carga da história (entradas antigas = sem TTS)
@@ -3311,8 +3332,11 @@ function atualizarInputArea(eu, config) {
     else if (narrando) {
       if (config.retryProgresso) {
         const rp = config.retryProgresso;
-        setActionStatus(`⏳ Tentativa ${rp.t}/${rp.total} — aguardando ${rp.s}s...`);
+        const txt = `Tentativa ${rp.t}/${rp.total} — aguardando ${rp.s}s...`;
+        setActionStatus('');
+        if (!amIHost) mostrarLoadingOverlay(txt); // host já mostra via mostrarRetryUI
       } else {
+        ocultarLoadingOverlay();
         setActionStatus('⏳ Narrando...');
       }
     }
@@ -3559,13 +3583,40 @@ function _narrarWebSpeech(texto) {
 // ═══════════════════════════════════════════════════════════════
 //  RETRY UI
 // ═══════════════════════════════════════════════════════════════
-function mostrarRetryUI(tentativa, waitMs) {
-  const el = document.getElementById('retry-ui');
-  if (el) {
-    el.style.display = 'block';
-    document.getElementById('retry-msg').textContent = `Tentativa ${tentativa}/20 — aguardando ${waitMs/1000}s...`;
+function _avancarLore() {
+  const el = document.getElementById('loading-lore-txt');
+  if (!el) return;
+  el.style.opacity = '0';
+  setTimeout(() => {
+    _loreIndex = (_loreIndex + 1) % _LORE_FACTS.length;
+    el.textContent = _LORE_FACTS[_loreIndex];
+    el.style.opacity = '1';
+  }, 600);
+}
+
+function mostrarLoadingOverlay(statusTxt) {
+  const ov = document.getElementById('loading-overlay');
+  if (!ov) return;
+  ov.style.display = 'flex';
+  const st = document.getElementById('loading-status-txt');
+  if (st) st.textContent = statusTxt || 'Aguardando servidor...';
+  if (!_loreTimer) {
+    const lore = document.getElementById('loading-lore-txt');
+    if (lore) { lore.textContent = _LORE_FACTS[_loreIndex]; lore.style.opacity = '1'; }
+    _loreTimer = setInterval(_avancarLore, 9000);
   }
-  // Sincroniza com Firebase para todos os jogadores verem
+}
+
+function ocultarLoadingOverlay() {
+  const ov = document.getElementById('loading-overlay');
+  if (ov) ov.style.display = 'none';
+  if (_loreTimer) { clearInterval(_loreTimer); _loreTimer = null; }
+}
+
+function mostrarRetryUI(tentativa, waitMs) {
+  const statusTxt = `Tentativa ${tentativa}/20 — aguardando ${Math.round(waitMs/1000)}s...`;
+  mostrarLoadingOverlay(statusTxt);
+  // Sincroniza com Firebase para não-hosts verem o overlay também
   if (mySala && amIHost) {
     update(ref(db, `salas/${mySala}/config`), {
       retryProgresso: { t: tentativa, total: 20, s: Math.round(waitMs / 1000) }
@@ -3573,9 +3624,7 @@ function mostrarRetryUI(tentativa, waitMs) {
   }
 }
 function ocultarRetryUI() {
-  const el = document.getElementById('retry-ui');
-  if (el) el.style.display = 'none';
-  // Limpa do Firebase
+  ocultarLoadingOverlay();
   if (mySala && amIHost) {
     update(ref(db, `salas/${mySala}/config`), { retryProgresso: null }).catch(() => {});
   }
