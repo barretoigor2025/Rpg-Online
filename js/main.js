@@ -2946,20 +2946,17 @@ function irParaJogo(codigo) {
     // Cancelar timer se saiu do estado avançando
     if (config.estado !== 'avançando') cancelarAutoAvancar();
 
-    // Auto-avançar quando IA sinalizou AVANÇAR — espera todos os jogadores confirmarem
+    // Auto-avançar quando IA sinalizou AVANÇAR — espera todos os jogadores confirmarem (sem timer)
     if (amIHost && config.estado === 'avançando' && !chamandoIA) {
       const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
       const alguemComAcaoReal = ativos.some(j => j.acao1 != null && j.acao1 !== '__avançar__' && j.acao1 !== '__pular__');
       const todosConfirmaram = ativos.length > 0 && ativos.every(j => j.acao1 === '__avançar__' || j.acao1 === '__pular__');
       if (alguemComAcaoReal) {
-        cancelarAutoAvancar();
         update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
       } else if (todosConfirmaram) {
-        cancelarAutoAvancar();
         chamarIA_continuar();
-      } else {
-        iniciarAutoAvancar();
       }
+      // Sem iniciarAutoAvancar() — a história só avança quando TODOS confirmarem manualmente
     }
 
     // Host narra quando estado = 'aguardando' e todos enviaram ação
@@ -4277,7 +4274,7 @@ VOZ:
 - Foque no RESULTADO das ações, não na preparação.
 - Separe blocos temáticos distintos com linha em branco (\n\n) entre eles.
 - ${iniList
-  ? `COMBATE ATIVO — inimigos são entidades VIVAS com instintos, táticas e emoções próprias. Eles não esperam. Regras:\n  • Após QUALQUER ação dos jogadores (incluindo quando passaram o turno sem agir), os inimigos REAGEM IMEDIATAMENTE — atacam, usam poderes, se reposicionam ou agem conforme seu comportamento e motivação.\n  • Se o jogador passou o turno sem ação específica: os inimigos APROVEITAM A ABERTURA — pressionam com força total, gritam bravatas, usam poderes especiais.\n  • Expresse o estado emocional dos inimigos: raiva ao ver companheiros cair, euforia quando dominam, desespero quando acuados, determinação fria se forem calculistas. Use o campo comportamento de cada criatura.\n  • Use TESTAR para cada ataque inimigo (nome exato | ação | atributo | CD | jogador alvo), seguido de ROLAR de dano. Inclua STATS:[JOGADOR:nome:novoHp] ao acertar.\n  • CRÍTICO/CATÁSTROFE: narração dramática e detalhada.\n  • Criaturas com PODE NEGOCIAR podem pausar para diálogo — use fraqueza_social como gatilho. BESTIAL e BERSERK jamais param.\n  • NUNCA mencione dados, modificadores ou CD. Tom seco e direto, máximo 60 palavras de narração.\n  • ORDEM OBRIGATÓRIA: TESTAR/ROLAR vêm PRIMEIRO. Texto antes dos dados = apenas contexto de cena. NUNCA descreva impacto, som de golpe ou contato físico antes de rolar — isso só aparece na narração pós-dado de narrarResultadoTestes.`
+  ? `COMBATE ATIVO — você recebe TODAS as ações declaradas pelos jogadores ao mesmo tempo. Avalie o campo de batalha como um todo antes de narrar qualquer coisa.\n\nLEITURA DO CAMPO (faça mentalmente antes de cada rodada):\n  • INICIATIVA: quem age primeiro? Considere velocidade da ação (reação > ataque rápido > ataque pesado), DES dos combatentes, e quem tem vantagem posicional.\n  • POSICIONAMENTO: quem está adjacente a quem? Quem tem cobertura, altura, flanqueo, linha de visão limpa?\n  • AÇÕES COMBINADAS: dois jogadores atacando o mesmo alvo = flanqueo narrado como manobra conjunta. Um distrai enquanto o outro age = bônus de contexto. Narre cooperação como estratégia, não como coincidência.\n  • SOLO vs. GRUPO: identifique ações independentes vs. coordenadas — narração deve refletir isso.\n  • ESTADO DOS COMBATENTES: HP baixo = postura defensiva ou desesperada. Inimigo dominando = agressivo e confiante.\n\nINIMIGOS SÃO VIVOS — instinto, tática, emoção:\n  • Reagem às ações dos jogadores DEPOIS que elas são resolvidas — nunca antes.\n  • Raiva ao ver companheiros cair. Euforia ao dominar. Desespero quando acuados. Frieza calculista se forem estrategistas.\n  • Use o campo comportamento de cada criatura. BESTIAL e BERSERK jamais param. PODE NEGOCIAR pode pausar — use fraqueza_social como gatilho.\n  • Se jogador passou o turno sem agir: inimigos APROVEITAM A ABERTURA.\n  • Use TESTAR para cada ataque inimigo (nome exato | ação | atributo | CD | jogador alvo) + ROLAR de dano. STATS:[JOGADOR:nome:novoHp] ao acertar.\n\nREGRAS DE NARRAÇÃO:\n  • NUNCA narre apenas um personagem por rodada — a batalha acontece para todos ao mesmo tempo.\n  • Distribua destaque entre todos os jogadores em cena. Quem ficou fora: inclua na próxima rodada.\n  • ORDEM OBRIGATÓRIA: TESTAR/ROLAR PRIMEIRO. Texto antes dos dados = apenas contexto de cena e intenção. NUNCA descreva impacto, contato físico ou som de golpe antes de rolar.\n  • Máximo 60 palavras de narração. CRÍTICO/CATÁSTROFE: dramático e detalhado.\n  • NUNCA mencione dados, modificadores ou CD no texto narrativo.`
   : 'EXPLORAÇÃO — máximo 70 palavras por bloco narrativo (tags FALA não contam no limite). Em diálogos, negociações, missões e conversas com NPCs: seja expressivo e detalhado, sem limite de palavras — desenvolva personalidade, emoção e contexto.'}
 - Mantenha o tom: a floresta observa, os NPCs têm segredos, nada é seguro.
 - NUNCA termine com pergunta ao jogador. A narração termina com a consequência da cena.
