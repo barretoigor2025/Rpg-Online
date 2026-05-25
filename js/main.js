@@ -3298,7 +3298,14 @@ function atualizarInputArea(eu, config) {
     if (statusEl) statusEl.innerHTML = html;
   } else {
     if (morto)         setActionStatus('Seu personagem está fora de combate.');
-    else if (narrando) setActionStatus('⏳ Narrando...');
+    else if (narrando) {
+      if (config.retryProgresso) {
+        const rp = config.retryProgresso;
+        setActionStatus(`⏳ Tentativa ${rp.t}/${rp.total} — aguardando ${rp.s}s...`);
+      } else {
+        setActionStatus('⏳ Narrando...');
+      }
+    }
     else if (jaEnviou) setActionStatus('⏳ Processando ação...');
     else               setActionStatus('');
   }
@@ -3548,10 +3555,20 @@ function mostrarRetryUI(tentativa, waitMs) {
     el.style.display = 'block';
     document.getElementById('retry-msg').textContent = `Tentativa ${tentativa}/20 — aguardando ${waitMs/1000}s...`;
   }
+  // Sincroniza com Firebase para todos os jogadores verem
+  if (mySala && amIHost) {
+    update(ref(db, `salas/${mySala}/config`), {
+      retryProgresso: { t: tentativa, total: 20, s: Math.round(waitMs / 1000) }
+    }).catch(() => {});
+  }
 }
 function ocultarRetryUI() {
   const el = document.getElementById('retry-ui');
   if (el) el.style.display = 'none';
+  // Limpa do Firebase
+  if (mySala && amIHost) {
+    update(ref(db, `salas/${mySala}/config`), { retryProgresso: null }).catch(() => {});
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
