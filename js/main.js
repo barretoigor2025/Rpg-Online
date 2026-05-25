@@ -294,6 +294,7 @@ function limparTags(txt) {
     .replace(/^\s*ROLAR:\s*\[.*\]\s*$/gim, '')
     .replace(/^\s*AVANÇAR\s*$/im, '')
     .replace(/^\s*FECHAR_ATO:\s*\[[^\]]*\]\s*$/im, '')
+    .replace(/FALA:\s*\[[^\|]+\|"[^"]*"\]/gi, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
@@ -379,7 +380,7 @@ function getPortraitAtaque(nome, costas = false) {
 
 function extrairFalas(txt) {
   const falas = [];
-  const re = /^\s*FALA:\s*\[([^\|]+)\|"(.+)"\]\s*$/gim;
+  const re = /FALA:\s*\[([^\|]+)\|"(.+?)"\]/gi;
   let m;
   while ((m = re.exec(txt)) !== null) {
     falas.push({ nome: m[1].trim(), texto: m[2].trim() });
@@ -973,20 +974,31 @@ function parsearSegmentos(txt) {
   const linhas = txt.split('\n');
   let acum = [];
   linhas.forEach(linha => {
-    const mFala = linha.match(/^\s*FALA:\s*\[([^\|]+)\|"(.+)"\]\s*$/i);
-    const mAtaque = linha.match(/^\s*ATAQUE:\s*\[([^\|]+)\|([^\|]+)\|"([^"]+)"\|(sim|nao)\]/i);
-    if (mFala) {
-      const t = acum.join('\n').trim();
-      if (t) segs.push({ tipo: 'texto', conteudo: t });
-      acum = [];
-      segs.push({ tipo: 'fala', nome: mFala[1].trim(), texto: mFala[2].trim() });
-    } else if (mAtaque) {
-      const t = acum.join('\n').trim();
-      if (t) segs.push({ tipo: 'texto', conteudo: t });
-      acum = [];
-      segs.push({ tipo: 'ataque', atacante: mAtaque[1].trim(), alvo: mAtaque[2].trim(), resultado: mAtaque[3].trim(), surpresa: mAtaque[4].toLowerCase() === 'sim' });
+    const FALA_MID = /FALA:\s*\[([^\|]+)\|"(.+?)"\]/gi;
+    if (FALA_MID.test(linha)) {
+      FALA_MID.lastIndex = 0;
+      let lastIdx = 0, m;
+      while ((m = FALA_MID.exec(linha)) !== null) {
+        const antes = linha.slice(lastIdx, m.index).trim();
+        if (antes) acum.push(antes);
+        const t = acum.join('\n').trim();
+        if (t) segs.push({ tipo: 'texto', conteudo: t });
+        acum = [];
+        segs.push({ tipo: 'fala', nome: m[1].trim(), texto: m[2].trim() });
+        lastIdx = m.index + m[0].length;
+      }
+      const depois = linha.slice(lastIdx).trim();
+      if (depois) acum.push(depois);
     } else {
-      acum.push(linha);
+      const mAtaque = linha.match(/^\s*ATAQUE:\s*\[([^\|]+)\|([^\|]+)\|"([^"]+)"\|(sim|nao)\]/i);
+      if (mAtaque) {
+        const t = acum.join('\n').trim();
+        if (t) segs.push({ tipo: 'texto', conteudo: t });
+        acum = [];
+        segs.push({ tipo: 'ataque', atacante: mAtaque[1].trim(), alvo: mAtaque[2].trim(), resultado: mAtaque[3].trim(), surpresa: mAtaque[4].toLowerCase() === 'sim' });
+      } else {
+        acum.push(linha);
+      }
     }
   });
   const resto = acum.join('\n').trim();
