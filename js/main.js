@@ -313,7 +313,7 @@ function limparTags(txt) {
     .replace(/\[(?:INIMIGO|MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR|LESAO|XP|TITULO|POSSE|REPUTACAO|EQUIPAR|ITEM_BAG):[^\]\n]*/gi, '')
     .replace(/^\s*TESTAR:\s*\[.*\]\s*$/gim, '')
     .replace(/^\s*ROLAR:\s*\[.*\]\s*$/gim, '')
-    .replace(/^\s*AVANÇAR\s*$/im, '')
+    .replace(/AVANÇAR/gi, '')
     .replace(/^\s*FECHAR_ATO:\s*\[[^\]]*\]\s*$/im, '')
     .replace(/FALA:\s*\[[^\|]+\|"[^"]*"\]/gi, '')
     .replace(/\n{3,}/g, '\n\n')
@@ -329,11 +329,11 @@ function removerFacharAto(txt) {
 }
 
 function extrairAvançar(txt) {
-  return /^\s*AVANÇAR\s*$/im.test(txt);
+  return /AVANÇAR/i.test(txt);
 }
 
 function removerAvançar(txt) {
-  return txt.replace(/^\s*AVANÇAR\s*$/im, '').replace(/\n{3,}/g, '\n\n').trim();
+  return txt.replace(/AVANÇAR/gi, '').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3245,23 +3245,24 @@ function atualizarInputArea(eu, config) {
   const totalAtivos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && !j.ausente).length;
   const soloMode    = totalAtivos <= 1;
 
-  // Painel de leitura — tem prioridade sobre os demais status
+  // Botão Continuar (X/N) — tem prioridade sobre os demais status
   if (leituraGateAtiva) {
     _stopProcessingTimer();
-    const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && !j.ausente);
-    let html = '<div id="leitura-gate-panel">';
-    for (const j of ativos) {
-      const confirmou = leitura.confirmados?.[j.uid] === true;
-      html += confirmou
-        ? `<div class="leitura-player leu">✅ ${esc(j.nome)}: leu</div>`
-        : `<div class="leitura-player nao-leu">⏳ ${esc(j.nome)}: não leu ainda${amIHost && j.uid !== myUid ? ` <button class="btn-pular-turno" onclick="pularLeituraJogador('${j.uid}')">⏭ Pular</button>` : ''}</div>`;
+    const totalN = ativos.length;
+    const nConfirmados = ativos.filter(j => leitura.confirmados?.[j.uid] === true).length;
+    const euJaConfirmou = leitura.confirmados?.[myUid] === true;
+    let html = '<div class="leitura-counter-wrap">';
+    if (euJaConfirmou) {
+      html += `<span class="leitura-waiting">▶ Continuar (${nConfirmados}/${totalN})</span>`;
+    } else {
+      html += `<button class="btn-continuar-narr" onclick="confirmarLeitura()">▶ Continuar (${nConfirmados}/${totalN})</button>`;
     }
-    if (!euJaLi) {
-      if (narracaoLocalTerminou) {
-        html += `<button class="btn-confirmar-leitura" onclick="confirmarLeitura()">✅ Li tudo — continuar</button>`;
-      } else {
-        html += `<div class="leitura-hint">Leia até o final para confirmar...</div>`;
+    if (amIHost) {
+      const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const naoLeram = ativos.filter(j => leitura.confirmados?.[j.uid] !== true && j.uid !== myUid);
+      for (const j of naoLeram) {
+        html += ` <button class="btn-pular-turno" onclick="pularLeituraJogador('${j.uid}')">⏭ ${esc(j.nome)}</button>`;
       }
     }
     html += '</div>';
