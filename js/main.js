@@ -187,6 +187,7 @@ let _lastConfig       = {};       // último snapshot de config (para re-check d
 let _skipTimers       = {};       // uid → timeoutId | 'ready' — timers para botão "Pular turno"
 let _retryCountdownTimer = null;  // intervalo do countdown de retryPendente
 let _loreTimer           = null;  // intervalo de rotação de curiosidades no overlay de ampulheta
+let _ultimaRodadaNotificada = null; // rodada para a qual já enviamos notificação de turno
 
 // Curiosidades do mundo — exibidas durante a espera do servidor
 const _LORE_FACTS = [
@@ -944,6 +945,31 @@ window.pularLeituraJogador = async function(uid) {
   ups[`salas/${mySala}/leitura/confirmados/${uid}`] = true;
   await update(ref(db), ups);
 };
+
+// ── Notificações de turno ──
+async function pedirPermissaoNotificacao() {
+  if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+  if (Notification.permission !== 'default') return;
+  await Notification.requestPermission();
+}
+
+async function dispararNotificacaoTurno() {
+  if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+  if (document.visibilityState === 'visible') return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const base = window.location.href.replace(/index\.html.*$/, '').replace(/\?.*$/, '');
+    await reg.showNotification('⚔️ Oráculo RPG', {
+      body: 'É a sua vez! Declare sua ação.',
+      icon: base + 'sprites/guerreiro_m.png',
+      tag: 'rpg-turno',
+      requireInteraction: false,
+      vibrate: [200, 100, 200],
+      data: { url: window.location.href }
+    });
+  } catch(_) {}
+}
 
 window.querAvançarHistoria = async function() {
   if (!mySala) return;
@@ -2294,6 +2320,24 @@ window.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('touchstart', _unlockAudio, { passive: true });
   document.addEventListener('mousedown',  _unlockAudio, { passive: true });
 
+  // Registrar Service Worker para notificações de turno
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+
+  // Notificar quando jogador sai da aba e ainda tem uma ação pendente
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' || !mySala) return;
+    const meJog = _jogadoresCache[myUid];
+    if (_lastConfig.estado === 'aguardando' && meJog && meJog.acao1 == null && meJog.vivo && meJog.consciente && !meJog.ausente) {
+      const rodKey = String(_lastConfig.rodada || 0);
+      if (_ultimaRodadaNotificada !== rodKey) {
+        _ultimaRodadaNotificada = rodKey;
+        dispararNotificacaoTurno();
+      }
+    }
+  });
+
   // Restaurar provider selecionado
   document.querySelectorAll('.provider-chip').forEach(b => b.classList.toggle('active', b.dataset.prov === _provider));
   const p = PROVIDERS[_provider];
@@ -2880,6 +2924,8 @@ function irParaJogo(codigo) {
   localStorage.setItem(`rpg_sala_s${_activeSlot}`, codigo);
   mostrarTela('screen-game');
   document.getElementById('room-code').textContent = codigo;
+  // Pedir permissão de notificação — dispara 2s após entrar no jogo
+  setTimeout(pedirPermissaoNotificacao, 2000);
 
   // Resetar estado de renderização para evitar TTS de entradas antigas no reload
   _renderedKeys = new Set();
@@ -3047,6 +3093,20 @@ function irParaJogo(codigo) {
     } else if (!config.retryPendente && _retryCountdownTimer) {
       clearInterval(_retryCountdownTimer);
       _retryCountdownTimer = null;
+    }
+
+    // Notificação de turno — avisa quando é a vez do jogador e página está em background
+    if (config.estado === 'aguardando') {
+      const meJog = jogadores[myUid];
+      if (meJog && meJog.acao1 == null && meJog.vivo && meJog.consciente && !meJog.ausente) {
+        const rodKey = String(config.rodada || 0);
+        if (_ultimaRodadaNotificada !== rodKey) {
+          _ultimaRodadaNotificada = rodKey;
+          dispararNotificacaoTurno();
+        }
+      }
+    } else {
+      _ultimaRodadaNotificada = null;
     }
   });
 }
