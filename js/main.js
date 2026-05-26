@@ -1085,124 +1085,31 @@ function renderizarSegmentos(container, segs, falas, noTTS) {
     }
   });
 
-  // Modo silencioso: renderiza tudo de uma vez, sem TTS nem botões Continuar
-  if (noTTS) {
-    const _ph = (src, icon, cor, espelhar) =>
-      `<div class="dialogo-inline-portrait" style="background:${cor}22;border-color:${cor}55">
-        ${src ? `<img src="${src}" alt=""${espelhar ? ' class="espelhado"' : ''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
-        <span class="dialogo-inline-icon-fb"${src ? ' style="display:none"' : ''}>${icon}</span>
-      </div>`;
-    items.forEach(it => {
-      if (it.tipo === 'chunk') {
-        const p = document.createElement('p');
-        p.className = 'narr-chunk';
-        p.textContent = it.texto;
-        container.appendChild(p);
-      } else if (it.tipo === 'fala') {
-        const jogEntry = Object.values(_jogadoresCache).find(j =>
-          j.nome && it.nome.toLowerCase().includes(j.nome.toLowerCase())
-        );
-        let htmlEsq, htmlDir;
-        if (jogEntry) {
-          htmlEsq = _ph(`sprites/${jogEntry.classe}_${jogEntry.sexo || 'm'}.png`, '🧑', '#4a7090', true);
-          // Prioridade: outro jogador ativo na sala; fallback: último NPC em cena
-          const outroJog = Object.values(_jogadoresCache).find(j => j.uid !== jogEntry.uid && j.ativo !== false && !j.ausente);
-          if (outroJog) {
-            htmlDir = _ph(`sprites/${outroJog.classe}_${outroJog.sexo || 'm'}.png`, '🧑', '#4a7090', false);
-          } else {
-            const npcOuv = _ultimoNpc || { icon: '👤', cor: '#4a5a70', portrait: null };
-            htmlDir = _ph(npcOuv.portrait ? `sprites/${npcOuv.portrait}.png` : '', npcOuv.icon, npcOuv.cor, false);
-          }
-        } else {
-          const npc = getNpcData(it.nome);
-          const prevNpc = _ultimoNpc;
-          _ultimoNpc = npc;
-          htmlEsq = _ph(npc.portrait ? `sprites/${npc.portrait}.png` : '', npc.icon, npc.cor, true);
-          // NPC-to-NPC apenas quando AMBOS têm portrait real (evita falso-positivo com jogadores)
-          const ouvinteNpc = prevNpc && prevNpc.portrait && npc.portrait && prevNpc.portrait !== npc.portrait ? prevNpc : null;
-          if (ouvinteNpc) {
-            htmlDir = _ph(`sprites/${ouvinteNpc.portrait}.png`, ouvinteNpc.icon, ouvinteNpc.cor, false);
-          } else {
-            const eu = _jogadoresCache[myUid];
-            htmlDir = _ph(eu ? `sprites/${eu.classe}_${eu.sexo || 'm'}.png` : '', '🧑', '#4a7090', false);
-          }
-        }
-        const bubble = document.createElement('div');
-        bubble.className = 'dialogo-inline';
-        bubble.innerHTML = `${htmlEsq}<div class="dialogo-inline-body"><div class="dialogo-inline-nome">${it.nome}</div><div class="dialogo-inline-texto">"${it.texto}"</div></div>${htmlDir}`;
-        container.appendChild(bubble);
-      }
-    });
-    return;
-  }
   if (!items.length) return;
 
-  if (items.length === 1 && items[0].tipo === 'chunk') {
-    const p = document.createElement('p');
-    p.className = 'narr-chunk';
-    p.textContent = items[0].texto;
-    container.appendChild(p);
-    narrarTexto(items[0].texto);
-    return;
-  }
+  const _ph = (src, icon, cor, espelhar) =>
+    `<div class="dialogo-inline-portrait" style="background:${cor}22;border-color:${cor}55">
+      ${src ? `<img src="${src}" alt=""${espelhar ? ' class="espelhado"' : ''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+      <span class="dialogo-inline-icon-fb"${src ? ' style="display:none"' : ''}>${icon}</span>
+    </div>`;
 
-  _narracaoAtiva++;
-  let idx = 0;
-  function proxItem() {
-    if (idx >= items.length) {
-      // Narração completa — re-habilitar botão e mostrar card de ação
-      _narracaoAtiva = Math.max(0, _narracaoAtiva - 1);
-      const eu = _jogadoresCache?.[myUid];
-      if (eu && _lastConfig) atualizarInputArea(eu, _lastConfig);
-      return;
-    }
-    const it = items[idx++];
+  const ttsQueue = [];
+
+  // Render all items to DOM immediately (text visible on all screens at once)
+  items.forEach(it => {
     if (it.tipo === 'chunk') {
       const p = document.createElement('p');
       p.className = 'narr-chunk';
       p.textContent = it.texto;
       container.appendChild(p);
-      scrollDown();
-      if (idx < items.length) {
-        narrarTexto(it.texto, () => {
-          const btn = document.createElement('button');
-          btn.className = 'btn-continuar-narr btn-continuar-tts';
-          // Mostrar contagem de confirmação se há gate ativo
-          const _ttsAtiv = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && !j.ausente);
-          const _ttsN = _leituraCache
-            ? _ttsAtiv.filter(j => _leituraCache.confirmados?.[j.uid] === true).length
-            : _lastConfig?.estado === 'avançando'
-              ? _ttsAtiv.filter(j => j.acao1 === '__avançar__' || j.acao1 === '__pular__').length
-              : -1;
-          btn.textContent = _ttsN >= 0 ? `▶ Continuar (${_ttsN}/${_ttsAtiv.length})` : '▶ Continuar';
-          btn.onclick = () => {
-            if (_leituraCache && _leituraCache.confirmados?.[myUid] !== true) confirmarLeitura();
-            else if (_lastConfig?.estado === 'avançando' && !(_jogadoresCache[myUid]?.acao1 === '__avançar__')) querAvançarHistoria();
-            btn.remove(); proxItem();
-          };
-          container.appendChild(btn);
-          scrollDown();
-        });
-      } else {
-        narrarTexto(it.texto, proxItem);
-      }
+      if (!noTTS) ttsQueue.push(it.texto);
     } else if (it.tipo === 'fala') {
-      // Bolha inline: FALANTE à esquerda (espelhado → olha pra direita) | OUVINTE à direita (normal → olha pra esquerda)
-      const _ph = (src, icon, cor, espelhar) =>
-        `<div class="dialogo-inline-portrait" style="background:${cor}22;border-color:${cor}55">
-          ${src ? `<img src="${src}" alt=""${espelhar ? ' class="espelhado"' : ''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
-          <span class="dialogo-inline-icon-fb"${src ? ' style="display:none"' : ''}>${icon}</span>
-        </div>`;
-
       const jogEntry = Object.values(_jogadoresCache).find(j =>
         j.nome && it.nome.toLowerCase().includes(j.nome.toLowerCase())
       );
-
       let htmlEsq, htmlDir;
       if (jogEntry) {
-        // Jogador fala → Jogador ESQUERDA (espelhado), outro jogador ou NPC DIREITA
-        const sexo = jogEntry.sexo || 'm';
-        htmlEsq = _ph(`sprites/${jogEntry.classe}_${sexo}.png`, '🧑', '#4a7090', true);
+        htmlEsq = _ph(`sprites/${jogEntry.classe}_${jogEntry.sexo || 'm'}.png`, '🧑', '#4a7090', true);
         const outroJog = Object.values(_jogadoresCache).find(j => j.uid !== jogEntry.uid && j.ativo !== false && !j.ausente);
         if (outroJog) {
           htmlDir = _ph(`sprites/${outroJog.classe}_${outroJog.sexo || 'm'}.png`, '🧑', '#4a7090', false);
@@ -1211,7 +1118,6 @@ function renderizarSegmentos(container, segs, falas, noTTS) {
           htmlDir = _ph(npcOuv.portrait ? `sprites/${npcOuv.portrait}.png` : '', npcOuv.icon, npcOuv.cor, false);
         }
       } else {
-        // NPC fala → NPC ESQUERDA (espelhado), ouvinte DIREITA (outro NPC com portrait ou jogador)
         const npc = getNpcData(it.nome);
         const prevNpc = _ultimoNpc;
         _ultimoNpc = npc;
@@ -1225,37 +1131,19 @@ function renderizarSegmentos(container, segs, falas, noTTS) {
           htmlDir = _ph(eu ? `sprites/${eu.classe}_${eu.sexo || 'm'}.png` : '', '🧑', '#4a7090', false);
         }
       }
-
       const bubble = document.createElement('div');
       bubble.className = 'dialogo-inline';
-      bubble.innerHTML = `
-        ${htmlEsq}
-        <div class="dialogo-inline-body">
-          <div class="dialogo-inline-nome">${it.nome}</div>
-          <div class="dialogo-inline-texto">"${it.texto}"</div>
-        </div>
-        ${htmlDir}`;
+      bubble.innerHTML = `${htmlEsq}<div class="dialogo-inline-body"><div class="dialogo-inline-nome">${it.nome}</div><div class="dialogo-inline-texto">"${it.texto}"</div></div>${htmlDir}`;
       container.appendChild(bubble);
-      scrollDown();
-      // Narra a fala (sem bloquear — usuário clica para continuar)
-      narrarTexto(it.texto);
-      const btn = document.createElement('button');
-      btn.className = 'btn-continuar-narr';
-      btn.textContent = '▶ Continuar';
-      btn.onclick = () => { btn.remove(); proxItem(); };
-      container.appendChild(btn);
-      scrollDown();
+      if (!noTTS) ttsQueue.push(it.texto);
     } else if (it.tipo === 'ataque') {
-      // Card de batalha: ATACANTE à esquerda (espelhado), ALVO à direita (normal ou costas se surpresa)
       const pAtac = getPortraitAtaque(it.atacante, false);
       const pAlvo = getPortraitAtaque(it.alvo, it.surpresa);
-
       const _phb = (p, espelhar) =>
         `<div class="batalha-inline-portrait" style="background:${p.cor}22;border-color:${p.cor}55">
           ${p.src ? `<img src="${p.src}" alt=""${espelhar ? ' class="espelhado"' : ''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
           <span class="batalha-inline-icon-fb"${p.src ? ' style="display:none"' : ''}>${p.icon}</span>
         </div>`;
-
       const card = document.createElement('div');
       card.className = 'batalha-inline';
       card.innerHTML = `
@@ -1266,17 +1154,26 @@ function renderizarSegmentos(container, segs, falas, noTTS) {
         </div>
         ${_phb(pAlvo, false)}`;
       container.appendChild(card);
-      scrollDown();
-      narrarTexto(it.resultado);
-      const btnA = document.createElement('button');
-      btnA.className = 'btn-continuar-narr';
-      btnA.textContent = '▶ Continuar';
-      btnA.onclick = () => { btnA.remove(); proxItem(); };
-      container.appendChild(btnA);
-      scrollDown();
+      if (!noTTS) ttsQueue.push(it.resultado);
     }
+  });
+  scrollDown();
+
+  if (noTTS || !ttsQueue.length) return;
+
+  // TTS: play audio sequentially in background — no blocking buttons between items
+  _narracaoAtiva++;
+  let ttsIdx = 0;
+  function playNextTTS() {
+    if (ttsIdx >= ttsQueue.length) {
+      _narracaoAtiva = Math.max(0, _narracaoAtiva - 1);
+      const eu = _jogadoresCache?.[myUid];
+      if (eu && _lastConfig) atualizarInputArea(eu, _lastConfig);
+      return;
+    }
+    narrarTexto(ttsQueue[ttsIdx++], playNextTTS);
   }
-  proxItem();
+  playNextTTS();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3021,21 +2918,6 @@ function irParaJogo(codigo) {
     // Sincronizar cache de leitura
     _leituraCache = data.leitura || null;
 
-    // Atualizar contagem nos botões Continuar TTS vivos na tela
-    {
-      const _ttsAtiv = Object.values(jogadores).filter(j => j.vivo && j.consciente && !j.ausente);
-      const _ttsTotal = _ttsAtiv.length;
-      let _ttsTxt = null;
-      if (_leituraCache) {
-        const n = _ttsAtiv.filter(j => _leituraCache.confirmados?.[j.uid] === true).length;
-        _ttsTxt = `▶ Continuar (${n}/${_ttsTotal})`;
-      } else if (config.estado === 'avançando') {
-        const n = _ttsAtiv.filter(j => jogadores[j.uid]?.acao1 === '__avançar__' || jogadores[j.uid]?.acao1 === '__pular__').length;
-        _ttsTxt = `▶ Continuar (${n}/${_ttsTotal})`;
-      }
-      if (_ttsTxt) document.querySelectorAll('.btn-continuar-tts').forEach(b => { b.textContent = _ttsTxt; });
-    }
-
     // Host verifica se todos confirmaram leitura → libera o jogo
     if (amIHost && _leituraCache) {
       const ativosL = Object.values(jogadores).filter(j => j.vivo && j.consciente && !j.ausente);
@@ -4635,17 +4517,17 @@ DIÁLOGOS — sistema de bolhas inline. Regras OBRIGATÓRIAS:
 
 2. FORMATO ESTRITO da tag FALA — uma única linha:
    FALA: [NomeExato|"frase falada APENAS — sem narração dentro dos colchetes"]
-   ✅ CORRETO: FALA: [Gregoras Pellos|"Vamos ao castelo. A Duquesa precisa saber."]
-   ❌ ERRADO: FALA: [Gregoras Pellos|"Vamos ao castelo." Ele se vira. "A Duquesa precisa saber."]
+   ✅ CORRETO: FALA: [Veldrak|"Vamos embora. O caminho está livre."]
+   ❌ ERRADO: FALA: [Veldrak|"Vamos embora." Ele se vira. "O caminho está livre."]
    A narração ("Ele se vira.") vai FORA da tag, ANTES ou DEPOIS dela.
 
 3. DIÁLOGO MULTI-TURNO: se a cena for uma conversa, gere múltiplas trocas com narração entre cada fala, até o diálogo se encerrar naturalmente:
-   Gregoras olha ao redor antes de falar:
-   FALA: [Gregoras Pellos|"As Blackwoods começam a poucas milhas daqui."]
+   Veldrak olha ao redor antes de falar:
+   FALA: [Veldrak|"A floresta começa a poucas milhas daqui."]
    Ele hesita, escolhendo as palavras:
-   FALA: [Gregoras Pellos|"Oswald ainda está lá dentro. Mudado, mas está."]
-   O guarda-costas fecha os olhos por um momento:
-   FALA: [Gregoras Pellos|"Salvem-no se puderem. Se não houver jeito... vocês saberão o que fazer."]
+   FALA: [Veldrak|"Ele ainda está lá dentro. Mudado, mas está."]
+   O mercenário fecha os olhos por um momento:
+   FALA: [Veldrak|"Salvem-no se puderem. Se não houver jeito... vocês saberão o que fazer."]
 
 4. RESPOSTA A FALA DE JOGADOR: se um jogador declarou uma fala direta, narre a reação do NPC e use FALA para a resposta dele. Não deixe perguntas sem resposta.
 
