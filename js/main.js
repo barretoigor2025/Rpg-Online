@@ -1015,6 +1015,7 @@ async function narrarResultadoTestes(resultados, rolarRes, jogadores, inimigos, 
 }
 
 function parsearSegmentos(txt) {
+  txt = txt.replace(/AVANÇAR/gi, '').replace(/\n{3,}/g, '\n\n').trim();
   const segs = [];
   const linhas = txt.split('\n');
   let acum = [];
@@ -3338,6 +3339,33 @@ function atualizarInputArea(eu, config) {
     if (btnDestravar) btnDestravar.style.display = 'none';
     const btnAvLeit = document.getElementById('btn-avançar-hist');
     if (btnAvLeit) btnAvLeit.style.display = 'none';
+    return;
+  }
+
+  // Botão Continuar (X/N) — estado avançando (IA usou AVANÇAR)
+  if (config.estado === 'avançando' && !narrando && !morto) {
+    _stopProcessingTimer();
+    const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && !j.ausente);
+    const totalN = ativos.length;
+    const nConf  = ativos.filter(j => j.acao1 === '__avançar__' || j.acao1 === '__pular__').length;
+    const euConf = eu?.acao1 === '__avançar__' || eu?.acao1 === '__pular__';
+    let html = '<div class="leitura-counter-wrap">';
+    html += euConf
+      ? `<span class="leitura-waiting">▶ Continuar (${nConf}/${totalN})</span>`
+      : `<button class="btn-continuar-narr" onclick="querAvançarHistoria()">▶ Continuar (${nConf}/${totalN})</button>`;
+    html += '</div>';
+    const statusEl = document.getElementById('action-status');
+    if (statusEl) statusEl.innerHTML = html;
+    atualizarPromptAcao(eu, config);
+    if (iniciarWrap && config.estado !== 'lobby') iniciarWrap.style.display = 'none';
+    const btnUndo2 = document.getElementById('btn-undo-turno');
+    if (btnUndo2) btnUndo2.style.display = amIHost ? 'inline-flex' : 'none';
+    const btnHist2 = document.getElementById('btn-editar-hist');
+    if (btnHist2) btnHist2.style.display = amIHost ? 'inline-flex' : 'none';
+    const btnDestravar2 = document.getElementById('btn-destravar');
+    if (btnDestravar2) btnDestravar2.style.display = 'none';
+    const btnAvConf = document.getElementById('btn-avançar-hist');
+    if (btnAvConf) btnAvConf.style.display = 'none';
     return;
   }
 
