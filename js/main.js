@@ -308,15 +308,20 @@ function _stopProcessingTimer() {
   if (_processingInterval) { clearInterval(_processingInterval); _processingInterval = null; }
 }
 
-function limparTags(txt) {
+function normalizarAspas(txt) {
   return txt
+    .replace(/[“”„«»]/g, '"')
+    .replace(/[‘’‚]/g, "'");
+}
+
+function limparTags(txt) {
+  return normalizarAspas(txt)
     .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV|JOGADOR|AUSENTE|PRESENTE|LESAO|XP|TITULO|POSSE|REPUTACAO|EQUIPAR|ITEM_BAG)[^\]]*\]\s*)*/gi, '')
     .replace(/\[(?:INIMIGO|MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR|LESAO|XP|TITULO|POSSE|REPUTACAO|EQUIPAR|ITEM_BAG):[^\]\n]*/gi, '')
     .replace(/^\s*TESTAR:\s*\[.*\]\s*$/gim, '')
     .replace(/^\s*ROLAR:\s*\[.*\]\s*$/gim, '')
     .replace(/AVANÇAR/gi, '')
     .replace(/^\s*FECHAR_ATO:\s*\[[^\]]*\]\s*$/im, '')
-    .replace(/FALA:\s*\[[^\|]+\|"[^"]*"\]/gi, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
@@ -401,6 +406,7 @@ function getPortraitAtaque(nome, costas = false) {
 }
 
 function extrairFalas(txt) {
+  txt = normalizarAspas(txt);
   const falas = [];
   const re = /FALA:\s*\[([^\|]+)\|"(.+?)"\]/gi;
   let m;
@@ -1015,7 +1021,7 @@ async function narrarResultadoTestes(resultados, rolarRes, jogadores, inimigos, 
 }
 
 function parsearSegmentos(txt) {
-  txt = txt.replace(/AVANÇAR/gi, '').replace(/\n{3,}/g, '\n\n').trim();
+  txt = normalizarAspas(txt).replace(/AVANÇAR/gi, '').replace(/\n{3,}/g, '\n\n').trim();
   const segs = [];
   const linhas = txt.split('\n');
   let acum = [];
@@ -1160,9 +1166,20 @@ function renderizarSegmentos(container, segs, falas, noTTS) {
       if (idx < items.length) {
         narrarTexto(it.texto, () => {
           const btn = document.createElement('button');
-          btn.className = 'btn-continuar-narr';
-          btn.textContent = '▶ Continuar';
-          btn.onclick = () => { btn.remove(); proxItem(); };
+          btn.className = 'btn-continuar-narr btn-continuar-tts';
+          // Mostrar contagem de confirmação se há gate ativo
+          const _ttsAtiv = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && !j.ausente);
+          const _ttsN = _leituraCache
+            ? _ttsAtiv.filter(j => _leituraCache.confirmados?.[j.uid] === true).length
+            : _lastConfig?.estado === 'avançando'
+              ? _ttsAtiv.filter(j => j.acao1 === '__avançar__' || j.acao1 === '__pular__').length
+              : -1;
+          btn.textContent = _ttsN >= 0 ? `▶ Continuar (${_ttsN}/${_ttsAtiv.length})` : '▶ Continuar';
+          btn.onclick = () => {
+            if (_leituraCache && _leituraCache.confirmados?.[myUid] !== true) confirmarLeitura();
+            else if (_lastConfig?.estado === 'avançando' && !(_jogadoresCache[myUid]?.acao1 === '__avançar__')) querAvançarHistoria();
+            btn.remove(); proxItem();
+          };
           container.appendChild(btn);
           scrollDown();
         });
@@ -3003,6 +3020,22 @@ function irParaJogo(codigo) {
 
     // Sincronizar cache de leitura
     _leituraCache = data.leitura || null;
+
+    // Atualizar contagem nos botões Continuar TTS vivos na tela
+    {
+      const _ttsAtiv = Object.values(jogadores).filter(j => j.vivo && j.consciente && !j.ausente);
+      const _ttsTotal = _ttsAtiv.length;
+      let _ttsTxt = null;
+      if (_leituraCache) {
+        const n = _ttsAtiv.filter(j => _leituraCache.confirmados?.[j.uid] === true).length;
+        _ttsTxt = `▶ Continuar (${n}/${_ttsTotal})`;
+      } else if (config.estado === 'avançando') {
+        const n = _ttsAtiv.filter(j => jogadores[j.uid]?.acao1 === '__avançar__' || jogadores[j.uid]?.acao1 === '__pular__').length;
+        _ttsTxt = `▶ Continuar (${n}/${_ttsTotal})`;
+      }
+      if (_ttsTxt) document.querySelectorAll('.btn-continuar-tts').forEach(b => { b.textContent = _ttsTxt; });
+    }
+
     // Host verifica se todos confirmaram leitura → libera o jogo
     if (amIHost && _leituraCache) {
       const ativosL = Object.values(jogadores).filter(j => j.vivo && j.consciente && !j.ausente);
