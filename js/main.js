@@ -3042,9 +3042,6 @@ function renderizarHistoria(historia, jogadores) {
   if (!el) return;
   const entries = Object.entries(historia).sort(([,a],[,b]) => (a.ts||0)-(b.ts||0));
 
-  // Na primeira carga (reload/entrada na sala), todas as entradas existentes
-  // são renderizadas sem acionar lógica de estado local.
-  const silenciarTudo = _carregandoHistoriaInicial;
   if (_carregandoHistoriaInicial) _carregandoHistoriaInicial = false;
 
   let adicionou = false;
