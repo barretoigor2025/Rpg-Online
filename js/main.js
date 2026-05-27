@@ -161,12 +161,6 @@ let unsubRolagem = null;
 let _processingStartTs = null;
 let _processingInterval = null;
 let _apiKeyPendingCb = null;
-let voiceEnabled = localStorage.getItem('rpg_voice') !== '0';
-let voiceQueue  = [];
-let voiceBusy   = false;
-let _currentAudio = null;
-let _ttsCtx = null;       // AudioContext — desbloqueado no primeiro gesto (iOS)
-let _currentSource = null; // AudioBufferSourceNode atual
 let _selectedClass  = 'guerreiro';
 let _selectedAdvs   = new Set();
 let _selectedPoderes = new Set();
@@ -177,7 +171,6 @@ let _introSlides = [];
 let _introIdx    = 0;
 let _introAtivo  = false;
 let _kitMigrado  = false;
-let _afterNarrationCb = null;
 let _jogadoresCache   = {};
 let _ultimoNpc        = null; // último NPC que falou, usado como ouvinte quando jogador responde
 let _regras           = {};
@@ -209,8 +202,7 @@ const _LORE_FACTS = [
 ];
 let _loreIndex = Math.floor(Math.random() * _LORE_FACTS.length);
 let _leituraCache     = null;     // snapshot do nó salas/${sala}/leitura — confirmação de leitura multiplayer
-let _narracaoAtiva    = 0;        // contagem de segmentos sendo narrados (com Continuar buttons)
-let _carregandoHistoriaInicial = false; // true durante a primeira carga da história (entradas antigas = sem TTS)
+let _carregandoHistoriaInicial = false;
 
 // ═══════════════════════════════════════════════════════════════
 //  HELPERS
@@ -221,32 +213,26 @@ const PROVIDERS = {
     nome:'Groq', modelo:'llama-3.3-70b-versatile',
     keyName:'rpg_groq_key', placeholder:'gsk_...',
     url:'https://api.groq.com/openai/v1/chat/completions',
-    ttsUrl:'https://api.groq.com/openai/v1/audio/speech',
-    ttsModel:'playai-tts', ttsVoice:'Dorian-PlayAI', ttsSpeed:1.35,
   },
   openai: {
     nome:'OpenAI', modelo:'gpt-4o',
     keyName:'rpg_openai_key', placeholder:'sk-...',
     url:'https://api.openai.com/v1/chat/completions',
-    ttsUrl:'https://api.openai.com/v1/audio/speech',
-    ttsModel:'tts-1', ttsVoice:'onyx', ttsSpeed:null,
   },
   gemini: {
     nome:'Gemini', modelo:'gemini-2.0-flash',
     keyName:'rpg_gemini_key', placeholder:'AIza...',
-    url:null, ttsUrl:null, // TTS via WebSpeech
+    url:null,
   },
   openrouter: {
     nome:'OpenRouter', modelo:'meta-llama/llama-4-maverick:free',
     keyName:'rpg_openrouter_key', placeholder:'sk-or-v1-...',
     url:'https://openrouter.ai/api/v1/chat/completions',
-    ttsUrl:null,
   },
   cerebras: {
     nome:'Cerebras', modelo:'llama-3.3-70b',
     keyName:'rpg_cerebras_key', placeholder:'csk-...',
     url:'https://api.cerebras.ai/v1/chat/completions',
-    ttsUrl:null,
   },
 };
 let _provider = localStorage.getItem('rpg_provider') || 'groq';
@@ -1073,7 +1059,7 @@ function chuncarTexto(txt, maxWords = 50) {
   return chunks;
 }
 
-function renderizarSegmentos(container, segs, falas, noTTS) {
+function renderizarSegmentos(container, segs, falas, atorPrimario) {
   const items = [];
   segs.forEach(s => {
     if (s.tipo === 'texto') {
@@ -1093,16 +1079,13 @@ function renderizarSegmentos(container, segs, falas, noTTS) {
       <span class="dialogo-inline-icon-fb"${src ? ' style="display:none"' : ''}>${icon}</span>
     </div>`;
 
-  const ttsQueue = [];
-
-  // Render all items to DOM immediately (text visible on all screens at once)
+  // Render all items to DOM
   items.forEach(it => {
     if (it.tipo === 'chunk') {
       const p = document.createElement('p');
       p.className = 'narr-chunk';
       p.textContent = it.texto;
       container.appendChild(p);
-      if (!noTTS) ttsQueue.push(it.texto);
     } else if (it.tipo === 'fala') {
       const jogEntry = Object.values(_jogadoresCache).find(j =>
         j.nome && it.nome.toLowerCase().includes(j.nome.toLowerCase())
@@ -1127,15 +1110,15 @@ function renderizarSegmentos(container, segs, falas, noTTS) {
         if (ouvinteNpc) {
           htmlDir = _ph(`sprites/${ouvinteNpc.portrait}.png`, ouvinteNpc.icon, ouvinteNpc.cor, false);
         } else {
-          const eu = _jogadoresCache[myUid];
-          htmlDir = _ph(eu ? `sprites/${eu.classe}_${eu.sexo || 'm'}.png` : '', '🧑', '#4a7090', false);
+          const ouvinteUid = atorPrimario || myUid;
+          const ouvinte = _jogadoresCache[ouvinteUid] || _jogadoresCache[myUid];
+          htmlDir = _ph(ouvinte ? `sprites/${ouvinte.classe}_${ouvinte.sexo || 'm'}.png` : '', '🧑', '#4a7090', false);
         }
       }
       const bubble = document.createElement('div');
       bubble.className = 'dialogo-inline';
       bubble.innerHTML = `${htmlEsq}<div class="dialogo-inline-body"><div class="dialogo-inline-nome">${it.nome}</div><div class="dialogo-inline-texto">"${it.texto}"</div></div>${htmlDir}`;
       container.appendChild(bubble);
-      if (!noTTS) ttsQueue.push(it.texto);
     } else if (it.tipo === 'ataque') {
       const pAtac = getPortraitAtaque(it.atacante, false);
       const pAlvo = getPortraitAtaque(it.alvo, it.surpresa);
@@ -1154,26 +1137,9 @@ function renderizarSegmentos(container, segs, falas, noTTS) {
         </div>
         ${_phb(pAlvo, false)}`;
       container.appendChild(card);
-      if (!noTTS) ttsQueue.push(it.resultado);
     }
   });
   scrollDown();
-
-  if (noTTS || !ttsQueue.length) return;
-
-  // TTS: play audio sequentially in background — no blocking buttons between items
-  _narracaoAtiva++;
-  let ttsIdx = 0;
-  function playNextTTS() {
-    if (ttsIdx >= ttsQueue.length) {
-      _narracaoAtiva = Math.max(0, _narracaoAtiva - 1);
-      const eu = _jogadoresCache?.[myUid];
-      if (eu && _lastConfig) atualizarInputArea(eu, _lastConfig);
-      return;
-    }
-    narrarTexto(ttsQueue[ttsIdx++], playNextTTS);
-  }
-  playNextTTS();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2230,11 +2196,6 @@ function buildRegrasContext() {
 
 // Preenche input e seletor de provider salvos
 window.addEventListener('DOMContentLoaded', () => {
-  // Desbloquear AudioContext no primeiro gesto (obrigatório no iOS)
-  const _unlockAudio = () => { try { _getTtsCtx(); } catch(e) {} };
-  document.addEventListener('touchstart', _unlockAudio, { passive: true });
-  document.addEventListener('mousedown',  _unlockAudio, { passive: true });
-
   // Registrar Service Worker para notificações de turno
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
@@ -2422,10 +2383,6 @@ window.deixarSala = function() {
   if (unsubRolagem) { unsubRolagem(); unsubRolagem = null; }
   mySala = null; amIHost = false; _kitMigrado = false;
   _jogadoresCache = {};
-  // Para narração em andamento
-  _stopCurrentAudio();
-  if (window.speechSynthesis) speechSynthesis.cancel();
-  voiceQueue = []; voiceBusy = false;
   irParaPersonagens();
 };
 
@@ -2842,9 +2799,8 @@ function irParaJogo(codigo) {
   // Pedir permissão de notificação — dispara 2s após entrar no jogo
   setTimeout(pedirPermissaoNotificacao, 2000);
 
-  // Resetar estado de renderização para evitar TTS de entradas antigas no reload
+  // Resetar estado de renderização
   _renderedKeys = new Set();
-  _narracaoAtiva = 0;
   _carregandoHistoriaInicial = true;
 
   _kitMigrado = false;
@@ -3087,8 +3043,7 @@ function renderizarHistoria(historia, jogadores) {
   const entries = Object.entries(historia).sort(([,a],[,b]) => (a.ts||0)-(b.ts||0));
 
   // Na primeira carga (reload/entrada na sala), todas as entradas existentes
-  // são renderizadas em silêncio — evita TTS para histórico antigo e
-  // impede _narracaoAtiva de crescer sem nunca decrementar.
+  // são renderizadas sem acionar lógica de estado local.
   const silenciarTudo = _carregandoHistoriaInicial;
   if (_carregandoHistoriaInicial) _carregandoHistoriaInicial = false;
 
@@ -3104,7 +3059,7 @@ function renderizarHistoria(historia, jogadores) {
       div.className = 'msg msg-gm';
       const falas = normalizarFalas(entry.falas);
       const segs  = parsearSegmentos(entry.content);
-      renderizarSegmentos(div, segs, falas, silenciarTudo || entry.noTTS);
+      renderizarSegmentos(div, segs, falas, entry.atorPrimario || null);
     } else if (entry.role === 'user') {
       const j = Object.values(jogadores).find(j => j.uid === entry.uid);
       const cls = CLASSES[j?.classe] || {};
@@ -3188,13 +3143,11 @@ function atualizarInputArea(eu, config) {
   if (!eu) return;
 
   const jaEnviou    = eu.acao1 != null;
-  const temContinuar = !!document.querySelector('#story-content .btn-continuar-narr');
-  const narrando    = config.estado === 'narrando' || config.estado === 'iniciando' || temContinuar || _narracaoAtiva > 0;
+  const narrando    = config.estado === 'narrando' || config.estado === 'iniciando';
   const morto       = !eu.vivo || !eu.consciente;
 
   // Leitura gate: bloqueia input até todos confirmarem leitura
   const leitura = _leituraCache;
-  const narracaoLocalTerminou = !temContinuar && _narracaoAtiva <= 0;
   const euJaLi    = !leitura || leitura.confirmados?.[myUid] !== false;
   const leituraGateAtiva = !!(leitura && !narrando && !morto);
 
@@ -3387,8 +3340,7 @@ function atualizarPromptAcao(eu, config) {
 
   let card = document.getElementById('action-prompt-card');
   const estadoAvançando  = config.estado === 'avançando';
-  const temContinuarBtn  = !!document.querySelector('#story-content .btn-continuar-narr');
-  const deveExibir = eu && (config.estado === 'aguardando' || estadoAvançando) && eu.acao1 == null && eu.vivo && eu.consciente && !temContinuarBtn && _narracaoAtiva <= 0 && !_leituraCache;
+  const deveExibir = eu && (config.estado === 'aguardando' || estadoAvançando) && eu.acao1 == null && eu.vivo && eu.consciente && !_leituraCache;
 
   if (!deveExibir) {
     if (card) card.remove();
@@ -3455,7 +3407,6 @@ window.resetarSala = async function() {
   if (!mySala || !amIHost) { toast('Só o host pode resetar.'); return; }
   if (!confirm('Resetar a sala?')) return;
   _renderedKeys = new Set();
-  _narracaoAtiva = 0;
   _carregandoHistoriaInicial = false;
   const jogadores = (await get(ref(db, `salas/${mySala}/jogadores`))).val() || {};
   const ups = {};
@@ -3477,112 +3428,6 @@ window.resetarSala = async function() {
   await update(ref(db), ups);
   document.getElementById('story-content').innerHTML = '';
 };
-
-// ═══════════════════════════════════════════════════════════════
-//  VOZ — GROQ TTS
-// ═══════════════════════════════════════════════════════════════
-window.toggleVoz = function() {
-  voiceEnabled = !voiceEnabled;
-  localStorage.setItem('rpg_voice', voiceEnabled ? '1' : '0');
-  const btn = document.getElementById('voice-btn');
-  if (btn) btn.textContent = voiceEnabled ? '🔊' : '🔇';
-  if (!voiceEnabled) {
-    voiceQueue = []; voiceBusy = false;
-    setVoiceIndicator(false);
-    _stopCurrentAudio();
-    if (window.speechSynthesis) speechSynthesis.cancel();
-  }
-  toast(voiceEnabled ? '🔊 Narração ativada' : '🔇 Narração desativada', 2000);
-};
-
-function setVoiceIndicator(on) {
-  const el = document.getElementById('voice-indicator');
-  if (el) el.className = on ? 'speaking' : '';
-}
-
-function _getTtsCtx() {
-  if (!_ttsCtx) _ttsCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (_ttsCtx.state === 'suspended') _ttsCtx.resume().catch(() => {});
-  return _ttsCtx;
-}
-
-function _stopCurrentAudio() {
-  if (_currentSource) {
-    try { _currentSource.stop(); } catch(e) {}
-    _currentSource = null;
-  }
-  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
-}
-
-function narrarTexto(texto, afterCb) {
-  _afterNarrationCb = afterCb || null;
-  if (!voiceEnabled) {
-    if (_afterNarrationCb) { const cb = _afterNarrationCb; _afterNarrationCb = null; cb(); }
-    return;
-  }
-  voiceQueue = [];
-  _stopCurrentAudio();
-  if (window.speechSynthesis) speechSynthesis.cancel();
-  voiceBusy = false;
-  voiceQueue.push(texto);
-  _nextUtterance();
-}
-
-function _nextUtterance() {
-  if (!voiceQueue.length) {
-    voiceBusy = false;
-    setVoiceIndicator(false);
-    if (_afterNarrationCb) { const cb = _afterNarrationCb; _afterNarrationCb = null; cb(); }
-    return;
-  }
-  voiceBusy = true;
-  setVoiceIndicator(true);
-  const texto = voiceQueue.shift();
-  const limpo = texto.replace(/<[^>]+>/g,'').replace(/[*#_`~]/g,'').replace(/\s+/g,' ').trim().substring(0,800);
-  if (!limpo) { _nextUtterance(); return; }
-
-  const apiKey = getApiKey();
-  if (!apiKey) { _narrarWebSpeech(limpo); return; }
-
-  const prov = PROVIDERS[_provider];
-  if (!prov.ttsUrl) { _narrarWebSpeech(limpo); return; }  // Gemini: sem TTS API
-
-  const ttsBody = { model: prov.ttsModel, input: limpo, voice: prov.ttsVoice, response_format:'mp3' };
-  if (prov.ttsSpeed) ttsBody.speed = prov.ttsSpeed;
-
-  const _ttsCtrl = new AbortController();
-  const _ttsTimer = setTimeout(() => _ttsCtrl.abort(), 10000);
-  fetch(prov.ttsUrl, {
-    method: 'POST',
-    headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
-    body: JSON.stringify(ttsBody),
-    signal: _ttsCtrl.signal
-  }).then(async res => {
-    clearTimeout(_ttsTimer);
-    if (!res.ok) { _narrarWebSpeech(limpo); return; }
-    const blob = await res.blob();
-    const arrayBuf = await blob.arrayBuffer();
-    const ctx = _getTtsCtx();
-    ctx.decodeAudioData(arrayBuf, (audioBuf) => {
-      const source = ctx.createBufferSource();
-      source.buffer = audioBuf;
-      source.connect(ctx.destination);
-      _currentSource = source;
-      source.onended = () => { _currentSource = null; _nextUtterance(); };
-      source.start(0);
-    }, () => { _narrarWebSpeech(limpo); });
-  }).catch(() => { clearTimeout(_ttsTimer); _narrarWebSpeech(limpo); });
-}
-
-function _narrarWebSpeech(texto) {
-  if (!window.speechSynthesis) { _nextUtterance(); return; }
-  const utt = new SpeechSynthesisUtterance(texto);
-  const voz = speechSynthesis.getVoices().find(v => v.lang.startsWith('pt')) || null;
-  if (voz) utt.voice = voz;
-  utt.rate = 1.45; utt.pitch = 0.82;
-  utt.onend = utt.onerror = () => _nextUtterance();
-  speechSynthesis.speak(utt);
-}
 
 // ═══════════════════════════════════════════════════════════════
 //  RETRY UI
@@ -3954,7 +3799,6 @@ function mostrarSlide(idx) {
     nextBtn.onclick = () => avancarSlide();
   }
 
-  narrarTexto(slide.texto);
 }
 
 window.avancarSlide = function() {
@@ -4007,9 +3851,6 @@ function fecharIntro() {
   _introAtivo = false;
   const el = document.getElementById('intro-overlay');
   if (el) el.style.display = 'none';
-  _stopCurrentAudio();
-  if (window.speechSynthesis) speechSynthesis.cancel();
-  voiceQueue = []; voiceBusy = false;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -4126,8 +3967,6 @@ window.confirmarLimpezaHistorico = async function() {
 window.destravaNarracao = async function() {
   if (!amIHost || !mySala) return;
   chamandoIA = false;
-  _narracaoAtiva = 0;
-  _stopCurrentAudio();
   await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
   // Limpar acao1 para evitar re-trigger imediato
   const snap = await db.ref(`salas/${mySala}/jogadores`).once('value');
@@ -4308,6 +4147,12 @@ async function chamarIA(jogadores, data) {
       .map(j => `${j.nome}: ${j.acao1 === '__avançar__' ? '(aguardando — sem ação específica, quer que a história avance)' : j.acao1}`)
       .join('\n');
 
+    // Determinar ator primário (para portrait correto na narrativa multiplayer)
+    const _atoresAtivos = Object.values(jogadores).filter(j => j.acao1 && j.acao1 !== '__pular__' && j.acao1 !== '__avançar__');
+    const _atorPrimario = _atoresAtivos.length === 1
+      ? _atoresAtivos[0].uid
+      : (_atoresAtivos.find(j => /[""""]|(\b(falo|digo|pergunto|respondo|abordo|negocio|converso)\b)/i.test(j.acao1)) || _atoresAtivos[0])?.uid || null;
+
     const msg = `Rodada ${rodada}.\n\nAções dos jogadores:\n${acoes}`;
 
     const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), hist, msg, mostrarRetryUI);
@@ -4336,7 +4181,7 @@ async function chamarIA(jogadores, data) {
       const textoAntes = primeiroTag >= 0 ? resposta.substring(0, primeiroTag) : '';
       const preamble = limparTags(textoAntes);
       if (preamble) {
-        await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: preamble, falas: extrairFalas(textoAntes), ataques: extrairAtaques(textoAntes), noTTS: true, ts: Date.now() });
+        await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: preamble, falas: extrairFalas(textoAntes), ataques: extrairAtaques(textoAntes), atorPrimario: _atorPrimario, ts: Date.now() });
       }
       await update(ref(db), ups);
       iniciarTestes(testes, roles, jogadores, async (resultados, rolarRes) => {
@@ -4352,7 +4197,7 @@ async function chamarIA(jogadores, data) {
       ups[`salas/${mySala}/config/estado`] = temAvançar ? 'avançando' : 'aguardando';
       ups[`salas/${mySala}/config/rodada`] = rodada + 1;
       if (!temAvançar) ups[`salas/${mySala}/leitura`] = buildLeituraGate(jogadores);
-      await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(respostaFinal), falas: extrairFalas(respostaFinal), ataques: extrairAtaques(respostaFinal), ts: Date.now() });
+      await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(respostaFinal), falas: extrairFalas(respostaFinal), ataques: extrairAtaques(respostaFinal), atorPrimario: _atorPrimario, ts: Date.now() });
       await processarStats(respostaFinal, jogadores, inimigos);
       await update(ref(db), ups);
       if (atoTitulo) mostrarCinematicaAto(atoTitulo);

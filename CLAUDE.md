@@ -234,4 +234,4 @@ await update(ref(db), ups);  // atômico
 ## Versão do cache JS
 
 Incrementar `?v=N` em `index.html` a cada deploy que altere `main.js` ou `layout.css`.  
-Versão atual: `?v=57`
+Versão atual: `?v=58`

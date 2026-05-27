@@ -552,18 +552,6 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 }
 #toast.show { opacity: 1; }
 
-/* Voice indicator */
-#voice-indicator.speaking::after {
-  content: '🔊';
-  position: fixed;
-  top: 50px;
-  right: 12px;
-  font-size: 14px;
-  opacity: .7;
-  animation: pulse 1s infinite;
-}
-@keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
-
 /* ══ INTRO SLIDES ══ */
 #intro-overlay {
   position: fixed;
