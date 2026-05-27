@@ -967,6 +967,8 @@ window.querAvançarHistoria = async function() {
   if (!mySala) return;
   const eu = _jogadoresCache[myUid];
   if (!eu || !eu.vivo || !eu.consciente || eu.acao1 != null) return;
+  // Atualização otimista: bloqueia cliques duplos antes de Firebase propagar
+  _jogadoresCache[myUid] = { ...eu, acao1: '__avançar__' };
   const nome = eu.nome || myNome || 'Jogador';
   await push(ref(db, `salas/${mySala}/historia`), { role: 'user', content: `${nome} está pronto para avançar a história.`, uid: myUid, ts: Date.now() });
   await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), { acao1: '__avançar__' });
@@ -4056,7 +4058,14 @@ async function chamarIA_jogadoresAvançam(jogadores, data) {
     if (atoTituloAv) mostrarCinematicaAto(atoTituloAv);
   } catch(e) {
     console.warn('[chamarIA_jogadoresAvançam] exceção:', e);
-    try { await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' }); } catch(_) {}
+    try {
+      // Restaurar acao1='__avançar__' para não perder o estado e evitar entradas duplicadas
+      const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && !j.ausente);
+      const upsErr = {};
+      ativos.forEach(j => { upsErr[`salas/${mySala}/jogadores/${j.uid}/acao1`] = '__avançar__'; });
+      upsErr[`salas/${mySala}/config/estado`] = 'avançando';
+      await update(ref(db), upsErr);
+    } catch(_) {}
   } finally {
     chamandoIA = false;
     ocultarRetryUI();
@@ -4109,7 +4118,16 @@ async function chamarIA_continuar() {
     if (atoTituloCont) mostrarCinematicaAto(atoTituloCont);
   } catch(e) {
     console.warn('[chamarIA_continuar] exceção:', e);
-    try { await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' }); } catch(_) {}
+    try {
+      // Restaurar acao1='__avançar__' para não perder o estado e evitar entradas duplicadas
+      const snapErr = await get(ref(db, `salas/${mySala}/jogadores`));
+      const jogsErr = snapErr.val() || {};
+      const upsErr  = {};
+      Object.values(jogsErr).filter(j => j.vivo && j.consciente && !j.ausente)
+        .forEach(j => { upsErr[`salas/${mySala}/jogadores/${j.uid}/acao1`] = '__avançar__'; });
+      upsErr[`salas/${mySala}/config/estado`] = 'avançando';
+      await update(ref(db), upsErr);
+    } catch(_) {}
   } finally {
     chamandoIA = false;
     ocultarRetryUI();
