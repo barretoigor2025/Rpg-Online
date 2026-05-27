@@ -472,18 +472,6 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 }
 #toast.show { opacity: 1; }
 
-/* Voice indicator */
-#voice-indicator.speaking::after {
-  content: '🔊';
-  position: fixed;
-  top: 50px;
-  right: 12px;
-  font-size: 14px;
-  opacity: .7;
-  animation: pulse 1s infinite;
-}
-@keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
-
 /* ══ INTRO SLIDES ══ */
 #intro-overlay {
   position: fixed;
@@ -725,22 +713,6 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   line-height: 1.7;
   color: var(--text);
 }
-.btn-continuar-narr {
-  display: block;
-  margin: 8px auto;
-  background: none;
-  border: 1px solid rgba(200,160,80,.35);
-  color: var(--gold);
-  font-size: 11px;
-  padding: 4px 18px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-family: inherit;
-  letter-spacing: 1px;
-  transition: all .15s;
-}
-.btn-continuar-narr:hover { background: rgba(200,160,80,.1); border-color: var(--gold); }
-
 /* ══ PAINEL DE PERÍCIAS ══ */
 #skills-panel {
   position: fixed;

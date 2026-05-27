@@ -159,10 +159,6 @@ let chamandoIA  = false;
 let unsubSala   = null;
 let unsubRolagem = null;
 let _apiKeyPendingCb = null;
-let voiceEnabled = localStorage.getItem('rpg_voice') !== '0';
-let voiceQueue  = [];
-let voiceBusy   = false;
-let _currentAudio = null;
 let _selectedClass  = 'guerreiro';
 let _selectedAdvs   = new Set();
 let _selectedPoderes = new Set();
@@ -173,15 +169,12 @@ let _introSlides = [];
 let _introIdx    = 0;
 let _introAtivo  = false;
 let _kitMigrado  = false;
-let _afterNarrationCb = null;
 let _jogadoresCache   = {};
 let _ultimoNpc        = null; // último NPC que falou, usado como ouvinte quando jogador responde
 let _regras           = {};
 let _trocaItens       = new Set(); // slugs selecionados para troca
 let _trocaAtual       = null;     // snapshot atual do nó salas/${sala}/troca
 let _lastConfig       = {};       // último snapshot de config (para re-check de prompt)
-let _narracaoAtiva    = 0;        // contagem de segmentos sendo narrados (com Continuar buttons)
-let _carregandoHistoriaInicial = false; // true durante a primeira carga da história (entradas antigas = sem TTS)
 
 // ═══════════════════════════════════════════════════════════════
 //  HELPERS
@@ -890,7 +883,7 @@ function chuncarTexto(txt, maxWords = 50) {
   return chunks;
 }
 
-function renderizarSegmentos(container, segs, falas, noTTS) {
+function renderizarSegmentos(container, segs, falas) {
   const items = [];
   segs.forEach(s => {
     if (s.tipo === 'texto') {
@@ -902,126 +895,53 @@ function renderizarSegmentos(container, segs, falas, noTTS) {
     }
   });
 
-  // Modo silencioso: renderiza tudo de uma vez, sem TTS nem botões Continuar
-  if (noTTS) {
-    items.forEach(it => {
-      if (it.tipo === 'chunk') {
-        const p = document.createElement('p');
-        p.className = 'narr-chunk';
-        p.textContent = it.texto;
-        container.appendChild(p);
-      } else if (it.tipo === 'fala') {
-        const bubble = document.createElement('div');
-        bubble.className = 'dialogo-inline';
-        const npc = getNpcData(it.nome);
-        bubble.innerHTML = `<div class="dialogo-inline-body">
-          <div class="dialogo-inline-nome">${it.nome}</div>
-          <div class="dialogo-inline-texto">"${it.texto}"</div>
-        </div>`;
-        container.appendChild(bubble);
-      }
-    });
-    return;
-  }
   if (!items.length) return;
 
-  if (items.length === 1 && items[0].tipo === 'chunk') {
-    const p = document.createElement('p');
-    p.className = 'narr-chunk';
-    p.textContent = items[0].texto;
-    container.appendChild(p);
-    narrarTexto(items[0].texto);
-    return;
-  }
+  const _ph = (src, icon, cor, espelhar) =>
+    `<div class="dialogo-inline-portrait" style="background:${cor}22;border-color:${cor}55">
+      ${src ? `<img src="${src}" alt=""${espelhar ? ' class="espelhado"' : ''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+      <span class="dialogo-inline-icon-fb"${src ? ' style="display:none"' : ''}>${icon}</span>
+    </div>`;
 
-  _narracaoAtiva++;
-  let idx = 0;
-  function proxItem() {
-    if (idx >= items.length) {
-      // Narração completa — re-habilitar botão e mostrar card de ação
-      _narracaoAtiva = Math.max(0, _narracaoAtiva - 1);
-      const eu = _jogadoresCache?.[myUid];
-      if (eu && _lastConfig) atualizarInputArea(eu, _lastConfig);
-      return;
-    }
-    const it = items[idx++];
+  items.forEach(it => {
     if (it.tipo === 'chunk') {
       const p = document.createElement('p');
       p.className = 'narr-chunk';
       p.textContent = it.texto;
       container.appendChild(p);
-      scrollDown();
-      if (idx < items.length) {
-        narrarTexto(it.texto, () => {
-          const btn = document.createElement('button');
-          btn.className = 'btn-continuar-narr';
-          btn.textContent = '▶ Continuar';
-          btn.onclick = () => { btn.remove(); proxItem(); };
-          container.appendChild(btn);
-          scrollDown();
-        });
-      } else {
-        narrarTexto(it.texto, proxItem);
-      }
     } else if (it.tipo === 'fala') {
-      // Bolha inline: FALANTE à esquerda (espelhado → olha pra direita) | OUVINTE à direita (normal → olha pra esquerda)
-      const _ph = (src, icon, cor, espelhar) =>
-        `<div class="dialogo-inline-portrait" style="background:${cor}22;border-color:${cor}55">
-          ${src ? `<img src="${src}" alt=""${espelhar ? ' class="espelhado"' : ''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
-          <span class="dialogo-inline-icon-fb"${src ? ' style="display:none"' : ''}>${icon}</span>
-        </div>`;
-
+      // Bolha inline: FALANTE à esquerda (espelhado) | OUVINTE à direita (normal)
       const jogEntry = Object.values(_jogadoresCache).find(j =>
         j.nome && it.nome.toLowerCase().includes(j.nome.toLowerCase())
       );
-
       let htmlEsq, htmlDir;
       if (jogEntry) {
-        // Jogador fala → Jogador ESQUERDA (espelhado), último NPC DIREITA (normal)
+        // Jogador fala → Jogador ESQUERDA, último NPC DIREITA
         const sexo = jogEntry.sexo || 'm';
         htmlEsq = _ph(`sprites/${jogEntry.classe}_${sexo}.png`, '🧑', '#4a7090', true);
         const npcOuv = _ultimoNpc || { icon: '👤', cor: '#4a5a70', portrait: null };
         htmlDir = _ph(npcOuv.portrait ? `sprites/${npcOuv.portrait}.png` : '', npcOuv.icon, npcOuv.cor, false);
       } else {
-        // NPC fala → NPC ESQUERDA (espelhado), Jogador atual DIREITA (normal)
+        // NPC fala → NPC ESQUERDA, Jogador atual DIREITA
         const npc = getNpcData(it.nome);
         _ultimoNpc = npc;
         htmlEsq = _ph(npc.portrait ? `sprites/${npc.portrait}.png` : '', npc.icon, npc.cor, true);
         const eu = _jogadoresCache[myUid];
-        const src = eu ? `sprites/${eu.classe}_${eu.sexo || 'm'}.png` : '';
-        htmlDir = _ph(src, '🧑', '#4a7090', false);
+        htmlDir = _ph(eu ? `sprites/${eu.classe}_${eu.sexo || 'm'}.png` : '', '🧑', '#4a7090', false);
       }
-
       const bubble = document.createElement('div');
       bubble.className = 'dialogo-inline';
-      bubble.innerHTML = `
-        ${htmlEsq}
-        <div class="dialogo-inline-body">
-          <div class="dialogo-inline-nome">${it.nome}</div>
-          <div class="dialogo-inline-texto">"${it.texto}"</div>
-        </div>
-        ${htmlDir}`;
+      bubble.innerHTML = `${htmlEsq}<div class="dialogo-inline-body"><div class="dialogo-inline-nome">${it.nome}</div><div class="dialogo-inline-texto">"${it.texto}"</div></div>${htmlDir}`;
       container.appendChild(bubble);
-      scrollDown();
-      // Narra a fala (sem bloquear — usuário clica para continuar)
-      narrarTexto(it.texto);
-      const btn = document.createElement('button');
-      btn.className = 'btn-continuar-narr';
-      btn.textContent = '▶ Continuar';
-      btn.onclick = () => { btn.remove(); proxItem(); };
-      container.appendChild(btn);
-      scrollDown();
     } else if (it.tipo === 'ataque') {
-      // Card de batalha: ATACANTE à esquerda (espelhado), ALVO à direita (normal ou costas se surpresa)
+      // Card de batalha: ATACANTE à esquerda (espelhado), ALVO à direita
       const pAtac = getPortraitAtaque(it.atacante, false);
       const pAlvo = getPortraitAtaque(it.alvo, it.surpresa);
-
       const _phb = (p, espelhar) =>
         `<div class="batalha-inline-portrait" style="background:${p.cor}22;border-color:${p.cor}55">
           ${p.src ? `<img src="${p.src}" alt=""${espelhar ? ' class="espelhado"' : ''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
           <span class="batalha-inline-icon-fb"${p.src ? ' style="display:none"' : ''}>${p.icon}</span>
         </div>`;
-
       const card = document.createElement('div');
       card.className = 'batalha-inline';
       card.innerHTML = `
@@ -1032,17 +952,9 @@ function renderizarSegmentos(container, segs, falas, noTTS) {
         </div>
         ${_phb(pAlvo, false)}`;
       container.appendChild(card);
-      scrollDown();
-      narrarTexto(it.resultado);
-      const btnA = document.createElement('button');
-      btnA.className = 'btn-continuar-narr';
-      btnA.textContent = '▶ Continuar';
-      btnA.onclick = () => { btnA.remove(); proxItem(); };
-      container.appendChild(btnA);
-      scrollDown();
     }
-  }
-  proxItem();
+  });
+  scrollDown();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2262,10 +2174,6 @@ window.deixarSala = function() {
   if (unsubRolagem) { unsubRolagem(); unsubRolagem = null; }
   mySala = null; amIHost = false; _kitMigrado = false;
   _jogadoresCache = {};
-  // Para narração em andamento
-  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
-  if (window.speechSynthesis) speechSynthesis.cancel();
-  voiceQueue = []; voiceBusy = false;
   irParaPersonagens();
 };
 
@@ -2680,10 +2588,8 @@ function irParaJogo(codigo) {
   mostrarTela('screen-game');
   document.getElementById('room-code').textContent = codigo;
 
-  // Resetar estado de renderização para evitar TTS de entradas antigas no reload
+  // Resetar estado de renderização
   _renderedKeys = new Set();
-  _narracaoAtiva = 0;
-  _carregandoHistoriaInicial = true;
 
   _kitMigrado = false;
   if (unsubSala) unsubSala();
@@ -2865,12 +2771,6 @@ function renderizarHistoria(historia, jogadores) {
   if (!el) return;
   const entries = Object.entries(historia).sort(([,a],[,b]) => (a.ts||0)-(b.ts||0));
 
-  // Na primeira carga (reload/entrada na sala), todas as entradas existentes
-  // são renderizadas em silêncio — evita TTS para histórico antigo e
-  // impede _narracaoAtiva de crescer sem nunca decrementar.
-  const silenciarTudo = _carregandoHistoriaInicial;
-  if (_carregandoHistoriaInicial) _carregandoHistoriaInicial = false;
-
   let adicionou = false;
 
   entries.forEach(([key, entry]) => {
@@ -2883,7 +2783,7 @@ function renderizarHistoria(historia, jogadores) {
       div.className = 'msg msg-gm';
       const falas = normalizarFalas(entry.falas);
       const segs  = parsearSegmentos(entry.content);
-      renderizarSegmentos(div, segs, falas, silenciarTudo || entry.noTTS);
+      renderizarSegmentos(div, segs, falas);
     } else if (entry.role === 'user') {
       const j = Object.values(jogadores).find(j => j.uid === entry.uid);
       const cls = CLASSES[j?.classe] || {};
@@ -2967,8 +2867,7 @@ function atualizarInputArea(eu, config) {
   if (!eu) return;
 
   const jaEnviou    = eu.acao1 != null;
-  const temContinuar = !!document.querySelector('#story-content .btn-continuar-narr');
-  const narrando    = config.estado === 'narrando' || config.estado === 'iniciando' || temContinuar || _narracaoAtiva > 0;
+  const narrando    = config.estado === 'narrando' || config.estado === 'iniciando';
   const morto       = !eu.vivo || !eu.consciente;
 
   if (btn) btn.disabled = jaEnviou || narrando || morto;
@@ -2989,7 +2888,7 @@ function atualizarInputArea(eu, config) {
     const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
     const querAvCount = ativos.filter(j => j.acao1 === '__avançar__').length;
     const estaAvançando = config.estado === 'avançando';
-    const mostrar = !narrando && !morto && (config.estado === 'aguardando' || estaAvançando) && !temContinuar;
+    const mostrar = !narrando && !morto && (config.estado === 'aguardando' || estaAvançando);
     btnAv.style.display = mostrar ? '' : 'none';
     const euQuer = eu?.acao1 === '__avançar__';
     btnAv.classList.toggle('ativo', euQuer);
@@ -3012,8 +2911,7 @@ function atualizarPromptAcao(eu, config) {
 
   let card = document.getElementById('action-prompt-card');
   const estadoAvançando  = config.estado === 'avançando';
-  const temContinuarBtn  = !!document.querySelector('#story-content .btn-continuar-narr');
-  const deveExibir = eu && (config.estado === 'aguardando' || estadoAvançando) && eu.acao1 == null && eu.vivo && eu.consciente && !temContinuarBtn && _narracaoAtiva <= 0;
+  const deveExibir = eu && (config.estado === 'aguardando' || estadoAvançando) && eu.acao1 == null && eu.vivo && eu.consciente;
 
   if (!deveExibir) {
     if (card) card.remove();
@@ -3079,8 +2977,6 @@ window.resetarSala = async function() {
   if (!mySala || !amIHost) { toast('Só o host pode resetar.'); return; }
   if (!confirm('Resetar a sala?')) return;
   _renderedKeys = new Set();
-  _narracaoAtiva = 0;
-  _carregandoHistoriaInicial = false;
   const jogadores = (await get(ref(db, `salas/${mySala}/jogadores`))).val() || {};
   const ups = {};
   ups[`salas/${mySala}/historia`]  = null;
@@ -3101,88 +2997,6 @@ window.resetarSala = async function() {
   await update(ref(db), ups);
   document.getElementById('story-content').innerHTML = '';
 };
-
-// ═══════════════════════════════════════════════════════════════
-//  VOZ — GROQ TTS
-// ═══════════════════════════════════════════════════════════════
-window.toggleVoz = function() {
-  voiceEnabled = !voiceEnabled;
-  localStorage.setItem('rpg_voice', voiceEnabled ? '1' : '0');
-  const btn = document.getElementById('voice-btn');
-  if (btn) btn.textContent = voiceEnabled ? '🔊' : '🔇';
-  if (!voiceEnabled) {
-    voiceQueue = []; voiceBusy = false;
-    setVoiceIndicator(false);
-    if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
-    if (window.speechSynthesis) speechSynthesis.cancel();
-  }
-  toast(voiceEnabled ? '🔊 Narração ativada' : '🔇 Narração desativada', 2000);
-};
-
-function setVoiceIndicator(on) {
-  const el = document.getElementById('voice-indicator');
-  if (el) el.className = on ? 'speaking' : '';
-}
-
-function narrarTexto(texto, afterCb) {
-  _afterNarrationCb = afterCb || null;
-  if (!voiceEnabled) {
-    if (_afterNarrationCb) { const cb = _afterNarrationCb; _afterNarrationCb = null; cb(); }
-    return;
-  }
-  voiceQueue = [];
-  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
-  if (window.speechSynthesis) speechSynthesis.cancel();
-  voiceBusy = false;
-  voiceQueue.push(texto);
-  _nextUtterance();
-}
-
-function _nextUtterance() {
-  if (!voiceQueue.length) {
-    voiceBusy = false;
-    setVoiceIndicator(false);
-    if (_afterNarrationCb) { const cb = _afterNarrationCb; _afterNarrationCb = null; cb(); }
-    return;
-  }
-  voiceBusy = true;
-  setVoiceIndicator(true);
-  const texto = voiceQueue.shift();
-  const limpo = texto.replace(/<[^>]+>/g,'').replace(/[*#_`~]/g,'').replace(/\s+/g,' ').trim().substring(0,800);
-  if (!limpo) { _nextUtterance(); return; }
-
-  const apiKey = getApiKey();
-  if (!apiKey) { _narrarWebSpeech(limpo); return; }
-
-  const _ttsCtrl = new AbortController();
-  const _ttsTimer = setTimeout(() => _ttsCtrl.abort(), 10000);
-  fetch('https://api.groq.com/openai/v1/audio/speech', {
-    method: 'POST',
-    headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
-    body: JSON.stringify({ model:'playai-tts', input: limpo, voice:'Dorian-PlayAI', response_format:'mp3', speed:1.35 }),
-    signal: _ttsCtrl.signal
-  }).then(async res => {
-    clearTimeout(_ttsTimer);
-    if (!res.ok) { _narrarWebSpeech(limpo); return; }
-    const blob = await res.blob();
-    const url  = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    _currentAudio = audio;
-    audio.onended = () => { URL.revokeObjectURL(url); _currentAudio = null; _nextUtterance(); };
-    audio.onerror = () => _nextUtterance();
-    audio.play().catch(() => _narrarWebSpeech(limpo));
-  }).catch(() => { clearTimeout(_ttsTimer); _narrarWebSpeech(limpo); });
-}
-
-function _narrarWebSpeech(texto) {
-  if (!window.speechSynthesis) { _nextUtterance(); return; }
-  const utt = new SpeechSynthesisUtterance(texto);
-  const voz = speechSynthesis.getVoices().find(v => v.lang.startsWith('pt')) || null;
-  if (voz) utt.voice = voz;
-  utt.rate = 1.45; utt.pitch = 0.82;
-  utt.onend = utt.onerror = () => _nextUtterance();
-  speechSynthesis.speak(utt);
-}
 
 // ═══════════════════════════════════════════════════════════════
 //  RETRY UI
@@ -3473,7 +3287,6 @@ function mostrarSlide(idx) {
     nextBtn.onclick = () => avancarSlide();
   }
 
-  narrarTexto(slide.texto);
 }
 
 window.avancarSlide = function() {
@@ -3526,9 +3339,6 @@ function fecharIntro() {
   _introAtivo = false;
   const el = document.getElementById('intro-overlay');
   if (el) el.style.display = 'none';
-  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
-  if (window.speechSynthesis) speechSynthesis.cancel();
-  voiceQueue = []; voiceBusy = false;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3704,7 +3514,7 @@ async function chamarIA(jogadores, data) {
       const textoAntes = primeiroTag >= 0 ? resposta.substring(0, primeiroTag) : '';
       const preamble = limparTags(textoAntes);
       if (preamble) {
-        await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: preamble, falas: extrairFalas(textoAntes), ataques: extrairAtaques(textoAntes), noTTS: true, ts: Date.now() });
+        await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: preamble, falas: extrairFalas(textoAntes), ataques: extrairAtaques(textoAntes), ts: Date.now() });
       }
       await update(ref(db), ups);
       iniciarTestes(testes, roles, jogadores, async (resultados, rolarRes) => {
