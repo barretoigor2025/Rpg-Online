@@ -3314,7 +3314,7 @@ function atualizarInputArea(eu, config) {
     const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && !j.ausente);
     const querAvCount = ativos.filter(j => j.acao1 === '__avançar__').length;
     const estaAvançando = config.estado === 'avançando';
-    const mostrar = !narrando && !morto && (config.estado === 'aguardando' || estaAvançando) && !temContinuar;
+    const mostrar = !narrando && !morto && (config.estado === 'aguardando' || estaAvançando);
     btnAv.style.display = mostrar ? '' : 'none';
     const euQuer = eu?.acao1 === '__avançar__';
     btnAv.classList.toggle('ativo', euQuer);
