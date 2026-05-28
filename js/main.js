@@ -156,6 +156,7 @@ let _activeSlot  = parseInt(localStorage.getItem('rpg_active_slot') || '0');
 let _charSlots   = new Array(4).fill(null);
 let amIHost     = false;
 let chamandoIA  = false;
+let _primeiraEntrada = false; // true na primeira onValue após irParaJogo — usado para auto-recovery
 let unsubSala   = null;
 let unsubRolagem = null;
 let _processingStartTs = null;
@@ -2804,6 +2805,7 @@ function irParaJogo(codigo) {
   // Resetar estado de renderização
   _renderedKeys = new Set();
   _carregandoHistoriaInicial = true;
+  _primeiraEntrada = true; // habilita auto-recovery na primeira leitura do Firebase
 
   _kitMigrado = false;
   if (unsubSala) unsubSala();
@@ -2826,6 +2828,25 @@ function irParaJogo(codigo) {
     const inimigos  = data.inimigos  || {};
 
     amIHost = config.host === myUid;
+
+    // Auto-recovery: host reabre o jogo com sessão travada em 'narrando' (sem retryPendente)
+    // Isso ocorre quando o browser fecha durante uma chamada de API em andamento.
+    // Como uma narração ativa sempre resolve em ≤90s ou seta retryPendente,
+    // estado='narrando' + sem retryPendente na primeira leitura = sessão órfã.
+    if (amIHost && _primeiraEntrada) {
+      _primeiraEntrada = false;
+      if (config.estado === 'narrando' && !config.retryPendente && !chamandoIA) {
+        chamandoIA = false;
+        setTimeout(async () => {
+          try {
+            await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
+            toast('🔄 Sessão anterior recuperada — continuando...', 3000);
+          } catch(e) { console.warn('[auto-recovery]', e); }
+        }, 1200);
+      }
+    } else if (_primeiraEntrada) {
+      _primeiraEntrada = false;
+    }
 
     // Turno
     const rodEl = document.getElementById('round-display');
