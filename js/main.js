@@ -2837,9 +2837,33 @@ function irParaJogo(codigo) {
       _primeiraEntrada = false;
       if (config.estado === 'narrando' && !config.retryPendente && !chamandoIA) {
         chamandoIA = false;
+        // Capturar snapshot antes do setTimeout (closures sobre `data` atual)
+        const _dataSnap = data;
         setTimeout(async () => {
           try {
-            await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
+            // Restaurar acao1 para jogadores que tenham ação pendente sem resposta da IA
+            // (acao1 pode ter sido limpo pelo fluxo de TESTAR antes do crash)
+            const _historia = _dataSnap.historia || {};
+            const _jogs     = _dataSnap.jogadores || {};
+            const _sorted   = Object.values(_historia).sort((a,b) => (a.ts||0)-(b.ts||0));
+            // Último modelo real (excluindo preambles noTTS) = marca de tempo de referência
+            const _lastModelTs = _sorted
+              .filter(e => e.role === 'model' && !e.noTTS)
+              .reduce((mx, e) => Math.max(mx, e.ts||0), 0);
+            const _ups = {};
+            Object.values(_jogs).forEach(j => {
+              if (!j.vivo || j.ausente) return;
+              if (j.acao1 != null) return; // já tem ação, não sobrescrever
+              // Última ação desse jogador após o último modelo real
+              const _ultima = _sorted
+                .filter(e => e.role === 'user' && e.uid === j.uid && (e.ts||0) > _lastModelTs)
+                .pop();
+              if (_ultima?.content && _ultima.content !== `${j.nome} está pronto para avançar a história.`) {
+                _ups[`salas/${mySala}/jogadores/${j.uid}/acao1`] = _ultima.content;
+              }
+            });
+            _ups[`salas/${mySala}/config/estado`] = 'aguardando';
+            await update(ref(db), _ups);
             toast('🔄 Sessão anterior recuperada — continuando...', 3000);
           } catch(e) { console.warn('[auto-recovery]', e); }
         }, 1200);
