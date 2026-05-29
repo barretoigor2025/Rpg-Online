@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>A Fera do Forte Negro — Personagens &amp; Bestiário</title>
+<title>A Fera do Forte Negro — Classes, Personagens &amp; Bestiário</title>
 <style>
   :root {
     --bg: #0e0b07;
@@ -320,6 +320,108 @@
     font-style: italic;
   }
 
+  /* ── CLASSES GRID ── */
+  .classes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    max-width: 1100px;
+    margin: 1.5rem auto 3rem;
+    padding: 0 1.25rem;
+  }
+  .class-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .class-card:hover {
+    border-color: var(--gold);
+    box-shadow: 0 6px 28px #00000099;
+  }
+  .class-portraits {
+    display: flex;
+    background: #0a0807;
+    border-bottom: 1px solid var(--border);
+  }
+  .class-portrait {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.75rem 0.5rem 0.5rem;
+    gap: 0.3rem;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .class-portrait:hover { background: #12100a; }
+  .class-portrait img {
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
+    image-rendering: pixelated;
+  }
+  .class-portrait-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .class-divider {
+    width: 1px;
+    background: var(--border);
+    align-self: stretch;
+  }
+  .class-info {
+    padding: 1rem 1.25rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .class-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .class-icon { font-size: 1.5rem; }
+  .class-name {
+    font-size: 1.15rem;
+    color: var(--gold2);
+    letter-spacing: 0.05em;
+  }
+  .class-habilidade {
+    font-size: 0.82rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+  .class-habilidade strong { color: var(--gold); font-style: normal; }
+  .class-desc {
+    font-size: 0.88rem;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .class-powers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .power-tag {
+    background: #20180a;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.76rem;
+    color: var(--text);
+  }
+  .power-tag.habilidade {
+    background: #28200a;
+    border-color: var(--gold);
+    color: var(--gold2);
+  }
+
   /* scrollbar */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: #0a0807; }
@@ -332,13 +434,20 @@
   <h1>⚔ A Fera do Forte Negro ⚔</h1>
   <p>Personagens &amp; Bestiário — Campanha Oráculo RPG</p>
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('npcs', this)">👥 Personagens</button>
+    <button class="tab-btn active" onclick="switchTab('classes', this)">⚔ Classes</button>
+    <button class="tab-btn" onclick="switchTab('npcs', this)">👥 Personagens</button>
     <button class="tab-btn" onclick="switchTab('enemies', this)">💀 Bestiário</button>
   </div>
 </header>
 
+<!-- ════════════════════════════════════════════ CLASSES TAB ════════════════════════════════════════════ -->
+<div id="tab-classes" class="tab-panel active">
+  <div class="section-title">Classes de Personagem</div>
+  <div class="classes-grid" id="grid-classes"></div>
+</div>
+
 <!-- ════════════════════════════════════════════ NPCs TAB ════════════════════════════════════════════ -->
-<div id="tab-npcs" class="tab-panel active">
+<div id="tab-npcs" class="tab-panel">
   <div class="section-title">Personagens da Campanha</div>
 
   <!-- Mhoried -->
@@ -382,6 +491,59 @@
 </div>
 
 <script>
+// ═══════════════════════════════════════════ CLASSES DATA ═══════════════════════════════════════════
+
+const CLASSES = [
+  {
+    id: 'guerreiro',
+    nome: 'Guerreiro',
+    icon: '⚔️',
+    habilidade: 'Ataque Extra',
+    desc: 'Mestre das armas e da armadura, o Guerreiro é a força central do grupo. Com Ataque Extra, pode desferir múltiplos golpes num mesmo turno — um soldado disciplinado que vira o rumo de qualquer batalha.',
+    poderes: ['Golpe Poderoso', 'Postura de Defesa', 'Segundo Fôlego']
+  },
+  {
+    id: 'mago',
+    nome: 'Mago',
+    icon: '🔮',
+    habilidade: 'Grimório',
+    desc: 'Estudioso do arcano, o Mago carrega um Grimório com nove magias e escolhe três para dominar. Frágil em combate direto, mas capaz de mudar completamente o destino de um encontro com o feitiço certo.',
+    poderes: ['Pool de 9 magias', '3 magias escolhidas', 'Combinações ilimitadas']
+  },
+  {
+    id: 'ladino',
+    nome: 'Ladino',
+    icon: '🗡️',
+    habilidade: 'Ataque Furtivo',
+    desc: 'Veloz e mortal nas sombras, o Ladino usa o posicionamento a seu favor para desferir Ataques Furtivos devastadores. Especialista em se mover sem ser visto e em golpear onde mais dói.',
+    poderes: ['Evasão', 'Veneno', 'Sombras']
+  },
+  {
+    id: 'clerigo',
+    nome: 'Clérigo',
+    icon: '✨',
+    habilidade: 'Canalizar Divindade',
+    desc: 'Portador da fé e da cura, o Clérigo sustenta o grupo com Canalizar Divindade — bênçãos, curas e proteção divina. É a âncora moral e médica de qualquer expedição nas Blackwoods.',
+    poderes: ['Bênção', 'Curar Ferimentos', 'Expulsar Mortos-Vivos', 'Escudo da Fé']
+  },
+  {
+    id: 'barbaro',
+    nome: 'Bárbaro',
+    icon: '🪓',
+    habilidade: 'Fúria',
+    desc: 'Quando a Fúria toma conta, o Bárbaro transcende os limites humanos. Dor virou combustível, e cada golpe carrega o peso de uma força primordial. Imparável em combate aberto.',
+    poderes: ['Golpe Devastador', 'Pele de Ferro', 'Uivo de Guerra']
+  },
+  {
+    id: 'arqueiro',
+    nome: 'Arqueiro',
+    icon: '🏹',
+    habilidade: 'Olho de Águia',
+    desc: 'Preciso e ágil, o Arqueiro nunca precisa se aproximar para ser mortal. Olho de Águia concede visão sobrenatural — identifica fraquezas, acerta alvos distantes e dança entre os adversários.',
+    poderes: ['Tiro Preciso', 'Chuva de Flechas', 'Passo do Vento']
+  },
+];
+
 // ═══════════════════════════════════════════ DATA ═══════════════════════════════════════════
 
 const NPCS = {
@@ -962,6 +1124,60 @@ function switchTab(name, btn) {
 }
 
 // ═══════════════════════════════════════════ INIT ═══════════════════════════════════════════
+
+// Classes
+(function renderClasses() {
+  const el = document.getElementById('grid-classes');
+  el.innerHTML = CLASSES.map(c => `
+    <div class="class-card">
+      <div class="class-portraits">
+        <div class="class-portrait" onclick="openClassModal('${c.id}','m')">
+          <img src="sprites/${c.id}_m.png" alt="${c.nome} ♂" loading="lazy">
+          <span class="class-portrait-label">♂ Masculino</span>
+        </div>
+        <div class="class-divider"></div>
+        <div class="class-portrait" onclick="openClassModal('${c.id}','f')">
+          <img src="sprites/${c.id}_f.png" alt="${c.nome} ♀" loading="lazy">
+          <span class="class-portrait-label">♀ Feminino</span>
+        </div>
+      </div>
+      <div class="class-info">
+        <div class="class-title-row">
+          <span class="class-icon">${c.icon}</span>
+          <span class="class-name">${c.nome}</span>
+        </div>
+        <div class="class-habilidade">Habilidade especial: <strong>${c.habilidade}</strong></div>
+        <p class="class-desc">${c.desc}</p>
+        <div class="class-powers">
+          <span class="power-tag habilidade">${c.habilidade}</span>
+          ${c.poderes.map(p => `<span class="power-tag">${p}</span>`).join('')}
+        </div>
+      </div>
+    </div>`).join('');
+})();
+
+function openClassModal(id, sexo) {
+  const c = CLASSES.find(x => x.id === id);
+  const label = sexo === 'm' ? 'Masculino' : 'Feminino';
+  document.getElementById('modal-img').src = `sprites/${id}_${sexo}.png`;
+  document.getElementById('modal-name').textContent = c.nome;
+  document.getElementById('modal-subtitle').textContent = `${c.icon} ${label}`;
+  document.getElementById('modal-badges').innerHTML = `<span class="card-badge badge-neutro">${c.habilidade}</span>`;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="modal-section">
+      <div class="modal-section-label">Sobre a Classe</div>
+      <p>${c.desc}</p>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-label">Habilidade Especial</div>
+      <p><strong style="color:var(--gold)">${c.habilidade}</strong></p>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-label">Poderes</div>
+      <div class="trait-list">${c.poderes.map(p => `<span class="trait">${p}</span>`).join('')}</div>
+    </div>`;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
 
 renderNpcGrid('grid-mhoried',    NPCS.mhoried);
 renderNpcGrid('grid-blackwoods', NPCS.blackwoods);
