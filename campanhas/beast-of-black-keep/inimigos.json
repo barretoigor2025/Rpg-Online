@@ -1,7 +1,6 @@
 {
   "_campanha": "beast-of-black-keep",
   "_comentario": "Roster completo de inimigos e criaturas hostis. stats_dnd usa FOR/DES/CON/INT/SAB/CAR/CA no sistema D&D adaptado.",
-
   "essenciais": [
     {
       "id": "espantalho_assombrado",
@@ -13,15 +12,39 @@
       "descricao_arte": "Espantalho de tamanho humano feito de palha, trapos surrados e ossos presos com arame enferrujado. Vestido com roupas de fazendeiro podres. Cabeça de saco de estopa costurado com um rosto grosseiro. Olhos brilhando como brasas vermelhas. Uma mão segura uma foice enferrujada; a outra tem dedos de gravetos afiados. Postura rígida e ameaçadora, como se estivesse plantado num campo mas pronto para matar.",
       "icon": "🪨",
       "cor_hp": "#8a6a20",
-      "stats": { "ST": 10, "DX": 12, "IQ": 7, "HT": 10, "HP": 10 },
-      "stats_dnd": { "FOR": 10, "DES": 12, "CON": 12, "INT": 4, "SAB": 6, "CAR": 4, "CA": 11 },
+      "stats": {
+        "ST": 10,
+        "DX": 12,
+        "IQ": 7,
+        "HT": 10,
+        "HP": 10
+      },
+      "stats_dnd": {
+        "FOR": 10,
+        "DES": 12,
+        "CON": 12,
+        "INT": 4,
+        "SAB": 6,
+        "CAR": 4,
+        "CA": 11
+      },
       "comportamento": "bestial",
       "pode_dialogar": false,
       "motivacao": "Eliminar intrusos por ordem de Choir — nenhum pensamento próprio",
       "fraqueza_social": null,
-      "ataques_principais": ["Foice enferrujada 1d6", "Garras de gravetos 1d4"],
-      "poderes_especiais": ["Imune a medo e charme", "Visão no escuro 18m", "Detecta calor humano a 9m"],
-      "resistencias": ["veneno", "necrótico"]
+      "ataques_principais": [
+        "Foice enferrujada 1d6",
+        "Garras de gravetos 1d4"
+      ],
+      "poderes_especiais": [
+        "Imune a medo e charme",
+        "Visão no escuro 18m",
+        "Detecta calor humano a 9m"
+      ],
+      "resistencias": [
+        "veneno",
+        "necrótico"
+      ]
     },
     {
       "id": "grimhollow_thool",
@@ -32,14 +55,36 @@
       "descricao_arte": "Humano transformado em criatura ogrina, tamanho grande (SM+1). Pele espessa e acinzentada com textura de couro seco, enrugada nos cotovelos e joelhos. Traços faciais ainda reconhecivelmente humanos mas distorcidos — maxilar projetado, testa protuberante, olhos turvos com irises desbotadas. Chifres vestigiais pequenos na testa. Usa couro em camadas improvisado como armadura. Carrega uma lança longa e uma faca de reserva na cinta. Há uma melancolia estranha nos gestos, como se algo humano ainda vivesse dentro.",
       "icon": "👹",
       "cor_hp": "#5a4a30",
-      "stats": { "ST": 15, "DX": 12, "IQ": 11, "HT": 12, "HP": 15, "SM": "+1" },
-      "stats_dnd": { "FOR": 17, "DES": 10, "CON": 14, "INT": 10, "SAB": 9, "CAR": 8, "CA": 13 },
+      "stats": {
+        "ST": 15,
+        "DX": 12,
+        "IQ": 11,
+        "HT": 12,
+        "HP": 15,
+        "SM": "+1"
+      },
+      "stats_dnd": {
+        "FOR": 17,
+        "DES": 10,
+        "CON": 14,
+        "INT": 10,
+        "SAB": 9,
+        "CAR": 8,
+        "CA": 13
+      },
       "comportamento": "calculista",
       "pode_dialogar": true,
       "motivacao": "Obedecer Dendybar mas odeia o que se tornou; pode ser explorado emocionalmente",
       "fraqueza_social": "Mencionar seu nome humano ou apelar para o que era antes da transformação — hesita, pode parar de atacar momentaneamente",
-      "ataques_principais": ["Lança 1d8+3", "Faca de reserva 1d4+3", "Golpe de punho 1d6+3"],
-      "poderes_especiais": ["Vantagem em Percepção (olfato aguçado)", "Resistência a dano físico por pele grossa de ogro"],
+      "ataques_principais": [
+        "Lança 1d8+3",
+        "Faca de reserva 1d4+3",
+        "Golpe de punho 1d6+3"
+      ],
+      "poderes_especiais": [
+        "Vantagem em Percepção (olfato aguçado)",
+        "Resistência a dano físico por pele grossa de ogro"
+      ],
       "resistencias": []
     },
     {
@@ -50,15 +95,39 @@
       "descricao_arte": "Ettin de duas cabeças, massivo e imponente. Pele marrom-esverdeada áspera como casca de árvore velha. Duas cabeças numa só cerviz grossa: a cabeça esquerda tem expressão calculista e fala pausada; a direita tem olhar paranoico e fareja o ar constantemente. Usa uma capa negra encardida sobre ombros enormes. Carrega o Cajado de Limm — um báculo de pedra enegrecida com glifos élficos incandescentes gravados em espiral. Altura intimidadora, mesmo sem ser SM+1 na ficha. As duas cabeças nunca olham na mesma direção ao mesmo tempo.",
       "icon": "👹",
       "cor_hp": "#7a1a1a",
-      "stats": { "ST": 21, "DX": 11, "IQ": 12, "HT": 13, "HP": 21 },
-      "stats_dnd": { "FOR": 21, "DES": 8, "CON": 16, "INT": 12, "SAB": 9, "CAR": 9, "CA": 13 },
+      "stats": {
+        "ST": 21,
+        "DX": 11,
+        "IQ": 12,
+        "HT": 13,
+        "HP": 21
+      },
+      "stats_dnd": {
+        "FOR": 21,
+        "DES": 8,
+        "CON": 16,
+        "INT": 12,
+        "SAB": 9,
+        "CAR": 9,
+        "CA": 13
+      },
       "comportamento": "sadico",
       "pode_dialogar": true,
       "motivacao": "Controle total das Blackwoods pelo Cajado de Limm — domínio absoluto e poder eterno",
       "fraqueza_social": "Ego imenso — lisonjear a cabeça esquerda enquanto desafia a direita os deixa em conflito interno; pausa para monólogos e discursos de vilão",
-      "ataques_principais": ["Cajado de Limm 2d6+5 (dano ácido)", "Raio Ácido 3d6 (alcance 18m)", "Trovão de Limm 2d8+4 CD14 CON"],
-      "poderes_especiais": ["Magias de Feiticeiro Nível 3 (Bola de Fogo, Relâmpago, Teia)", "Duas cabeças — vantagem vs. surpresa e encantamentos", "Regeneração mágica 3 HP/turno enquanto empunha o Cajado"],
-      "resistencias": ["magia da floresta"]
+      "ataques_principais": [
+        "Cajado de Limm 2d6+5 (dano ácido)",
+        "Raio Ácido 3d6 (alcance 18m)",
+        "Trovão de Limm 2d8+4 CD14 CON"
+      ],
+      "poderes_especiais": [
+        "Magias de Feiticeiro Nível 3 (Bola de Fogo, Relâmpago, Teia)",
+        "Duas cabeças — vantagem vs. surpresa e encantamentos",
+        "Regeneração mágica 3 HP/turno enquanto empunha o Cajado"
+      ],
+      "resistencias": [
+        "magia da floresta"
+      ]
     },
     {
       "id": "golem_de_pergaminho",
@@ -69,15 +138,38 @@
       "descricao_arte": "Figura humanoide feita inteiramente de livros antigos e pergaminhos dobrados e entrelaçados. Corpo sem rosto definido — apenas páginas comprimidas onde deveria haver uma cabeça, com letras élficas visíveis. Os braços terminam em páginas dobradas como garras. Flutua levemente acima do chão, as folhas na borda do corpo tremulando como asas. Quando pegam fogo, as páginas se acendem e a criatura corre desesperadamente para abraçar o inimigo mais próximo.",
       "icon": "📜",
       "cor_hp": "#6a5a20",
-      "stats": { "ST": 13, "DX": 12, "IQ": 8, "HT": 12, "HP": 13 },
-      "stats_dnd": { "FOR": 13, "DES": 14, "CON": 12, "INT": 5, "SAB": 6, "CAR": 3, "CA": 13 },
+      "stats": {
+        "ST": 13,
+        "DX": 12,
+        "IQ": 8,
+        "HT": 12,
+        "HP": 13
+      },
+      "stats_dnd": {
+        "FOR": 13,
+        "DES": 14,
+        "CON": 12,
+        "INT": 5,
+        "SAB": 6,
+        "CAR": 3,
+        "CA": 13
+      },
       "comportamento": "bestial",
       "pode_dialogar": false,
       "motivacao": "Destruir intrusos — marionete sem vontade de Rei Chutter",
       "fraqueza_social": null,
-      "ataques_principais": ["Garras de papel 1d6+1", "Abraço de fogo 2d6 (quando em chamas)"],
-      "poderes_especiais": ["Voo velocidade 9m", "Explosão de fogo: ao receber dano de fogo explode em AoE 1d8 CD12 DES", "Imune a veneno e dano psíquico"],
-      "resistencias": ["dano perfurante de projéteis"]
+      "ataques_principais": [
+        "Garras de papel 1d6+1",
+        "Abraço de fogo 2d6 (quando em chamas)"
+      ],
+      "poderes_especiais": [
+        "Voo velocidade 9m",
+        "Explosão de fogo: ao receber dano de fogo explode em AoE 1d8 CD12 DES",
+        "Imune a veneno e dano psíquico"
+      ],
+      "resistencias": [
+        "dano perfurante de projéteis"
+      ]
     },
     {
       "id": "mother_clutch",
@@ -88,15 +180,42 @@
       "descricao_arte": "Horror de tamanho grande (SM+2) feito de membros humanos roubados de vítimas. Corpo central deformado e inchado, de onde emergem 10 braços humanos extras de tamanhos e cores diferentes, alguns com mãos ainda intactas, outros terminando em ossos expostos. Rola pelo chão usando os braços como pernas de aranha. Sem olhos visíveis — detecta por cheiro. Os braços em torno do corpo ondulam independentemente, criando a impressão de uma criatura sempre em movimento, sempre alcançando.",
       "icon": "🕷️",
       "cor_hp": "#3a1a3a",
-      "stats": { "ST": 13, "DX": 13, "IQ": 8, "HT": 12, "HP": 16, "SM": "+2" },
-      "stats_dnd": { "FOR": 16, "DES": 14, "CON": 14, "INT": 5, "SAB": 8, "CAR": 3, "CA": 13 },
+      "stats": {
+        "ST": 13,
+        "DX": 13,
+        "IQ": 8,
+        "HT": 12,
+        "HP": 16,
+        "SM": "+2"
+      },
+      "stats_dnd": {
+        "FOR": 16,
+        "DES": 14,
+        "CON": 14,
+        "INT": 5,
+        "SAB": 8,
+        "CAR": 3,
+        "CA": 13
+      },
       "comportamento": "bestial",
       "pode_dialogar": false,
       "motivacao": "Capturar e absorver corpos para crescer — expansão constante e insaciável",
       "fraqueza_social": null,
-      "ataques_principais": ["Tentáculo de braço 1d8+3 (até 3 ataques por turno)", "Garras de osso 2d4+3", "Agarre: alvos agarrados levam 1d6 por turno"],
-      "poderes_especiais": ["Detecta por calor e vibração (sem visão)", "Agarre múltiplo simultâneo (até 2 alvos)", "Imune a charme e medo", "Regeneração 1 HP/turno"],
-      "resistencias": ["dano cortante", "dano perfurante"]
+      "ataques_principais": [
+        "Tentáculo de braço 1d8+3 (até 3 ataques por turno)",
+        "Garras de osso 2d4+3",
+        "Agarre: alvos agarrados levam 1d6 por turno"
+      ],
+      "poderes_especiais": [
+        "Detecta por calor e vibração (sem visão)",
+        "Agarre múltiplo simultâneo (até 2 alvos)",
+        "Imune a charme e medo",
+        "Regeneração 1 HP/turno"
+      ],
+      "resistencias": [
+        "dano cortante",
+        "dano perfurante"
+      ]
     },
     {
       "id": "marrowwither",
@@ -108,15 +227,38 @@
       "descricao_arte": "Larva de tamanho médio, corpo mole e translúcido como gelatina podre. A pele fina deixa ver ossos de outras criaturas absorvidos no interior, como se a larva os estivesse digerindo lentamente. Sem olhos nem orelhas — detecta vibração. Na pele externa, tatuagem de uma única palavra em rúnico: 'CHOIR'. Babão e lento, mas forte. Deixa rastro de líquido âmbar pútrido.",
       "icon": "🐛",
       "cor_hp": "#4a3a10",
-      "stats": { "ST": 11, "DX": 9, "IQ": 2, "HT": 12, "HP": 14 },
-      "stats_dnd": { "FOR": 12, "DES": 8, "CON": 14, "INT": 1, "SAB": 5, "CAR": 1, "CA": 10 },
+      "stats": {
+        "ST": 11,
+        "DX": 9,
+        "IQ": 2,
+        "HT": 12,
+        "HP": 14
+      },
+      "stats_dnd": {
+        "FOR": 12,
+        "DES": 8,
+        "CON": 14,
+        "INT": 1,
+        "SAB": 5,
+        "CAR": 1,
+        "CA": 10
+      },
       "comportamento": "bestial",
       "pode_dialogar": false,
       "motivacao": "Absorver matéria orgânica por puro instinto — zero consciência",
       "fraqueza_social": null,
-      "ataques_principais": ["Mordida ácida 1d8+1", "Abraço de ácido 2d6/turno (se agarrado)"],
-      "poderes_especiais": ["Tremorsense 9m (detecta vibração)", "Rastro ácido — 1d4 a quem pisar onde passou", "Imune a veneno"],
-      "resistencias": ["veneno"]
+      "ataques_principais": [
+        "Mordida ácida 1d8+1",
+        "Abraço de ácido 2d6/turno (se agarrado)"
+      ],
+      "poderes_especiais": [
+        "Tremorsense 9m (detecta vibração)",
+        "Rastro ácido — 1d4 a quem pisar onde passou",
+        "Imune a veneno"
+      ],
+      "resistencias": [
+        "veneno"
+      ]
     },
     {
       "id": "larva_gigante",
@@ -126,15 +268,39 @@
       "descricao_arte": "Minhoca ou larva do tamanho de uma carroça (SM+2). Pele pálida-amarelada, inchada e úmida, com segmentos marcados. Baba líquido âmbar espesso em abundância. Sem membros. Mandíbulas grandes no extremo anterior com dentes voltados para dentro como anzóis. Runas necromânticas entalhadas na pele por Choir — símbolos em espiral ao longo do corpo inteiro, como se a criatura fosse uma tatuagem viva. Cheiro nauseante.",
       "icon": "🐛",
       "cor_hp": "#6a5a10",
-      "stats": { "ST": 18, "DX": 8, "IQ": 2, "HT": 13, "HP": 22, "SM": "+2" },
-      "stats_dnd": { "FOR": 22, "DES": 6, "CON": 16, "INT": 1, "SAB": 5, "CAR": 1, "CA": 10 },
+      "stats": {
+        "ST": 18,
+        "DX": 8,
+        "IQ": 2,
+        "HT": 13,
+        "HP": 22,
+        "SM": "+2"
+      },
+      "stats_dnd": {
+        "FOR": 22,
+        "DES": 6,
+        "CON": 16,
+        "INT": 1,
+        "SAB": 5,
+        "CAR": 1,
+        "CA": 10
+      },
       "comportamento": "bestial",
       "pode_dialogar": false,
       "motivacao": "Comer tudo na frente — bestial absoluto sem nenhum discernimento",
       "fraqueza_social": null,
-      "ataques_principais": ["Mandíbulas 2d8+6", "Esmagar 2d10+6 (vítima fica soterrada)"],
-      "poderes_especiais": ["Movimento subterrâneo (burrow speed 6m)", "Vítima soterrada: CD16 FOR para escapar por turno", "Runas de Choir: resistência a magia elemental"],
-      "resistencias": ["magia elemental"]
+      "ataques_principais": [
+        "Mandíbulas 2d8+6",
+        "Esmagar 2d10+6 (vítima fica soterrada)"
+      ],
+      "poderes_especiais": [
+        "Movimento subterrâneo (burrow speed 6m)",
+        "Vítima soterrada: CD16 FOR para escapar por turno",
+        "Runas de Choir: resistência a magia elemental"
+      ],
+      "resistencias": [
+        "magia elemental"
+      ]
     },
     {
       "id": "wraithweaver_spider",
@@ -145,15 +311,40 @@
       "descricao_arte": "Aranha de tamanho médio (SM 0), pele branca como osso polido sem nenhum pigmento. Oito olhos como brasas congeladas — azul gelado luminescente no escuro. Em vez de teia de seda, produz fios espectrais quase invisíveis (translúcidos como névoa) que causam visões paralisantes de morte ao toque. Patas longas e articuladas, silenciosas. Não tem mandíbulas proeminentes mas a mordida injeta veneno que causa terror. Aparência gélida e silenciosa.",
       "icon": "🕷️",
       "cor_hp": "#4a4a6a",
-      "stats": { "ST": 12, "DX": 13, "IQ": 3, "HT": 11, "HP": 12 },
-      "stats_dnd": { "FOR": 12, "DES": 16, "CON": 12, "INT": 3, "SAB": 8, "CAR": 3, "CA": 14 },
+      "stats": {
+        "ST": 12,
+        "DX": 13,
+        "IQ": 3,
+        "HT": 11,
+        "HP": 12
+      },
+      "stats_dnd": {
+        "FOR": 12,
+        "DES": 16,
+        "CON": 12,
+        "INT": 3,
+        "SAB": 8,
+        "CAR": 3,
+        "CA": 14
+      },
       "comportamento": "bestial",
       "pode_dialogar": false,
       "motivacao": "Caçar e alimentar-se — predador silencioso e paciente",
       "fraqueza_social": null,
-      "ataques_principais": ["Mordida 1d8+1 + veneno (CD12 CON ou Medo por 1d4 turnos)", "Teia Espectral: CD12 SAB ou paralisado de terror por 1 turno"],
-      "poderes_especiais": ["Visão no escuro 18m", "Subir paredes e tetos", "Teia quase invisível (CD16 Percepção para detectar)", "Veneno de terror psíquico"],
-      "resistencias": ["dano psíquico", "dano necrótico"]
+      "ataques_principais": [
+        "Mordida 1d8+1 + veneno (CD12 CON ou Medo por 1d4 turnos)",
+        "Teia Espectral: CD12 SAB ou paralisado de terror por 1 turno"
+      ],
+      "poderes_especiais": [
+        "Visão no escuro 18m",
+        "Subir paredes e tetos",
+        "Teia quase invisível (CD16 Percepção para detectar)",
+        "Veneno de terror psíquico"
+      ],
+      "resistencias": [
+        "dano psíquico",
+        "dano necrótico"
+      ]
     },
     {
       "id": "manticora_albina",
@@ -163,14 +354,37 @@
       "descricao_arte": "Manticora rara de pelagem inteiramente branca (albina). Corpo leonino grande (SM+1) com músculos proeminentes sob pelagem creme-branca. Face vagamente humanoide mas deformada — nariz achatado, boca com fileiras de dentes, olhos vermelhos de albino. Cauda longa com cluster de espinhos negros na ponta, contrastando com o branco do corpo. Asas de morcego vestigiais na espalda (pequenas demais para voar, mas ameaçadoras). A mordida deixa feridas que não curam naturalmente.",
       "icon": "🦁",
       "cor_hp": "#8a4a20",
-      "stats": { "ST": 18, "DX": 12, "IQ": 7, "HT": 12, "HP": 18, "SM": "+1" },
-      "stats_dnd": { "FOR": 18, "DES": 12, "CON": 14, "INT": 6, "SAB": 10, "CAR": 6, "CA": 14 },
+      "stats": {
+        "ST": 18,
+        "DX": 12,
+        "IQ": 7,
+        "HT": 12,
+        "HP": 18,
+        "SM": "+1"
+      },
+      "stats_dnd": {
+        "FOR": 18,
+        "DES": 12,
+        "CON": 14,
+        "INT": 6,
+        "SAB": 10,
+        "CAR": 6,
+        "CA": 14
+      },
       "comportamento": "agressivo",
       "pode_dialogar": false,
       "motivacao": "Territorialidade e fome — predador apex do norte das Blackwoods",
       "fraqueza_social": null,
-      "ataques_principais": ["Garras 2d6+4", "Mordida 1d10+4 (ferida amaldiçoada — não cicatriza sem magia)", "Espinhos da cauda 1d6+1 (alcance 12m, até 3 por turno)"],
-      "poderes_especiais": ["Ferida amaldiçoada: mordida não cura naturalmente por 24h", "Asas vestigiais: queda controlada sem dano", "Rastejo silencioso (+5 Furtividade)"],
+      "ataques_principais": [
+        "Garras 2d6+4",
+        "Mordida 1d10+4 (ferida amaldiçoada — não cicatriza sem magia)",
+        "Espinhos da cauda 1d6+1 (alcance 12m, até 3 por turno)"
+      ],
+      "poderes_especiais": [
+        "Ferida amaldiçoada: mordida não cura naturalmente por 24h",
+        "Asas vestigiais: queda controlada sem dano",
+        "Rastejo silencioso (+5 Furtividade)"
+      ],
       "resistencias": []
     },
     {
@@ -182,15 +396,40 @@
       "descricao_arte": "Árvore de carvalho de tamanho médio-grande que ganhou consciência maligna. Raízes grossas usadas como pernas para movimentação lenta mas implacável. Galhos retorcidos como braços, terminando em pontas de madeira afiadas como garras. Casca enegrecida e retorcida, com padrão de veias vermelhas pulsando levemente (sangue vegetal mágico). Dois nós na casca formam olhos de âmbar avermelhado. Postura de predador vegetativo.",
       "icon": "🌳",
       "cor_hp": "#3a5a1a",
-      "stats": { "ST": 16, "DX": 8, "IQ": 4, "HT": 14, "HP": 20 },
-      "stats_dnd": { "FOR": 18, "DES": 6, "CON": 18, "INT": 3, "SAB": 8, "CAR": 3, "CA": 15 },
+      "stats": {
+        "ST": 16,
+        "DX": 8,
+        "IQ": 4,
+        "HT": 14,
+        "HP": 20
+      },
+      "stats_dnd": {
+        "FOR": 18,
+        "DES": 6,
+        "CON": 18,
+        "INT": 3,
+        "SAB": 8,
+        "CAR": 3,
+        "CA": 15
+      },
       "comportamento": "bestial",
       "pode_dialogar": false,
       "motivacao": "Proteger território por ordem de Rootflayer — lento, implacável e sem mercê",
       "fraqueza_social": null,
-      "ataques_principais": ["Ramo em garra 2d6+4", "Raiz prendedora 1d8+4 + Agarre (CD14 FOR para escapar)", "Estocada de galho 2d4+4 (alcance 3m)"],
-      "poderes_especiais": ["Imune a veneno e doenças", "Vulnerável a fogo (dano dobrado)", "Resistente a dano físico não-mágico", "Movimento 6m/turno — imparável em terreno florestal"],
-      "resistencias": ["dano físico não-mágico"]
+      "ataques_principais": [
+        "Ramo em garra 2d6+4",
+        "Raiz prendedora 1d8+4 + Agarre (CD14 FOR para escapar)",
+        "Estocada de galho 2d4+4 (alcance 3m)"
+      ],
+      "poderes_especiais": [
+        "Imune a veneno e doenças",
+        "Vulnerável a fogo (dano dobrado)",
+        "Resistente a dano físico não-mágico",
+        "Movimento 6m/turno — imparável em terreno florestal"
+      ],
+      "resistencias": [
+        "dano físico não-mágico"
+      ]
     },
     {
       "id": "esqueleto_lanceiro",
@@ -202,15 +441,39 @@
       "descricao_arte": "Esqueleto humano completamente reanimado. Ossos tingidos de cinza-esverdeado por magia necromântica de Choir — não são brancos, têm uma patina verde-podre. Olhos com chama verde fria nos soquetes. Armado com uma lança élfica negra (comprida, fina, com ponta de metal escurecido). Nenhuma armadura. Movimentos mecânicos e silenciosos. Alguns ainda têm fragmentos de roupa esfarrapada presa entre os ossos.",
       "icon": "💀",
       "cor_hp": "#3a4a2a",
-      "stats": { "ST": 11, "DX": 11, "IQ": 8, "HT": 12, "HP": 11 },
-      "stats_dnd": { "FOR": 12, "DES": 12, "CON": 12, "INT": 6, "SAB": 8, "CAR": 4, "CA": 12 },
+      "stats": {
+        "ST": 11,
+        "DX": 11,
+        "IQ": 8,
+        "HT": 12,
+        "HP": 11
+      },
+      "stats_dnd": {
+        "FOR": 12,
+        "DES": 12,
+        "CON": 12,
+        "INT": 6,
+        "SAB": 8,
+        "CAR": 4,
+        "CA": 12
+      },
       "comportamento": "bestial",
       "pode_dialogar": false,
       "motivacao": "Obedecer Choir — autômato necromantico sem vontade ou medo",
       "fraqueza_social": null,
-      "ataques_principais": ["Lança élfica 1d8+1 (alcance 3m)", "Arremesso de lança 1d6+1 (alcance 9m)"],
-      "poderes_especiais": ["Imune a veneno e exaustão", "Vulnerável a dano contundente (dano dobrado)", "Aura necromântica: -1 em salvaguardas SAB a 1,5m"],
-      "resistencias": ["dano cortante", "dano perfurante"]
+      "ataques_principais": [
+        "Lança élfica 1d8+1 (alcance 3m)",
+        "Arremesso de lança 1d6+1 (alcance 9m)"
+      ],
+      "poderes_especiais": [
+        "Imune a veneno e exaustão",
+        "Vulnerável a dano contundente (dano dobrado)",
+        "Aura necromântica: -1 em salvaguardas SAB a 1,5m"
+      ],
+      "resistencias": [
+        "dano cortante",
+        "dano perfurante"
+      ]
     },
     {
       "id": "kobold_azul",
@@ -220,14 +483,35 @@
       "descricao_arte": "Humanoide pequeno (SM-1), pele azul-ardósia escura quase azul-marinho. Orelhas longas e pontiagudas que tremem com emoção. Olhos amarelo-âmbar com pupila vertical. Nariz aguçado. Dentes pequenos e afiados. Armados com arcos curtos primitivos, lanças de bambu e adagas de sílex. Vestem pedaços de couro mal curtido e trapos capturados de viajantes. Expressão variável: covarde quando em minoria, arrogante em bando.",
       "icon": "🐊",
       "cor_hp": "#2a4a6a",
-      "stats": { "ST": 8, "DX": 12, "IQ": 8, "HT": 10, "HP": 8 },
-      "stats_dnd": { "FOR": 7, "DES": 14, "CON": 10, "INT": 8, "SAB": 8, "CAR": 7, "CA": 13 },
+      "stats": {
+        "ST": 8,
+        "DX": 12,
+        "IQ": 8,
+        "HT": 10,
+        "HP": 8
+      },
+      "stats_dnd": {
+        "FOR": 7,
+        "DES": 14,
+        "CON": 10,
+        "INT": 8,
+        "SAB": 8,
+        "CAR": 7,
+        "CA": 13
+      },
       "comportamento": "covarde_em_grupo",
       "pode_dialogar": true,
       "motivacao": "Sobrevivência da tribo e de Kobold-Town — são territoriais mas negociam acesso por recursos",
       "fraqueza_social": "Oferecer comida ou recursos para a tribo resolve a maioria dos conflitos; ameaçar o chefe faz o grupo inteiro entrar em colapso; sozinho, rende-se imediatamente",
-      "ataques_principais": ["Arco curto 1d6 (alcance 24m)", "Lança 1d6-2", "Adaga de sílex 1d4-2"],
-      "poderes_especiais": ["Tática de matilha: vantagem em ataques quando aliado adjacente", "Fuga instintiva: com HP < 4 foge sem testar moral"],
+      "ataques_principais": [
+        "Arco curto 1d6 (alcance 24m)",
+        "Lança 1d6-2",
+        "Adaga de sílex 1d4-2"
+      ],
+      "poderes_especiais": [
+        "Tática de matilha: vantagem em ataques quando aliado adjacente",
+        "Fuga instintiva: com HP < 4 foge sem testar moral"
+      ],
       "resistencias": []
     },
     {
@@ -239,18 +523,40 @@
       "descricao_arte": "Élfico de estatura média, traços afiados e angulosos. Pele cinza-esverdeada escura, não negra — mais como pedra de ardósia. Cabelo branco ou prateado, geralmente preso. Olhos sem íris visível — toda a esclera é cinza-prata. Armadura de couro élfica negra, bem articulada e silenciosa. Arco longo com flechas de ponta preta. Expressão permanentemente hostil e superior. Porte altivo e furtivo ao mesmo tempo.",
       "icon": "🏹",
       "cor_hp": "#2a3a4a",
-      "stats": { "ST": 11, "DX": 13, "IQ": 11, "HT": 11, "HP": 11 },
-      "stats_dnd": { "FOR": 11, "DES": 14, "CON": 11, "INT": 11, "SAB": 11, "CAR": 9, "CA": 14 },
+      "stats": {
+        "ST": 11,
+        "DX": 13,
+        "IQ": 11,
+        "HT": 11,
+        "HP": 11
+      },
+      "stats_dnd": {
+        "FOR": 11,
+        "DES": 14,
+        "CON": 11,
+        "INT": 11,
+        "SAB": 11,
+        "CAR": 9,
+        "CA": 14
+      },
       "comportamento": "hostil_calculista",
       "pode_dialogar": true,
       "motivacao": "Defender território élfico — lealdade absoluta ao clã de Kalos acima de tudo",
       "fraqueza_social": "Demonstrar conhecimento das tradições élficas ou falar élfico básico abaixa a guarda; mostrar respeito pelo clã pode abrir parley",
-      "ataques_principais": ["Arco longo 1d8+2 (alcance 45m)", "Espada curta élfica 1d6+2", "Duas flechas por turno (se não se moveu)"],
-      "poderes_especiais": ["Furtividade +4", "Visão no escuro 18m", "Imune a sono mágico", "Vantagem vs. charme"],
+      "ataques_principais": [
+        "Arco longo 1d8+2 (alcance 45m)",
+        "Espada curta élfica 1d6+2",
+        "Duas flechas por turno (se não se moveu)"
+      ],
+      "poderes_especiais": [
+        "Furtividade +4",
+        "Visão no escuro 18m",
+        "Imune a sono mágico",
+        "Vantagem vs. charme"
+      ],
       "resistencias": []
     }
   ],
-
   "encontros": [
     {
       "id": "javali_ensandecido",
@@ -259,14 +565,34 @@
       "onde_aparece": "Encruzilhada (local 3) — único encontro de história",
       "descricao_arte": "Javali macho adulto enorme, espumando pela boca com olhos completamente vermelhos de raiva e dor. Uma lança de caçador está fincada profundamente nas costas, partida pela metade — e ainda há um braço humano decepado agarrado à lança, a mão fechada numa garra de agonia. A criatura corre sem direção, ferida e desesperada.",
       "icon": "🐗",
-      "stats": { "ST": 14, "DX": 11, "IQ": 3, "HT": 12, "HP": 14 },
-      "stats_dnd": { "FOR": 15, "DES": 10, "CON": 14, "INT": 2, "SAB": 7, "CAR": 4, "CA": 11 },
+      "stats": {
+        "ST": 14,
+        "DX": 11,
+        "IQ": 3,
+        "HT": 12,
+        "HP": 14
+      },
+      "stats_dnd": {
+        "FOR": 15,
+        "DES": 10,
+        "CON": 14,
+        "INT": 2,
+        "SAB": 7,
+        "CAR": 4,
+        "CA": 11
+      },
       "comportamento": "berserk",
       "pode_dialogar": false,
       "motivacao": "Dor cega — atacará tudo que se mover perto, sem distinção ou estratégia",
       "fraqueza_social": null,
-      "ataques_principais": ["Chifrada 2d6+2", "Pisoteamento: alvo caído leva 1d8+2 adicional"],
-      "poderes_especiais": ["Carga: +1d6 se mover 3m antes de atacar", "Fúria ferida: com HP < metade, ataque duplo por turno"],
+      "ataques_principais": [
+        "Chifrada 2d6+2",
+        "Pisoteamento: alvo caído leva 1d8+2 adicional"
+      ],
+      "poderes_especiais": [
+        "Carga: +1d6 se mover 3m antes de atacar",
+        "Fúria ferida: com HP < metade, ataque duplo por turno"
+      ],
       "resistencias": []
     },
     {
@@ -277,14 +603,36 @@
       "onde_aparece": "Gruta Afogada — Wane Deep, sala 3 (submersa)",
       "descricao_arte": "Meio-troll aquático, servidor pessoal de Ruzalka. Corpo grande e curvado de troll, pele esverdeada coberta de algas lacustres e conchas presas na pele como parasitas. Olhos amarelos adaptados à escuridão submersa. Mãos enormes com dedos membranosos. Coleciona itens roubados que carrega presos ao cinto de couro putrefato. Vive no fundo da ruína submersa e ataca qualquer intruso.",
       "icon": "🧌",
-      "stats": { "ST": 15, "DX": 10, "IQ": 6, "HT": 13, "HP": 17 },
-      "stats_dnd": { "FOR": 16, "DES": 10, "CON": 16, "INT": 5, "SAB": 8, "CAR": 5, "CA": 12 },
+      "stats": {
+        "ST": 15,
+        "DX": 10,
+        "IQ": 6,
+        "HT": 13,
+        "HP": 17
+      },
+      "stats_dnd": {
+        "FOR": 16,
+        "DES": 10,
+        "CON": 16,
+        "INT": 5,
+        "SAB": 8,
+        "CAR": 5,
+        "CA": 12
+      },
       "comportamento": "agressivo",
       "pode_dialogar": false,
       "motivacao": "Guardar domínio de Ruzalka e colecionar objetos reluzentes — territorial e brutal",
       "fraqueza_social": null,
-      "ataques_principais": ["Garras membranosas 1d8+3", "Aperto 2d6+3 (agarrado)", "Mordida 1d6+3 (bônus de ação)"],
-      "poderes_especiais": ["Respiração subaquática", "Regeneração troll 2 HP/turno (exceto fogo ou ácido)", "Visão no escuro 18m subaquática"],
+      "ataques_principais": [
+        "Garras membranosas 1d8+3",
+        "Aperto 2d6+3 (agarrado)",
+        "Mordida 1d6+3 (bônus de ação)"
+      ],
+      "poderes_especiais": [
+        "Respiração subaquática",
+        "Regeneração troll 2 HP/turno (exceto fogo ou ácido)",
+        "Visão no escuro 18m subaquática"
+      ],
       "resistencias": []
     },
     {
@@ -294,14 +642,34 @@
       "onde_aparece": "Gruta Afogada — Wane Deep, sala 4 (1d unidades)",
       "descricao_arte": "Caranguejo de água doce de tamanho médio a grande (SM 0 a +1). Carapaça azul-negra com reflexos roxos iridescentes. Pinças enormes e simétricas, a da direita levemente maior. Olhos em pedúnculo. Mandíbulas laterais. Rápido debaixo d'água, mais lento em terra. Servem Ruzalka como guardas do corredor submerso.",
       "icon": "🦀",
-      "stats": { "ST": 14, "DX": 12, "IQ": 1, "HT": 12, "HP": 14 },
-      "stats_dnd": { "FOR": 15, "DES": 14, "CON": 14, "INT": 1, "SAB": 6, "CAR": 1, "CA": 15 },
+      "stats": {
+        "ST": 14,
+        "DX": 12,
+        "IQ": 1,
+        "HT": 12,
+        "HP": 14
+      },
+      "stats_dnd": {
+        "FOR": 15,
+        "DES": 14,
+        "CON": 14,
+        "INT": 1,
+        "SAB": 6,
+        "CAR": 1,
+        "CA": 15
+      },
       "comportamento": "bestial",
       "pode_dialogar": false,
       "motivacao": "Guardar corredor aquático por instinto — servo involuntário de Ruzalka",
       "fraqueza_social": null,
-      "ataques_principais": ["Pinça direita 1d10+2 (CD13 FOR para escapar do agarre)", "Pinça esquerda 1d8+2"],
-      "poderes_especiais": ["Anfíbio (respira ar e água)", "Carapaça dura: imune a dano crítico de projéteis pequenos"],
+      "ataques_principais": [
+        "Pinça direita 1d10+2 (CD13 FOR para escapar do agarre)",
+        "Pinça esquerda 1d8+2"
+      ],
+      "poderes_especiais": [
+        "Anfíbio (respira ar e água)",
+        "Carapaça dura: imune a dano crítico de projéteis pequenos"
+      ],
       "resistencias": []
     },
     {
@@ -311,15 +679,37 @@
       "onde_aparece": "Carcaça da Larva (local 15) — espírito da árvore; persegue quem colher os cogumelos",
       "descricao_arte": "Espírito feminino de uma árvore morta. Corpo superior humanoide: mulher anciã de aparência etérea, semitranslúcida, cabelos de fibras de árvore brancas. Corpo inferior funde-se diretamente com o tronco podre e raízes de onde ela habita — não tem pernas, apenas raízes que se movem como tentáculos. Chora suavemente com um som de galhos estralando. Quando ameaçada, as raízes se esticam para agarrar tornozelos.",
       "icon": "🌿",
-      "stats": { "ST": 12, "DX": 10, "IQ": 7, "HT": 11, "HP": 14 },
-      "stats_dnd": { "FOR": 13, "DES": 10, "CON": 13, "INT": 7, "SAB": 10, "CAR": 8, "CA": 12 },
+      "stats": {
+        "ST": 12,
+        "DX": 10,
+        "IQ": 7,
+        "HT": 11,
+        "HP": 14
+      },
+      "stats_dnd": {
+        "FOR": 13,
+        "DES": 10,
+        "CON": 13,
+        "INT": 7,
+        "SAB": 10,
+        "CAR": 8,
+        "CA": 12
+      },
       "comportamento": "territorial_perturbado",
       "pode_dialogar": true,
       "motivacao": "Proteger a árvore mãe e os cogumelos sagrados — não é maligna, apenas defensiva e assustada",
       "fraqueza_social": "Pedir permissão com respeito antes de colher; oferecer algo à árvore (mel, sangue voluntário, prece sincera) — ela aceita e se afasta; mostrar que se entende sua dor resolve o conflito sem combate",
-      "ataques_principais": ["Raiz tentáculo 1d8+1 (prender tornozelo CD12 STR)", "Choro de terror: CD12 SAB ou fuga por 1 turno"],
-      "poderes_especiais": ["Semi-incorporal: resistente a dano físico não-mágico", "Reparar com tronco: +2 HP/turno em contato com árvore"],
-      "resistencias": ["dano físico não-mágico"]
+      "ataques_principais": [
+        "Raiz tentáculo 1d8+1 (prender tornozelo CD12 STR)",
+        "Choro de terror: CD12 SAB ou fuga por 1 turno"
+      ],
+      "poderes_especiais": [
+        "Semi-incorporal: resistente a dano físico não-mágico",
+        "Reparar com tronco: +2 HP/turno em contato com árvore"
+      ],
+      "resistencias": [
+        "dano físico não-mágico"
+      ]
     },
     {
       "id": "ankle_snapper",
@@ -329,14 +719,35 @@
       "onde_aparece": "Encontros aleatórios — norte das Blackwoods",
       "descricao_arte": "Raízes carnívoras que saem do solo da floresta. Visualmente indetectáveis até o momento do ataque — parecem raízes comuns até se moverem. Marrom-avermelhadas com pontas endurecidas como garra vegetal. Emergem em grupos de 3-5 do chão ao detectar vibração de passos. Enrolam no tornozelo da vítima e tentam puxá-la para baixo. Quando sem vítima, movem-se suavemente como tentáculos subaquáticos.",
       "icon": "🌿",
-      "stats": { "ST": 10, "DX": 14, "IQ": 0, "HT": 10, "HP": 8 },
-      "stats_dnd": { "FOR": 10, "DES": 15, "CON": 10, "INT": 1, "SAB": 3, "CAR": 1, "CA": 13 },
+      "stats": {
+        "ST": 10,
+        "DX": 14,
+        "IQ": 0,
+        "HT": 10,
+        "HP": 8
+      },
+      "stats_dnd": {
+        "FOR": 10,
+        "DES": 15,
+        "CON": 10,
+        "INT": 1,
+        "SAB": 3,
+        "CAR": 1,
+        "CA": 13
+      },
       "comportamento": "bestial",
       "pode_dialogar": false,
       "motivacao": "Capturar presas por vibração — reflexo vegetal puro, zero consciência",
       "fraqueza_social": null,
-      "ataques_principais": ["Enrolar tornozelo 1d6 + prender (CD12 FOR)", "Puxar para baixo: alvo preso cai prostrado"],
-      "poderes_especiais": ["Emboscada automática: surpresa no primeiro turno", "Tremorsense 6m", "Imune a charme e medo"],
+      "ataques_principais": [
+        "Enrolar tornozelo 1d6 + prender (CD12 FOR)",
+        "Puxar para baixo: alvo preso cai prostrado"
+      ],
+      "poderes_especiais": [
+        "Emboscada automática: surpresa no primeiro turno",
+        "Tremorsense 6m",
+        "Imune a charme e medo"
+      ],
       "resistencias": []
     },
     {
@@ -347,14 +758,36 @@
       "onde_aparece": "Encontros aleatórios — sul das Blackwoods; sequestra pessoas para assar",
       "descricao_arte": "Troll de floresta alto (SM+1), pele esverdeada e áspera. A característica marcante: ventre e espalda cobertos de musgo vivo denso — o musgo é real, cresceu na pele espessa do troll como jardim parasita, daí o apelido Moss-Belly. Olhos pequenos e amarelados. Boca larga com dentes irregulares. Carrega uma clava feita de tronco de árvore jovem, ainda com galhos presos. Fome insaciável; cheira a terra úmida e matéria orgânica.",
       "icon": "🧌",
-      "stats": { "ST": 17, "DX": 10, "IQ": 5, "HT": 13, "HP": 22 },
-      "stats_dnd": { "FOR": 19, "DES": 8, "CON": 16, "INT": 4, "SAB": 8, "CAR": 5, "CA": 13 },
+      "stats": {
+        "ST": 17,
+        "DX": 10,
+        "IQ": 5,
+        "HT": 13,
+        "HP": 22
+      },
+      "stats_dnd": {
+        "FOR": 19,
+        "DES": 8,
+        "CON": 16,
+        "INT": 4,
+        "SAB": 8,
+        "CAR": 5,
+        "CA": 13
+      },
       "comportamento": "agressivo",
       "pode_dialogar": false,
       "motivacao": "Comer — constantemente e sem descanso; a fome é a única lei do Moss-Belly",
       "fraqueza_social": null,
-      "ataques_principais": ["Clava de tronco 2d8+4", "Soco 1d10+4", "Mordida 1d8+4"],
-      "poderes_especiais": ["Regeneração troll 3 HP/turno (exceto fogo ou ácido)", "Detecção de carne: fareja criaturas vivas a 18m", "Musgo venenoso: quem ataca corpo a corpo leva 1 dano de veneno por contato"],
+      "ataques_principais": [
+        "Clava de tronco 2d8+4",
+        "Soco 1d10+4",
+        "Mordida 1d8+4"
+      ],
+      "poderes_especiais": [
+        "Regeneração troll 3 HP/turno (exceto fogo ou ácido)",
+        "Detecção de carne: fareja criaturas vivas a 18m",
+        "Musgo venenoso: quem ataca corpo a corpo leva 1 dano de veneno por contato"
+      ],
       "resistencias": []
     },
     {
@@ -364,14 +797,34 @@
       "onde_aparece": "Encontros aleatórios — sul das Blackwoods; procurados, conhecem pouco da floresta",
       "descricao_arte": "Bugbear de pelagem marrom-escura quase negra nos ombros, mais clara no ventre. Musculoso e surpreendentemente furtivo para o tamanho — patas acolchoadas. Cara de urso com focinho curto e orelhas arredondadas. Olhos vermelhos cansados. Carrega adagas de faca de qualidade razoável e um arco curto. Expressão permanentemente irritada e ameaçadora, mas visivelmente exausta — são foragidos, não guerreiros em campanha.",
       "icon": "🐻",
-      "stats": { "ST": 14, "DX": 12, "IQ": 8, "HT": 11, "HP": 14 },
-      "stats_dnd": { "FOR": 15, "DES": 14, "CON": 12, "INT": 8, "SAB": 9, "CAR": 7, "CA": 14 },
+      "stats": {
+        "ST": 14,
+        "DX": 12,
+        "IQ": 8,
+        "HT": 11,
+        "HP": 14
+      },
+      "stats_dnd": {
+        "FOR": 15,
+        "DES": 14,
+        "CON": 12,
+        "INT": 8,
+        "SAB": 9,
+        "CAR": 7,
+        "CA": 14
+      },
       "comportamento": "agressivo_desesperado",
       "pode_dialogar": true,
       "motivacao": "Sobreviver e fugir das Blackwoods — foragidos que não querem morrer, só querem ir embora",
       "fraqueza_social": "Oferecer passagem segura ou pagamento; eles preferem viver a lutar — qualquer saída honrosa funciona",
-      "ataques_principais": ["Adaga 1d4+2 (dois ataques)", "Arco curto 1d6+2 (alcance 24m)"],
-      "poderes_especiais": ["Ataque furtivo: +2d6 extra com vantagem ou flanqueamento", "Furtividade +4"],
+      "ataques_principais": [
+        "Adaga 1d4+2 (dois ataques)",
+        "Arco curto 1d6+2 (alcance 24m)"
+      ],
+      "poderes_especiais": [
+        "Ataque furtivo: +2d6 extra com vantagem ou flanqueamento",
+        "Furtividade +4"
+      ],
       "resistencias": []
     },
     {
@@ -381,14 +834,34 @@
       "onde_aparece": "Encontros noturnos aleatórios — emboscada com flechas",
       "descricao_arte": "Orc de estatura média, pele esverdeada de tom oliva escuro. Presas inferiores discretas mas visíveis. Olhos amarelos adaptados ao escuro. Usa armadura de couro remendada com peças roubadas de viajantes — mistura desigual de estilos. Arco curto para emboscada, espada curta para o combate próximo. Exausto e irritado, sinais de que são uma tropa derrotada tentando sobreviver.",
       "icon": "⚔️",
-      "stats": { "ST": 12, "DX": 11, "IQ": 8, "HT": 11, "HP": 12 },
-      "stats_dnd": { "FOR": 14, "DES": 11, "CON": 12, "INT": 8, "SAB": 8, "CAR": 8, "CA": 13 },
+      "stats": {
+        "ST": 12,
+        "DX": 11,
+        "IQ": 8,
+        "HT": 11,
+        "HP": 12
+      },
+      "stats_dnd": {
+        "FOR": 14,
+        "DES": 11,
+        "CON": 12,
+        "INT": 8,
+        "SAB": 8,
+        "CAR": 8,
+        "CA": 13
+      },
       "comportamento": "oportunista",
       "pode_dialogar": true,
       "motivacao": "Roubar e escapar — tropa derrotada que quer sobreviver, não morrer por nada",
       "fraqueza_social": "Deixá-los passar em paz com o que já têm; ameaçar revelar posição para autoridades; suborno com moeda funciona sempre",
-      "ataques_principais": ["Espada curta 1d6+2", "Arco curto 1d6 (emboscada noturna)"],
-      "poderes_especiais": ["Visão no escuro 18m", "Tática de emboscada noturna: preferem atacar à noite com vantagem"],
+      "ataques_principais": [
+        "Espada curta 1d6+2",
+        "Arco curto 1d6 (emboscada noturna)"
+      ],
+      "poderes_especiais": [
+        "Visão no escuro 18m",
+        "Tática de emboscada noturna: preferem atacar à noite com vantagem"
+      ],
       "resistencias": []
     }
   ]
