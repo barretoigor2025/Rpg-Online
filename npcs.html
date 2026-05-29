@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Personagens — A Fera do Forte Negro</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold:    #c8900a;
+    --gold-lt: #f0d060;
+    --parch:   #e8d4a0;
+    --dark:    #0e0804;
+    --panel:   rgba(14,8,4,.85);
+  }
+
+  body {
+    background: #0e0804;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(80,40,10,.4) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(40,20,60,.3) 0%, transparent 60%);
+    min-height: 100vh;
+    font-family: 'Crimson Text', Georgia, serif;
+    color: var(--parch);
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    padding: 48px 24px 32px;
+    position: relative;
+  }
+  header::after {
+    content: '';
+    display: block;
+    width: 60%;
+    max-width: 600px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--gold), transparent);
+    margin: 20px auto 0;
+  }
+  .header-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-size: .75rem;
+    letter-spacing: .25em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 700;
+    color: var(--gold-lt);
+    text-shadow: 0 0 40px rgba(200,144,10,.4);
+    line-height: 1.2;
+  }
+  header p {
+    margin-top: 14px;
+    font-style: italic;
+    font-size: 1.1rem;
+    color: #b09060;
+    max-width: 560px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ── Grid ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 20px;
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 24px 60px;
+  }
+
+  /* ── Card ── */
+  .card {
+    cursor: pointer;
+    border: 1px solid rgba(200,144,10,.25);
+    border-radius: 6px;
+    overflow: hidden;
+    background: rgba(20,12,4,.7);
+    transition: transform .2s, border-color .2s, box-shadow .2s;
+    position: relative;
+  }
+  .card:hover {
+    transform: translateY(-6px) scale(1.03);
+    border-color: var(--gold);
+    box-shadow: 0 12px 40px rgba(200,144,10,.3), 0 0 0 1px rgba(200,144,10,.4);
+  }
+  .card:hover .card-overlay { opacity: 1; }
+  .card-img {
+    width: 100%;
+    aspect-ratio: 1 / 1.1;
+    object-fit: cover;
+    object-position: center top;
+    display: block;
+    filter: brightness(.92) saturate(.85);
+    transition: filter .2s;
+  }
+  .card:hover .card-img { filter: brightness(1.05) saturate(1); }
+  .card-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(200,144,10,.15), transparent 50%);
+    opacity: 0;
+    transition: opacity .2s;
+    pointer-events: none;
+  }
+  .card-body {
+    padding: 10px 12px 12px;
+    border-top: 1px solid rgba(200,144,10,.2);
+    background: rgba(10,6,2,.6);
+  }
+  .card-name {
+    font-family: 'Cinzel', serif;
+    font-size: .72rem;
+    font-weight: 600;
+    color: var(--gold-lt);
+    line-height: 1.3;
+    text-align: center;
+  }
+  .card-role {
+    font-size: .72rem;
+    color: #8a6830;
+    text-align: center;
+    margin-top: 3px;
+    font-style: italic;
+  }
+  /* alignment badge */
+  .card-tag {
+    display: inline-block;
+    font-size: .6rem;
+    font-family: 'Cinzel', serif;
+    letter-spacing: .08em;
+    padding: 2px 7px;
+    border-radius: 20px;
+    margin: 6px auto 0;
+    text-align: center;
+    width: 100%;
+  }
+  .tag-ally    { background: rgba(40,80,40,.6); color: #80c080; border: 1px solid rgba(80,160,80,.3); }
+  .tag-neutral { background: rgba(80,60,20,.6); color: #c09040; border: 1px solid rgba(160,120,40,.3); }
+  .tag-hostile { background: rgba(80,20,20,.6); color: #c06060; border: 1px solid rgba(160,40,40,.3); }
+  .tag-unknown { background: rgba(40,30,60,.6); color: #9070b0; border: 1px solid rgba(80,60,120,.3); }
+
+  /* ── Modal ── */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.82);
+    backdrop-filter: blur(6px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-backdrop.open { display: flex; }
+
+  .modal {
+    background: #12090400;
+    background: linear-gradient(160deg, #1e1206, #0e0804 60%);
+    border: 1px solid rgba(200,144,10,.5);
+    border-radius: 10px;
+    box-shadow: 0 0 80px rgba(0,0,0,.8), 0 0 0 1px rgba(200,144,10,.2);
+    max-width: 700px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    animation: modalIn .25s ease;
+  }
+  @keyframes modalIn {
+    from { opacity:0; transform: scale(.94) translateY(16px); }
+    to   { opacity:1; transform: scale(1)  translateY(0);     }
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 14px; right: 18px;
+    background: none; border: none;
+    color: #806030; font-size: 1.4rem;
+    cursor: pointer; line-height: 1;
+    transition: color .15s;
+    z-index: 1;
+  }
+  .modal-close:hover { color: var(--gold-lt); }
+
+  .modal-inner {
+    display: flex;
+    gap: 0;
+  }
+
+  .modal-portrait-wrap {
+    flex: 0 0 220px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px 0 0 10px;
+  }
+  .modal-portrait-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, transparent 60%, #0e0804);
+    pointer-events: none;
+  }
+  .modal-portrait {
+    width: 100%;
+    height: 100%;
+    min-height: 280px;
+    object-fit: cover;
+    object-position: center top;
+    display: block;
+  }
+
+  .modal-content {
+    flex: 1;
+    padding: 28px 28px 28px 20px;
+  }
+
+  .modal-tag {
+    display: inline-block;
+    font-size: .65rem;
+    font-family: 'Cinzel', serif;
+    letter-spacing: .1em;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+  }
+
+  .modal-name {
+    font-family: 'Cinzel', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--gold-lt);
+    text-shadow: 0 0 20px rgba(200,144,10,.3);
+    line-height: 1.2;
+  }
+  .modal-title {
+    font-style: italic;
+    color: var(--gold);
+    font-size: 1rem;
+    margin-top: 4px;
+    margin-bottom: 18px;
+  }
+
+  .modal-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(to right, rgba(200,144,10,.6), transparent);
+    margin-bottom: 18px;
+  }
+
+  .modal-desc {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: #d0b880;
+  }
+  .modal-desc p + p { margin-top: 12px; }
+
+  .modal-traits {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 20px;
+  }
+  .trait {
+    font-size: .7rem;
+    font-family: 'Cinzel', serif;
+    color: #907040;
+    border: 1px solid rgba(144,112,64,.35);
+    border-radius: 3px;
+    padding: 3px 9px;
+    letter-spacing: .05em;
+  }
+
+  /* scrollbar */
+  .modal::-webkit-scrollbar { width: 5px; }
+  .modal::-webkit-scrollbar-track { background: #0e0804; }
+  .modal::-webkit-scrollbar-thumb { background: rgba(200,144,10,.3); border-radius: 3px; }
+
+  /* ── Responsive ── */
+  @media (max-width: 520px) {
+    .modal-inner { flex-direction: column; }
+    .modal-portrait-wrap { flex: none; height: 220px; border-radius: 10px 10px 0 0; }
+    .modal-portrait-wrap::after { background: linear-gradient(to top, #0e0804, transparent 40%); }
+    .modal-content { padding: 20px; }
+    .modal-name { font-size: 1.2rem; }
+  }
+
+  /* section separators */
+  .section-label {
+    font-family: 'Cinzel', serif;
+    font-size: .68rem;
+    letter-spacing: .2em;
+    color: #6a4a18;
+    text-transform: uppercase;
+    text-align: center;
+    margin: 36px 0 20px;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 24px;
+    position: relative;
+  }
+  .section-label::before, .section-label::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 30%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(106,74,24,.5));
+  }
+  .section-label::before { left: 24px; }
+  .section-label::after { right: 24px; transform: scaleX(-1); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-eyebrow">A Fera do Forte Negro</div>
+  <h1>Personagens das Blackwoods</h1>
+  <p>Aliados, rivais e enigmas que habitam Mhoried e a floresta amaldiçoada. Clique em qualquer figura para saber mais.</p>
+</header>
+
+<div class="section-label">Mhoried</div>
+<div class="grid" id="grid-mhoried"></div>
+
+<div class="section-label">Habitantes das Blackwoods</div>
+<div class="grid" id="grid-blackwoods"></div>
+
+<div class="section-label">Viajantes e Forasteiros</div>
+<div class="grid" id="grid-viajantes"></div>
+
+<div class="section-label">Figuras Sombrias</div>
+<div class="grid" id="grid-sombrios"></div>
+
+<!-- Modal -->
+<div class="modal-backdrop" id="modal-backdrop" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <div class="modal-inner">
+      <div class="modal-portrait-wrap">
+        <img class="modal-portrait" id="modal-img" src="" alt="">
+      </div>
+      <div class="modal-content">
+        <span class="modal-tag" id="modal-tag"></span>
+        <div class="modal-name"  id="modal-name"></div>
+        <div class="modal-title" id="modal-title"></div>
+        <div class="modal-divider"></div>
+        <div class="modal-desc"  id="modal-desc"></div>
+        <div class="modal-traits" id="modal-traits"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const NPCS = {
+  mhoried: [
+    {
+      id: 'catherine_laskaris',
+      nome: 'Duquesa Catherine Laskaris',
+      titulo: 'Governante de Mhoried',
+      alinhamento: 'ally',
+      alinhamento_label: 'Aliada',
+      sprite: 'sprites/npc_catherine_laskaris.png',
+      descricao: `<p>Jovem e graciosa, Catherine governa Mhoried a partir do imponente Forte Negro — uma fortaleza de granito anão erguida há cinco séculos sobre a cidade. Apesar da pouca idade, comanda com presença natural e é genuinamente amada por seu povo.</p>
+      <p>Durante o mercado da Festa de São Phanourius é comum vê-la entre os fazendeiros, comprando flores e alimentos com prazer verdadeiro. Não governa atrás de muros — ela caminha entre os seus.</p>
+      <p>Carrega algum peso silencioso. Seus olhos, às vezes, vão a um lugar distante.</p>`,
+      tracos: ['Nobre', 'Protetora', 'Carismática', 'Reservada']
+    },
+    {
+      id: 'gregoras_pellos',
+      nome: 'Sir Gregoras Pellos',
+      titulo: 'Guarda-costas da Duquesa',
+      alinhamento: 'ally',
+      alinhamento_label: 'Aliado',
+      sprite: 'sprites/npc_gregoras_pellos.png',
+      descricao: `<p>Homem de postura firme e rosto honesto, Gregoras raramente está longe da Duquesa. Carrega uma maça de guerra na cinta e veste armadura acolchoada durante o festival — sempre pronto, mesmo em dias de paz.</p>
+      <p>É leal com uma intensidade que beira o fervor. Fala pouco, observa muito. Quando contrata aventureiros, é direto: há um problema nas Blackwoods e ele precisa de pessoas que saibam o que estão fazendo.</p>`,
+      tracos: ['Leal', 'Pragmático', 'Discreto', 'Determinado']
+    },
+    {
+      id: 'hobbleboot_sam',
+      nome: 'Hobbleboot Sam',
+      titulo: 'Guia das Blackwoods',
+      alinhamento: 'neutral',
+      alinhamento_label: 'Neutro',
+      sprite: 'sprites/npc_hobbleboot_sam.png',
+      descricao: `<p>Veterano das trilhas e atalhos das Blackwoods, Sam conhece cada árvore retorcida, cada poça turva e cada pedra coberta de musgo da floresta. Pelo menos é o que garante.</p>
+      <p>Disponível para contratar como guia por cem pratas — ou vende mapas rudimentares por dez. Seus mapas são tão rudimentares quanto parecem, mas o homem em si vale bem mais do que o preço pedido.</p>
+      <p>Não faz perguntas sobre para onde você quer ir. Essa talvez seja sua melhor qualidade.</p>`,
+      tracos: ['Experiente', 'Discreto', 'Conhecedor', 'Mercenário']
+    },
+  ],
+
+  blackwoods: [
+    {
+      id: 'mutter_grimmhaar',
+      nome: 'Mutter Grimmhaar',
+      titulo: 'A Bruxa das Blackwoods',
+      alinhamento: 'hostile',
+      alinhamento_label: 'Perigosa',
+      sprite: 'sprites/npc_mutter_grimmhaar.png',
+      descricao: `<p>Ela vive num claro que permanece sempre envolto em crepúsculo, mesmo ao meio-dia. A cabana parece um sapo podre — teto de teias e mofo, ar pesado com cheiro de carne cozida.</p>
+      <p>Mutter Grimmhaar é velha como as raízes das árvores. Conhece a floresta de um jeito que nenhum guia jamais conhecerá. Pode ajudar — se tiver razão para isso. Mas suas informações têm custo, e ela sempre sabe mais do que revela.</p>
+      <p>Não confie nela. Mas tampouco a ignore.</p>`,
+      tracos: ['Manipuladora', 'Conhecedora', 'Caprichosa', 'Enigmática']
+    },
+    {
+      id: 'wulfram_chifrado',
+      nome: 'Wulfram',
+      titulo: 'O Homem Chifrado',
+      alinhamento: 'neutral',
+      alinhamento_label: 'Incerto',
+      sprite: 'sprites/npc_wulfram_chifrado.png',
+      descricao: `<p>Numa clareira onde as árvores se inclinam e nenhum pássaro canta, há uma cabana com telhado coberto de chifres e antlers. Uma placa na porta diz: <em>"Guarda tua alma, pois o Homem Chifrado a reclamará."</em></p>
+      <p>Wulfram tem chifres de veado crescendo de sua cabeça. Seus olhos carregam mais tristeza do que ameaça. Se tratado com respeito, convida para água e ensopado de javali.</p>
+      <p>O que ele é, exatamente, é uma das muitas perguntas que as Blackwoods preferem não responder.</p>`,
+      tracos: ['Melancólico', 'Hospitaleiro', 'Misterioso', 'Conflitado']
+    },
+    {
+      id: 'principe_kalos',
+      nome: 'Príncipe Kalos',
+      titulo: 'Líder dos Elfos Sombrios',
+      alinhamento: 'hostile',
+      alinhamento_label: 'Hostil',
+      sprite: 'sprites/npc_principe_kalos.png',
+      descricao: `<p>Kalos lidera cerca de cinquenta elfos sombrios que habitam as Blackwoods em torno de pilares de pedra caídos. Não é um anfitrião gentil para não-elfos.</p>
+      <p>Austero, orgulhoso e ciumento das posses de seu povo, ele enxerga estranhos como intrusos até prova em contrário. Tem suas razões. Elas não o tornam mais fácil de lidar.</p>
+      <p>Comercia, se houver algo que lhe interesse. Mas cruzar seus limites sem permissão é uma aposta que poucos repetem.</p>`,
+      tracos: ['Arrogante', 'Legalista', 'Perigoso', 'Comerciante']
+    },
+    {
+      id: 'mac_ronan',
+      nome: 'Mac Rónán',
+      titulo: 'Druida Supremo do Cnoc na Ríthe',
+      alinhamento: 'ally',
+      alinhamento_label: 'Aliado',
+      sprite: 'sprites/npc_mac_ronan.png',
+      descricao: `<p>Ancião de vasto conhecimento sobre as Blackwoods, Mac Rónán preside o Cnoc na Ríthe — um anel de pedras sagradas que serve de santuário para foragidos, perdidos e excomungados. Sob sua guarda, até os corvos pousam em paz.</p>
+      <p>Sábio e paciente, ele entende a floresta como poucos seres ainda vivos. Sua ausência do santuário preocupa sua assistente Muirenn.</p>
+      <p>Quem o encontrar descobrirá que há muito que ele ainda pode ensinar — e pedir.</p>`,
+      tracos: ['Sábio', 'Paciente', 'Curandeiro', 'Protetor']
+    },
+    {
+      id: 'muirenn',
+      nome: 'Muirenn',
+      titulo: 'Assistente do Druida',
+      alinhamento: 'ally',
+      alinhamento_label: 'Aliada',
+      sprite: 'sprites/npc_muirenn.png',
+      descricao: `<p>Discípula de Mac Rónán no Cnoc na Ríthe, Muirenn cuida do santuário na ausência do mestre. Curandeira habilidosa, trata ferimentos graves com calma e precisão.</p>
+      <p>De fala suave e espírito gentil, conhece a fauna e flora das Blackwoods com intimidade de quem cresceu entre as raízes. Compartilha o que sabe com quem chegar com "mãos quietas" — como diz a saudação do santuário.</p>`,
+      tracos: ['Gentil', 'Curandeira', 'Conhecedora', 'Discreta']
+    },
+    {
+      id: 'ruzalka',
+      nome: 'Ruzalka',
+      titulo: 'Espírito d\'Água',
+      alinhamento: 'neutral',
+      alinhamento_label: 'Caprichosa',
+      sprite: 'sprites/npc_ruzalka.png',
+      descricao: `<p>De cabelos brancos e aparência sedutora, Ruzalka habita as ruínas alagadas de uma antiga castellet submersa num lago enevoado. Ela não é humana — é um espírito d'água, com tudo que isso implica.</p>
+      <p>Caprichosa e esquecidiça, trata visitantes de acordo com o humor do momento. Tem informações valiosas sobre a floresta, mas seus interesses raramente coincidem com os dos outros por muito tempo.</p>
+      <p>Homens atraentes deveriam ter cuidado redobrado.</p>`,
+      tracos: ['Caprichosa', 'Sedutora', 'Informada', 'Perigosa']
+    },
+    {
+      id: 'blunkin_esmaga_cranios',
+      nome: 'Blunkin, o Esmaga-Crânios',
+      titulo: 'Chefe Kobold',
+      alinhamento: 'hostile',
+      alinhamento_label: 'Hostil',
+      sprite: 'sprites/npc_blunkin_esmaga_cranios.png',
+      descricao: `<p>Chefe autodenominado dos kobolds de pele azul que habitam as colinas rochosas das Blackwoods, Blunkin comanda sua gente a partir do único prédio de dois andares da vila. Isso já diz bastante sobre ele.</p>
+      <p>Pomposo, ruidoso e de inteligência questionável, ele faz declarações absurdas que seus pares acham encantadoras. É manipulável com facilidade surpreendente. O que falta em sagacidade, sobra em confiança.</p>`,
+      tracos: ['Arrogante', 'Ingênuo', 'Impulsivo', 'Facilmente Manipulável']
+    },
+    {
+      id: 'drizzle',
+      nome: 'Drizzle',
+      titulo: 'Kobold Cleptomaníaco',
+      alinhamento: 'neutral',
+      alinhamento_label: 'Suspeito',
+      sprite: 'sprites/npc_drizzle.png',
+      descricao: `<p>Orelhas excepcionalmente longas e língua que se agita ao falar — Drizzle se apresenta com entusiasmo suspeito. Quer fazer amigos. Genuinamente.</p>
+      <p>Só que a mão dele fica curiosamente próxima dos bolsos alheios durante toda a conversa. Não é mal-intencionado — é compulsão. Diz coisas estranhas com convicção absoluta. Algumas dessas coisas são verdade.</p>`,
+      tracos: ['Amigável', 'Cleptomaníaco', 'Imprevisível', 'Peculiar']
+    },
+  ],
+
+  viajantes: [
+    {
+      id: 'valmorien',
+      nome: 'Valmorien',
+      titulo: 'Caçador Experiente',
+      alinhamento: 'neutral',
+      alinhamento_label: 'Neutro',
+      sprite: 'sprites/npc_valmorien.png',
+      descricao: `<p>Caçador de presas perigosas, Valmorien opera nas Blackwoods com a precisão de quem faz isso há décadas. Sério e metódico, não desperdiça palavras nem flechas.</p>
+      <p>Veio com sua aprendiz em busca de uma presa específica — valiosa o suficiente para valer o risco de se embrenhar nesta floresta. Conhece o terreno razoavelmente bem e não recusa uma conversa útil.</p>`,
+      tracos: ['Metódico', 'Experiente', 'Direto', 'Profissional']
+    },
+    {
+      id: 'ysoria',
+      nome: 'Ysoria',
+      titulo: 'Aprendiz de Caçadora',
+      alinhamento: 'ally',
+      alinhamento_label: 'Aliada',
+      sprite: 'sprites/npc_ysoria.png',
+      descricao: `<p>Adolescente, energética e curiosa, Ysoria aprende o ofício da caçada ao lado de Valmorien. Faz perguntas com uma frequência que testa a paciência do mestre.</p>
+      <p>Tem olhos atentos e boa pontaria para alguém tão jovem. Talvez entusiasta demais para o próprio bem, mas essa energia tem seu valor quando as coisas ficam complicadas.</p>`,
+      tracos: ['Entusiasta', 'Curiosa', 'Corajosa', 'Inexperiente']
+    },
+    {
+      id: 'aelar_eisenli',
+      nome: 'Aelar Eisenli',
+      titulo: 'Caçadora de Recompensas Élfica',
+      alinhamento: 'neutral',
+      alinhamento_label: 'Neutra',
+      sprite: 'sprites/npc_aelar_eisenli.png',
+      descricao: `<p>Elfa furtiva e bem equipada, Aelar percorre as Blackwoods com um objetivo específico em mente. Não conta detalhes, mas o trabalho dela envolve alguém que preferia não ser encontrado.</p>
+      <p>Honesta dentro dos limites da lei. Legalista ao ponto de recusar certas ações mesmo quando seriam convenientes. Isso a torna previsível de um jeito útil — você sabe aproximadamente o que esperar dela.</p>`,
+      tracos: ['Furtiva', 'Honesta', 'Legalista', 'Eficiente']
+    },
+    {
+      id: 'finn_willowheel',
+      nome: 'Finn Willowheel',
+      titulo: 'Sapateiro Élfico Viajante',
+      alinhamento: 'ally',
+      alinhamento_label: 'Amigável',
+      sprite: 'sprites/npc_finn_willowheel.png',
+      descricao: `<p>Velho e sempre alegre, Finn carrega uma sacola encantada que contém dezenas de sapatos de todos os tamanhos e formas — obra de décadas de ofício. Encontrá-lo nas Blackwoods é uma surpresa; ele tem seus motivos para estar aqui.</p>
+      <p>Conhece os pés de figuras importantes da região de uma forma que apenas um bom sapateiro poderia. Detalhes incomuns sobre clientes antigos ficam gravados na memória dele com precisão espantosa.</p>`,
+      tracos: ['Alegre', 'Memorioso', 'Artesão', 'Curioso']
+    },
+    {
+      id: 'dvalinn_anao',
+      nome: 'Dvalinn',
+      titulo: 'Anão Aventureiro',
+      alinhamento: 'ally',
+      alinhamento_label: 'Aliado',
+      sprite: 'sprites/npc_dvalinn_anao.png',
+      descricao: `<p>Mal-humorado, com pele dura como couro curtido e uma opinião sobre absolutamente tudo, Dvalinn anda pelas Blackwoods por razões que prefere não discutir. A pergunta errada no momento errado rende um olhar que poderia cortar pedra.</p>
+      <p>Apesar do temperamento, conhece lendas antigas que a maioria dos viajantes nunca ouviu. Às vezes, esse conhecimento escapa entre um resmungo e outro.</p>`,
+      tracos: ['Mal-humorado', 'Resistente', 'Experiente', 'Lendário']
+    },
+    {
+      id: 'fariborz_piromante',
+      nome: 'Fariborz',
+      titulo: 'O Piromante',
+      alinhamento: 'unknown',
+      alinhamento_label: 'Imprevisível',
+      sprite: 'sprites/npc_fariborz_piromante.png',
+      descricao: `<p>Pouco atraente, paranoico e com marcas que sugerem uma vida complicada, Fariborz carrega uma faca encantada com chamas que nunca se apagam completamente. Especialista em magia de fogo — isso nunca é bom sinal.</p>
+      <p>Está nas Blackwoods por alguma razão que prefere não explicar. Fala de demônios de fogo com familiaridade preocupante. Pode ser útil. Pode ser perigoso. Provavelmente as duas coisas ao mesmo tempo.</p>`,
+      tracos: ['Paranoico', 'Habilidoso', 'Instável', 'Evasivo']
+    },
+  ],
+
+  sombrios: [
+    {
+      id: 'duque_oswald_thool',
+      nome: 'Grimhollow Thool',
+      titulo: 'Criatura das Blackwoods',
+      alinhamento: 'hostile',
+      alinhamento_label: 'Ameaçador',
+      sprite: 'sprites/npc_duque_oswald_thool.png',
+      descricao: `<p>Criaturas grandes e assustadoras que vagam pelas Blackwoods. Os Grimhollow Thools — três ao total — são responsáveis por uma série de ataques a assentamentos nos arredores de Mhoried.</p>
+      <p>Não se sabe ao certo o que são, de onde vieram ou o que os move. A Duquesa Catherine proibiu expressamente que sejam atacados, o que levanta perguntas que ela se recusa a responder.</p>
+      <p>Há algo errado nessa história. Mas o quê, exatamente, só as Blackwoods sabem.</p>`,
+      tracos: ['Ameaçador', 'Misterioso', 'Intocável', 'Procurado']
+    },
+    {
+      id: 'rei_chutter',
+      nome: 'Rei Chutter',
+      titulo: 'O Ettin Feiticeiro',
+      alinhamento: 'hostile',
+      alinhamento_label: 'Inimigo',
+      sprite: 'sprites/npc_rei_chutter.png',
+      descricao: `<p>Um ettin — criatura de duas cabeças, cada qual com voz e temperamento próprios. Uma fala com eloquência calculada. A outra desconfia de tudo e de todos, interrompendo e contradizendo.</p>
+      <p>Versado em feitiçaria, Chutter não é o tipo de monstro que ataca por instinto. Pensa. Planeja. Isso o torna muito mais perigoso do que qualquer besta selvagem das Blackwoods.</p>
+      <p>Por que ele está aqui? O que ele quer? São perguntas que a floresta sussurra — mas não responde.</p>`,
+      tracos: ['Feiticeiro', 'Calculista', 'Intimidador', 'Ambicioso']
+    },
+    {
+      id: 'choir_necromante',
+      nome: 'Choir',
+      titulo: 'O Necromante',
+      alinhamento: 'unknown',
+      alinhamento_label: 'Sombrio',
+      sprite: 'sprites/npc_choir_necromante.png',
+      descricao: `<p>Nunca aparece diretamente. Apenas seus rastros — e suas criações.</p>
+      <p>Choir é um nome sussurrado entre os que habitam as Blackwoods, associado a coisas que não deveriam existir. Quem é? De onde veio? O que quer? Respostas para essas perguntas são raras, e quem as possui raramente está em condições de compartilhá-las.</p>
+      <p>Sua influência é sentida em toda a campanha. Sua presença, nunca.</p>`,
+      tracos: ['Sombrio', 'Oculto', 'Necromante', 'Imprevisível']
+    },
+  ]
+};
+
+const TAG_COLORS = {
+  ally:    { bg: 'rgba(40,80,40,.6)',  color: '#80c080', border: 'rgba(80,160,80,.4)'  },
+  neutral: { bg: 'rgba(80,60,20,.6)', color: '#c09040', border: 'rgba(160,120,40,.4)' },
+  hostile: { bg: 'rgba(80,20,20,.6)', color: '#c06060', border: 'rgba(160,40,40,.4)'  },
+  unknown: { bg: 'rgba(40,30,60,.6)', color: '#9070b0', border: 'rgba(80,60,120,.4)'  },
+};
+
+function makeCard(npc) {
+  const tc = TAG_COLORS[npc.alinhamento];
+  const div = document.createElement('div');
+  div.className = 'card';
+  div.innerHTML = `
+    <div class="card-overlay"></div>
+    <img class="card-img" src="${npc.sprite}" alt="${npc.nome}" loading="lazy">
+    <div class="card-body">
+      <div class="card-name">${npc.nome.split(',')[0].split(' — ')[0]}</div>
+      <div class="card-role">${npc.titulo}</div>
+      <div class="card-tag" style="background:${tc.bg};color:${tc.color};border:1px solid ${tc.border}">
+        ${npc.alinhamento_label}
+      </div>
+    </div>
+  `;
+  div.addEventListener('click', () => openModal(npc));
+  return div;
+}
+
+function openModal(npc) {
+  const tc = TAG_COLORS[npc.alinhamento];
+  document.getElementById('modal-img').src   = npc.sprite;
+  document.getElementById('modal-img').alt   = npc.nome;
+  document.getElementById('modal-name').textContent  = npc.nome;
+  document.getElementById('modal-title').textContent = npc.titulo;
+  document.getElementById('modal-desc').innerHTML    = npc.descricao;
+
+  const tag = document.getElementById('modal-tag');
+  tag.textContent = npc.alinhamento_label;
+  tag.style.background = tc.bg;
+  tag.style.color       = tc.color;
+  tag.style.border      = `1px solid ${tc.border}`;
+
+  const traitsEl = document.getElementById('modal-traits');
+  traitsEl.innerHTML = (npc.tracos || []).map(t => `<span class="trait">${t}</span>`).join('');
+
+  document.getElementById('modal-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal-backdrop') && e.target.className !== 'modal-close') return;
+  document.getElementById('modal-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal({}); });
+
+// Populate grids
+NPCS.mhoried.forEach(n   => document.getElementById('grid-mhoried').appendChild(makeCard(n)));
+NPCS.blackwoods.forEach(n => document.getElementById('grid-blackwoods').appendChild(makeCard(n)));
+NPCS.viajantes.forEach(n  => document.getElementById('grid-viajantes').appendChild(makeCard(n)));
+NPCS.sombrios.forEach(n   => document.getElementById('grid-sombrios').appendChild(makeCard(n)));
+</script>
+</body>
+</html>
