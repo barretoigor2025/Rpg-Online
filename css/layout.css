@@ -1017,21 +1017,19 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 }
 .dialogo-inline-portrait {
   flex-shrink: 0;
-  width: 52px; height: 70px;
-  border-radius: 5px;
-  border: 1px solid rgba(200,160,80,.2);
-  overflow: hidden;
+  width: 72px; height: 90px;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   position: relative;
 }
 .dialogo-inline-portrait img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: top center;
+  object-fit: contain;
+  object-position: center bottom;
   display: block;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,.7));
 }
 .dialogo-inline-icon-fb {
   font-size: 22px;
@@ -1066,21 +1064,19 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 }
 .batalha-inline-portrait {
   flex-shrink: 0;
-  width: 52px; height: 70px;
-  border-radius: 5px;
-  border: 1px solid rgba(200,70,50,.3);
-  overflow: hidden;
+  width: 66px; height: 82px;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   position: relative;
 }
 .batalha-inline-portrait img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: top center;
+  object-fit: contain;
+  object-position: center bottom;
   display: block;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,.7));
 }
 .batalha-inline-portrait img.espelhado { transform: scaleX(-1); }
 .batalha-inline-icon-fb {
@@ -1150,9 +1146,10 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 .combate-teste-portrait img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: top center;
+  object-fit: contain;
+  object-position: center bottom;
   display: block;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,.8));
 }
 .combate-teste-portrait img.espelhado { transform: scaleX(-1); }
 .combate-teste-icon-fb {
@@ -1814,14 +1811,13 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   align-items: flex-start;
 }
 .skills-avatar {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
+  width: 110px;
+  height: 120px;
+  object-fit: contain;
+  object-position: center bottom;
   image-rendering: pixelated;
-  border-radius: 6px;
-  border: 1px solid rgba(200,160,80,.25);
   flex-shrink: 0;
-  background: rgba(20,24,40,.6);
+  filter: drop-shadow(0 3px 10px rgba(0,0,0,.9));
 }
 .skills-stats-col {
   flex: 1;
@@ -2365,11 +2361,13 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   margin-bottom: 12px;
 }
 #lobby-char-sprite {
-  width: 52px;
-  height: 64px;
+  width: 70px;
+  height: 84px;
   object-fit: contain;
+  object-position: center bottom;
   image-rendering: pixelated;
   flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,.8));
 }
 #lobby-char-info { flex: 1; }
 #lobby-char-nome {

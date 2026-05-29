@@ -898,7 +898,7 @@ function renderizarSegmentos(container, segs, falas) {
   if (!items.length) return;
 
   const _ph = (src, icon, cor, espelhar) =>
-    `<div class="dialogo-inline-portrait" style="background:${cor}22;border-color:${cor}55">
+    `<div class="dialogo-inline-portrait">
       ${src ? `<img src="${src}" alt=""${espelhar ? ' class="espelhado"' : ''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
       <span class="dialogo-inline-icon-fb"${src ? ' style="display:none"' : ''}>${icon}</span>
     </div>`;
@@ -2797,7 +2797,7 @@ function renderizarHistoria(historia, jogadores) {
         const tomIcon = { diz: '💬', grita: '📢', sussurra: '🤫' }[tom] || '💬';
 
         const _ph = (src, icon, cor, espelhar) =>
-          `<div class="dialogo-inline-portrait" style="background:${cor}22;border-color:${cor}55">
+          `<div class="dialogo-inline-portrait">
             ${src ? `<img src="${src}" alt=""${espelhar ? ' class="espelhado"' : ''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
             <span class="dialogo-inline-icon-fb"${src ? ' style="display:none"' : ''}>${icon}</span>
           </div>`;
