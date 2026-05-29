@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>A Fera do Forte Negro — Mapa da Campanha</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #12080200;
+  display: flex; justify-content: center; align-items: flex-start;
+  min-height: 100vh; padding: 16px;
+  background: radial-gradient(ellipse at center, #2a1400 0%, #0a0500 100%);
+  font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+}
+.wrap {
+  position: relative;
+  box-shadow: 0 0 60px rgba(0,0,0,.9), inset 0 0 0 4px #5a3010, inset 0 0 0 8px #3a1a04;
+  border: 6px solid #3a1a04;
+}
+canvas { display: block; cursor: default; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="c" width="1160" height="860"></canvas>
+</div>
+<script>
+const c = document.getElementById('c');
+const cx = c.getContext('2d');
+
+// ── Hex geometry (flat-top) ─────────────────────────────────────────────────
+const R  = 62;           // circumradius
+const dx = R * 1.5;      // col step
+const dy = R * Math.sqrt(3); // row step
+const OX = 130;          // grid left origin
+const OY = 115;          // grid top origin
+const COLS = 6, ROWS = 5;
+
+function hctr(q, r) {
+  return { x: OX + q * dx, y: OY + r * dy + (q & 1) * dy * 0.5 };
+}
+
+function hexPath(x, y, r) {
+  cx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const a = (Math.PI / 3) * i;
+    const px = x + r * Math.cos(a), py = y + r * Math.sin(a);
+    i ? cx.lineTo(px, py) : cx.moveTo(px, py);
+  }
+  cx.closePath();
+}
+
+// ── Terrain palettes ────────────────────────────────────────────────────────
+const T = {
+  forest: { bg:'#1e3d0e', shade:'#162d08', rim:'#0e1e06', txt:'#a0d060' },
+  dense:  { bg:'#132808', shade:'#0e1e06', rim:'#091204', txt:'#80b040' },
+  hunt:   { bg:'#2a4010', shade:'#1e2e0a', rim:'#121a04', txt:'#b0c060' },
+  water:  { bg:'#1a3066', shade:'#102050', rim:'#08163a', txt:'#90bde8' },
+  ruins:  { bg:'#3a2810', shade:'#281a08', rim:'#180e02', txt:'#d0a060' },
+  dark:   { bg:'#1a0e04', shade:'#100800', rim:'#080400', txt:'#c05030' },
+  city:   { bg:'#7a5220', shade:'#5a3a10', rim:'#3a2008', txt:'#ffe090' },
+  outside:{ bg:'#c8b07a', shade:'#b09060', rim:'#906840', txt:'#604020' },
+  grove:  { bg:'#1e4a1a', shade:'#163812', rim:'#0e2409', txt:'#a0e070' },
+  swamp:  { bg:'#243818', shade:'#182810', rim:'#0e1a08', txt:'#90c060' },
+  hills:  { bg:'#4a4e26', shade:'#363818', rim:'#222410', txt:'#c8d080' },
+  cave:   { bg:'#0e0808', shade:'#060404', rim:'#020202', txt:'#9a4820' },
+  road:   { bg:'#a08858', shade:'#887040', rim:'#685028', txt:'#604020' },
+};
+
+// ── Location data ───────────────────────────────────────────────────────────
+// [q, r, terrain, roman, shortName, drawFn]
+const LOCS = [
+  // Mhoried (outside forest — road hex leading to it)
+  [0, 1, 'city',    null,   'Mhoried',         drawCity    ],
+  [0, 0, 'outside', null,   '',                null        ],
+  [0, 2, 'outside', null,   '',                null        ],
+  [0, 3, 'outside', null,   '',                null        ],
+  [0, 4, 'outside', null,   '',                null        ],
+
+  // Column 1 – western Blackwoods
+  [1, 0, 'forest',  null,   '',                drawTrees   ],
+  [1, 1, 'forest',  'I',    'Entrada',         drawArch    ],
+  [1, 2, 'forest',  'II',   'Carroça',         drawWagon   ],
+  [1, 3, 'dense',   'VI',   'Bruxa',           drawHut     ],
+  [1, 4, 'forest',  null,   '',                drawTrees   ],
+
+  // Column 2 – central Blackwoods
+  [2, 0, 'hunt',    'VIII', 'Caçada',          drawManticore],
+  [2, 1, 'water',   'IV',   'Poço',            drawWell    ],
+  [2, 2, 'forest',  'III',  'Encruzilhada',    drawCross   ],
+  [2, 3, 'ruins',   'VII',  'Simithari',       drawRuins   ],
+  [2, 4, 'dark',    'IX',   'Vulkrundshard',   drawStone   ],
+
+  // Column 3 – north / central deep
+  [3, 0, 'forest',  'V',    'Elfos',           drawCamp    ],
+  [3, 1, 'grove',   'XII',  'Cnoc na Ríthe',   drawStones  ],
+  [3, 2, 'forest',  'X',    'Twinfold',        drawTwoFace ],
+  [3, 3, 'water',   'XIII', 'Gruta Afogada',   drawLake    ],
+  [3, 4, 'forest',  null,   '',                drawTrees   ],
+
+  // Column 4 – northeast / east
+  [4, 0, 'swamp',   'XV',   'Carcaça Larva',   drawLarva   ],
+  [4, 1, 'forest',  'XI',   'Hom. Chifrado',   drawAntler  ],
+  [4, 2, 'hills',   'XIV',  'Kobold-Town',     drawKobold  ],
+  [4, 3, 'forest',  null,   '',                drawTrees   ],
+  [4, 4, 'forest',  null,   '',                drawTrees   ],
+
+  // Column 5 – far east
+  [5, 0, 'forest',  null,   '',                drawTrees   ],
+  [5, 1, 'cave',    'XVI',  'Gloamreach',      drawChasm   ],
+  [5, 2, 'forest',  null,   '',                drawTrees   ],
+  [5, 3, 'forest',  null,   '',                drawTrees   ],
+  [5, 4, 'forest',  null,   '',                drawTrees   ],
+];
+
+// ── Icon drawing functions (each draws relative to hex center x,y) ──────────
+
+function drawTrees(x, y) {
+  const n = 3, base = y + 28;
+  const xs = [x - 16, x + 2, x + 18];
+  xs.forEach((tx, i) => {
+    const h = 28 + i * 4;
+    cx.fillStyle = '#0a1a06';
+    cx.beginPath(); cx.moveTo(tx, base - h); cx.lineTo(tx - 9, base); cx.lineTo(tx + 9, base); cx.fill();
+    cx.beginPath(); cx.moveTo(tx, base - h - 8); cx.lineTo(tx - 7, base - h + 6); cx.lineTo(tx + 7, base - h + 6); cx.fill();
+    cx.fillStyle = '#233015';
+    cx.fillRect(tx - 2, base, 4, 8);
+  });
+}
+
+function drawCity(x, y) {
+  const by = y + 30;
+  cx.fillStyle = '#8a7040';
+  // Battlements
+  for (let i = -2; i <= 2; i++) { cx.fillRect(x + i * 10 - 4, by - 48, 7, 10); }
+  cx.fillRect(x - 26, by - 38, 52, 38);
+  // Gate
+  cx.fillStyle = '#2a1a0a';
+  cx.beginPath(); cx.arc(x, by - 12, 9, Math.PI, 0); cx.rect(x - 9, by - 12, 18, 12); cx.fill();
+  // Towers
+  [x - 22, x + 22].forEach(tx => {
+    cx.fillStyle = '#7a6030';
+    cx.fillRect(tx - 8, by - 52, 16, 52);
+    for (let i = -1; i <= 1; i++) { cx.fillStyle = '#8a7040'; cx.fillRect(tx + i * 5 - 2, by - 56, 5, 8); }
+  });
+  // Flag
+  cx.strokeStyle = '#a08040'; cx.lineWidth = 1.5;
+  cx.beginPath(); cx.moveTo(x, by - 52); cx.lineTo(x, by - 70); cx.stroke();
+  cx.fillStyle = '#c84020';
+  cx.beginPath(); cx.moveTo(x, by - 70); cx.lineTo(x + 14, by - 63); cx.lineTo(x, by - 56); cx.fill();
+}
+
+function drawArch(x, y) {
+  const by = y + 24;
+  cx.strokeStyle = '#607040'; cx.lineWidth = 5;
+  // Posts
+  cx.fillStyle = '#404828';
+  cx.fillRect(x - 22, by - 44, 8, 44);
+  cx.fillRect(x + 14, by - 44, 8, 44);
+  // Arch
+  cx.beginPath(); cx.arc(x, by - 44, 22, Math.PI, 0); cx.strokeStyle = '#507030'; cx.lineWidth = 6; cx.stroke();
+  // Hanging rope
+  cx.strokeStyle = '#806040'; cx.lineWidth = 2;
+  cx.beginPath(); cx.moveTo(x - 4, by - 62); cx.quadraticCurveTo(x - 8, by - 30, x + 2, by - 24); cx.stroke();
+  // Moss
+  cx.fillStyle = '#2a4010';
+  cx.fillRect(x - 22, by - 44, 8, 6); cx.fillRect(x + 14, by - 44, 8, 6);
+}
+
+function drawWagon(x, y) {
+  const by = y + 30;
+  cx.save(); cx.translate(x, by); cx.rotate(-0.25);
+  // Body
+  cx.fillStyle = '#604020';
+  cx.fillRect(-24, -22, 48, 22);
+  // Wheels (broken)
+  cx.strokeStyle = '#3a2010'; cx.lineWidth = 3;
+  [[-18, 4], [16, 4]].forEach(([wx, wy]) => {
+    cx.beginPath(); cx.arc(wx, wy, 12, 0, Math.PI * 2); cx.stroke();
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 3) {
+      cx.beginPath(); cx.moveTo(wx, wy); cx.lineTo(wx + 11 * Math.cos(a), wy + 11 * Math.sin(a)); cx.stroke();
+    }
+  });
+  cx.restore();
+  // Arrows
+  cx.fillStyle = '#1a0800';
+  cx.beginPath(); cx.moveTo(x + 10, by - 28); cx.lineTo(x + 12, by - 44); cx.lineTo(x + 14, by - 28); cx.fill();
+}
+
+function drawHut(x, y) {
+  const by = y + 30;
+  cx.fillStyle = '#2a1a08';
+  cx.fillRect(x - 20, by - 32, 40, 32);
+  // Thatched roof
+  cx.fillStyle = '#1a0e04';
+  cx.beginPath(); cx.moveTo(x - 28, by - 30); cx.lineTo(x, by - 58); cx.lineTo(x + 28, by - 30); cx.fill();
+  // Thatch strokes
+  cx.strokeStyle = '#3a2810'; cx.lineWidth = 1.5;
+  for (let i = -20; i <= 20; i += 8) {
+    cx.beginPath(); cx.moveTo(x + i, by - 30); cx.lineTo(x + i * 0.5, by - 52); cx.stroke();
+  }
+  // Skulls on roof
+  cx.fillStyle = '#a09060';
+  [x - 10, x, x + 10].forEach(sx => {
+    cx.beginPath(); cx.arc(sx, by - 32, 4, 0, Math.PI * 2); cx.fill();
+  });
+  // Door
+  cx.fillStyle = '#0a0604';
+  cx.beginPath(); cx.arc(x, by - 10, 7, Math.PI, 0); cx.rect(x - 7, by - 10, 14, 10); cx.fill();
+  // Spider webs
+  cx.strokeStyle = '#605040'; cx.lineWidth = 0.5;
+  for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+    cx.beginPath(); cx.moveTo(x - 24, by - 48); cx.lineTo(x - 24 + 12 * Math.cos(a), by - 48 + 12 * Math.sin(a)); cx.stroke();
+  }
+}
+
+function drawManticore(x, y) {
+  const by = y + 22;
+  // Body silhouette
+  cx.fillStyle = '#0e1a06';
+  cx.beginPath(); cx.ellipse(x, by, 26, 14, 0, 0, Math.PI * 2); cx.fill();
+  // Head
+  cx.beginPath(); cx.arc(x + 24, by - 4, 12, 0, Math.PI * 2); cx.fill();
+  // Mane
+  cx.fillStyle = '#1a2a08';
+  for (let a = -Math.PI/2; a <= Math.PI/2; a += 0.4) {
+    cx.beginPath(); cx.moveTo(x + 24, by - 4); cx.lineTo(x + 24 + 16 * Math.cos(a), by - 4 + 16 * Math.sin(a)); cx.lineWidth = 3; cx.strokeStyle = '#1a2a08'; cx.stroke();
+  }
+  // Tail with spines
+  cx.strokeStyle = '#0e1a06'; cx.lineWidth = 3;
+  cx.beginPath(); cx.moveTo(x - 26, by); cx.quadraticCurveTo(x - 50, by - 30, x - 40, by - 50); cx.stroke();
+  cx.fillStyle = '#0e1a06';
+  for (let i = 0; i < 4; i++) {
+    cx.beginPath(); cx.moveTo(x - 38 + i * 4, by - 48 + i * 5);
+    cx.lineTo(x - 34 + i * 4, by - 58 + i * 5);
+    cx.lineTo(x - 30 + i * 4, by - 48 + i * 5); cx.fill();
+  }
+  // Eyes
+  cx.fillStyle = '#e04000';
+  cx.beginPath(); cx.arc(x + 28, by - 6, 2.5, 0, Math.PI * 2); cx.fill();
+  // Tree in back
+  drawSmallTree(x - 18, by - 26);
+}
+
+function drawSmallTree(x, y) {
+  cx.fillStyle = '#0a1606';
+  cx.beginPath(); cx.moveTo(x, y - 18); cx.lineTo(x - 7, y); cx.lineTo(x + 7, y); cx.fill();
+  cx.fillRect(x - 2, y, 4, 6);
+}
+
+function drawWell(x, y) {
+  const by = y + 24;
+  // Well base
+  cx.fillStyle = '#3a4060';
+  cx.beginPath(); cx.ellipse(x, by, 18, 9, 0, 0, Math.PI * 2); cx.fill();
+  // Well sides
+  cx.fillStyle = '#2a3050';
+  cx.fillRect(x - 18, by - 26, 36, 26);
+  cx.fillStyle = '#3a4060';
+  cx.beginPath(); cx.ellipse(x, by - 26, 18, 9, 0, 0, Math.PI * 2); cx.fill();
+  // Posts
+  cx.fillStyle = '#3a2810'; cx.fillRect(x - 20, by - 44, 5, 44); cx.fillRect(x + 15, by - 44, 5, 44);
+  // Crossbeam
+  cx.fillRect(x - 22, by - 46, 44, 5);
+  // Rope
+  cx.strokeStyle = '#806040'; cx.lineWidth = 2;
+  cx.beginPath(); cx.moveTo(x - 2, by - 41); cx.lineTo(x - 2, by - 18); cx.stroke();
+  // Water shimmer
+  cx.fillStyle = '#5070a0';
+  cx.beginPath(); cx.ellipse(x, by - 4, 14, 7, 0, 0, Math.PI * 2); cx.fill();
+  // Mystic glow
+  cx.strokeStyle = '#a0c0ff'; cx.lineWidth = 1; cx.globalAlpha = 0.4;
+  cx.beginPath(); cx.ellipse(x, by - 4, 16, 8, 0, 0, Math.PI * 2); cx.stroke();
+  cx.globalAlpha = 1;
+}
+
+function drawCross(x, y) {
+  const by = y + 26;
+  cx.fillStyle = '#5a4020';
+  cx.fillRect(x - 4, by - 50, 8, 50);
+  cx.fillRect(x - 20, by - 40, 40, 8);
+  // Sign boards
+  cx.fillStyle = '#4a3018';
+  cx.fillRect(x + 2, by - 38, 28, 8);
+  cx.fillRect(x + 2, by - 24, 24, 8);
+  cx.fillRect(x - 30, by - 30, 26, 8);
+  // Text hint
+  cx.fillStyle = '#a08050'; cx.font = '7px serif';
+  cx.textAlign = 'center'; cx.textBaseline = 'middle';
+  cx.fillText('!', x + 16, by - 34);
+}
+
+function drawRuins(x, y) {
+  const by = y + 28;
+  // Ruined tower
+  cx.fillStyle = '#2a2016';
+  cx.fillRect(x - 14, by - 46, 28, 46);
+  // Crumble
+  cx.fillStyle = '#1a140e';
+  cx.beginPath(); cx.moveTo(x + 14, by - 46); cx.lineTo(x + 14, by - 60); cx.lineTo(x + 4, by - 52); cx.lineTo(x - 4, by - 62); cx.lineTo(x - 14, by - 54); cx.lineTo(x - 14, by - 46); cx.fill();
+  // Windows
+  cx.fillStyle = '#0a0806';
+  cx.fillRect(x - 6, by - 42, 7, 10);
+  cx.fillRect(x - 6, by - 24, 7, 10);
+  // Rubble
+  cx.fillStyle = '#2a2016';
+  [[x + 18, by - 5], [x + 24, by - 2], [x - 20, by - 4], [x - 16, by - 8]].forEach(([rx, ry]) => {
+    cx.beginPath(); cx.arc(rx, ry, 5, 0, Math.PI * 2); cx.fill();
+  });
+  // Scorch marks
+  cx.fillStyle = '#1a0e06';
+  cx.beginPath(); cx.moveTo(x - 14, by - 46); cx.lineTo(x - 20, by - 30); cx.lineTo(x - 8, by - 38); cx.fill();
+}
+
+function drawStone(x, y) {
+  const by = y + 28;
+  // Massive stone
+  cx.fillStyle = '#0e0806';
+  cx.beginPath();
+  cx.moveTo(x - 18, by); cx.lineTo(x - 24, by - 28); cx.lineTo(x - 10, by - 46);
+  cx.lineTo(x + 8, by - 50); cx.lineTo(x + 22, by - 36); cx.lineTo(x + 20, by - 10);
+  cx.lineTo(x + 14, by); cx.fill();
+  // Red veins
+  cx.strokeStyle = '#c03010'; cx.lineWidth = 1.5; cx.globalAlpha = 0.8;
+  cx.beginPath(); cx.moveTo(x - 8, by); cx.lineTo(x - 4, by - 30); cx.lineTo(x + 10, by - 44); cx.stroke();
+  cx.beginPath(); cx.moveTo(x + 4, by); cx.lineTo(x, by - 20); cx.lineTo(x - 10, by - 38); cx.stroke();
+  cx.globalAlpha = 1;
+  // Glow
+  const grad = cx.createRadialGradient(x, by - 28, 2, x, by - 28, 22);
+  grad.addColorStop(0, 'rgba(220,60,10,0.5)');
+  grad.addColorStop(1, 'rgba(220,60,10,0)');
+  cx.fillStyle = grad; cx.beginPath(); cx.arc(x, by - 28, 22, 0, Math.PI * 2); cx.fill();
+}
+
+function drawCamp(x, y) {
+  const by = y + 28;
+  // 3 tents
+  const tents = [x - 20, x, x + 20];
+  tents.forEach((tx, i) => {
+    cx.fillStyle = i === 1 ? '#1a3050' : '#1e2840';
+    cx.beginPath(); cx.moveTo(tx, by - 34 - i * 4); cx.lineTo(tx - 12, by); cx.lineTo(tx + 12, by); cx.fill();
+    cx.strokeStyle = '#2a3a60'; cx.lineWidth = 1;
+    cx.beginPath(); cx.moveTo(tx - 12, by); cx.lineTo(tx + 12, by); cx.stroke();
+  });
+  // Camp fire
+  cx.fillStyle = '#c04010';
+  cx.beginPath(); cx.arc(x, by + 6, 4, 0, Math.PI * 2); cx.fill();
+  cx.fillStyle = '#e07020';
+  cx.beginPath(); cx.moveTo(x, by - 2); cx.lineTo(x - 4, by + 8); cx.lineTo(x + 4, by + 8); cx.fill();
+  // Trees framing
+  drawSmallTree(x - 38, by - 20);
+  drawSmallTree(x + 34, by - 20);
+}
+
+function drawStones(x, y) {
+  const by = y + 24;
+  const n = 8, r2 = 26;
+  cx.strokeStyle = '#304828'; cx.lineWidth = 1; cx.setLineDash([3,3]);
+  cx.beginPath(); cx.arc(x, by, r2, 0, Math.PI * 2); cx.stroke();
+  cx.setLineDash([]);
+  for (let i = 0; i < n; i++) {
+    const a = (Math.PI * 2 / n) * i;
+    const sx = x + r2 * Math.cos(a), sy = by + r2 * Math.sin(a);
+    cx.fillStyle = '#2a3820';
+    cx.fillRect(sx - 4, sy - 14, 7, 14);
+    cx.fillRect(sx - 5, sy - 16, 9, 4);
+  }
+  // Druids fire in center
+  cx.fillStyle = '#206018'; cx.globalAlpha = 0.6;
+  cx.beginPath(); cx.arc(x, by, 8, 0, Math.PI * 2); cx.fill();
+  cx.globalAlpha = 1;
+  cx.fillStyle = '#40c040';
+  cx.beginPath(); cx.arc(x, by, 4, 0, Math.PI * 2); cx.fill();
+}
+
+function drawTwoFace(x, y) {
+  const by = y + 10;
+  cx.fillStyle = '#1a2e0e';
+  // Trunk
+  cx.fillRect(x - 5, by, 10, 40);
+  // Canopy - left (angry face)
+  cx.fillStyle = '#142408';
+  cx.beginPath(); cx.arc(x - 14, by - 6, 24, 0, Math.PI * 2); cx.fill();
+  // Left face features
+  cx.fillStyle = '#e04020'; cx.fillRect(x - 22, by - 10, 6, 3); // eye
+  cx.fillStyle = '#1a0e06';
+  cx.beginPath(); cx.moveTo(x - 20, by - 2); cx.lineTo(x - 8, by + 2); cx.lineTo(x - 8, by - 2); cx.fill(); // frown
+  // Canopy - right (friendly face)
+  cx.fillStyle = '#1e3410';
+  cx.beginPath(); cx.arc(x + 14, by - 6, 24, 0, Math.PI * 2); cx.fill();
+  cx.fillStyle = '#40c040'; cx.fillRect(x + 8, by - 10, 6, 3); // eye
+  cx.fillStyle = '#0a1806';
+  cx.beginPath(); cx.moveTo(x + 8, by - 2); cx.quadraticCurveTo(x + 14, by + 6, x + 20, by - 2); cx.lineTo(x + 20, by - 4); cx.quadraticCurveTo(x + 14, by + 2, x + 8, by - 4); cx.fill(); // smile
+}
+
+function drawLake(x, y) {
+  const by = y + 26;
+  // Lake body
+  cx.fillStyle = '#1a2a5a';
+  cx.beginPath(); cx.ellipse(x, by - 8, 30, 20, 0, 0, Math.PI * 2); cx.fill();
+  // Mist
+  cx.fillStyle = 'rgba(180,200,220,0.2)';
+  cx.beginPath(); cx.ellipse(x, by - 14, 32, 10, 0, 0, Math.PI * 2); cx.fill();
+  // Ripples
+  cx.strokeStyle = '#4060a0'; cx.lineWidth = 1; cx.globalAlpha = 0.5;
+  cx.beginPath(); cx.ellipse(x, by - 8, 14, 6, 0, 0, Math.PI * 2); cx.stroke();
+  cx.beginPath(); cx.ellipse(x - 8, by - 14, 8, 4, -0.3, 0, Math.PI * 2); cx.stroke();
+  cx.globalAlpha = 1;
+  // Gillshade plants on bank
+  cx.strokeStyle = '#3a7030'; cx.lineWidth = 2;
+  [x - 26, x + 24].forEach(gx => {
+    cx.beginPath(); cx.moveTo(gx, by + 6); cx.quadraticCurveTo(gx - 4, by - 6, gx + 2, by - 14); cx.stroke();
+    cx.beginPath(); cx.moveTo(gx, by + 6); cx.quadraticCurveTo(gx + 4, by - 4, gx - 2, by - 10); cx.stroke();
+  });
+  // Spirit shimmer
+  cx.fillStyle = 'rgba(160,200,240,0.3)';
+  cx.beginPath(); cx.ellipse(x + 6, by - 20, 8, 14, 0.3, 0, Math.PI * 2); cx.fill();
+}
+
+function drawLarva(x, y) {
+  const by = y + 24;
+  // Carcass
+  cx.fillStyle = '#c0c8a0';
+  cx.beginPath(); cx.ellipse(x, by - 4, 28, 16, 0, 0, Math.PI * 2); cx.fill();
+  // Segments
+  cx.strokeStyle = '#a0a870'; cx.lineWidth = 2;
+  for (let i = -18; i <= 18; i += 10) {
+    cx.beginPath(); cx.arc(x + i, by - 4, 12, -Math.PI / 2, Math.PI / 2); cx.stroke();
+  }
+  // Ooze
+  cx.fillStyle = '#c8a030'; cx.globalAlpha = 0.7;
+  cx.beginPath(); cx.ellipse(x + 4, by + 8, 16, 6, 0, 0, Math.PI * 2); cx.fill();
+  cx.globalAlpha = 1;
+  // Necromantic runes
+  cx.strokeStyle = '#602080'; cx.lineWidth = 1.5;
+  cx.beginPath(); cx.moveTo(x - 12, by - 10); cx.lineTo(x - 6, by + 2); cx.lineTo(x - 18, by + 2); cx.closePath(); cx.stroke();
+  // Mushrooms nearby
+  cx.fillStyle = '#a06040';
+  [[x + 22, by - 12], [x + 30, by - 8]].forEach(([mx, my]) => {
+    cx.beginPath(); cx.arc(mx, my, 6, Math.PI, 0); cx.fill();
+    cx.fillStyle = '#604020'; cx.fillRect(mx - 2, my, 4, 8); cx.fillStyle = '#a06040';
+  });
+}
+
+function drawAntler(x, y) {
+  const by = y + 28;
+  // Cabin
+  cx.fillStyle = '#2a1a0e';
+  cx.fillRect(x - 20, by - 30, 40, 30);
+  cx.fillStyle = '#1e1208';
+  cx.beginPath(); cx.moveTo(x - 28, by - 28); cx.lineTo(x, by - 52); cx.lineTo(x + 28, by - 28); cx.fill();
+  // Door
+  cx.fillStyle = '#0e0806';
+  cx.beginPath(); cx.arc(x, by - 10, 8, Math.PI, 0); cx.rect(x - 8, by - 10, 16, 10); cx.fill();
+  // Antlers on roof
+  cx.strokeStyle = '#6a4820'; cx.lineWidth = 2.5;
+  // Left antler
+  cx.beginPath(); cx.moveTo(x - 8, by - 52); cx.lineTo(x - 14, by - 64); cx.lineTo(x - 20, by - 60); cx.stroke();
+  cx.beginPath(); cx.moveTo(x - 14, by - 58); cx.lineTo(x - 22, by - 52); cx.stroke();
+  // Right antler
+  cx.beginPath(); cx.moveTo(x + 8, by - 52); cx.lineTo(x + 14, by - 64); cx.lineTo(x + 20, by - 60); cx.stroke();
+  cx.beginPath(); cx.moveTo(x + 14, by - 58); cx.lineTo(x + 22, by - 52); cx.stroke();
+  // No birds sign
+  cx.fillStyle = 'rgba(200,180,140,0)'; // no birds — just silence
+}
+
+function drawKobold(x, y) {
+  const by = y + 26;
+  // Rocky terrain
+  [[-22, 14], [-10, 18], [10, 16], [22, 14], [0, 10]].forEach(([rx, ry]) => {
+    cx.fillStyle = '#3a4030';
+    cx.beginPath(); cx.arc(x + rx, by + ry - 30, 10, 0, Math.PI * 2); cx.fill();
+  });
+  // Huts cluster
+  const huts = [[x - 16, by - 18], [x + 4, by - 22], [x - 4, by - 8]];
+  huts.forEach(([hx, hy]) => {
+    cx.fillStyle = '#2a2818';
+    cx.fillRect(hx - 9, hy - 12, 18, 12);
+    cx.fillStyle = '#1e1e10';
+    cx.beginPath(); cx.moveTo(hx - 13, hy - 12); cx.lineTo(hx, hy - 26); cx.lineTo(hx + 13, hy - 12); cx.fill();
+  });
+  // Kobold figure
+  cx.fillStyle = '#2040a0';
+  cx.beginPath(); cx.arc(x + 20, by - 32, 5, 0, Math.PI * 2); cx.fill();
+  cx.fillRect(x + 17, by - 27, 6, 10);
+  // Spear
+  cx.strokeStyle = '#4060c0'; cx.lineWidth = 1.5;
+  cx.beginPath(); cx.moveTo(x + 22, by - 42); cx.lineTo(x + 22, by - 18); cx.stroke();
+}
+
+function drawChasm(x, y) {
+  const by = y + 28;
+  // Cracked earth
+  cx.fillStyle = '#0e0806';
+  cx.beginPath();
+  cx.moveTo(x - 26, by); cx.lineTo(x - 20, by - 10); cx.lineTo(x - 8, by - 6);
+  cx.lineTo(x, by - 24); cx.lineTo(x + 10, by - 8); cx.lineTo(x + 22, by - 14);
+  cx.lineTo(x + 26, by); cx.fill();
+  // Depth shading
+  const gr = cx.createLinearGradient(x, by - 24, x, by);
+  gr.addColorStop(0, '#000000');
+  gr.addColorStop(1, '#1a0a04');
+  cx.fillStyle = gr;
+  cx.beginPath();
+  cx.moveTo(x - 18, by); cx.lineTo(x - 12, by - 8); cx.lineTo(x - 4, by - 5);
+  cx.lineTo(x, by - 20); cx.lineTo(x + 6, by - 6); cx.lineTo(x + 18, by - 12);
+  cx.lineTo(x + 22, by); cx.fill();
+  // Glowing runes inside
+  cx.fillStyle = 'rgba(100,50,200,0.4)';
+  cx.beginPath(); cx.arc(x, by - 10, 8, 0, Math.PI * 2); cx.fill();
+  cx.fillStyle = 'rgba(150,80,250,0.6)';
+  cx.beginPath(); cx.arc(x, by - 10, 4, 0, Math.PI * 2); cx.fill();
+  // Stairs
+  cx.strokeStyle = '#3a2818'; cx.lineWidth = 1.5;
+  for (let i = 0; i < 4; i++) {
+    cx.beginPath(); cx.moveTo(x - 6 + i * 2, by - 4 - i * 4); cx.lineTo(x + 4 + i * 2, by - 4 - i * 4); cx.stroke();
+  }
+  // Cracked pillars
+  cx.fillStyle = '#2a1a0e';
+  cx.fillRect(x - 30, by - 40, 7, 40); cx.fillRect(x + 23, by - 36, 7, 36);
+  // Crack in pillars
+  cx.strokeStyle = '#1a0e06'; cx.lineWidth = 2;
+  cx.beginPath(); cx.moveTo(x - 27, by - 40); cx.lineTo(x - 24, by - 20); cx.lineTo(x - 26, by); cx.stroke();
+}
+
+// ── Background & parchment ──────────────────────────────────────────────────
+function drawBackground() {
+  // Parchment base
+  const pg = cx.createRadialGradient(580, 430, 100, 580, 430, 700);
+  pg.addColorStop(0, '#e8d4a0');
+  pg.addColorStop(0.6, '#d4bc88');
+  pg.addColorStop(1, '#b89860');
+  cx.fillStyle = pg; cx.fillRect(0, 0, c.width, c.height);
+
+  // Parchment texture (light noise)
+  cx.globalAlpha = 0.06;
+  for (let i = 0; i < 3000; i++) {
+    const px = Math.random() * c.width, py = Math.random() * c.height;
+    cx.fillStyle = Math.random() > 0.5 ? '#000' : '#fff';
+    cx.fillRect(px, py, 2, 2);
+  }
+  cx.globalAlpha = 1;
+
+  // Aged edges vignette
+  const vg = cx.createRadialGradient(580, 430, 300, 580, 430, 700);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(80,40,0,0.5)');
+  cx.fillStyle = vg; cx.fillRect(0, 0, c.width, c.height);
+
+  // Stain blobs
+  cx.globalAlpha = 0.07;
+  [[150, 650, 80], [900, 120, 60], [500, 750, 100], [1000, 600, 70]].forEach(([bx, by, br]) => {
+    cx.fillStyle = '#805020';
+    cx.beginPath(); cx.arc(bx, by, br, 0, Math.PI * 2); cx.fill();
+  });
+  cx.globalAlpha = 1;
+}
+
+// ── Draw empty forest hexes to fill the grid ────────────────────────────────
+function drawEmptyForests() {
+  const defined = new Set(LOCS.map(l => `${l[0]},${l[1]}`));
+  for (let q = 0; q <= 5; q++) {
+    for (let r = 0; r <= 4; r++) {
+      if (!defined.has(`${q},${r}`)) {
+        const { x, y } = hctr(q, r);
+        const t = T.forest;
+        hexPath(x, y, R); cx.fillStyle = t.bg; cx.fill();
+        hexPath(x, y, R); cx.strokeStyle = t.rim; cx.lineWidth = 1.5; cx.stroke();
+        // Subtle tree texture
+        cx.globalAlpha = 0.4;
+        drawTrees(x, y);
+        cx.globalAlpha = 1;
+      }
+    }
+  }
+}
+
+// ── Road lines ───────────────────────────────────────────────────────────────
+function drawRoads() {
+  cx.strokeStyle = '#8a6030'; cx.lineWidth = 3; cx.setLineDash([6, 4]);
+  cx.lineCap = 'round';
+  // Road: Mhoried → Entrada
+  const m = hctr(0, 1), e1 = hctr(1, 1);
+  cx.beginPath(); cx.moveTo(m.x + R, m.y); cx.lineTo(e1.x - R * 0.5, e1.y - R * 0.86 * 0.5); cx.stroke();
+  // Paths inside forest
+  cx.lineWidth = 1.5; cx.strokeStyle = '#6a4820'; cx.setLineDash([4, 5]);
+  const pts = [hctr(1,1), hctr(1,2), hctr(2,2), hctr(2,1), hctr(3,1), hctr(3,2), hctr(4,2), hctr(5,1)];
+  cx.beginPath(); cx.moveTo(pts[0].x, pts[0].y);
+  pts.slice(1).forEach(p => cx.lineTo(p.x, p.y));
+  cx.stroke();
+  cx.setLineDash([]);
+}
+
+// ── Draw all hexes ───────────────────────────────────────────────────────────
+function drawAllHexes() {
+  // First pass: fills
+  LOCS.forEach(([q, r, terrain]) => {
+    const { x, y } = hctr(q, r);
+    const t = T[terrain];
+    hexPath(x, y, R);
+    const g = cx.createLinearGradient(x - R, y - R, x + R, y + R);
+    g.addColorStop(0, t.bg);
+    g.addColorStop(1, t.shade);
+    cx.fillStyle = g; cx.fill();
+  });
+  // Second pass: strokes + content
+  LOCS.forEach(([q, r, terrain, roman, name, drawFn]) => {
+    const { x, y } = hctr(q, r);
+    const t = T[terrain];
+    hexPath(x, y, R);
+    cx.strokeStyle = t.rim; cx.lineWidth = 2; cx.stroke();
+    // Draw icon
+    if (drawFn) drawFn(x, y);
+    // Roman numeral badge
+    if (roman) {
+      const bx = x - R * 0.6, by2 = y - R * 0.7;
+      cx.fillStyle = '#b8860a';
+      cx.beginPath(); cx.arc(bx, by2, 12, 0, Math.PI * 2); cx.fill();
+      cx.strokeStyle = '#7a5600'; cx.lineWidth = 0.8;
+      cx.beginPath(); cx.arc(bx, by2, 12, 0, Math.PI * 2); cx.stroke();
+      const fs = roman.length >= 4 ? '6.5px' : roman.length === 3 ? '7.5px' : '9px';
+      cx.fillStyle = '#0a0604'; cx.font = `bold ${fs} Georgia`;
+      cx.textAlign = 'center'; cx.textBaseline = 'middle';
+      cx.fillText(roman, bx, by2);
+    }
+    // Location name
+    if (name) {
+      cx.fillStyle = terrain === 'outside' ? '#6a4818' : '#e8d0a0';
+      cx.font = `${terrain === 'city' ? 'bold ' : ''}9px Georgia`;
+      cx.textAlign = 'center'; cx.textBaseline = 'top';
+      cx.fillText(name, x, y + R * 0.58);
+    }
+  });
+}
+
+// ── Startower inset ───────────────────────────────────────────────────────────
+function drawStartower() {
+  const bx = 940, by = 40, bw = 200, bh = 150;
+  // Frame
+  cx.fillStyle = '#1a0e06'; cx.fillRect(bx, by, bw, bh);
+  cx.strokeStyle = '#c8900a'; cx.lineWidth = 2; cx.strokeRect(bx, by, bw, bh);
+  // Mountain peaks
+  cx.fillStyle = '#2a2a2a';
+  [[bx + 20, by + 140, 40], [bx + 60, by + 140, 50], [bx + 100, by + 140, 60], [bx + 150, by + 140, 45], [bx + 190, by + 140, 35]].forEach(([mx, my, mh]) => {
+    cx.beginPath(); cx.moveTo(mx, my); cx.lineTo(mx - mh * 0.6, my - mh); cx.lineTo(mx + mh * 0.6, my - mh); cx.fill();
+  });
+  // Snow caps
+  cx.fillStyle = '#c8c8c8';
+  cx.beginPath(); cx.moveTo(bx + 100, by + 140 - 60); cx.lineTo(bx + 88, by + 110); cx.lineTo(bx + 112, by + 110); cx.fill();
+  // Tower
+  cx.fillStyle = '#1a1416';
+  cx.fillRect(bx + 88, by + 30, 24, 80);
+  cx.fillStyle = '#201a1c';
+  cx.beginPath(); cx.moveTo(bx + 85, by + 30); cx.lineTo(bx + 100, by + 10); cx.lineTo(bx + 115, by + 30); cx.fill();
+  // Star glow at top
+  const sg = cx.createRadialGradient(bx + 100, by + 12, 2, bx + 100, by + 12, 20);
+  sg.addColorStop(0, 'rgba(200,180,100,0.9)');
+  sg.addColorStop(1, 'rgba(200,180,100,0)');
+  cx.fillStyle = sg; cx.beginPath(); cx.arc(bx + 100, by + 12, 20, 0, Math.PI * 2); cx.fill();
+  cx.fillStyle = '#ffe080';
+  cx.beginPath(); cx.arc(bx + 100, by + 12, 4, 0, Math.PI * 2); cx.fill();
+  // Windows glowing
+  cx.fillStyle = '#c08020';
+  [[bx + 96, by + 44], [bx + 96, by + 60], [bx + 96, by + 76]].forEach(([wx, wy]) => {
+    cx.beginPath(); cx.arc(wx + 4, wy, 3.5, Math.PI, 0); cx.rect(wx, wy, 8, 5); cx.fill();
+  });
+  // Label
+  cx.fillStyle = '#c8900a'; cx.font = 'bold 11px Georgia';
+  cx.textAlign = 'center'; cx.fillText('Torre das Estrelas de Limm', bx + bw / 2, by + bh - 8);
+  cx.fillStyle = '#9a7010'; cx.font = '9px Georgia';
+  cx.fillText('(via portal — Parte III)', bx + bw / 2, by + bh - 18);
+  // Border ornament
+  cx.strokeStyle = '#c8900a'; cx.lineWidth = 0.5;
+  cx.strokeRect(bx + 3, by + 3, bw - 6, bh - 6);
+  // Portal arrow from Gloamreach
+  const gr = hctr(5, 1);
+  cx.strokeStyle = '#8060c0'; cx.lineWidth = 1.5; cx.setLineDash([4, 3]);
+  cx.beginPath(); cx.moveTo(gr.x + R, gr.y - 20); cx.quadraticCurveTo(920, 120, bx + 40, by + 100); cx.stroke();
+  cx.setLineDash([]);
+  cx.fillStyle = '#8060c0'; cx.font = '8px Georgia'; cx.textAlign = 'center';
+  cx.fillText('portal →', 890, 90);
+}
+
+// ── Legend ────────────────────────────────────────────────────────────────────
+function drawLegend() {
+  const lx = 12, ly = 115;
+  cx.fillStyle = 'rgba(20,10,4,0.7)';
+  cx.fillRect(lx - 4, ly - 4, 110, 640);
+  cx.strokeStyle = '#6a4010'; cx.lineWidth = 1;
+  cx.strokeRect(lx - 4, ly - 4, 110, 640);
+  cx.fillStyle = '#c8900a'; cx.font = 'bold 10px Georgia'; cx.textAlign = 'center';
+  cx.fillText('PONTOS DE', lx + 51, ly + 8);
+  cx.fillText('INTERESSE', lx + 51, ly + 22);
+  cx.strokeStyle = '#6a4010'; cx.lineWidth = 1;
+  cx.beginPath(); cx.moveTo(lx + 4, ly + 30); cx.lineTo(lx + 98, ly + 30); cx.stroke();
+
+  const entries = [
+    ['I',     'Entrada das'],
+    [null,    'Blackwoods'],
+    ['II',    'Carroça Tombada'],
+    ['III',   'Encruzilhada'],
+    ['IV',    'Poço das Lágrimas'],
+    ['V',     'Acampamento Élfico'],
+    ['VI',    'Cabana da Bruxa'],
+    ['VII',   'Ruínas Simithari'],
+    ['VIII',  'Caçada/Manticora'],
+    ['IX',    'Vulkrundshard'],
+    ['X',     'Twinfold Hollow'],
+    ['XI',    'Hom. Chifrado'],
+    ['XII',   'Cnoc na Ríthe'],
+    ['XIII',  'Gruta Afogada'],
+    ['XIV',   'Kobold-Town'],
+    ['XV',    'Carcaça da Larva'],
+    ['XVI',   'Gloamreach ★'],
+  ];
+
+  let ey = ly + 44;
+  entries.forEach(([num, label]) => {
+    if (num) {
+      cx.fillStyle = '#d4a020'; cx.font = 'bold 9px Georgia'; cx.textAlign = 'left';
+      cx.fillText(num, lx + 2, ey);
+    }
+    cx.fillStyle = '#e0c880'; cx.font = '8px Georgia'; cx.textAlign = 'left';
+    cx.fillText(label, num ? lx + 24 : lx + 10, ey);
+    ey += 14;
+    if (!num) ey -= 4;
+  });
+
+  // Terrain key
+  ey += 8;
+  cx.fillStyle = '#c8900a'; cx.font = 'bold 9px Georgia'; cx.textAlign = 'center';
+  cx.fillText('TERRENO', lx + 51, ey); ey += 14;
+  const terrainKey = [
+    ['forest', 'Floresta'],
+    ['water',  'Água / Lagos'],
+    ['ruins',  'Ruínas'],
+    ['hills',  'Colinas'],
+    ['cave',   'Caverna'],
+    ['city',   'Cidade'],
+  ];
+  terrainKey.forEach(([key, label]) => {
+    cx.fillStyle = T[key].bg;
+    cx.fillRect(lx + 2, ey - 8, 12, 10);
+    cx.strokeStyle = T[key].rim; cx.lineWidth = 1;
+    cx.strokeRect(lx + 2, ey - 8, 12, 10);
+    cx.fillStyle = '#e0c880'; cx.font = '8px Georgia'; cx.textAlign = 'left';
+    cx.fillText(label, lx + 18, ey);
+    ey += 14;
+  });
+}
+
+// ── Title & border ────────────────────────────────────────────────────────────
+function drawTitle() {
+  // Top title bar
+  cx.fillStyle = 'rgba(10,6,2,0.82)';
+  cx.fillRect(0, 0, c.width, 90);
+  cx.strokeStyle = '#8a5810'; cx.lineWidth = 2;
+  cx.beginPath(); cx.moveTo(0, 90); cx.lineTo(c.width, 90); cx.stroke();
+
+  cx.fillStyle = '#ffe090'; cx.font = 'bold 28px "Palatino Linotype", Georgia';
+  cx.textAlign = 'center'; cx.textBaseline = 'middle';
+  cx.fillText('A FERA DO FORTE NEGRO', c.width / 2, 32);
+
+  cx.fillStyle = '#c8900a'; cx.font = 'italic 14px Georgia';
+  cx.fillText('Mapa das Blackwoods — Hexcrawl Sandbox', c.width / 2, 58);
+
+  // Decorative divider
+  cx.strokeStyle = '#8a5810'; cx.lineWidth = 1;
+  cx.beginPath(); cx.moveTo(80, 72); cx.lineTo(c.width - 80, 72); cx.stroke();
+  cx.fillStyle = '#c8900a'; cx.font = '9px Georgia';
+  cx.fillText('1 hex ≈ 1 milha', c.width - 70, 80);
+
+  // Scale bar
+  const sbx = c.width - 160, sby = 78;
+  cx.fillStyle = '#6a4010'; cx.fillRect(sbx, sby - 4, 60, 3);
+  cx.fillStyle = '#c8900a'; cx.fillRect(sbx, sby - 4, 30, 3);
+  cx.font = '7px Georgia'; cx.fillText('0', sbx, sby + 6); cx.fillText('1mi', sbx + 55, sby + 6);
+
+  // Bottom bar
+  cx.fillStyle = 'rgba(10,6,2,0.7)';
+  cx.fillRect(0, c.height - 36, c.width, 36);
+  cx.strokeStyle = '#8a5810'; cx.lineWidth = 1;
+  cx.beginPath(); cx.moveTo(0, c.height - 36); cx.lineTo(c.width, c.height - 36); cx.stroke();
+  cx.fillStyle = '#9a7020'; cx.font = 'italic 9px Georgia';
+  cx.textAlign = 'center'; cx.textBaseline = 'middle';
+  cx.fillText('"Um fio de escuridão lança raízes nas Blackwoods. A floresta sussurra nomes que ninguém pronunciou em séculos." — Oráculo RPG', c.width / 2, c.height - 18);
+
+  // Compass rose (bottom-right)
+  drawCompass(c.width - 60, c.height - 68);
+}
+
+function drawCompass(cx2, cy2) {
+  const dirs = [['N', 0, -22], ['S', 0, 22], ['L', 22, 0], ['O', -22, 0]];
+  cx.strokeStyle = '#c8900a'; cx.lineWidth = 1.5;
+  dirs.forEach(([, dx2, dy2]) => {
+    cx.beginPath(); cx.moveTo(cx2, cy2); cx.lineTo(cx2 + dx2, cy2 + dy2); cx.stroke();
+  });
+  // Arrow N
+  cx.fillStyle = '#c8900a';
+  cx.beginPath(); cx.moveTo(cx2, cy2 - 28); cx.lineTo(cx2 - 5, cy2 - 16); cx.lineTo(cx2 + 5, cy2 - 16); cx.fill();
+  cx.fillStyle = '#806010';
+  cx.beginPath(); cx.arc(cx2, cy2, 5, 0, Math.PI * 2); cx.fill();
+  cx.fillStyle = '#c8900a'; cx.font = 'bold 10px Georgia'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+  ['N', 'S', 'L', 'O'].forEach((d, i) => {
+    const [, dx2, dy2] = dirs[i];
+    cx.fillText(d, cx2 + dx2 * 1.6, cy2 + dy2 * 1.6);
+  });
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+  drawBackground();
+  drawEmptyForests();
+  drawRoads();
+  drawAllHexes();
+  drawStartower();
+  drawLegend();
+  drawTitle();
+}
+
+render();
+</script>
+</body>
+</html>
