@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Fera do Forte Negro — Classes, Personagens &amp; Bestiário</title>
+<style>
+  :root {
+    --bg: #0e0b07;
+    --panel: #1a140c;
+    --border: #4a3820;
+    --gold: #c8a040;
+    --gold2: #e8c060;
+    --text: #d8c898;
+    --muted: #907860;
+    --red: #8a2020;
+    --green: #2a5a2a;
+    --blue: #1a3a5a;
+    --purple: #3a1a5a;
+    --card-bg: #16110a;
+    --modal-bg: #120e08;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Georgia', serif;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    text-align: center;
+    padding: 2.5rem 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #1a0e06 0%, var(--bg) 100%);
+  }
+  header h1 {
+    font-size: clamp(1.4rem, 4vw, 2.4rem);
+    color: var(--gold2);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-shadow: 0 0 24px #c8a04055;
+  }
+  header p {
+    margin-top: 0.5rem;
+    color: var(--muted);
+    font-style: italic;
+    font-size: 0.95rem;
+  }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    margin: 2rem auto 0;
+    max-width: 520px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .tab-btn {
+    flex: 1;
+    background: var(--panel);
+    border: none;
+    color: var(--muted);
+    font-family: 'Georgia', serif;
+    font-size: 1rem;
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: background 0.2s, color 0.2s;
+    border-right: 1px solid var(--border);
+  }
+  .tab-btn:last-child { border-right: none; }
+  .tab-btn.active {
+    background: #28200f;
+    color: var(--gold2);
+  }
+  .tab-btn:hover:not(.active) {
+    background: #20180a;
+    color: var(--text);
+  }
+
+  /* ── SECTION HEADER ── */
+  .section-title {
+    text-align: center;
+    padding: 2rem 1rem 0.5rem;
+    color: var(--gold);
+    font-size: 1.1rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+  }
+  .section-title::before, .section-title::after {
+    content: '';
+    flex: 1;
+    max-width: 200px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border));
+  }
+  .section-title::after {
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+
+  /* ── GRID ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+    gap: 1.25rem;
+    max-width: 1280px;
+    margin: 1.5rem auto 3rem;
+    padding: 0 1.25rem;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .card:hover {
+    border-color: var(--gold);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 24px #00000088;
+  }
+  .card-img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: contain;
+    background: #0a0807;
+    display: block;
+    image-rendering: pixelated;
+  }
+  .card-body {
+    padding: 0.65rem 0.75rem 0.75rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+  .card-name {
+    font-size: 0.88rem;
+    color: var(--gold2);
+    line-height: 1.25;
+    font-weight: bold;
+  }
+  .card-role {
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-style: italic;
+    line-height: 1.3;
+  }
+  .card-badge {
+    display: inline-block;
+    margin-top: auto;
+    padding: 0.18rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.68rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-family: monospace;
+    align-self: flex-start;
+  }
+  .badge-aliado   { background: #1a3a1a; color: #60b060; border: 1px solid #2a5a2a; }
+  .badge-neutro   { background: #2a2510; color: #c0a040; border: 1px solid #4a4020; }
+  .badge-hostil   { background: #3a1010; color: #c04040; border: 1px solid #5a2020; }
+  .badge-sombra   { background: #1a1030; color: #8060c0; border: 1px solid #3a2060; }
+  .badge-besta    { background: #1a1505; color: #a07030; border: 1px solid #3a2a10; }
+  .badge-construto{ background: #101828; color: #4090c0; border: 1px solid #2a4060; }
+  .badge-undead   { background: #121220; color: #6060a0; border: 1px solid #303060; }
+  .badge-planta   { background: #0e1a0a; color: #50a040; border: 1px solid #1a4010; }
+  .badge-espirito { background: #101828; color: #60a0c0; border: 1px solid #2a5060; }
+
+  /* ── FILTER BAR ── */
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    padding: 0.75rem 1rem 0;
+  }
+  .filter-btn {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.78rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: 'Georgia', serif;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .filter-btn.active, .filter-btn:hover {
+    background: #28200f;
+    color: var(--gold2);
+    border-color: var(--gold);
+  }
+
+  /* ── MODAL ── */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #000000cc;
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--modal-bg);
+    border: 1px solid var(--gold);
+    border-radius: 10px;
+    max-width: 640px;
+    width: 100%;
+    max-height: 92vh;
+    overflow-y: auto;
+    box-shadow: 0 0 60px #00000099;
+    animation: fadeUp 0.18s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .modal-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.25rem;
+    padding: 1.5rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-portrait {
+    width: 110px;
+    height: 110px;
+    object-fit: contain;
+    background: #0a0807;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    flex-shrink: 0;
+    image-rendering: pixelated;
+  }
+  .modal-title-block { flex: 1; }
+  .modal-name {
+    font-size: 1.25rem;
+    color: var(--gold2);
+    line-height: 1.2;
+  }
+  .modal-subtitle {
+    color: var(--muted);
+    font-style: italic;
+    font-size: 0.88rem;
+    margin-top: 0.3rem;
+  }
+  .modal-badges { margin-top: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: 0 0.25rem;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .modal-close:hover { color: var(--gold2); }
+  .modal-body { padding: 1.25rem 1.5rem 1.5rem; }
+  .modal-section { margin-bottom: 1.1rem; }
+  .modal-section-label {
+    color: var(--gold);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.25rem;
+  }
+  .modal-section p {
+    color: var(--text);
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+  .trait-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.2rem;
+  }
+  .trait {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.78rem;
+    color: var(--text);
+  }
+
+  /* ── PANEL (tab content) ── */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── DIVIDERS ── */
+  .faction-divider {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.75rem 0 0;
+    font-style: italic;
+  }
+
+  /* ── CLASSES GRID ── */
+  .classes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    max-width: 1100px;
+    margin: 1.5rem auto 3rem;
+    padding: 0 1.25rem;
+  }
+  .class-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .class-card:hover {
+    border-color: var(--gold);
+    box-shadow: 0 6px 28px #00000099;
+  }
+  .class-portraits {
+    display: flex;
+    background: #0a0807;
+    border-bottom: 1px solid var(--border);
+  }
+  .class-portrait {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.75rem 0.5rem 0.5rem;
+    gap: 0.3rem;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .class-portrait:hover { background: #12100a; }
+  .class-portrait img {
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
+    image-rendering: pixelated;
+  }
+  .class-portrait-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .class-divider {
+    width: 1px;
+    background: var(--border);
+    align-self: stretch;
+  }
+  .class-info {
+    padding: 1rem 1.25rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .class-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .class-icon { font-size: 1.5rem; }
+  .class-name {
+    font-size: 1.15rem;
+    color: var(--gold2);
+    letter-spacing: 0.05em;
+  }
+  .class-habilidade {
+    font-size: 0.82rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+  .class-habilidade strong { color: var(--gold); font-style: normal; }
+  .class-desc {
+    font-size: 0.88rem;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .class-powers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .power-tag {
+    background: #20180a;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.76rem;
+    color: var(--text);
+  }
+  .power-tag.habilidade {
+    background: #28200a;
+    border-color: var(--gold);
+    color: var(--gold2);
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #0a0807; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚔ A Fera do Forte Negro ⚔</h1>
+  <p>Personagens &amp; Bestiário — Campanha Oráculo RPG</p>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('classes', this)">⚔ Classes</button>
+    <button class="tab-btn" onclick="switchTab('npcs', this)">👥 Personagens</button>
+    <button class="tab-btn" onclick="switchTab('enemies', this)">💀 Bestiário</button>
+  </div>
+</header>
+
+<!-- ════════════════════════════════════════════ CLASSES TAB ════════════════════════════════════════════ -->
+<div id="tab-classes" class="tab-panel active">
+  <div class="section-title">Classes de Personagem</div>
+  <div class="classes-grid" id="grid-classes"></div>
+</div>
+
+<!-- ════════════════════════════════════════════ NPCs TAB ════════════════════════════════════════════ -->
+<div id="tab-npcs" class="tab-panel">
+  <div class="section-title">Personagens da Campanha</div>
+
+  <!-- Mhoried -->
+  <div class="faction-divider">— Mhoried —</div>
+  <div class="grid" id="grid-mhoried"></div>
+
+  <!-- Blackwoods -->
+  <div class="faction-divider">— As Blackwoods —</div>
+  <div class="grid" id="grid-blackwoods"></div>
+
+  <!-- Viajantes -->
+  <div class="faction-divider">— Viajantes &amp; Errantes —</div>
+  <div class="grid" id="grid-viajantes"></div>
+
+  <!-- Figuras Sombrias -->
+  <div class="faction-divider">— Figuras Sombrias —</div>
+  <div class="grid" id="grid-sombrias"></div>
+</div>
+
+<!-- ════════════════════════════════════════════ ENEMIES TAB ════════════════════════════════════════════ -->
+<div id="tab-enemies" class="tab-panel">
+  <div class="section-title">Bestiário das Blackwoods</div>
+  <div class="filter-bar" id="enemy-filters"></div>
+  <div class="grid" id="grid-enemies"></div>
+</div>
+
+<!-- ════════════════════════════════════════════ MODAL ════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-backdrop" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <img class="modal-portrait" id="modal-img" src="" alt="">
+      <div class="modal-title-block">
+        <div class="modal-name" id="modal-name"></div>
+        <div class="modal-subtitle" id="modal-subtitle"></div>
+        <div class="modal-badges" id="modal-badges"></div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('modal-backdrop').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════ CLASSES DATA ═══════════════════════════════════════════
+
+const CLASSES = [
+  {
+    id: 'guerreiro',
+    nome: 'Guerreiro',
+    icon: '⚔️',
+    habilidade: 'Ataque Extra',
+    desc: 'Mestre das armas e da armadura, o Guerreiro é a força central do grupo. Com Ataque Extra, pode desferir múltiplos golpes num mesmo turno — um soldado disciplinado que vira o rumo de qualquer batalha.',
+    poderes: ['Golpe Poderoso', 'Postura de Defesa', 'Segundo Fôlego']
+  },
+  {
+    id: 'mago',
+    nome: 'Mago',
+    icon: '🔮',
+    habilidade: 'Grimório',
+    desc: 'Estudioso do arcano, o Mago carrega um Grimório com nove magias e escolhe três para dominar. Frágil em combate direto, mas capaz de mudar completamente o destino de um encontro com o feitiço certo.',
+    poderes: ['Pool de 9 magias', '3 magias escolhidas', 'Combinações ilimitadas']
+  },
+  {
+    id: 'ladino',
+    nome: 'Ladino',
+    icon: '🗡️',
+    habilidade: 'Ataque Furtivo',
+    desc: 'Veloz e mortal nas sombras, o Ladino usa o posicionamento a seu favor para desferir Ataques Furtivos devastadores. Especialista em se mover sem ser visto e em golpear onde mais dói.',
+    poderes: ['Evasão', 'Veneno', 'Sombras']
+  },
+  {
+    id: 'clerigo',
+    nome: 'Clérigo',
+    icon: '✨',
+    habilidade: 'Canalizar Divindade',
+    desc: 'Portador da fé e da cura, o Clérigo sustenta o grupo com Canalizar Divindade — bênçãos, curas e proteção divina. É a âncora moral e médica de qualquer expedição nas Blackwoods.',
+    poderes: ['Bênção', 'Curar Ferimentos', 'Expulsar Mortos-Vivos', 'Escudo da Fé']
+  },
+  {
+    id: 'barbaro',
+    nome: 'Bárbaro',
+    icon: '🪓',
+    habilidade: 'Fúria',
+    desc: 'Quando a Fúria toma conta, o Bárbaro transcende os limites humanos. Dor virou combustível, e cada golpe carrega o peso de uma força primordial. Imparável em combate aberto.',
+    poderes: ['Golpe Devastador', 'Pele de Ferro', 'Uivo de Guerra']
+  },
+  {
+    id: 'arqueiro',
+    nome: 'Arqueiro',
+    icon: '🏹',
+    habilidade: 'Olho de Águia',
+    desc: 'Preciso e ágil, o Arqueiro nunca precisa se aproximar para ser mortal. Olho de Águia concede visão sobrenatural — identifica fraquezas, acerta alvos distantes e dança entre os adversários.',
+    poderes: ['Tiro Preciso', 'Chuva de Flechas', 'Passo do Vento']
+  },
+];
+
+// ═══════════════════════════════════════════ DATA ═══════════════════════════════════════════
+
+const NPCS = {
+  mhoried: [
+    {
+      id: 'catherine',
+      nome: 'Catherine Laskaris',
+      titulo: 'Duquesa de Mhoried',
+      sprite: 'sprites/npc_catherine_laskaris.png',
+      alinhamento: 'aliado',
+      descricao: 'Jovem governante de Mhoried, Catherine é conhecida por sua presença serena no mercado — compra flores dos fazendeiros ela mesma, sem intermediários. Nobre de verdade, não de aparência: toma decisões difíceis para proteger seu povo.',
+      aparencia: 'Jovem, movimentos leves e graciosos. Veste azul escuro com detalhes dourados e carrega uma bolsa de viagem simples.',
+      personalidade: 'Nobre, protetora e reservada. Há algo que ela claramente não conta, mas seus motivos parecem genuinamente voltados ao bem de Mhoried.',
+      tracos: ['Governante', 'Protetora', 'Discreta']
+    },
+    {
+      id: 'gregoras',
+      nome: 'Gregoras Pellos',
+      titulo: 'Sir — Guarda-costas da Duquesa',
+      sprite: 'sprites/npc_gregoras_pellos.png',
+      alinhamento: 'aliado',
+      descricao: 'Soldado leal e prático, Gregoras protege a Duquesa Catherine com eficiência militar. É ele quem busca aventureiros para resolver o problema que assola a região, e quem define as recompensas pela missão.',
+      aparencia: 'Homem bonito e disciplinado, com um maço preso à cinta. Durante o festival, veste couro acolchoado — preparado mesmo em paz.',
+      personalidade: 'Direto, competente, e completamente dedicado ao seu dever. Não desperdiça palavras.',
+      tracos: ['Soldado', 'Leal', 'Contratante']
+    },
+  ],
+  blackwoods: [
+    {
+      id: 'hobbleboot_sam',
+      nome: 'Hobbleboot Sam',
+      titulo: 'Guia das Blackwoods',
+      sprite: 'sprites/npc_hobbleboot_sam.png',
+      alinhamento: 'aliado',
+      descricao: 'Conhece as Blackwoods como ninguém. Manqueja levemente mas percorre trilhas que mapas não registram, com uma mochila cheia de cogumelos colhidos pelo caminho. Cobra por suas informações, mas vale cada prata.',
+      aparencia: 'Homem de meia-idade com bengala, botas surradas e uma mochila volumosa repleta de fungos e ervas silvestres.',
+      personalidade: 'Habilidoso, cauteloso e um pouco excêntrico. Tem um medo particular de altura que raramente menciona.',
+      tracos: ['Guia', 'Rastreador', 'Conhecimento local']
+    },
+    {
+      id: 'oswald',
+      nome: 'Oswald Thool',
+      titulo: 'Grimhollow Thool — Figura de Gloamreach',
+      sprite: 'sprites/npc_duque_oswald_thool.png',
+      alinhamento: 'neutro',
+      descricao: 'Uma presença imponente e silenciosa entre os Thools de Gloamreach. Sua aparência bruta contrasta com algo nos olhos — uma expressão quase humana que não combina com o que seu corpo sugere.',
+      aparencia: 'Ogro acinzentado de tamanho impressionante, com pele áspera e textura de couro seco. Carrega uma lança comprida. Possui uma tatuagem em forma de baga no ombro.',
+      personalidade: 'Age como bruto mas reage diferente dos outros Thools. Às vezes para, como se tentasse lembrar de algo.',
+      tracos: ['Thool', 'Misterioso', 'Potencial aliado']
+    },
+    {
+      id: 'mutter',
+      nome: 'Mutter Grimmhaar',
+      titulo: 'Bruxa das Blackwoods',
+      sprite: 'sprites/npc_mutter_grimmhaar.png',
+      alinhamento: 'neutro',
+      descricao: 'Uma bruxa velha que habita uma clareira ao sul das Blackwoods. Vende informações e ingredientes raros por favores que raramente são simples. Encanta de forma perturbadora — encerra frases com "que assim é", como uma afirmação de lei.',
+      aparencia: 'Alta e frágil, vestida em preto desgastado, com chapéu de pele de anfíbio decorado com teia de aranha. Dedos longos e um cajado de osso.',
+      personalidade: 'Encantadora à sua maneira estranha. Conhece mais sobre as Blackwoods do que qualquer outro ser vivo — e cobra o preço justo por isso.',
+      tracos: ['Bruxa', 'Comerciante de segredos', 'Perigosa']
+    },
+    {
+      id: 'wulfram',
+      nome: 'Wulfram',
+      titulo: 'O Homem Chifrado',
+      sprite: 'sprites/npc_wulfram_chifrado.png',
+      alinhamento: 'neutro',
+      descricao: 'Um recluso das florestas com chifres de veado crescidos na cabeça. Vive numa cabana no sudeste das Blackwoods, rodeado de silêncio e uma tristeza que não sabe nomear. Pode ser aliado ou adversário, dependendo do que os aventureiros descobrirem.',
+      aparencia: 'Homem musculoso com chifres de cervídeo na testa, roupas de couro e pelo. Carrega um machado de aparência poderosa. Expressão permanentemente sombria.',
+      personalidade: 'Temperamental e indeciso. Gosta de frutas cítricas. Algo o consome por dentro — uma dívida que ainda não reconheceu.',
+      tracos: ['Recluso', 'Combatente', 'Dilema moral']
+    },
+    {
+      id: 'mac_ronan',
+      nome: 'Mac Rónán',
+      titulo: 'Druida Supremo do Cnoc na Ríthe',
+      sprite: 'sprites/npc_mac_ronan.png',
+      alinhamento: 'aliado',
+      descricao: 'O mais sábio conhecedor das plantas e magias das Blackwoods, Mac Rónán foi capturado pelos kobolds e agora aguarda resgate em Kobold-Town. Sua sabedoria sobre as ervas da floresta pode ser decisiva para a missão.',
+      aparencia: 'Ancião de cabelos brancos entrelaçados com galhos secos, vestes verdes desgastadas e correntes nos pulsos. Mesmo acorrentado, mantém postura serena.',
+      personalidade: 'Sábio, paciente e profundamente preocupado com o equilíbrio da floresta.',
+      tracos: ['Druida', 'Prisioneiro', 'Curandeiro']
+    },
+    {
+      id: 'muirenn',
+      nome: 'Muirenn',
+      titulo: 'Assistente Druida — Cnoc na Ríthe',
+      sprite: 'sprites/npc_muirenn.png',
+      alinhamento: 'aliado',
+      descricao: 'Jovem assistente de Mac Rónán no círculo druídico. Quieta e amigável, Muirenn permanece no grove após o desaparecimento do mestre. Conhece os arredores e pode curar ferimentos.',
+      aparencia: 'Jovem mulher com roupas simples em tons de verde e marrom, cabelos castanhos presos e expressão aberta e gentil.',
+      personalidade: 'Quieta, amigável e levemente ansiosa com a ausência de Mac Rónán.',
+      tracos: ['Curandeira', 'Guia local', 'Aliada']
+    },
+    {
+      id: 'ruzalka',
+      nome: 'Ruzalka',
+      titulo: 'Espírito d\'Água da Gruta Afogada',
+      sprite: 'sprites/npc_ruzalka.png',
+      alinhamento: 'neutro',
+      descricao: 'Espírito feminino que habita uma ruína submersa nas Blackwoods. Bela e etérea, Ruzalka possui informações valiosas — mas negociar com ela raramente é simples. Caprichosa e esquecidiça, pode ser tanto ajuda quanto perigo.',
+      aparencia: 'Figura translúcida de mulher jovem com longos cabelos brancos flutuantes, vestida em tecido d\'água com bolhas ao redor.',
+      personalidade: 'Caprichosa, esquecidiça e sedutora. Sabe muito sobre as criaturas das Blackwoods e não se incomoda em compartilhar — por um preço.',
+      tracos: ['Espírito', 'Informante', 'Imprevisível']
+    },
+    {
+      id: 'blunkin',
+      nome: 'Blunkin Esmaga-Crânios',
+      titulo: 'Chefe de Kobold-Town',
+      sprite: 'sprites/npc_blunkin_esmaga_cranios.png',
+      alinhamento: 'hostil',
+      descricao: 'Líder dos kobolds que dominam uma parte das Blackwoods. Blunkin governa com autoridade que supera em muito sua inteligência — suas declarações absurdas são tratadas como sabedoria pelos subordinados.',
+      aparencia: 'Kobold gordo com coroa de cobre torta, manto real surrado e um maço com crânio na ponta. Expressão de quem se leva muito a sério.',
+      personalidade: 'Arrogante, pouco inteligente e incrivelmente susceptível a adulação. Facilmente manipulável por quem souber agradar seu ego.',
+      tracos: ['Chefe kobold', 'Arrogante', 'Manipulável']
+    },
+    {
+      id: 'drizzle',
+      nome: 'Drizzle',
+      titulo: 'Kobold — Kobold-Town',
+      sprite: 'sprites/npc_drizzle.png',
+      alinhamento: 'neutro',
+      descricao: 'Um kobold diferente dos outros: amigável em excesso, tagarela, e completamente incapaz de não roubar. Drizzle parece útil à primeira vista, mas qualquer item que ele tocar provavelmente vai desaparecer.',
+      aparencia: 'Kobold de orelhas excepcionalmente longas, língua que se agita nervosamente, sempre com bolsos cheios de coisas que não são suas.',
+      personalidade: 'Amigável de forma suspeita, não consegue parar de roubar. Fala muito mais do que deveria.',
+      tracos: ['Cleptomaníaco', 'Informante', 'Kobold']
+    },
+  ],
+  viajantes: [
+    {
+      id: 'valmorien',
+      nome: 'Valmorien',
+      titulo: 'Caçador Experiente',
+      sprite: 'sprites/npc_valmorien.png',
+      alinhamento: 'neutro',
+      descricao: 'Caçador veterano nas Blackwoods, acompanhado de sua aprendiz. Está atrás de uma presa lendária que vale uma fortuna — mas cuidado: suas trilhas cruzam com territórios perigosos.',
+      aparencia: 'Homem de meia-idade com arco, aljava cheia e capa de pelo. Expressão focada de quem passa mais tempo na floresta do que em cidades.',
+      personalidade: 'Pragmático, experiente e cauteloso. Conhece o valor de boas informações.',
+      tracos: ['Caçador', 'Experiente', 'Viajante']
+    },
+    {
+      id: 'ysoria',
+      nome: 'Ysoria',
+      titulo: 'Aprendiz de Caçadora',
+      sprite: 'sprites/npc_ysoria.png',
+      alinhamento: 'neutro',
+      descricao: 'Jovem aprendiz de Valmorien, cheia de energia e entusiasmo. Empunha um arco com mais confiança do que a experiência justificaria — mas o que falta em técnica, sobra em coragem.',
+      aparencia: 'Garota jovem em trajes verdes de floresta, cabelos loiros presos, arco nas costas e punho erguido com animação.',
+      personalidade: 'Entusiasmada, impulsiva e corajosa. Ainda está aprendendo que a floresta não perdoa descuido.',
+      tracos: ['Arqueira', 'Aprendiz', 'Corajosa']
+    },
+    {
+      id: 'aelar',
+      nome: 'Aelar Eisenli',
+      titulo: 'Caçadora de Recompensas Élfica',
+      sprite: 'sprites/npc_aelar_eisenli.png',
+      alinhamento: 'neutro',
+      descricao: 'Caçadora de recompensas élfica furtiva e bem equipada. Aelar opera segundo a lei — nem mais, nem menos. Está atrás de alguém específico nas Blackwoods e não se deixa distrair facilmente.',
+      aparencia: 'Élfica em armadura de couro reforçada, com capacete de visão especial, longa adaga à cinta e arco nas costas. Movimentos silenciosos e calculados.',
+      personalidade: 'Honesta, legalista e profissional. Não interfere em assuntos que não são seus contrato.',
+      tracos: ['Caçadora de recompensas', 'Élfica', 'Legalista']
+    },
+    {
+      id: 'finn',
+      nome: 'Finn Willowheel',
+      titulo: 'Sapateiro Élfico Errante',
+      sprite: 'sprites/npc_finn_willowheel.png',
+      alinhamento: 'aliado',
+      descricao: 'Um velho sapateiro élfico que anda pelas Blackwoods com um saco encantado cheio de calçados de todos os tipos. Parece excêntrico, mas possui uma memória extraordinária para detalhes — especialmente para pés.',
+      aparencia: 'Gnomo ou halfling idoso, alegre, com avental de artesão e um enorme saco de sapatos nas costas. Olhos vivos e curiosos.',
+      personalidade: 'Velho e alegre, cheio de histórias. Sua memória para detalhes anatômicos é estranhamente específica.',
+      tracos: ['Artesão', 'Informante', 'Errante']
+    },
+    {
+      id: 'dvalinn',
+      nome: 'Dvalinn',
+      titulo: 'O Anão — Prisioneiro em Kobold-Town',
+      sprite: 'sprites/npc_dvalinn_anao.png',
+      alinhamento: 'aliado',
+      descricao: 'Anão mal-humorado capturado pelos kobolds, aguardando resgate (ou uma boa desculpa para se vingar por conta própria). Resistente e combativo, carrega rancor pesado por elfos sombrios.',
+      aparencia: 'Anão compacto e musculoso, barba ruiva, armadura parcialmente destruída pelos kobolds. Expressão permanente de irritação.',
+      personalidade: 'Mal-humorado, resiliente e com sede de vingança. Sabe coisas sobre as Blackwoods que podem ser úteis.',
+      tracos: ['Anão', 'Prisioneiro', 'Aliado em potencial']
+    },
+    {
+      id: 'fariborz',
+      nome: 'Fariborz',
+      titulo: 'O Piromante',
+      sprite: 'sprites/npc_fariborz_piromante.png',
+      alinhamento: 'neutro',
+      descricao: 'Mago de fogo paranoico e perigoso, escondido nas Blackwoods. Fariborz tem um passado obscuro e uma obsessão com criaturas de fogo que o torna imprevisível. Pode ser valioso — ou catastrófico.',
+      aparencia: 'Homem de aparência desgastada, vestes de mago à prova de fogo queimadas nas bordas. Porta uma faca com lâmina de chama azul.',
+      personalidade: 'Paranoico, egoísta e sadista. Mas possui conhecimentos raros e pode cooperar quando seu interesse está alinhado.',
+      tracos: ['Piromante', 'Fugitivo', 'Aliado instável']
+    },
+  ],
+  sombrias: [
+    {
+      id: 'kalos',
+      nome: 'Príncipe Kalos',
+      titulo: 'Líder dos Elfos Sombrios',
+      sprite: 'sprites/npc_principe_kalos.png',
+      alinhamento: 'hostil',
+      descricao: 'Líder arrogante de uma facção de elfos sombrios no norte das Blackwoods, Kalos está consumido por um projeto obsessivo de décadas. Intolerante com humanos, mas inteligente o suficiente para fazer acordos quando eles servem a seus objetivos.',
+      aparencia: 'Élfico de traços afiados, cabelos brancos, armadura negra élfica com detalhes dourados e espada fina. Postura de quem nunca duvida de si mesmo.',
+      personalidade: 'Obsessivo, inteligente e frio. Respeita competência; despreza tudo mais.',
+      tracos: ['Elfo sombrio', 'Líder', 'Hostil a humanos']
+    },
+    {
+      id: 'rei_chutter',
+      nome: 'Rei Chutter',
+      titulo: 'O Tirano de Duas Cabeças',
+      sprite: 'sprites/npc_rei_chutter.png',
+      alinhamento: 'hostil',
+      descricao: 'Ettin feiticeiro de duas cabeças que comanda das sombras. Cada cabeça possui personalidade distinta — uma eloquente, outra eternamente desconfiada. Juntas, formam a mente por trás dos ataques às Blackwoods.',
+      aparencia: 'Ettin massivo de duas cabeças, com pele marrom-esverdeada áspera. Usa mantos escuros e carrega um cajado ornado com símbolos de poder.',
+      personalidade: 'Uma cabeça é eloquente e estratégica; a outra desconfia de tudo e de todos, inclusive da primeira.',
+      tracos: ['Ettin', 'Feiticeiro', 'Antagonista']
+    },
+    {
+      id: 'choir',
+      nome: 'Choir',
+      titulo: 'O Necromante das Sombras',
+      sprite: 'sprites/npc_choir_necromante.png',
+      alinhamento: 'hostil',
+      descricao: 'Um necromante que raramente se mostra diretamente. Sua influência permeia as Blackwoods de formas que os aventureiros notarão antes de o verem. Frio, calculista, e sempre pensando três passos à frente.',
+      aparencia: 'Figura encapuzada com robes negros e roxos, um cajado com cristal púrpura e crânio. Fantasmas e espíritos pairam ao redor como sombras.',
+      personalidade: 'Frio e calculista. Não toma ação direta quando uma peça movida de longe serve melhor.',
+      tracos: ['Necromante', 'Vilão nas sombras', 'Antagonista']
+    },
+  ]
+};
+
+const ENEMIES = [
+  {
+    id: 'espantalho_assombrado',
+    nome: 'Espantalho Assombrado',
+    tipo: 'Construto Necromântico',
+    badge: 'construto',
+    sprite: 'sprites/inimigo_espantalho_assombrado.png',
+    descricao: 'Espantalho de tamanho humano feito de palha, trapos e ossos presos com arame. Olhos que brilham como brasas vermelhas. Uma mão segura uma foice enferrujada; a outra tem dedos de gravetos afiados.',
+    comportamento: 'Instintivo e implacável',
+    tracos: ['Imune a medo', 'Visão no escuro', 'Detecta calor humano']
+  },
+  {
+    id: 'grimhollow_thool',
+    nome: 'Grimhollow Thool',
+    tipo: 'Humanoide Transformado',
+    badge: 'construto',
+    sprite: 'sprites/inimigo_grimhollow_thool.png',
+    descricao: 'Humano transformado em criatura ogrina. Pele espessa e acinzentada, traços ainda reconhecivelmente humanos mas distorcidos. Há uma melancolia estranha nos gestos, como se algo humano ainda vivesse dentro.',
+    comportamento: 'Calculista e metódico',
+    tracos: ['Força ogre', 'Inteligência residual', 'Armado com lança']
+  },
+  {
+    id: 'rei_chutter',
+    nome: 'Rei Chutter',
+    tipo: 'Ettin Feiticeiro',
+    badge: 'hostil',
+    sprite: 'sprites/inimigo_rei_chutter.png',
+    descricao: 'Ettin de duas cabeças, massivo e imponente. Pele marrom-esverdeada como casca de árvore velha. Cada cabeça usa adornos distintos. Uma das bocas murmura magias enquanto a outra grita ordens de batalha.',
+    comportamento: 'Sádico e estratégico',
+    tracos: ['Magia de terra e areia', 'Dois modos de ataque', 'Invoca Golens de Pergaminho']
+  },
+  {
+    id: 'golem_de_pergaminho',
+    nome: 'Golem de Pergaminho',
+    tipo: 'Construto Voador',
+    badge: 'construto',
+    sprite: 'sprites/inimigo_golem_de_pergaminho.png',
+    descricao: 'Figura humanoide feita de livros antigos e pergaminhos entrelaçados. O rosto é uma máscara de papel com olhos de tinta brilhante. Pode se desfazer e remontar como folhas ao vento.',
+    comportamento: 'Bestial — segue ordens sem questionar',
+    tracos: ['Voa', 'Imune a veneno', 'Se desmonta para esquivar']
+  },
+  {
+    id: 'mother_clutch',
+    nome: 'Mother Clutch',
+    tipo: 'Horror Necrótico',
+    badge: 'undead',
+    sprite: 'sprites/inimigo_mother_clutch.png',
+    descricao: 'Horror feito de membros humanos roubados de vítimas. Corpo central deformado com múltiplos braços e pernas dispostos de forma caótica. Nenhum rosto — apenas uma massa de carne que se move com propósito terrível.',
+    comportamento: 'Instintivo e implacável',
+    tracos: ['Garras múltiplas', 'Imune a veneno', 'Regenera em trevas']
+  },
+  {
+    id: 'marrowwither',
+    nome: 'Marrowwither',
+    tipo: 'Entidade Necromântica',
+    badge: 'undead',
+    sprite: 'sprites/inimigo_marrowwither.png',
+    descricao: 'Figura encapuzada envolta em névoa escura, com fantasmas e espíritos pairando ao redor. Drena a essência vital de suas vítimas, secando ossos e apagando memórias. Presença perturbadora mesmo a distância.',
+    comportamento: 'Bestial em combate, mas carrega um propósito sombrio',
+    tracos: ['Drena força vital', 'Aura de medo', 'Espíritos servos']
+  },
+  {
+    id: 'larva_gigante',
+    nome: 'Larva Gigante',
+    tipo: 'Besta Larval',
+    badge: 'besta',
+    sprite: 'sprites/inimigo_larva_gigante.png',
+    descricao: 'Minhoca ou larva do tamanho de uma carroça. Pele pálida e úmida com segmentos definidos. A boca abre em múltiplas mandíbulas com runas entalhadas que brilham à noite. Devora qualquer matéria orgânica.',
+    comportamento: 'Instintivo — come tudo que se move',
+    tracos: ['Tamanho enorme', 'Devora terreno', 'Runas de controle']
+  },
+  {
+    id: 'wraithweaver_spider',
+    nome: 'Aranha Espectral',
+    tipo: 'Besta Mágica',
+    badge: 'besta',
+    sprite: 'sprites/inimigo_wraithweaver_spider.png',
+    descricao: 'Aranha de pele branca como osso polido, sem pigmento. Oito olhos como brilhantes lâminas de azul elétrico. Teia tecida com fios de ectoplasma que paralisam espiritualmente. Quase silenciosa ao se mover.',
+    comportamento: 'Instintivo mas paciente',
+    tracos: ['Teia espectral', 'Veneno paralisante', 'Quase silenciosa']
+  },
+  {
+    id: 'manticora_albina',
+    nome: 'Manticora Albina',
+    tipo: 'Besta Mágica Rara',
+    badge: 'besta',
+    sprite: 'sprites/inimigo_manticora_albina.png',
+    descricao: 'Manticora rara de pelagem inteiramente branca. Corpo leonino com músculos proeminentes, cauda com espinhos ósseos giratórios. Os olhos cor-de-rosa fixam com uma inteligência predatória que vai além do animal comum.',
+    comportamento: 'Agressivo e territorial',
+    tracos: ['Dispara espinhos', 'Presa valorizada', 'Alta inteligência predatória']
+  },
+  {
+    id: 'barkthresher',
+    nome: 'Barkthresher',
+    tipo: 'Planta Senciente',
+    badge: 'planta',
+    sprite: 'sprites/inimigo_barkthresher.png',
+    descricao: 'Carvalho de tamanho médio-grande que ganhou consciência maligna. Raízes grossas usadas como chicotes; galhos superiores controlam os movimentos de animais próximos. Olho único no centro do tronco que brilha como brasa.',
+    comportamento: 'Bestial — defende seu território',
+    tracos: ['Raízes-chicote', 'Controla animais', 'Olho de fogo']
+  },
+  {
+    id: 'esqueleto_lanceiro',
+    nome: 'Esqueleto Lanceiro',
+    tipo: 'Morto-Vivo',
+    badge: 'undead',
+    sprite: 'sprites/inimigo_esqueleto_lanceiro.png',
+    descricao: 'Esqueleto humano reanimado com ossos tingidos de cinza-esverdeado por magia necromântica. Equipado com lança comprida e escudo redondo com o símbolo de Choir. Move-se com eficiência mecânica sem hesitação.',
+    comportamento: 'Bestial — segue ordens absolutamente',
+    tracos: ['Imune a veneno', 'Imune a medo', 'Não sente dor']
+  },
+  {
+    id: 'kobold_azul',
+    nome: 'Kobold de Pele Azul',
+    tipo: 'Humanoide',
+    badge: 'neutro',
+    sprite: 'sprites/inimigo_kobold_azul.png',
+    descricao: 'Humanoide pequeno de pele azul-ardósia com orelhas longas e presas pequenas. Usam táticas de grupo — covardes sozinhos, mas perigosos em bando. Sempre estão arquitetando alguma armadilha.',
+    comportamento: 'Covarde sozinho, perigoso em grupo',
+    tracos: ['Armadilhas', 'Tático em bando', 'Fraco isolado']
+  },
+  {
+    id: 'elfo_sombrio',
+    nome: 'Elfo Sombrio',
+    tipo: 'Humanoide',
+    badge: 'hostil',
+    sprite: 'sprites/inimigo_elfo_sombrio.png',
+    descricao: 'Élfico de traços afiados com pele cinza-esverdeada escura. Cabelos brancos presos. Dual empunha lâminas finas com precisão cirúrgica. Serve ao Príncipe Kalos e não demonstra nenhuma hesitação ao atacar intrusos.',
+    comportamento: 'Hostil e estratégico',
+    tracos: ['Dual-blade', 'Alta destreza', 'Leal a Kalos']
+  },
+  {
+    id: 'javali_ensandecido',
+    nome: 'Javali Ensandecido',
+    tipo: 'Besta',
+    badge: 'besta',
+    sprite: 'sprites/inimigo_javali_ensandecido.png',
+    descricao: 'Javali macho adulto enorme, espumando pela boca com olhos completamente vermelhos de raiva. Um projétil enfiado no corpo não o parou — a dor parece combustível. Carrega adiante sem parar.',
+    comportamento: 'Fúria incontrolável',
+    tracos: ['Berserk', 'Ignora dor', 'Carga imparável']
+  },
+  {
+    id: 'quay_grabber',
+    nome: 'Quay Grabber',
+    tipo: 'Meio-Troll Aquático',
+    badge: 'besta',
+    sprite: 'sprites/inimigo_quay_grabber.png',
+    descricao: 'Meio-troll aquático, servidor pessoal de Ruzalka. Corpo grande e curvado de troll, pele esverdeada úmida como musgo molhado. Emerge silenciosamente da água para capturar presas que Ruzalka deseja.',
+    comportamento: 'Agressivo por comando',
+    tracos: ['Semi-aquático', 'Servo de Ruzalka', 'Emboscada']
+  },
+  {
+    id: 'caranguejo_gigante',
+    nome: 'Caranguejo Gigante',
+    tipo: 'Besta',
+    badge: 'besta',
+    sprite: 'sprites/inimigo_caranguejo_gigante.png',
+    descricao: 'Caranguejo de água doce de tamanho impressionante. Carapaça azul-negra com reflexos roxos e olhos em haste que se movem independentemente. Pinças capazes de cortar madeira — e ossos.',
+    comportamento: 'Instintivo — território aquático',
+    tracos: ['Carapaça resistente', 'Pinças cortantes', 'Aquático']
+  },
+  {
+    id: 'log_wife',
+    nome: 'Log-Wife',
+    tipo: 'Espírito Vegetal',
+    badge: 'espirito',
+    sprite: 'sprites/inimigo_log_wife.png',
+    descricao: 'Espírito feminino de uma árvore morta. Corpo superior de mulher anciã etérea, parte inferior se confunde com raízes e lama. Habita áreas de madeira podre nas Blackwoods. Perturbá-la raramente termina bem.',
+    comportamento: 'Territorial e perturbada',
+    tracos: ['Espírito vegetal', 'Ligada à madeira morta', 'Perturbar é arriscado']
+  },
+  {
+    id: 'ankle_snapper',
+    nome: 'Leguminosa-Tornozelo',
+    tipo: 'Planta Carnívora',
+    badge: 'planta',
+    sprite: 'sprites/inimigo_ankle_snapper.png',
+    descricao: 'Raízes carnívoras que saem do solo sem aviso. Visualmente indetectáveis até o momento do ataque — parecem raízes comuns de floresta. Constringem tornozelos e puxam para baixo da terra.',
+    comportamento: 'Bestial — emboscada do solo',
+    tracos: ['Camuflada no solo', 'Paralisa tornozelo', 'Difícil de detectar']
+  },
+  {
+    id: 'troll_moss_belly',
+    nome: 'Moss-Belly',
+    tipo: 'Troll de Floresta',
+    badge: 'besta',
+    sprite: 'sprites/inimigo_troll_moss_belly.png',
+    descricao: 'Troll alto de pele esverdeada com ventre e espaldas cobertos de musgo espesso. O musgo é parte viva de seu corpo — ao morrer, libera esporos. Regenera ferimentos desde que o musgo esteja úmido.',
+    comportamento: 'Agressivo e territorial',
+    tracos: ['Regeneração por musgo', 'Esporos ao morrer', 'Vulnerável a fogo']
+  },
+  {
+    id: 'bugbear_assassino',
+    nome: 'Bugbear Assassino',
+    tipo: 'Humanoide',
+    badge: 'hostil',
+    sprite: 'sprites/inimigo_bugbear_assassino.png',
+    descricao: 'Bugbear de pelagem marrom-escura, musculoso e surpreendentemente silencioso para seu tamanho. Especialista em emboscadas — costuma atacar quando a vítima está distraída. Olhos amarelos que brilham no escuro.',
+    comportamento: 'Agressivo e desesperado',
+    tracos: ['Furtivo', 'Emboscada', 'Força considerável']
+  },
+  {
+    id: 'orc_bandido',
+    nome: 'Orc Bandido',
+    tipo: 'Humanoide',
+    badge: 'hostil',
+    sprite: 'sprites/inimigo_orc_bandido.png',
+    descricao: 'Orc de pele esverdeada e presas discretas, vestindo armadura de couro improvisada com peças roubadas. Carrega arco e quiver cheio. Age por oportunidade — ataca quem parece valioso e vulnerável.',
+    comportamento: 'Oportunista',
+    tracos: ['Arqueiro', 'Oportunista', 'Foge se em desvantagem']
+  },
+];
+
+// ═══════════════════════════════════════════ RENDER ═══════════════════════════════════════════
+
+function badge(type) {
+  const map = {
+    aliado: ['badge-aliado', 'Aliado'],
+    neutro: ['badge-neutro', 'Neutro'],
+    hostil: ['badge-hostil', 'Hostil'],
+    sombra: ['badge-sombra', 'Nas Sombras'],
+    construto: ['badge-construto', 'Construto'],
+    undead: ['badge-undead', 'Morto-Vivo'],
+    besta: ['badge-besta', 'Besta'],
+    planta: ['badge-planta', 'Planta'],
+    espirito: ['badge-espirito', 'Espírito'],
+  };
+  const [cls, label] = map[type] || ['badge-neutro', type];
+  return `<span class="card-badge ${cls}">${label}</span>`;
+}
+
+function renderNpcGrid(gridId, npcs) {
+  const el = document.getElementById(gridId);
+  el.innerHTML = npcs.map(n => `
+    <div class="card" onclick="openNpcModal('${n.id}')">
+      <img class="card-img" src="${n.sprite}" alt="${n.nome}" loading="lazy">
+      <div class="card-body">
+        <div class="card-name">${n.nome}</div>
+        <div class="card-role">${n.titulo}</div>
+        ${badge(n.alinhamento)}
+      </div>
+    </div>`).join('');
+}
+
+function renderEnemyGrid(filter) {
+  const el = document.getElementById('grid-enemies');
+  const list = filter === 'todos' ? ENEMIES : ENEMIES.filter(e => e.badge === filter);
+  el.innerHTML = list.map(e => `
+    <div class="card" onclick="openEnemyModal('${e.id}')">
+      <img class="card-img" src="${e.sprite}" alt="${e.nome}" loading="lazy">
+      <div class="card-body">
+        <div class="card-name">${e.nome}</div>
+        <div class="card-role">${e.tipo}</div>
+        ${badge(e.badge)}
+      </div>
+    </div>`).join('');
+}
+
+function renderEnemyFilters() {
+  const types = ['todos', 'besta', 'construto', 'undead', 'planta', 'espirito', 'hostil', 'neutro'];
+  const labels = { todos: 'Todos', besta: 'Bestas', construto: 'Construtos', undead: 'Mortos-Vivos', planta: 'Plantas', espirito: 'Espíritos', hostil: 'Humanoides', neutro: 'Kobolds' };
+  const el = document.getElementById('enemy-filters');
+  el.innerHTML = types.map((t, i) =>
+    `<button class="filter-btn ${i===0?'active':''}" onclick="filterEnemies('${t}', this)">${labels[t]}</button>`
+  ).join('');
+}
+
+function filterEnemies(type, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderEnemyGrid(type);
+}
+
+// ═══════════════════════════════════════════ MODALS ═══════════════════════════════════════════
+
+const NPC_MAP = {};
+[...NPCS.mhoried, ...NPCS.blackwoods, ...NPCS.viajantes, ...NPCS.sombrias].forEach(n => NPC_MAP[n.id] = n);
+const ENEMY_MAP = {};
+ENEMIES.forEach(e => ENEMY_MAP[e.id] = e);
+
+function openNpcModal(id) {
+  const n = NPC_MAP[id];
+  document.getElementById('modal-img').src = n.sprite;
+  document.getElementById('modal-name').textContent = n.nome;
+  document.getElementById('modal-subtitle').textContent = n.titulo;
+  const badgeMap = { aliado: ['badge-aliado','Aliado'], neutro: ['badge-neutro','Neutro'], hostil: ['badge-hostil','Hostil'] };
+  const [bc, bl] = badgeMap[n.alinhamento] || ['badge-neutro', n.alinhamento];
+  document.getElementById('modal-badges').innerHTML = `<span class="card-badge ${bc}">${bl}</span>`;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="modal-section">
+      <div class="modal-section-label">Sobre</div>
+      <p>${n.descricao}</p>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-label">Aparência</div>
+      <p>${n.aparencia}</p>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-label">Personalidade</div>
+      <p>${n.personalidade}</p>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-label">Traços</div>
+      <div class="trait-list">${n.tracos.map(t => `<span class="trait">${t}</span>`).join('')}</div>
+    </div>`;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function openEnemyModal(id) {
+  const e = ENEMY_MAP[id];
+  document.getElementById('modal-img').src = e.sprite;
+  document.getElementById('modal-name').textContent = e.nome;
+  document.getElementById('modal-subtitle').textContent = e.tipo;
+  const badgeMap = { construto: ['badge-construto','Construto'], undead: ['badge-undead','Morto-Vivo'], besta: ['badge-besta','Besta'], planta: ['badge-planta','Planta'], espirito: ['badge-espirito','Espírito'], hostil: ['badge-hostil','Humanoide'], neutro: ['badge-neutro','Kobold'] };
+  const [bc, bl] = badgeMap[e.badge] || ['badge-neutro', e.badge];
+  document.getElementById('modal-badges').innerHTML = `<span class="card-badge ${bc}">${bl}</span>`;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="modal-section">
+      <div class="modal-section-label">Descrição</div>
+      <p>${e.descricao}</p>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-label">Comportamento</div>
+      <p>${e.comportamento}</p>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-label">Características</div>
+      <div class="trait-list">${e.tracos.map(t => `<span class="trait">${t}</span>`).join('')}</div>
+    </div>`;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal-backdrop'))
+    document.getElementById('modal-backdrop').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════ TABS ═══════════════════════════════════════════
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ═══════════════════════════════════════════ INIT ═══════════════════════════════════════════
+
+// Classes
+(function renderClasses() {
+  const el = document.getElementById('grid-classes');
+  el.innerHTML = CLASSES.map(c => `
+    <div class="class-card">
+      <div class="class-portraits">
+        <div class="class-portrait" onclick="openClassModal('${c.id}','m')">
+          <img src="sprites/${c.id}_m.png" alt="${c.nome} ♂" loading="lazy">
+          <span class="class-portrait-label">♂ Masculino</span>
+        </div>
+        <div class="class-divider"></div>
+        <div class="class-portrait" onclick="openClassModal('${c.id}','f')">
+          <img src="sprites/${c.id}_f.png" alt="${c.nome} ♀" loading="lazy">
+          <span class="class-portrait-label">♀ Feminino</span>
+        </div>
+      </div>
+      <div class="class-info">
+        <div class="class-title-row">
+          <span class="class-icon">${c.icon}</span>
+          <span class="class-name">${c.nome}</span>
+        </div>
+        <div class="class-habilidade">Habilidade especial: <strong>${c.habilidade}</strong></div>
+        <p class="class-desc">${c.desc}</p>
+        <div class="class-powers">
+          <span class="power-tag habilidade">${c.habilidade}</span>
+          ${c.poderes.map(p => `<span class="power-tag">${p}</span>`).join('')}
+        </div>
+      </div>
+    </div>`).join('');
+})();
+
+function openClassModal(id, sexo) {
+  const c = CLASSES.find(x => x.id === id);
+  const label = sexo === 'm' ? 'Masculino' : 'Feminino';
+  document.getElementById('modal-img').src = `sprites/${id}_${sexo}.png`;
+  document.getElementById('modal-name').textContent = c.nome;
+  document.getElementById('modal-subtitle').textContent = `${c.icon} ${label}`;
+  document.getElementById('modal-badges').innerHTML = `<span class="card-badge badge-neutro">${c.habilidade}</span>`;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="modal-section">
+      <div class="modal-section-label">Sobre a Classe</div>
+      <p>${c.desc}</p>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-label">Habilidade Especial</div>
+      <p><strong style="color:var(--gold)">${c.habilidade}</strong></p>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-label">Poderes</div>
+      <div class="trait-list">${c.poderes.map(p => `<span class="trait">${p}</span>`).join('')}</div>
+    </div>`;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+renderNpcGrid('grid-mhoried',    NPCS.mhoried);
+renderNpcGrid('grid-blackwoods', NPCS.blackwoods);
+renderNpcGrid('grid-viajantes',  NPCS.viajantes);
+renderNpcGrid('grid-sombrias',   NPCS.sombrias);
+renderEnemyFilters();
+renderEnemyGrid('todos');
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('modal-backdrop').classList.remove('open');
+});
+</script>
+</body>
+</html>

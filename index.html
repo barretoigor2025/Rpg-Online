@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
   <title>Oráculo RPG</title>
-  <link rel="stylesheet" href="css/layout.css?v=30">
+  <link rel="stylesheet" href="css/layout.css">
   <script>
     // Navegação básica inline — roda ANTES de qualquer script externo.
     // Garante que os botões funcionem mesmo se o Firebase demorar a carregar.
@@ -194,32 +194,6 @@
     <p id="home-desc">A inteligência artificial conduz a narrativa, interpreta NPCs, controla inimigos e adapta a campanha em tempo real conforme suas escolhas.</p>
     <button id="home-play-btn" onclick="irParaPersonagens()">Jogar</button>
     <button id="home-retomar-btn" style="display:none" onclick="retomarUltimaSessao()">▶ Retomar Campanha</button>
-
-    <div id="api-section" class="field-group">
-      <label class="field-lbl">Provedor de IA</label>
-      <div class="provider-chips">
-        <button class="provider-chip active" data-prov="groq" onclick="selecionarProvider('groq',this)">
-          <strong>⚡ Groq</strong><small>llama-3.3 · voz</small>
-        </button>
-        <button class="provider-chip" data-prov="openai" onclick="selecionarProvider('openai',this)">
-          <strong>🤖 OpenAI</strong><small>gpt-4o · voz</small>
-        </button>
-        <button class="provider-chip" data-prov="gemini" onclick="selecionarProvider('gemini',this)">
-          <strong>✦ Gemini</strong><small>2.0 flash · grátis</small>
-        </button>
-        <button class="provider-chip" data-prov="openrouter" onclick="selecionarProvider('openrouter',this)">
-          <strong>🌐 Router</strong><small>llama-4 · grátis</small>
-        </button>
-        <button class="provider-chip" data-prov="cerebras" onclick="selecionarProvider('cerebras',this)">
-          <strong>🧠 Cerebras</strong><small>llama-3.3 · grátis</small>
-        </button>
-      </div>
-      <div class="row-input" style="margin-top:8px">
-        <input type="password" id="api-input" placeholder="gsk_...">
-        <button class="btn-sm" onclick="salvarApiKey()">Salvar</button>
-      </div>
-      <span id="api-status" class="hint"></span>
-    </div>
   </div>
 </div>
 
@@ -312,6 +286,17 @@
       <span id="campaign-name">📖 Carregando campanha...</span>
     </div>
 
+    <div class="field-group" id="api-section">
+      <label class="field-lbl">Chave API Groq</label>
+      <div class="row-input">
+        <input type="password" id="api-input" placeholder="gsk_...">
+        <button class="btn-sm" onclick="salvarApiKey()">Salvar</button>
+      </div>
+      <span id="api-status" class="hint"></span>
+    </div>
+
+    <hr class="divider">
+
     <div class="room-actions">
       <button class="btn-primary" onclick="criarSala()">Criar Sala</button>
       <div class="row-input">
@@ -333,9 +318,6 @@
     </div>
     <div id="topbar-right">
       <button class="icon-btn" onclick="toggleSkillsPanel()" title="Perícias">📜</button>
-      <button id="btn-destravar" class="icon-btn" onclick="destravaNarracao()" title="Destravar narração travada" style="display:none">🔓</button>
-      <button id="btn-undo-turno" class="icon-btn" onclick="desfazerUltimoTurno()" title="Desfazer último turno" style="display:none">↩</button>
-      <button id="btn-editar-hist" class="icon-btn" onclick="abrirGerenciarHistorico()" title="Editar histórico" style="display:none">🗂️</button>
       <button class="icon-btn" onclick="resetarSala()" title="Resetar sala">↺</button>
       <button class="icon-btn icon-btn-exit" onclick="deixarSala()" title="Sair da sala">🚪</button>
     </div>
@@ -348,18 +330,6 @@
   <div id="enemies-bar" style="display:none"></div>
   <div id="retry-ui" style="display:none">
     <span id="retry-msg"></span>
-  </div>
-
-  <!-- Overlay de espera — servidor ocupado / aguardando IA -->
-  <div id="loading-overlay" style="display:none">
-    <div class="loading-box">
-      <div class="hg-wrap">
-        <div class="hg-ring"></div>
-        <span class="hg-glyph">⌛</span>
-      </div>
-      <div id="loading-status-txt" class="loading-status">Aguardando servidor...</div>
-      <div id="loading-lore-txt" class="loading-lore"></div>
-    </div>
   </div>
   <div id="action-bar">
     <div id="action-top-btns">
@@ -382,29 +352,10 @@
   </div>
 </div>
 
-<!-- ══ MODAL GERENCIAR HISTÓRICO (host only) ══ -->
-<div id="modal-historico" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:900;align-items:flex-end;justify-content:center;padding:0">
-  <div style="background:#12171f;border:1px solid rgba(200,160,80,.3);border-top-left-radius:16px;border-top-right-radius:16px;width:100%;max-width:600px;height:85vh;display:flex;flex-direction:column;overflow:hidden">
-    <div style="padding:14px 16px 10px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
-      <span id="hist-modal-header" style="color:#c8a050;font-size:13px;letter-spacing:1px;text-transform:uppercase">🗂️ Editar Histórico</span>
-      <button onclick="fecharGerenciarHistorico()" style="background:none;border:none;color:#888;font-size:20px;cursor:pointer;padding:4px 8px">✕</button>
-    </div>
-    <div style="padding:8px 4px 4px;flex-shrink:0;display:flex;gap:6px;border-bottom:1px solid rgba(255,255,255,.05)">
-      <button onclick="histSelecionarTodos(true)"  style="flex:1;background:rgba(80,160,80,.12);border:1px solid rgba(80,160,80,.3);color:#8bc88b;border-radius:6px;padding:6px;font-size:11px;cursor:pointer">✓ Manter todos</button>
-      <button onclick="histSelecionarTodos(false)" style="flex:1;background:rgba(160,60,60,.12);border:1px solid rgba(160,60,60,.3);color:#c88b8b;border-radius:6px;padding:6px;font-size:11px;cursor:pointer">✗ Desmarcar todos</button>
-    </div>
-    <div id="hist-lista" style="overflow-y:scroll;-webkit-overflow-scrolling:touch;flex:1;padding:4px 0"></div>
-    <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.07);display:flex;gap:8px;flex-shrink:0">
-      <button onclick="confirmarLimpezaHistorico()" style="flex:1;background:#8b2020;color:#fff;border:none;border-radius:8px;padding:12px;font-size:13px;font-weight:600;cursor:pointer">🗑️ Remover desmarcados</button>
-      <button onclick="fecharGerenciarHistorico()" style="background:rgba(255,255,255,.06);color:#aaa;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:12px 16px;font-size:13px;cursor:pointer">Cancelar</button>
-    </div>
-  </div>
-</div>
-
 <!-- ══ MODAL API KEY ══ -->
 <div id="modal-apikey" style="display:none">
   <div class="modal-box">
-    <p id="modal-api-label">Insira sua chave API para continuar:</p>
+    <p>Insira sua chave Groq para continuar:</p>
     <input type="password" id="modal-api-input" placeholder="gsk_...">
     <button class="btn-primary" onclick="confirmarApiKeyModal()">Confirmar</button>
   </div>
@@ -438,6 +389,6 @@
 <!-- Firebase SDK via script tags (mais confiável em mobile que ES module imports) -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-<script src="js/main.js?v=62"></script>
+<script src="js/main.js?v=28"></script>
 </body>
 </html>

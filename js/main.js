@@ -156,11 +156,8 @@ let _activeSlot  = parseInt(localStorage.getItem('rpg_active_slot') || '0');
 let _charSlots   = new Array(4).fill(null);
 let amIHost     = false;
 let chamandoIA  = false;
-let _primeiraEntrada = false; // true na primeira onValue após irParaJogo — usado para auto-recovery
 let unsubSala   = null;
 let unsubRolagem = null;
-let _processingStartTs = null;
-let _processingInterval = null;
 let _apiKeyPendingCb = null;
 let _selectedClass  = 'guerreiro';
 let _selectedAdvs   = new Set();
@@ -178,78 +175,11 @@ let _regras           = {};
 let _trocaItens       = new Set(); // slugs selecionados para troca
 let _trocaAtual       = null;     // snapshot atual do nó salas/${sala}/troca
 let _lastConfig       = {};       // último snapshot de config (para re-check de prompt)
-let _skipTimers       = {};       // uid → timeoutId | 'ready' — timers para botão "Pular turno"
-let _retryCountdownTimer = null;  // intervalo do countdown de retryPendente
-let _loreTimer           = null;  // intervalo de rotação de curiosidades no overlay de ampulheta
-let _ultimaRodadaNotificada = null; // rodada para a qual já enviamos notificação de turno
-
-// Curiosidades do mundo — exibidas durante a espera do servidor
-const _LORE_FACTS = [
-  "Mhoried é famosa por suas peras douradas e pela prata lavrada de seus artesãos — ambas consideradas entre as melhores do reino.",
-  "A Arbor Aeterna, a Árvore Eterna de Mhoried, tem raízes tão antigas que não aparecem em nenhum registro histórico — simplesmente sempre esteve lá.",
-  "Aventureiros experientes sabem: nas Blackwoods, a sensação de estar sendo observado não é paranoia. É instinto de sobrevivência.",
-  "Os kobolds das Blackwoods constroem labirintos de túneis tão complexos que até mesmo seus criadores às vezes se perdem.",
-  "A névoa matinal das Blackwoods cheira diferente de qualquer floresta comum — mais antiga, mais úmida, como terra que nunca viu sol.",
-  "Na tradição de Mhoried, deixar uma vela acesa na janela durante a noite de São Phanourius protege a casa de visitantes indesejados.",
-  "Mutter Grimmhaar é tão velha que ninguém em Mhoried se lembra de quando ela chegou à floresta. Dizem que ela sabe coisas que nunca ninguém lhe contou.",
-  "O Forte Negro existe há séculos. Seus construtores originais nunca foram identificados — a arquitetura não corresponde a nenhuma civilização conhecida da região.",
-  "Poções de cura nas Blackwoods são raras e caras. Curandeiros locais raramente fazem perguntas sobre a origem das feridas.",
-  "Os elfos sombrios das Blackwoods não revelam seus nomes verdadeiros a estranhos. Para eles, o nome é parte da alma — e a alma não se empresta.",
-  "Criaturas das Blackwoods raramente atacam sem razão. O problema é que 'razão' para elas pode ser algo tão simples quanto um olhar no momento errado.",
-  "Viajantes que atravessam as Blackwoods à noite relatam sons que não existem de dia: passos que param quando você para, músicas sem origem, sussurros em língua esquecida.",
-  "Diz a lenda que qualquer contrato firmado sob a sombra da Arbor Aeterna é vinculante por algo maior que a lei dos homens.",
-  "A guilda dos mercadores de Mhoried proíbe negócios formais com criaturas das Blackwoods — não por moral, mas por amarga experiência.",
-  "Espantalhos animados não são criaturas vivas — são construtos mágicos. O que os move nunca é exatamente o que parece à primeira vista.",
-];
-let _loreIndex = Math.floor(Math.random() * _LORE_FACTS.length);
-let _leituraCache     = null;     // snapshot do nó salas/${sala}/leitura — confirmação de leitura multiplayer
-let _carregandoHistoriaInicial = false;
 
 // ═══════════════════════════════════════════════════════════════
 //  HELPERS
 // ═══════════════════════════════════════════════════════════════
-// ── Provedores de IA ──────────────────────────────────────────────
-const PROVIDERS = {
-  groq: {
-    nome:'Groq', modelo:'llama-3.3-70b-versatile',
-    keyName:'rpg_groq_key', placeholder:'gsk_...',
-    url:'https://api.groq.com/openai/v1/chat/completions',
-  },
-  openai: {
-    nome:'OpenAI', modelo:'gpt-4o',
-    keyName:'rpg_openai_key', placeholder:'sk-...',
-    url:'https://api.openai.com/v1/chat/completions',
-  },
-  gemini: {
-    nome:'Gemini', modelo:'gemini-2.0-flash',
-    keyName:'rpg_gemini_key', placeholder:'AIza...',
-    url:null,
-  },
-  openrouter: {
-    nome:'OpenRouter', modelo:'meta-llama/llama-4-maverick:free',
-    keyName:'rpg_openrouter_key', placeholder:'sk-or-v1-...',
-    url:'https://openrouter.ai/api/v1/chat/completions',
-  },
-  cerebras: {
-    nome:'Cerebras', modelo:'llama-3.3-70b',
-    keyName:'rpg_cerebras_key', placeholder:'csk-...',
-    url:'https://api.cerebras.ai/v1/chat/completions',
-  },
-};
-let _provider = localStorage.getItem('rpg_provider') || 'groq';
-
-function getApiKey() { return localStorage.getItem(PROVIDERS[_provider].keyName) || ''; }
-
-window.selecionarProvider = function(prov, btn) {
-  _provider = prov;
-  localStorage.setItem('rpg_provider', prov);
-  document.querySelectorAll('.provider-chip').forEach(b => b.classList.toggle('active', b.dataset.prov === prov));
-  const p = PROVIDERS[prov];
-  const inp = document.getElementById('api-input');
-  if (inp) { inp.placeholder = p.placeholder; inp.value = localStorage.getItem(p.keyName) || ''; }
-  const st = document.getElementById('api-status');
-  if (st) st.textContent = inp?.value ? '✓ Chave salva' : '';
-};
+function getApiKey() { return localStorage.getItem('rpg_groq_key') || ''; }
 
 function toast(msg, ms = 3000) {
   const el = document.getElementById('toast');
@@ -273,41 +203,13 @@ function setActionStatus(msg) {
   if (el) el.textContent = msg;
 }
 
-function _startProcessingTimer() {
-  _processingStartTs = Date.now();
-  if (_processingInterval) clearInterval(_processingInterval);
-  _processingInterval = setInterval(() => {
-    if (!_processingStartTs) { clearInterval(_processingInterval); _processingInterval = null; return; }
-    const secs = Math.floor((Date.now() - _processingStartTs) / 1000);
-    if (secs < 4) return;
-    const el = document.getElementById('action-status');
-    if (!el) return;
-    const prov = PROVIDERS[_provider]?.nome || 'IA';
-    if (el.textContent.includes('Processando') || el.textContent.includes('Aguardando os outros')) {
-      const base = el.textContent.includes('outros') ? '⏳ Aguardando os outros jogadores' : `⏳ Aguardando ${prov}`;
-      el.textContent = `${base}… ${secs}s`;
-    }
-  }, 1000);
-}
-
-function _stopProcessingTimer() {
-  _processingStartTs = null;
-  if (_processingInterval) { clearInterval(_processingInterval); _processingInterval = null; }
-}
-
-function normalizarAspas(txt) {
-  return txt
-    .replace(/[“”„«»]/g, '"')
-    .replace(/[‘’‚]/g, "'");
-}
-
 function limparTags(txt) {
-  return normalizarAspas(txt)
+  return txt
     .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV|JOGADOR|AUSENTE|PRESENTE|LESAO|XP|TITULO|POSSE|REPUTACAO|EQUIPAR|ITEM_BAG)[^\]]*\]\s*)*/gi, '')
     .replace(/\[(?:INIMIGO|MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR|LESAO|XP|TITULO|POSSE|REPUTACAO|EQUIPAR|ITEM_BAG):[^\]\n]*/gi, '')
     .replace(/^\s*TESTAR:\s*\[.*\]\s*$/gim, '')
     .replace(/^\s*ROLAR:\s*\[.*\]\s*$/gim, '')
-    .replace(/AVANÇAR/gi, '')
+    .replace(/^\s*AVANÇAR\s*$/im, '')
     .replace(/^\s*FECHAR_ATO:\s*\[[^\]]*\]\s*$/im, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -322,11 +224,11 @@ function removerFacharAto(txt) {
 }
 
 function extrairAvançar(txt) {
-  return /AVANÇAR/i.test(txt);
+  return /^\s*AVANÇAR\s*$/im.test(txt);
 }
 
 function removerAvançar(txt) {
-  return txt.replace(/AVANÇAR/gi, '').replace(/\n{3,}/g, '\n\n').trim();
+  return txt.replace(/^\s*AVANÇAR\s*$/im, '').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -393,9 +295,8 @@ function getPortraitAtaque(nome, costas = false) {
 }
 
 function extrairFalas(txt) {
-  txt = normalizarAspas(txt);
   const falas = [];
-  const re = /FALA:\s*\[([^\|]+)\|"(.+?)"\]/gi;
+  const re = /^\s*FALA:\s*\[([^\|]+)\|"([^"]+)"\]/gim;
   let m;
   while ((m = re.exec(txt)) !== null) {
     falas.push({ nome: m[1].trim(), texto: m[2].trim() });
@@ -819,24 +720,16 @@ let _falarAlvo = 'Todos';
 function detectarAlvosContexto() {
   const alvos = ['Todos'];
   Object.values(_jogadoresCache).forEach(j => { if (j.uid !== myUid && j.ativo) alvos.push(j.nome); });
-
   const textoRecente = Array.from(document.querySelectorAll('.msg-gm')).slice(-8).map(el => el.textContent).join(' ');
-  // Remove texto dentro de aspas — personagens MENCIONADOS em diálogo não estão fisicamente presentes
-  const textoSemFalas = textoRecente.replace(/"[^"]*"/g, ' ').replace(/«[^»]*»/g, ' ');
-
-  // NPCs de NPC_DATA cujo nome aparece no texto FORA de aspas (presença narrativa real)
   Object.keys(NPC_DATA).forEach(npc => {
-    if (textoSemFalas.toLowerCase().includes(npc.toLowerCase())) alvos.push(npc);
+    if (textoRecente.toLowerCase().includes(npc.toLowerCase())) alvos.push(npc);
   });
-
-  // Nomes seguidos de verbo de ação/fala fora de aspas
   const reNome = /([A-ZÁÉÍÓÚÀÃÕÂÊÔ][a-záéíóúàãõâêô]+(?:\s+[A-ZÁÉÍÓÚÀÃÕÂÊÔ][a-záéíóúàãõâêô]+)*)\s+(?:disse|falou|gritou|sussurrou|respondeu|perguntou|murmurou|exclamou)/g;
   let m;
-  while ((m = reNome.exec(textoSemFalas)) !== null) {
+  while ((m = reNome.exec(textoRecente)) !== null) {
     const nome = m[1].trim();
     if (nome.length > 2 && nome.length < 35) alvos.push(nome);
   }
-
   return [...new Set(alvos)];
 }
 
@@ -902,74 +795,16 @@ window.enviarFalaPersonagem = async function() {
   const acao = `${nome} ${tomLabel}${alvoStr}: "${texto}"`;
 
   fecharFalar();
+  const input = document.getElementById('action-input');
+  if (input) { input.value = acao; }
   await push(ref(db, `salas/${mySala}/historia`), { role:'user', content: acao, uid: myUid, ts: Date.now() });
   await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), { acao1: acao });
 };
-
-// Constrói o objeto leitura para o Firebase (null = solo, sem gate)
-function buildLeituraGate(jogadores) {
-  const confirmados = {};
-  Object.entries(jogadores || {}).forEach(([uid, j]) => {
-    if (j.vivo && j.consciente && !j.ausente) confirmados[uid] = false;
-  });
-  return Object.keys(confirmados).length > 1 ? { confirmados, ts: Date.now() } : null;
-}
-
-// Jogador confirma que leu a narração
-window.confirmarLeitura = async function() {
-  if (!mySala || !_leituraCache) return;
-  const ups = {};
-  ups[`salas/${mySala}/leitura/confirmados/${myUid}`] = true;
-  await update(ref(db), ups);
-};
-
-window.pularTurnoJogador = async function(uid) {
-  if (!amIHost || !mySala) return;
-  const t = _skipTimers[uid];
-  if (t && t !== 'ready') clearTimeout(t);
-  delete _skipTimers[uid];
-  await update(ref(db, `salas/${mySala}/jogadores/${uid}`), { acao1: '__pular__' });
-};
-
-// Host pula a confirmação de leitura de um jogador específico
-window.pularLeituraJogador = async function(uid) {
-  if (!amIHost || !mySala) return;
-  const ups = {};
-  ups[`salas/${mySala}/leitura/confirmados/${uid}`] = true;
-  await update(ref(db), ups);
-};
-
-// ── Notificações de turno ──
-async function pedirPermissaoNotificacao() {
-  if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
-  if (Notification.permission !== 'default') return;
-  await Notification.requestPermission();
-}
-
-async function dispararNotificacaoTurno() {
-  if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
-  if (Notification.permission !== 'granted') return;
-  if (document.visibilityState === 'visible') return;
-  try {
-    const reg = await navigator.serviceWorker.ready;
-    const base = window.location.href.replace(/index\.html.*$/, '').replace(/\?.*$/, '');
-    await reg.showNotification('⚔️ Oráculo RPG', {
-      body: 'É a sua vez! Declare sua ação.',
-      icon: base + 'sprites/guerreiro_m.png',
-      tag: 'rpg-turno',
-      requireInteraction: false,
-      vibrate: [200, 100, 200],
-      data: { url: window.location.href }
-    });
-  } catch(_) {}
-}
 
 window.querAvançarHistoria = async function() {
   if (!mySala) return;
   const eu = _jogadoresCache[myUid];
   if (!eu || !eu.vivo || !eu.consciente || eu.acao1 != null) return;
-  // Atualização otimista: bloqueia cliques duplos antes de Firebase propagar
-  _jogadoresCache[myUid] = { ...eu, acao1: '__avançar__' };
   const nome = eu.nome || myNome || 'Jogador';
   await push(ref(db, `salas/${mySala}/historia`), { role: 'user', content: `${nome} está pronto para avançar a história.`, uid: myUid, ts: Date.now() });
   await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), { acao1: '__avançar__' });
@@ -1004,42 +839,28 @@ async function narrarResultadoTestes(resultados, rolarRes, jogadores, inimigos, 
   }
   ups[`salas/${mySala}/config/estado`] = 'aguardando';
   ups[`salas/${mySala}/config/rodada`] = rodada + 1;
-  const leituraGate = buildLeituraGate(jogadores);
-  ups[`salas/${mySala}/leitura`] = leituraGate;
   await update(ref(db), ups);
 }
 
 function parsearSegmentos(txt) {
-  txt = normalizarAspas(txt).replace(/AVANÇAR/gi, '').replace(/\n{3,}/g, '\n\n').trim();
   const segs = [];
   const linhas = txt.split('\n');
   let acum = [];
   linhas.forEach(linha => {
-    const FALA_MID = /FALA:\s*\[([^\|]+)\|"(.+?)"\]/gi;
-    if (FALA_MID.test(linha)) {
-      FALA_MID.lastIndex = 0;
-      let lastIdx = 0, m;
-      while ((m = FALA_MID.exec(linha)) !== null) {
-        const antes = linha.slice(lastIdx, m.index).trim();
-        if (antes) acum.push(antes);
-        const t = acum.join('\n').trim();
-        if (t) segs.push({ tipo: 'texto', conteudo: t });
-        acum = [];
-        segs.push({ tipo: 'fala', nome: m[1].trim(), texto: m[2].trim() });
-        lastIdx = m.index + m[0].length;
-      }
-      const depois = linha.slice(lastIdx).trim();
-      if (depois) acum.push(depois);
+    const mFala = linha.match(/^\s*FALA:\s*\[([^\|]+)\|"([^"]+)"\]/i);
+    const mAtaque = linha.match(/^\s*ATAQUE:\s*\[([^\|]+)\|([^\|]+)\|"([^"]+)"\|(sim|nao)\]/i);
+    if (mFala) {
+      const t = acum.join('\n').trim();
+      if (t) segs.push({ tipo: 'texto', conteudo: t });
+      acum = [];
+      segs.push({ tipo: 'fala', nome: mFala[1].trim(), texto: mFala[2].trim() });
+    } else if (mAtaque) {
+      const t = acum.join('\n').trim();
+      if (t) segs.push({ tipo: 'texto', conteudo: t });
+      acum = [];
+      segs.push({ tipo: 'ataque', atacante: mAtaque[1].trim(), alvo: mAtaque[2].trim(), resultado: mAtaque[3].trim(), surpresa: mAtaque[4].toLowerCase() === 'sim' });
     } else {
-      const mAtaque = linha.match(/^\s*ATAQUE:\s*\[([^\|]+)\|([^\|]+)\|"([^"]+)"\|(sim|nao)\]/i);
-      if (mAtaque) {
-        const t = acum.join('\n').trim();
-        if (t) segs.push({ tipo: 'texto', conteudo: t });
-        acum = [];
-        segs.push({ tipo: 'ataque', atacante: mAtaque[1].trim(), alvo: mAtaque[2].trim(), resultado: mAtaque[3].trim(), surpresa: mAtaque[4].toLowerCase() === 'sim' });
-      } else {
-        acum.push(linha);
-      }
+      acum.push(linha);
     }
   });
   const resto = acum.join('\n').trim();
@@ -1062,7 +883,7 @@ function chuncarTexto(txt, maxWords = 50) {
   return chunks;
 }
 
-function renderizarSegmentos(container, segs, falas, atorPrimario) {
+function renderizarSegmentos(container, segs, falas) {
   const items = [];
   segs.forEach(s => {
     if (s.tipo === 'texto') {
@@ -1082,7 +903,6 @@ function renderizarSegmentos(container, segs, falas, atorPrimario) {
       <span class="dialogo-inline-icon-fb"${src ? ' style="display:none"' : ''}>${icon}</span>
     </div>`;
 
-  // Render all items to DOM
   items.forEach(it => {
     if (it.tipo === 'chunk') {
       const p = document.createElement('p');
@@ -1090,39 +910,31 @@ function renderizarSegmentos(container, segs, falas, atorPrimario) {
       p.textContent = it.texto;
       container.appendChild(p);
     } else if (it.tipo === 'fala') {
+      // Bolha inline: FALANTE à esquerda (espelhado) | OUVINTE à direita (normal)
       const jogEntry = Object.values(_jogadoresCache).find(j =>
         j.nome && it.nome.toLowerCase().includes(j.nome.toLowerCase())
       );
       let htmlEsq, htmlDir;
       if (jogEntry) {
-        htmlEsq = _ph(`sprites/${jogEntry.classe}_${jogEntry.sexo || 'm'}.png`, '🧑', '#4a7090', true);
-        const outroJog = Object.values(_jogadoresCache).find(j => j.uid !== jogEntry.uid && j.ativo !== false && !j.ausente);
-        if (outroJog) {
-          htmlDir = _ph(`sprites/${outroJog.classe}_${outroJog.sexo || 'm'}.png`, '🧑', '#4a7090', false);
-        } else {
-          const npcOuv = _ultimoNpc || { icon: '👤', cor: '#4a5a70', portrait: null };
-          htmlDir = _ph(npcOuv.portrait ? `sprites/${npcOuv.portrait}.png` : '', npcOuv.icon, npcOuv.cor, false);
-        }
+        // Jogador fala → Jogador ESQUERDA, último NPC DIREITA
+        const sexo = jogEntry.sexo || 'm';
+        htmlEsq = _ph(`sprites/${jogEntry.classe}_${sexo}.png`, '🧑', '#4a7090', true);
+        const npcOuv = _ultimoNpc || { icon: '👤', cor: '#4a5a70', portrait: null };
+        htmlDir = _ph(npcOuv.portrait ? `sprites/${npcOuv.portrait}.png` : '', npcOuv.icon, npcOuv.cor, false);
       } else {
+        // NPC fala → NPC ESQUERDA, Jogador atual DIREITA
         const npc = getNpcData(it.nome);
-        const prevNpc = _ultimoNpc;
         _ultimoNpc = npc;
         htmlEsq = _ph(npc.portrait ? `sprites/${npc.portrait}.png` : '', npc.icon, npc.cor, true);
-        // NPC-to-NPC apenas quando AMBOS têm portrait real (evita falso-positivo com jogadores)
-        const ouvinteNpc = prevNpc && prevNpc.portrait && npc.portrait && prevNpc.portrait !== npc.portrait ? prevNpc : null;
-        if (ouvinteNpc) {
-          htmlDir = _ph(`sprites/${ouvinteNpc.portrait}.png`, ouvinteNpc.icon, ouvinteNpc.cor, false);
-        } else {
-          const ouvinteUid = atorPrimario || myUid;
-          const ouvinte = _jogadoresCache[ouvinteUid] || _jogadoresCache[myUid];
-          htmlDir = _ph(ouvinte ? `sprites/${ouvinte.classe}_${ouvinte.sexo || 'm'}.png` : '', '🧑', '#4a7090', false);
-        }
+        const eu = _jogadoresCache[myUid];
+        htmlDir = _ph(eu ? `sprites/${eu.classe}_${eu.sexo || 'm'}.png` : '', '🧑', '#4a7090', false);
       }
       const bubble = document.createElement('div');
       bubble.className = 'dialogo-inline';
       bubble.innerHTML = `${htmlEsq}<div class="dialogo-inline-body"><div class="dialogo-inline-nome">${it.nome}</div><div class="dialogo-inline-texto">"${it.texto}"</div></div>${htmlDir}`;
       container.appendChild(bubble);
     } else if (it.tipo === 'ataque') {
+      // Card de batalha: ATACANTE à esquerda (espelhado), ALVO à direita
       const pAtac = getPortraitAtaque(it.atacante, false);
       const pAlvo = getPortraitAtaque(it.alvo, it.surpresa);
       const _phb = (p, espelhar) =>
@@ -1994,24 +1806,20 @@ document.querySelectorAll('.class-btn').forEach(btn => {
 window.salvarApiKey = function() {
   const val = document.getElementById('api-input')?.value?.trim();
   if (!val) return;
-  localStorage.setItem(PROVIDERS[_provider].keyName, val);
+  localStorage.setItem('rpg_groq_key', val);
   const st = document.getElementById('api-status');
   if (st) { st.textContent = '✓ Salva'; setTimeout(() => st.textContent = '', 2000); }
 };
 
 function pedirApiKey(cb) {
   _apiKeyPendingCb = cb;
-  const lbl = document.getElementById('modal-api-label');
-  const inp = document.getElementById('modal-api-input');
-  if (lbl) lbl.textContent = `Insira sua chave ${PROVIDERS[_provider].nome} para continuar:`;
-  if (inp) inp.placeholder = PROVIDERS[_provider].placeholder;
   document.getElementById('modal-apikey').style.display = 'flex';
 }
 
 window.confirmarApiKeyModal = function() {
   const val = document.getElementById('modal-api-input')?.value?.trim();
   if (!val) return;
-  localStorage.setItem(PROVIDERS[_provider].keyName, val);
+  localStorage.setItem('rpg_groq_key', val);
   document.getElementById('modal-apikey').style.display = 'none';
   if (_apiKeyPendingCb) { _apiKeyPendingCb(); _apiKeyPendingCb = null; }
 };
@@ -2197,33 +2005,13 @@ function buildRegrasContext() {
   return sec.length ? `\n═══ REGRAS CANÔNICAS DO SISTEMA ═══\n${sec.join('\n\n')}\n═══════════════════════════════════\n` : '';
 }
 
-// Preenche input e seletor de provider salvos
+// Preenche input se já tiver chave
 window.addEventListener('DOMContentLoaded', () => {
-  // Registrar Service Worker para notificações de turno
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
-  }
-
-  // Notificar quando jogador sai da aba e ainda tem uma ação pendente
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' || !mySala) return;
-    const meJog = _jogadoresCache[myUid];
-    if (_lastConfig.estado === 'aguardando' && meJog && meJog.acao1 == null && meJog.vivo && meJog.consciente && !meJog.ausente) {
-      const rodKey = String(_lastConfig.rodada || 0);
-      if (_ultimaRodadaNotificada !== rodKey) {
-        _ultimaRodadaNotificada = rodKey;
-        dispararNotificacaoTurno();
-      }
-    }
-  });
-
-  // Restaurar provider selecionado
-  document.querySelectorAll('.provider-chip').forEach(b => b.classList.toggle('active', b.dataset.prov === _provider));
-  const p = PROVIDERS[_provider];
+  const k = getApiKey();
   const el = document.getElementById('api-input');
-  if (el) { el.placeholder = p.placeholder; const k = getApiKey(); if (k) el.value = k; }
+  if (el && k) { el.value = k; }
   const st = document.getElementById('api-status');
-  if (st && getApiKey()) st.textContent = '✓ Chave salva';
+  if (st && k) st.textContent = '✓ Chave salva';
 
   document.getElementById('action-input')?.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarAcao(); }
@@ -2799,13 +2587,9 @@ function irParaJogo(codigo) {
   localStorage.setItem(`rpg_sala_s${_activeSlot}`, codigo);
   mostrarTela('screen-game');
   document.getElementById('room-code').textContent = codigo;
-  // Pedir permissão de notificação — dispara 2s após entrar no jogo
-  setTimeout(pedirPermissaoNotificacao, 2000);
 
   // Resetar estado de renderização
   _renderedKeys = new Set();
-  _carregandoHistoriaInicial = true;
-  _primeiraEntrada = true; // habilita auto-recovery na primeira leitura do Firebase
 
   _kitMigrado = false;
   if (unsubSala) unsubSala();
@@ -2828,49 +2612,6 @@ function irParaJogo(codigo) {
     const inimigos  = data.inimigos  || {};
 
     amIHost = config.host === myUid;
-
-    // Auto-recovery: host reabre o jogo com sessão travada em 'narrando' (sem retryPendente)
-    // Isso ocorre quando o browser fecha durante uma chamada de API em andamento.
-    // Como uma narração ativa sempre resolve em ≤90s ou seta retryPendente,
-    // estado='narrando' + sem retryPendente na primeira leitura = sessão órfã.
-    if (amIHost && _primeiraEntrada) {
-      _primeiraEntrada = false;
-      if (config.estado === 'narrando' && !config.retryPendente && !chamandoIA) {
-        chamandoIA = false;
-        // Capturar snapshot antes do setTimeout (closures sobre `data` atual)
-        const _dataSnap = data;
-        setTimeout(async () => {
-          try {
-            // Restaurar acao1 para jogadores que tenham ação pendente sem resposta da IA
-            // (acao1 pode ter sido limpo pelo fluxo de TESTAR antes do crash)
-            const _historia = _dataSnap.historia || {};
-            const _jogs     = _dataSnap.jogadores || {};
-            const _sorted   = Object.values(_historia).sort((a,b) => (a.ts||0)-(b.ts||0));
-            // Último modelo real (excluindo preambles noTTS) = marca de tempo de referência
-            const _lastModelTs = _sorted
-              .filter(e => e.role === 'model' && !e.noTTS)
-              .reduce((mx, e) => Math.max(mx, e.ts||0), 0);
-            const _ups = {};
-            Object.values(_jogs).forEach(j => {
-              if (!j.vivo || j.ausente) return;
-              if (j.acao1 != null) return; // já tem ação, não sobrescrever
-              // Última ação desse jogador após o último modelo real
-              const _ultima = _sorted
-                .filter(e => e.role === 'user' && e.uid === j.uid && (e.ts||0) > _lastModelTs)
-                .pop();
-              if (_ultima?.content && _ultima.content !== `${j.nome} está pronto para avançar a história.`) {
-                _ups[`salas/${mySala}/jogadores/${j.uid}/acao1`] = _ultima.content;
-              }
-            });
-            _ups[`salas/${mySala}/config/estado`] = 'aguardando';
-            await update(ref(db), _ups);
-            toast('🔄 Sessão anterior recuperada — continuando...', 3000);
-          } catch(e) { console.warn('[auto-recovery]', e); }
-        }, 1200);
-      }
-    } else if (_primeiraEntrada) {
-      _primeiraEntrada = false;
-    }
 
     // Turno
     const rodEl = document.getElementById('round-display');
@@ -2918,16 +2659,6 @@ function irParaJogo(codigo) {
       }
     }
 
-    // Sincronizar cache de leitura
-    _leituraCache = data.leitura || null;
-
-    // Host verifica se todos confirmaram leitura → libera o jogo
-    if (amIHost && _leituraCache) {
-      const ativosL = Object.values(jogadores).filter(j => j.vivo && j.consciente && !j.ausente);
-      const todosLeram = ativosL.length > 0 && ativosL.every(j => _leituraCache.confirmados?.[j.uid] === true);
-      if (todosLeram) update(ref(db, `salas/${codigo}`), { leitura: null });
-    }
-
     renderizarJogadores(jogadores, config);
     renderizarInimigos(inimigos);
     renderizarHistoria(historia, jogadores);
@@ -2951,81 +2682,34 @@ function irParaJogo(codigo) {
     // Cancelar timer se saiu do estado avançando
     if (config.estado !== 'avançando') cancelarAutoAvancar();
 
-    // Auto-avançar quando IA sinalizou AVANÇAR — espera todos os jogadores confirmarem (sem timer)
-    if (amIHost && config.estado === 'avançando' && !chamandoIA && !config.retryPendente) {
-      const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && !j.ausente);
-      const alguemComAcaoReal = ativos.some(j => j.acao1 != null && j.acao1 !== '__avançar__' && j.acao1 !== '__pular__');
-      const todosConfirmaram = ativos.length > 0 && ativos.every(j => j.acao1 === '__avançar__' || j.acao1 === '__pular__');
+    // Auto-avançar quando IA sinalizou AVANÇAR — espera todos os jogadores confirmarem
+    if (amIHost && config.estado === 'avançando' && !chamandoIA) {
+      const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
+      const alguemComAcaoReal = ativos.some(j => j.acao1 != null && j.acao1 !== '__avançar__');
+      const todosConfirmaram = ativos.length > 0 && ativos.every(j => j.acao1 === '__avançar__');
       if (alguemComAcaoReal) {
+        cancelarAutoAvancar();
         update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
       } else if (todosConfirmaram) {
+        cancelarAutoAvancar();
         chamarIA_continuar();
+      } else {
+        iniciarAutoAvancar();
       }
-      // Sem iniciarAutoAvancar() — a história só avança quando TODOS confirmarem manualmente
     }
 
-    // Host narra quando estado = 'aguardando' e todos enviaram ação (sem retry pendente)
-    if (amIHost && config.estado === 'aguardando' && !config.retryPendente) {
-      const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && !j.ausente);
+    // Host narra quando estado = 'aguardando' e todos enviaram ação
+    if (amIHost && config.estado === 'aguardando') {
+      const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
       const todosEnviaram = ativos.length > 0 && ativos.every(j => j.acao1 != null);
       if (todosEnviaram && !chamandoIA) {
-        const todosAvançar = ativos.every(j => j.acao1 === '__avançar__' || j.acao1 === '__pular__');
+        const todosAvançar = ativos.every(j => j.acao1 === '__avançar__');
         const haInimigos = Object.values(inimigos).some(i => (i.hp || 0) > 0);
         // Em combate chamarIA processa TESTAR/ROLAR corretamente;
         // fora de combate chamarIA_jogadoresAvançam usa o prompt de "mestre entra em cena"
         if (todosAvançar && !haInimigos) chamarIA_jogadoresAvançam(jogadores, data);
         else chamarIA(jogadores, data);
       }
-    }
-
-    // Auto-retry quando servidor estava sobrecarregado
-    if (amIHost && config.retryPendente && !chamandoIA) {
-      const agora = Date.now();
-      if (agora >= config.retryPendente.em) {
-        const tipo = config.retryPendente.tipo;
-        update(ref(db, `salas/${mySala}/config`), { retryPendente: null });
-        if (tipo === 'turno' && config.estado === 'aguardando') {
-          const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && !j.ausente);
-          const todosEnviaram = ativos.length > 0 && ativos.every(j => j.acao1 != null);
-          if (todosEnviaram) chamarIA(jogadores, data);
-        } else if (tipo === 'continuar' && config.estado === 'avançando') {
-          chamarIA_continuar();
-        } else if (tipo === 'avançam' && config.estado === 'avançando') {
-          chamarIA_continuar();
-        }
-      } else {
-        // Agendar verificação local quando o countdown expirar
-        if (!_retryCountdownTimer) {
-          _retryCountdownTimer = setInterval(() => {
-            const el = document.getElementById('retry-countdown-time');
-            if (!el) { clearInterval(_retryCountdownTimer); _retryCountdownTimer = null; return; }
-            const rem = (_lastConfig?.retryPendente?.em || 0) - Date.now();
-            if (rem <= 0) { el.textContent = '0s'; clearInterval(_retryCountdownTimer); _retryCountdownTimer = null; }
-            else {
-              const m = Math.floor(rem / 60000);
-              const s = Math.floor((rem % 60000) / 1000);
-              el.textContent = m > 0 ? `${m}m${String(s).padStart(2,'0')}s` : `${s}s`;
-            }
-          }, 1000);
-        }
-      }
-    } else if (!config.retryPendente && _retryCountdownTimer) {
-      clearInterval(_retryCountdownTimer);
-      _retryCountdownTimer = null;
-    }
-
-    // Notificação de turno — avisa quando é a vez do jogador e página está em background
-    if (config.estado === 'aguardando') {
-      const meJog = jogadores[myUid];
-      if (meJog && meJog.acao1 == null && meJog.vivo && meJog.consciente && !meJog.ausente) {
-        const rodKey = String(config.rodada || 0);
-        if (_ultimaRodadaNotificada !== rodKey) {
-          _ultimaRodadaNotificada = rodKey;
-          dispararNotificacaoTurno();
-        }
-      }
-    } else {
-      _ultimaRodadaNotificada = null;
     }
   });
 }
@@ -3047,10 +2731,8 @@ function renderizarJogadores(jogadores, config) {
     const lesaoBadge = lesoesArr.length
       ? `<span class="chip-lesao" title="${lesoesArr.map(l=>l.descricao).join(' | ')}">⚠</span>` : '';
     const nivelBadge = j.nivel > 1 ? `<span class="chip-nivel">Nv${j.nivel}</span>` : '';
-    const presenceDot = `<span class="presence-dot ${j.ativo === false ? 'offline' : 'online'}" title="${j.ativo === false ? 'offline' : 'online'}"></span>`;
     return `<div class="player-chip ${isMe ? 'me' : ''} ${j.ativo === false ? 'offline' : ''} ${j.ausente ? 'ausente' : ''}">
       <span>${icon}</span>
-      ${presenceDot}
       <span class="chip-name">${j.nome}</span>
       ${j.ausente ? '<span class="chip-ausente">outra cena</span>' : `<span class="chip-hp ${hpCls}">PV ${j.hp}/${j.maxHp}</span>`}
       ${!j.ausente && j.ac != null ? `<span class="chip-hp" style="color:var(--blue)">CA ${j.ac}</span>` : ''}
@@ -3089,8 +2771,6 @@ function renderizarHistoria(historia, jogadores) {
   if (!el) return;
   const entries = Object.entries(historia).sort(([,a],[,b]) => (a.ts||0)-(b.ts||0));
 
-  if (_carregandoHistoriaInicial) _carregandoHistoriaInicial = false;
-
   let adicionou = false;
 
   entries.forEach(([key, entry]) => {
@@ -3103,7 +2783,7 @@ function renderizarHistoria(historia, jogadores) {
       div.className = 'msg msg-gm';
       const falas = normalizarFalas(entry.falas);
       const segs  = parsearSegmentos(entry.content);
-      renderizarSegmentos(div, segs, falas, entry.atorPrimario || null);
+      renderizarSegmentos(div, segs, falas);
     } else if (entry.role === 'user') {
       const j = Object.values(jogadores).find(j => j.uid === entry.uid);
       const cls = CLASSES[j?.classe] || {};
@@ -3190,175 +2870,22 @@ function atualizarInputArea(eu, config) {
   const narrando    = config.estado === 'narrando' || config.estado === 'iniciando';
   const morto       = !eu.vivo || !eu.consciente;
 
-  // Leitura gate: bloqueia input até todos confirmarem leitura
-  const leitura = _leituraCache;
-  const euJaLi    = !leitura || leitura.confirmados?.[myUid] !== false;
-  const leituraGateAtiva = !!(leitura && !narrando && !morto);
+  if (btn) btn.disabled = jaEnviou || narrando || morto;
 
-  // Painel de retry pendente — servidor sobrecarregado, aguardando auto-retry
-  if (config.retryPendente && !narrando) {
-    if (btn) btn.disabled = true;
-    _stopProcessingTimer();
-    const rem = config.retryPendente.em - Date.now();
-    const m = Math.floor(Math.max(0, rem) / 60000);
-    const s = Math.floor((Math.max(0, rem) % 60000) / 1000);
-    const timeStr = m > 0 ? `${m}m${String(s).padStart(2,'0')}s` : `${s}s`;
-    const statusEl = document.getElementById('action-status');
-    if (statusEl) statusEl.innerHTML = `<div id="retry-countdown-panel">⏳ Servidor ocupado — nova tentativa em <span id="retry-countdown-time">${timeStr}</span></div>`;
-    atualizarPromptAcao(eu, config);
-    if (iniciarWrap && config.estado !== 'lobby') iniciarWrap.style.display = 'none';
-    return;
-  }
-  if (!config.retryPendente && _retryCountdownTimer) {
-    clearInterval(_retryCountdownTimer); _retryCountdownTimer = null;
-  }
-
-  if (btn) btn.disabled = jaEnviou || narrando || morto || leituraGateAtiva;
-
-  const totalAtivos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && !j.ausente).length;
+  const totalAtivos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente).length;
   const soloMode    = totalAtivos <= 1;
-
-  // Botão Continuar (X/N) — tem prioridade sobre os demais status
-  if (leituraGateAtiva) {
-    _stopProcessingTimer();
-    const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && !j.ausente);
-    const totalN = ativos.length;
-    const nConfirmados = ativos.filter(j => leitura.confirmados?.[j.uid] === true).length;
-    const euJaConfirmou = leitura.confirmados?.[myUid] === true;
-    let html = '<div class="leitura-counter-wrap">';
-    if (euJaConfirmou) {
-      html += `<span class="leitura-waiting">▶ Continuar (${nConfirmados}/${totalN})</span>`;
-    } else {
-      html += `<button class="btn-continuar-narr" onclick="confirmarLeitura()">▶ Continuar (${nConfirmados}/${totalN})</button>`;
-    }
-    if (amIHost) {
-      const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      const naoLeram = ativos.filter(j => leitura.confirmados?.[j.uid] !== true && j.uid !== myUid);
-      for (const j of naoLeram) {
-        html += ` <button class="btn-pular-turno" onclick="pularLeituraJogador('${j.uid}')">⏭ ${esc(j.nome)}</button>`;
-      }
-    }
-    html += '</div>';
-    const statusEl = document.getElementById('action-status');
-    if (statusEl) statusEl.innerHTML = html;
-    atualizarPromptAcao(eu, config);
-    if (iniciarWrap && config.estado !== 'lobby') iniciarWrap.style.display = 'none';
-    const btnUndo = document.getElementById('btn-undo-turno');
-    if (btnUndo) btnUndo.style.display = amIHost ? 'inline-flex' : 'none';
-    const btnHist = document.getElementById('btn-editar-hist');
-    if (btnHist) btnHist.style.display = amIHost ? 'inline-flex' : 'none';
-    const btnDestravar = document.getElementById('btn-destravar');
-    if (btnDestravar) btnDestravar.style.display = 'none';
-    const btnAvLeit = document.getElementById('btn-avançar-hist');
-    if (btnAvLeit) btnAvLeit.style.display = 'none';
-    return;
-  }
-
-  // Botão Continuar (X/N) — estado avançando (IA usou AVANÇAR)
-  if (config.estado === 'avançando' && !narrando && !morto) {
-    _stopProcessingTimer();
-    const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && !j.ausente);
-    const totalN = ativos.length;
-    const nConf  = ativos.filter(j => j.acao1 === '__avançar__' || j.acao1 === '__pular__').length;
-    const euConf = eu?.acao1 === '__avançar__' || eu?.acao1 === '__pular__';
-    let html = '<div class="leitura-counter-wrap">';
-    html += euConf
-      ? `<span class="leitura-waiting">▶ Continuar (${nConf}/${totalN})</span>`
-      : `<button class="btn-continuar-narr" onclick="querAvançarHistoria()">▶ Continuar (${nConf}/${totalN})</button>`;
-    html += '</div>';
-    const statusEl = document.getElementById('action-status');
-    if (statusEl) statusEl.innerHTML = html;
-    atualizarPromptAcao(eu, config);
-    if (iniciarWrap && config.estado !== 'lobby') iniciarWrap.style.display = 'none';
-    const btnUndo2 = document.getElementById('btn-undo-turno');
-    if (btnUndo2) btnUndo2.style.display = amIHost ? 'inline-flex' : 'none';
-    const btnHist2 = document.getElementById('btn-editar-hist');
-    if (btnHist2) btnHist2.style.display = amIHost ? 'inline-flex' : 'none';
-    const btnDestravar2 = document.getElementById('btn-destravar');
-    if (btnDestravar2) btnDestravar2.style.display = 'none';
-    const btnAvConf = document.getElementById('btn-avançar-hist');
-    if (btnAvConf) btnAvConf.style.display = 'none';
-    return;
-  }
-
-  // Limpar skip timers quando nova rodada começa ou IA está narrando
-  if (!jaEnviou || narrando) {
-    Object.keys(_skipTimers).forEach(uid => {
-      const t = _skipTimers[uid];
-      if (t && t !== 'ready') clearTimeout(t);
-    });
-    _skipTimers = {};
-  }
-
-  if (!jaEnviou) _stopProcessingTimer();
-
-  // Painel "quem já agiu" (multiplayer + eu já enviei + não narrando)
-  if (!soloMode && jaEnviou && !narrando && !morto) {
-    _stopProcessingTimer();
-    const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && !j.ausente);
-    const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    let html = '<div id="action-wait-panel">';
-    for (const j of ativos) {
-      if (j.acao1 != null) {
-        // Limpar timer se esse jogador agiu
-        if (_skipTimers[j.uid]) {
-          const t = _skipTimers[j.uid];
-          if (t && t !== 'ready') clearTimeout(t);
-          delete _skipTimers[j.uid];
-        }
-        const raw = j.acao1;
-        const preview = raw === '__avançar__' ? '(avançar)' : raw === '__pular__' ? '(pulou)' : `"${esc(raw.substring(0, 35))}${raw.length > 35 ? '…' : ''}"`;
-        html += `<div class="wait-player sent">✅ ${esc(j.nome)}: ${preview}</div>`;
-      } else {
-        // Jogador ainda não agiu — gerenciar timer de skip
-        if (amIHost && _skipTimers[j.uid] === undefined) {
-          _skipTimers[j.uid] = setTimeout(() => {
-            _skipTimers[j.uid] = 'ready';
-            const myEu = _jogadoresCache[myUid];
-            if (myEu && _lastConfig) atualizarInputArea(myEu, _lastConfig);
-          }, 60000);
-        }
-        html += `<div class="wait-player waiting">⏳ ${esc(j.nome)}: aguardando ação…`;
-        if (amIHost && _skipTimers[j.uid] === 'ready') {
-          html += ` <button class="btn-pular-turno" onclick="pularTurnoJogador('${j.uid}')">⏭ Pular turno</button>`;
-        }
-        html += `</div>`;
-      }
-    }
-    html += '</div>';
-    const statusEl = document.getElementById('action-status');
-    if (statusEl) statusEl.innerHTML = html;
-  } else {
-    if (morto)         setActionStatus('Seu personagem está fora de combate.');
-    else if (narrando) {
-      if (config.retryProgresso) {
-        const rp = config.retryProgresso;
-        const txt = `Tentativa ${rp.t}/${rp.total} — aguardando ${rp.s}s...`;
-        setActionStatus('');
-        if (!amIHost) mostrarLoadingOverlay(txt); // host já mostra via mostrarRetryUI
-      } else {
-        ocultarLoadingOverlay();
-        setActionStatus('⏳ Narrando...');
-      }
-    }
-    else if (jaEnviou) setActionStatus('⏳ Processando ação...');
-    else               setActionStatus('');
-  }
+  if (morto)         setActionStatus('Seu personagem está fora de combate.');
+  else if (narrando) setActionStatus('⏳ Narrando...');
+  else if (jaEnviou) setActionStatus(soloMode ? '⏳ Processando ação...' : '⏳ Aguardando os outros jogadores...');
+  else               setActionStatus('');
 
   atualizarPromptAcao(eu, config);
 
   if (iniciarWrap && config.estado !== 'lobby') iniciarWrap.style.display = 'none';
 
-  const btnUndo = document.getElementById('btn-undo-turno');
-  if (btnUndo) btnUndo.style.display = amIHost ? 'inline-flex' : 'none';
-  const btnHist = document.getElementById('btn-editar-hist');
-  if (btnHist) btnHist.style.display = amIHost ? 'inline-flex' : 'none';
-  const btnDestravar = document.getElementById('btn-destravar');
-  if (btnDestravar) btnDestravar.style.display = (amIHost && narrando) ? 'inline-flex' : 'none';
-
   const btnAv = document.getElementById('btn-avançar-hist');
   if (btnAv) {
-    const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && !j.ausente);
+    const ativos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
     const querAvCount = ativos.filter(j => j.acao1 === '__avançar__').length;
     const estaAvançando = config.estado === 'avançando';
     const mostrar = !narrando && !morto && (config.estado === 'aguardando' || estaAvançando);
@@ -3384,7 +2911,7 @@ function atualizarPromptAcao(eu, config) {
 
   let card = document.getElementById('action-prompt-card');
   const estadoAvançando  = config.estado === 'avançando';
-  const deveExibir = eu && (config.estado === 'aguardando' || estadoAvançando) && eu.acao1 == null && eu.vivo && eu.consciente && !_leituraCache;
+  const deveExibir = eu && (config.estado === 'aguardando' || estadoAvançando) && eu.acao1 == null && eu.vivo && eu.consciente;
 
   if (!deveExibir) {
     if (card) card.remove();
@@ -3430,7 +2957,6 @@ window.enviarAcao = async function() {
   if (!acao || !mySala) return;
 
   input.value = '';
-  _startProcessingTimer();
   await push(ref(db, `salas/${mySala}/historia`), { role:'user', content: acao, uid: myUid, ts: Date.now() });
   await update(ref(db, `salas/${mySala}/jogadores/${myUid}`), { acao1: acao });
 
@@ -3451,7 +2977,6 @@ window.resetarSala = async function() {
   if (!mySala || !amIHost) { toast('Só o host pode resetar.'); return; }
   if (!confirm('Resetar a sala?')) return;
   _renderedKeys = new Set();
-  _carregandoHistoriaInicial = false;
   const jogadores = (await get(ref(db, `salas/${mySala}/jogadores`))).val() || {};
   const ups = {};
   ups[`salas/${mySala}/historia`]  = null;
@@ -3476,51 +3001,16 @@ window.resetarSala = async function() {
 // ═══════════════════════════════════════════════════════════════
 //  RETRY UI
 // ═══════════════════════════════════════════════════════════════
-function _avancarLore() {
-  const el = document.getElementById('loading-lore-txt');
-  if (!el) return;
-  el.style.opacity = '0';
-  setTimeout(() => {
-    _loreIndex = (_loreIndex + 1) % _LORE_FACTS.length;
-    el.textContent = _LORE_FACTS[_loreIndex];
-    el.style.opacity = '1';
-  }, 600);
-}
-
-function mostrarLoadingOverlay(statusTxt) {
-  const ov = document.getElementById('loading-overlay');
-  if (!ov) return;
-  ov.style.display = 'flex';
-  const st = document.getElementById('loading-status-txt');
-  if (st) st.textContent = statusTxt || 'Aguardando servidor...';
-  if (!_loreTimer) {
-    const lore = document.getElementById('loading-lore-txt');
-    if (lore) { lore.textContent = _LORE_FACTS[_loreIndex]; lore.style.opacity = '1'; }
-    _loreTimer = setInterval(_avancarLore, 9000);
-  }
-}
-
-function ocultarLoadingOverlay() {
-  const ov = document.getElementById('loading-overlay');
-  if (ov) ov.style.display = 'none';
-  if (_loreTimer) { clearInterval(_loreTimer); _loreTimer = null; }
-}
-
 function mostrarRetryUI(tentativa, waitMs) {
-  const statusTxt = `Tentativa ${tentativa}/20 — aguardando ${Math.round(waitMs/1000)}s...`;
-  mostrarLoadingOverlay(statusTxt);
-  // Sincroniza com Firebase para não-hosts verem o overlay também
-  if (mySala && amIHost) {
-    update(ref(db, `salas/${mySala}/config`), {
-      retryProgresso: { t: tentativa, total: 20, s: Math.round(waitMs / 1000) }
-    }).catch(() => {});
+  const el = document.getElementById('retry-ui');
+  if (el) {
+    el.style.display = 'block';
+    document.getElementById('retry-msg').textContent = `Tentativa ${tentativa}/10 — aguardando ${waitMs/1000}s...`;
   }
 }
 function ocultarRetryUI() {
-  ocultarLoadingOverlay();
-  if (mySala && amIHost) {
-    update(ref(db, `salas/${mySala}/config`), { retryProgresso: null }).catch(() => {});
-  }
+  const el = document.getElementById('retry-ui');
+  if (el) el.style.display = 'none';
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3709,82 +3199,36 @@ async function processarStats(resposta, jogadores, inimigos) {
 async function chamarOpenAI(systemPrompt, history, userMsg, onRetry, maxTokens = 600) {
   const apiKey = getApiKey();
   if (!apiKey) return null;
-  if (_provider === 'gemini') return _chamarGemini(apiKey, systemPrompt, history, userMsg, onRetry, maxTokens);
 
-  // Groq e OpenAI usam formato OpenAI-compatível
-  const prov = PROVIDERS[_provider];
   const messages = [
     { role:'system', content: systemPrompt },
     ...history.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.role === 'trade' ? `[TROCA] ${m.content}` : (m.content || '') })),
     { role:'user', content: userMsg }
   ];
-  const body = JSON.stringify({ model: prov.modelo, messages, temperature:0.85, max_tokens: maxTokens });
 
-  for (let t = 1; t <= 20; t++) {
+  const body = JSON.stringify({ model:'llama-3.3-70b-versatile', messages, temperature:0.85, max_tokens: maxTokens });
+
+  for (let t = 1; t <= 10; t++) {
     if (t > 1) {
-      const wait = Math.min(t * 3000, 60000);
+      const wait = Math.min(t * 2000, 16000);
       if (onRetry) onRetry(t, wait);
       await new Promise(r => setTimeout(r, wait));
     }
     try {
-      const hdrs = { 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` };
-      if (_provider === 'openrouter') {
-        hdrs['HTTP-Referer'] = 'https://barretoigor2025.github.io/Rpg-Online/';
-        hdrs['X-Title'] = 'Oráculo RPG';
-      }
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 90000);
-      const res = await fetch(prov.url, { method:'POST', headers: hdrs, body, signal: ctrl.signal });
-      clearTimeout(timer);
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${apiKey}` },
+        body
+      });
       const d = await res.json();
       if (d.error) {
-        if (/rate.limit|overload|529|503/i.test(d.error.message||'') && t < 20) continue;
+        if (/rate.limit|overload|529|503/i.test(d.error.message||'') && t < 10) continue;
         toast(`Erro IA: ${(d.error.message||'').substring(0,80)}`);
         return null;
       }
       return d.choices?.[0]?.message?.content || '';
-    } catch(err) {
-      if (t === 20) { toast('Erro de conexão após 20 tentativas'); return null; }
-    }
-  }
-  return null;
-}
-
-async function _chamarGemini(apiKey, systemPrompt, history, userMsg, onRetry, maxTokens) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-  const contents = [
-    ...history.map(m => ({
-      role: m.role === 'model' ? 'model' : 'user',
-      parts: [{ text: m.role === 'trade' ? `[TROCA] ${m.content}` : (m.content || ' ') }]
-    })),
-    { role:'user', parts:[{ text: userMsg }] }
-  ];
-  const body = JSON.stringify({
-    system_instruction: { parts:[{ text: systemPrompt }] },
-    contents,
-    generationConfig: { maxOutputTokens: maxTokens, temperature: 0.85 }
-  });
-
-  for (let t = 1; t <= 20; t++) {
-    if (t > 1) {
-      const wait = Math.min(t * 3000, 60000);
-      if (onRetry) onRetry(t, wait);
-      await new Promise(r => setTimeout(r, wait));
-    }
-    try {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 90000);
-      const res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body, signal: ctrl.signal });
-      clearTimeout(timer);
-      const d = await res.json();
-      if (d.error) {
-        if (/quota|overload|503|429/i.test(JSON.stringify(d.error)) && t < 20) continue;
-        toast(`Erro Gemini: ${(d.error.message||'').substring(0,80)}`);
-        return null;
-      }
-      return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
     } catch {
-      if (t === 20) { toast('Erro de conexão após 20 tentativas'); return null; }
+      if (t === 10) { toast('Erro de conexão após 10 tentativas'); return null; }
     }
   }
   return null;
@@ -3928,143 +3372,6 @@ function cancelarAutoAvancar() {
   if (_autoAvancarTimer) { clearTimeout(_autoAvancarTimer); _autoAvancarTimer = null; }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  GERENCIAR HISTÓRICO (host only)
-// ═══════════════════════════════════════════════════════════════
-let _histEntradas = [];
-
-window.abrirGerenciarHistorico = async function() {
-  if (!amIHost || !mySala) return;
-  const modal = document.getElementById('modal-historico');
-  const lista = document.getElementById('hist-lista');
-  if (!modal || !lista) return;
-  lista.innerHTML = '<div style="color:#888;text-align:center;padding:24px">⏳ Carregando histórico...</div>';
-  modal.style.display = 'flex';
-
-  // Busca TODAS as entradas sem limite para garantir que apareçam
-  const snap = await db.ref(`salas/${mySala}/historia`).once('value');
-  _histEntradas = [];
-  snap.forEach(c => {
-    const v = c.val();
-    if (v && v.role) _histEntradas.push({ key: c.key, role: v.role, content: v.content || '', ts: v.ts || 0 });
-  });
-
-  if (!_histEntradas.length) {
-    lista.innerHTML = '<div style="color:#888;text-align:center;padding:24px">Histórico vazio.</div>';
-    return;
-  }
-
-  // Mais recente primeiro
-  const ordenado = [..._histEntradas].reverse();
-
-  const header = document.getElementById('hist-modal-header');
-  if (header) header.textContent = `🗂️ Editar Histórico (${_histEntradas.length} entradas)`;
-
-  lista.innerHTML = ordenado.map((e) => {
-    const idxOriginal = _histEntradas.indexOf(e);
-    const icon  = e.role === 'model' ? '🤖' : (e.role === 'trade' ? '🤝' : '👤');
-    const label = e.role === 'model' ? 'narrador' : e.role === 'trade' ? 'troca' : 'jogador';
-    const cor   = e.role === 'model' ? 'rgba(30,60,30,.6)' : 'rgba(20,20,50,.6)';
-    const borda = e.role === 'model' ? 'rgba(80,160,80,.2)' : 'rgba(80,80,200,.2)';
-    const resumo = e.content.replace(/<[^>]+>/g, '').replace(/\s+/g,' ').trim().substring(0, 100);
-    return `<label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;margin:4px 8px;border-radius:8px;border:1px solid ${borda};background:${cor};cursor:pointer;-webkit-tap-highlight-color:transparent">
-      <input type="checkbox" data-idx="${idxOriginal}" checked style="width:18px;height:18px;margin-top:2px;flex-shrink:0;accent-color:#c8a050">
-      <div style="flex:1;min-width:0">
-        <div style="font-size:10px;color:#666;margin-bottom:3px">${icon} ${label}</div>
-        <div style="font-size:12px;color:#ccc;line-height:1.5;word-break:break-word">${resumo || '<em style="color:#555">sem conteúdo</em>'}</div>
-      </div>
-    </label>`;
-  }).join('');
-};
-
-window.fecharGerenciarHistorico = function() {
-  const modal = document.getElementById('modal-historico');
-  if (modal) modal.style.display = 'none';
-};
-
-window.histSelecionarTodos = function(marcar) {
-  document.querySelectorAll('#hist-lista input[type=checkbox]').forEach(cb => { cb.checked = marcar; });
-};
-
-window.confirmarLimpezaHistorico = async function() {
-  const checkboxes = document.querySelectorAll('#hist-lista input[type=checkbox]');
-  const aRemover = [];
-  checkboxes.forEach(cb => { if (!cb.checked) aRemover.push(parseInt(cb.dataset.idx)); });
-  if (!aRemover.length) { fecharGerenciarHistorico(); return; }
-  if (!confirm(`Remover ${aRemover.length} entrada(s) do histórico permanentemente?`)) return;
-
-  const ups = {};
-  aRemover.forEach(i => { if (_histEntradas[i]) ups[`salas/${mySala}/historia/${_histEntradas[i].key}`] = null; });
-  await update(ref(db), ups);
-
-  // Re-renderiza do zero
-  _renderedKeys = new Set();
-  document.getElementById('story-content').innerHTML = '';
-
-  fecharGerenciarHistorico();
-  toast(`🗂️ ${aRemover.length} entrada(s) removida(s)`, 2500);
-};
-
-// ═══════════════════════════════════════════════════════════════
-//  DESTRAVAR NARRAÇÃO (host only) — reseta estado preso
-// ═══════════════════════════════════════════════════════════════
-window.destravaNarracao = async function() {
-  if (!amIHost || !mySala) return;
-  chamandoIA = false;
-  await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
-  // Limpar acao1 para evitar re-trigger imediato
-  const snap = await db.ref(`salas/${mySala}/jogadores`).once('value');
-  const ups = {};
-  snap.forEach(c => { ups[`salas/${mySala}/jogadores/${c.key}/acao1`] = null; });
-  if (Object.keys(ups).length) await update(ref(db), ups);
-  toast('🔓 Narração destravada — estado resetado para aguardando', 3000);
-};
-
-// ═══════════════════════════════════════════════════════════════
-//  DESFAZER ÚLTIMO TURNO (host only)
-// ═══════════════════════════════════════════════════════════════
-window.desfazerUltimoTurno = async function() {
-  if (!amIHost || !mySala) return;
-  if (!confirm('Desfazer o último turno?\nAs últimas ações e resposta do narrador serão removidas.')) return;
-
-  // Pega as últimas 20 entradas da história ordenadas por key
-  const snap = await db.ref(`salas/${mySala}/historia`).orderByKey().limitToLast(20).once('value');
-  const entries = [];
-  snap.forEach(child => entries.push({ key: child.key, role: child.val().role }));
-
-  // Caminha do fim para trás: deleta o último role:'model' e todos os role:'user' após o model anterior
-  const toDelete = [];
-  let passouModel = false;
-  for (let i = entries.length - 1; i >= 0; i--) {
-    const e = entries[i];
-    if (!passouModel) {
-      toDelete.push(e.key);
-      if (e.role === 'model') passouModel = true;
-    } else {
-      if (e.role === 'model') break; // chegou ao model anterior — para
-      toDelete.push(e.key);          // user/fala entre os dois models — deleta
-    }
-  }
-
-  if (!toDelete.length) { toast('Nada para desfazer.', 2000); return; }
-
-  const ups = {};
-  toDelete.forEach(key => { ups[`salas/${mySala}/historia/${key}`] = null; });
-
-  // Reseta acao1 de todos os jogadores
-  const jogSnap = await db.ref(`salas/${mySala}/jogadores`).once('value');
-  jogSnap.forEach(child => { ups[`salas/${mySala}/jogadores/${child.key}/acao1`] = null; });
-
-  // Retrocede rodada e volta ao estado aguardando
-  const cfgSnap = await db.ref(`salas/${mySala}/config`).once('value');
-  const rodadaAtual = cfgSnap.val()?.rodada || 1;
-  ups[`salas/${mySala}/config/estado`]  = 'aguardando';
-  ups[`salas/${mySala}/config/rodada`]  = Math.max(1, rodadaAtual - 1);
-
-  await update(ref(db), ups);
-  toast('↩ Último turno desfeito', 2500);
-};
-
 async function chamarIA_jogadoresAvançam(jogadores, data) {
   if (chamandoIA) return;
   if (!getApiKey()) { pedirApiKey(() => {}); return; }
@@ -4084,13 +3391,7 @@ async function chamarIA_jogadoresAvançam(jogadores, data) {
     const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), hist, msg, mostrarRetryUI);
     ocultarRetryUI();
     if (!resposta) {
-      // Restaurar acao1='__avançar__' para manter estado consistente durante retry
-      const upsRetry = {};
-      Object.values(jogadores).filter(j => j.vivo && j.consciente && !j.ausente)
-        .forEach(j => { upsRetry[`salas/${mySala}/jogadores/${j.uid}/acao1`] = '__avançar__'; });
-      upsRetry[`salas/${mySala}/config/estado`] = 'avançando';
-      upsRetry[`salas/${mySala}/config/retryPendente`] = { em: Date.now() + 5 * 60 * 1000, tipo: 'avançam' };
-      await update(ref(db), upsRetry);
+      await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando', rodada: rodada + 1 });
       return;
     }
     const atoTituloAv = extrairFacharAto(resposta);
@@ -4103,14 +3404,7 @@ async function chamarIA_jogadoresAvançam(jogadores, data) {
     if (atoTituloAv) mostrarCinematicaAto(atoTituloAv);
   } catch(e) {
     console.warn('[chamarIA_jogadoresAvançam] exceção:', e);
-    try {
-      // Restaurar acao1='__avançar__' para não perder o estado e evitar entradas duplicadas
-      const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && !j.ausente);
-      const upsErr = {};
-      ativos.forEach(j => { upsErr[`salas/${mySala}/jogadores/${j.uid}/acao1`] = '__avançar__'; });
-      upsErr[`salas/${mySala}/config/estado`] = 'avançando';
-      await update(ref(db), upsErr);
-    } catch(_) {}
+    try { await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' }); } catch(_) {}
   } finally {
     chamandoIA = false;
     ocultarRetryUI();
@@ -4142,11 +3436,8 @@ async function chamarIA_continuar() {
     ocultarRetryUI();
     const ups = {};
     if (!resposta) {
-      // Restaurar acao1='__avançar__' para manter botão desabilitado e evitar entradas duplicadas
-      const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && !j.ausente);
-      ativos.forEach(j => { ups[`salas/${mySala}/jogadores/${j.uid}/acao1`] = '__avançar__'; });
-      ups[`salas/${mySala}/config/estado`] = 'avançando';
-      ups[`salas/${mySala}/config/retryPendente`] = { em: Date.now() + 5 * 60 * 1000, tipo: 'continuar' };
+      ups[`salas/${mySala}/config/estado`] = 'aguardando';
+      ups[`salas/${mySala}/config/rodada`] = rodada + 1;
       await update(ref(db), ups);
       return;
     }
@@ -4156,23 +3447,13 @@ async function chamarIA_continuar() {
     const respostaFinal = temAvançar ? removerAvançar(semAtoCont) : semAtoCont;
     ups[`salas/${mySala}/config/estado`] = temAvançar ? 'avançando' : 'aguardando';
     ups[`salas/${mySala}/config/rodada`] = rodada + 1;
-    if (!temAvançar) ups[`salas/${mySala}/leitura`] = buildLeituraGate(jogadores);
     await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(respostaFinal), falas: extrairFalas(respostaFinal), ataques: extrairAtaques(respostaFinal), ts: Date.now() });
     await processarStats(respostaFinal, jogadores, inimigos);
     await update(ref(db), ups);
     if (atoTituloCont) mostrarCinematicaAto(atoTituloCont);
   } catch(e) {
     console.warn('[chamarIA_continuar] exceção:', e);
-    try {
-      // Restaurar acao1='__avançar__' para não perder o estado e evitar entradas duplicadas
-      const snapErr = await get(ref(db, `salas/${mySala}/jogadores`));
-      const jogsErr = snapErr.val() || {};
-      const upsErr  = {};
-      Object.values(jogsErr).filter(j => j.vivo && j.consciente && !j.ausente)
-        .forEach(j => { upsErr[`salas/${mySala}/jogadores/${j.uid}/acao1`] = '__avançar__'; });
-      upsErr[`salas/${mySala}/config/estado`] = 'avançando';
-      await update(ref(db), upsErr);
-    } catch(_) {}
+    try { await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' }); } catch(_) {}
   } finally {
     chamandoIA = false;
     ocultarRetryUI();
@@ -4193,7 +3474,7 @@ async function chamarIA(jogadores, data) {
     const historia = data.historia || {};
     const rodada  = config.rodada || 1;
 
-    await update(ref(db, `salas/${mySala}/config`), { estado: 'narrando', retryPendente: null });
+    await update(ref(db, `salas/${mySala}/config`), { estado: 'narrando' });
 
     // Monta histórico (últimas 10 entradas)
     const hist = Object.values(historia)
@@ -4203,33 +3484,25 @@ async function chamarIA(jogadores, data) {
 
     // Monta mensagem das ações desta rodada
     const acoes = Object.values(jogadores)
-      .filter(j => j.acao1 && j.acao1 !== '__pular__')
+      .filter(j => j.acao1)
       .map(j => `${j.nome}: ${j.acao1 === '__avançar__' ? '(aguardando — sem ação específica, quer que a história avance)' : j.acao1}`)
       .join('\n');
-
-    // Determinar ator primário (para portrait correto na narrativa multiplayer)
-    const _atoresAtivos = Object.values(jogadores).filter(j => j.acao1 && j.acao1 !== '__pular__' && j.acao1 !== '__avançar__');
-    const _atorPrimario = _atoresAtivos.length === 1
-      ? _atoresAtivos[0].uid
-      : (_atoresAtivos.find(j => /[""""]|(\b(falo|digo|pergunto|respondo|abordo|negocio|converso)\b)/i.test(j.acao1)) || _atoresAtivos[0])?.uid || null;
 
     const msg = `Rodada ${rodada}.\n\nAções dos jogadores:\n${acoes}`;
 
     const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), hist, msg, mostrarRetryUI);
     ocultarRetryUI();
 
-    if (!resposta) {
-      // Preservar acao1 — auto-retry após 5 minutos sem exigir nova ação dos jogadores
-      await update(ref(db, `salas/${mySala}/config`), {
-        estado: 'aguardando',
-        retryPendente: { em: Date.now() + 5 * 60 * 1000, tipo: 'turno' }
-      });
-      return;
-    }
-
-    // Sucesso — limpar acao1 agora
+    // Sempre limpar acao1 (evita loop infinito em caso de falha da API)
     const ups = {};
     Object.keys(jogadores).forEach(uid => { ups[`salas/${mySala}/jogadores/${uid}/acao1`] = null; });
+
+    if (!resposta) {
+      ups[`salas/${mySala}/config/estado`] = 'aguardando';
+      ups[`salas/${mySala}/config/rodada`] = rodada + 1;
+      await update(ref(db), ups);
+      return;
+    }
 
     // Verificar se a IA pediu testes sequenciais e/ou dados de dano
     const testes = extrairTestes(resposta);
@@ -4241,7 +3514,7 @@ async function chamarIA(jogadores, data) {
       const textoAntes = primeiroTag >= 0 ? resposta.substring(0, primeiroTag) : '';
       const preamble = limparTags(textoAntes);
       if (preamble) {
-        await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: preamble, falas: extrairFalas(textoAntes), ataques: extrairAtaques(textoAntes), atorPrimario: _atorPrimario, ts: Date.now() });
+        await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: preamble, falas: extrairFalas(textoAntes), ataques: extrairAtaques(textoAntes), ts: Date.now() });
       }
       await update(ref(db), ups);
       iniciarTestes(testes, roles, jogadores, async (resultados, rolarRes) => {
@@ -4256,8 +3529,7 @@ async function chamarIA(jogadores, data) {
       const respostaFinal = temAvançar ? removerAvançar(semAto) : semAto;
       ups[`salas/${mySala}/config/estado`] = temAvançar ? 'avançando' : 'aguardando';
       ups[`salas/${mySala}/config/rodada`] = rodada + 1;
-      if (!temAvançar) ups[`salas/${mySala}/leitura`] = buildLeituraGate(jogadores);
-      await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(respostaFinal), falas: extrairFalas(respostaFinal), ataques: extrairAtaques(respostaFinal), atorPrimario: _atorPrimario, ts: Date.now() });
+      await push(ref(db, `salas/${mySala}/historia`), { role:'model', content: limparTags(respostaFinal), falas: extrairFalas(respostaFinal), ataques: extrairAtaques(respostaFinal), ts: Date.now() });
       await processarStats(respostaFinal, jogadores, inimigos);
       await update(ref(db), ups);
       if (atoTitulo) mostrarCinematicaAto(atoTitulo);
@@ -4333,7 +3605,7 @@ VOZ:
 - Foque no RESULTADO das ações, não na preparação.
 - Separe blocos temáticos distintos com linha em branco (\n\n) entre eles.
 - ${iniList
-  ? `COMBATE ATIVO — você recebe TODAS as ações declaradas pelos jogadores ao mesmo tempo. Avalie o campo de batalha como um todo antes de narrar qualquer coisa.\n\nLEITURA DO CAMPO (faça mentalmente antes de cada rodada):\n  • INICIATIVA: quem age primeiro? Considere velocidade da ação (reação > ataque rápido > ataque pesado), DES dos combatentes, e quem tem vantagem posicional.\n  • POSICIONAMENTO: quem está adjacente a quem? Quem tem cobertura, altura, flanqueo, linha de visão limpa?\n  • AÇÕES COMBINADAS: dois jogadores atacando o mesmo alvo = flanqueo narrado como manobra conjunta. Um distrai enquanto o outro age = bônus de contexto. Narre cooperação como estratégia, não como coincidência.\n  • SOLO vs. GRUPO: identifique ações independentes vs. coordenadas — narração deve refletir isso.\n  • ESTADO DOS COMBATENTES: HP baixo = postura defensiva ou desesperada. Inimigo dominando = agressivo e confiante.\n\nINIMIGOS SÃO VIVOS — instinto, tática, emoção:\n  • Reagem às ações dos jogadores DEPOIS que elas são resolvidas — nunca antes.\n  • Raiva ao ver companheiros cair. Euforia ao dominar. Desespero quando acuados. Frieza calculista se forem estrategistas.\n  • Use o campo comportamento de cada criatura. BESTIAL e BERSERK jamais param. PODE NEGOCIAR pode pausar — use fraqueza_social como gatilho.\n  • Se jogador passou o turno sem agir: inimigos APROVEITAM A ABERTURA.\n  • Use TESTAR para cada ataque inimigo (nome exato | ação | atributo | CD | jogador alvo) + ROLAR de dano. STATS:[JOGADOR:nome:novoHp] ao acertar.\n\nREGRAS DE NARRAÇÃO:\n  • NUNCA narre apenas um personagem por rodada — a batalha acontece para todos ao mesmo tempo.\n  • Distribua destaque entre todos os jogadores em cena. Quem ficou fora: inclua na próxima rodada.\n  • ORDEM OBRIGATÓRIA: TESTAR/ROLAR PRIMEIRO. Texto antes dos dados = apenas contexto de cena e intenção. NUNCA descreva impacto, contato físico ou som de golpe antes de rolar.\n  • Máximo 60 palavras de narração. CRÍTICO/CATÁSTROFE: dramático e detalhado.\n  • NUNCA mencione dados, modificadores ou CD no texto narrativo.`
+  ? `COMBATE ATIVO — inimigos são entidades VIVAS com instintos, táticas e emoções próprias. Eles não esperam. Regras:\n  • Após QUALQUER ação dos jogadores (incluindo quando passaram o turno sem agir), os inimigos REAGEM IMEDIATAMENTE — atacam, usam poderes, se reposicionam ou agem conforme seu comportamento e motivação.\n  • Se o jogador passou o turno sem ação específica: os inimigos APROVEITAM A ABERTURA — pressionam com força total, gritam bravatas, usam poderes especiais.\n  • Expresse o estado emocional dos inimigos: raiva ao ver companheiros cair, euforia quando dominam, desespero quando acuados, determinação fria se forem calculistas. Use o campo comportamento de cada criatura.\n  • Use TESTAR para cada ataque inimigo (nome exato | ação | atributo | CD | jogador alvo), seguido de ROLAR de dano. Inclua STATS:[JOGADOR:nome:novoHp] ao acertar.\n  • CRÍTICO/CATÁSTROFE: narração dramática e detalhada.\n  • Criaturas com PODE NEGOCIAR podem pausar para diálogo — use fraqueza_social como gatilho. BESTIAL e BERSERK jamais param.\n  • NUNCA mencione dados, modificadores ou CD. Tom seco e direto, máximo 60 palavras de narração.\n  • ORDEM OBRIGATÓRIA: TESTAR/ROLAR vêm PRIMEIRO. Texto antes dos dados = apenas contexto de cena. NUNCA descreva impacto, som de golpe ou contato físico antes de rolar — isso só aparece na narração pós-dado de narrarResultadoTestes.`
   : 'EXPLORAÇÃO — máximo 70 palavras por bloco narrativo (tags FALA não contam no limite). Em diálogos, negociações, missões e conversas com NPCs: seja expressivo e detalhado, sem limite de palavras — desenvolva personalidade, emoção e contexto.'}
 - Mantenha o tom: a floresta observa, os NPCs têm segredos, nada é seguro.
 - NUNCA termine com pergunta ao jogador. A narração termina com a consequência da cena.
@@ -4341,18 +3613,6 @@ VOZ:
 - Use FECHAR_ATO: [Título] (penúltima linha, seguido de AVANÇAR) quando o objetivo central do ato atual se resolver: todos os inimigos principais derrotados E um novo gancho surgir (missão aceita, revelação feita, partida iminente). Isso exibe uma cinematica de encerramento do capítulo.
 - Se jogadores estiverem em locais diferentes, use [AUSENTE:nome] e [PRESENTE:nome].
 - AÇÕES INDIVIDUAIS: cada jogador age de forma INDEPENDENTE. Narre SOMENTE o que CADA UM declarou. NUNCA aplique a ação de um jogador ao grupo todo nem a outros jogadores.
-
-DIRETOR NARRATIVO — revisar internamente ANTES de cada resposta:
-① Qual era o objetivo ativo da cena antes desta ação?
-② Quais ganchos estão abertos? (pistas, NPCs, ameaças pendentes)
-③ O que mudou no ambiente por causa das ações recentes?
-④ Algum jogador ficou sem destaque nos últimos turnos?
-⑤ A cena pede tensão, alívio, mistério ou avanço?
-FIM DE COMBATE — quando o último inimigo cair: NUNCA encerre com pergunta vazia. Retome automaticamente o contexto anterior — o que estava em jogo antes da luta, o que mudou no cenário, o que é visível agora (pistas, objetos, passagens), qual consequência ou gancho se abre. A batalha é um evento dentro da história, não o encerramento dela.
-RITMO — varie o tamanho conforme a importância: combate em andamento = energia concentrada (até 60 palavras); descoberta ou revelação = mais peso e detalhe; diálogo com NPC = expressivo, sem limite; transição = atmosférica, 2-3 frases; fim de combate = peso dramático + reconexão com a história.
-CENÁRIO VIVO — o espaço é um personagem silencioso. Use distância, obstáculos, cobertura, iluminação, altura, objetos interativos e linha de visão para dar corpo à cena. O arqueiro se protege atrás das caixas. O corredor estreito impede cerco. A tocha vacila com a corrente de ar da passagem oculta.
-MÚLTIPLOS JOGADORES — narre ações combinadas como manobras conjuntas. O que um faz afeta o espaço do outro. Quem ficou sem destaque: inclua-o naturalmente na próxima narração.
-ITENS — troca ou uso de objeto é um momento narrativo, não uma entrada de log. Narre o objeto com sensorialidade e contexto ("frasco de vidro escuro, líquido rubra e espesso") antes de qualquer efeito mecânico.
 
 JOGADORES ATIVOS:
 ${jogList}
@@ -4388,27 +3648,7 @@ Exemplos:
   Equipar: "STATS: [EQUIPAR:Carne:mao_d:Espada Longa] [EQUIPAR:Carne:tronco:Cota de Malha]"
   Mochila: "STATS: [ITEM_BAG:Carne:Poção de Cura:2] [ITEM_BAG:Carne:Tocha:-1]"
 LESAO: somente lesões PERMANENTES irreversíveis. Persiste entre campanhas.
-XP — SISTEMA DE MÉRITO POR ATO:
-• XP é concedido SOMENTE na resposta que contém FECHAR_ATO — nunca durante o ato.
-• Na linha STATS do FECHAR_ATO, inclua [XP:nome:pontos] para cada jogador presente.
-• Avalie o ato inteiro de forma holística e individual — quem agiu mais merece mais.
-• Não mencione os pontos no texto narrativo (é silencioso no sistema).
-
-Faixas de referência (total por ato):
-  Participação mínima / passivo: 10–40 XP
-  Bom (participou consistentemente + 1–2 destaques): 80–130 XP
-  Excelente (múltiplos destaques em combate e roleplay): 140–200 XP
-  Épico (ato definidor, momento lendário): 210–280 XP
-
-Bônus que elevam o valor base:
-  Combate eficaz, salvou aliado: +10–25 · Derrubou boss/criatura especial: +25–40
-  Bravura (enfrentou risco voluntariamente): +10–20 · Quase-sacrifício épico: +30–50
-  Roleplay marcante, fiel ao personagem: +10–20 · Diálogo que virou o rumo: +20–30
-  Solução criativa que evitou combate: +10–20 · Revelou segredo/avançou o plot: +15–30
-
-Punições (subtraem — usar só em casos claros):
-  Covardia que prejudicou o grupo: –10 a –20
-  Traiu aliados / dano injustificado: –20 a –40
+XP: conceda 10-50 pts por vitória ou feito relevante.
 TITULO/POSSE/REPUTACAO: use quando a narrativa conferir recompensas concretas ou reconhecimento formal.
 EQUIPAR: slots válidos — cabeca, tronco, mao_d, mao_e, pes. Item vazio = desequipar.
 ITEM_BAG: qtd positiva = adicionar, negativa = remover da mochila.
@@ -4420,22 +3660,16 @@ DIÁLOGOS — sistema de bolhas inline. Regras OBRIGATÓRIAS:
 1. Quando um NPC fala, descreva a ação de falar (terminando em dois-pontos) e coloque a tag na linha seguinte:
    FALA: [NomeExato|"frase completa do NPC"]
 
-2. FORMATO ESTRITO da tag FALA — uma única linha:
-   FALA: [NomeExato|"frase falada APENAS — sem narração dentro dos colchetes"]
-   ✅ CORRETO: FALA: [Veldrak|"Vamos embora. O caminho está livre."]
-   ❌ ERRADO: FALA: [Veldrak|"Vamos embora." Ele se vira. "O caminho está livre."]
-   A narração ("Ele se vira.") vai FORA da tag, ANTES ou DEPOIS dela.
-
-3. DIÁLOGO MULTI-TURNO: se a cena for uma conversa, gere múltiplas trocas com narração entre cada fala, até o diálogo se encerrar naturalmente:
-   Veldrak olha ao redor antes de falar:
-   FALA: [Veldrak|"A floresta começa a poucas milhas daqui."]
+2. DIÁLOGO MULTI-TURNO: se a cena for uma conversa, gere múltiplas trocas com narração entre cada fala, até o diálogo se encerrar naturalmente:
+   Gregoras olha ao redor antes de falar:
+   FALA: [Gregoras Pellos|"As Blackwoods começam a poucas milhas daqui."]
    Ele hesita, escolhendo as palavras:
-   FALA: [Veldrak|"Ele ainda está lá dentro. Mudado, mas está."]
-   O mercenário fecha os olhos por um momento:
-   FALA: [Veldrak|"Salvem-no se puderem. Se não houver jeito... vocês saberão o que fazer."]
+   FALA: [Gregoras Pellos|"Oswald ainda está lá dentro. Mudado, mas está."]
+   O guarda-costas fecha os olhos por um momento:
+   FALA: [Gregoras Pellos|"Salvem-no se puderem. Se não houver jeito... vocês saberão o que fazer."]
 
-4. RESPOSTA A FALA DE JOGADOR: se um jogador declarou uma fala direta, narre a reação do NPC e use FALA para a resposta dele. Não deixe perguntas sem resposta.
+3. RESPOSTA A FALA DE JOGADOR: se um jogador declarou uma fala direta, narre a reação do NPC e use FALA para a resposta dele. Não deixe perguntas sem resposta.
 
-5. Nunca suprima a fala de um NPC — se o contexto exige que ele fale, ele DEVE falar via tag FALA.
-6. Coloque a fala COMPLETA do NPC na tag, não um resumo.`;
+4. Nunca suprima a fala de um NPC — se o contexto exige que ele fale, ele DEVE falar via tag FALA.
+5. Coloque a fala COMPLETA do NPC na tag, não um resumo.`;
 }
