@@ -3762,6 +3762,9 @@ window.abrirGerenciarHistorico = async function() {
     snap.forEach(c => _histEntradas.push({ key: c.key, role: c.val().role, content: c.val().content || '', ts: c.val().ts || 0 }));
   }
 
+  const countEl = document.getElementById('hist-count');
+  if (countEl) countEl.textContent = `${_histEntradas.length} entrada${_histEntradas.length !== 1 ? 's' : ''}`;
+
   lista.innerHTML = _histEntradas.map((e, i) => {
     const icon   = e.role === 'model' ? '🤖' : (e.role === 'trade' ? '🤝' : '👤');
     const cor    = e.role === 'model' ? '#1a2a1a' : '#1a1a2a';
@@ -3771,6 +3774,13 @@ window.abrirGerenciarHistorico = async function() {
       <span style="font-size:11px;color:#aaa;line-height:1.5">${icon} <em style="color:#666">[${e.role}]</em> ${resumo}</span>
     </label>`;
   }).join('') || '<div style="color:#888;text-align:center;padding:20px">Histórico vazio.</div>';
+
+  // Scroll para o final — entradas mais recentes visíveis sem precisar rolar
+  lista.scrollTop = lista.scrollHeight;
+};
+
+window.toggleHistAll = function(marcar) {
+  document.querySelectorAll('#hist-lista input[type=checkbox]').forEach(cb => { cb.checked = marcar; });
 };
 
 window.fecharGerenciarHistorico = function() {
