@@ -2615,35 +2615,45 @@ function irParaJogo(codigo) {
 
     amIHost = config.host === myUid;
 
-    // Auto-recovery: host reabre com sessão travada em 'narrando'
+    // Auto-recovery: host reabre sessão interrompida
     if (amIHost && _primeiraEntrada) {
       _primeiraEntrada = false;
-      if (config.estado === 'narrando' && !chamandoIA) {
-        const _dataSnap = data;
-        setTimeout(async () => {
-          try {
-            const _historia = _dataSnap.historia || {};
-            const _jogs     = _dataSnap.jogadores || {};
-            const _sorted   = Object.values(_historia).sort((a,b) => (a.ts||0)-(b.ts||0));
-            const _lastModelTs = _sorted
-              .filter(e => e.role === 'model' && !e.noTTS)
-              .reduce((mx, e) => Math.max(mx, e.ts||0), 0);
-            const _ups = {};
-            Object.values(_jogs).forEach(j => {
-              if (!j.vivo || j.ausente) return;
-              if (j.acao1 != null) return;
-              const _ultima = _sorted
-                .filter(e => e.role === 'user' && e.uid === j.uid && (e.ts||0) > _lastModelTs)
-                .pop();
-              if (_ultima?.content && _ultima.content !== `${j.nome} está pronto para avançar a história.`) {
-                _ups[`salas/${mySala}/jogadores/${j.uid}/acao1`] = _ultima.content;
-              }
-            });
-            _ups[`salas/${mySala}/config/estado`] = 'aguardando';
+      const _dataSnap = data;
+
+      const _runRecovery = async (forcarAguardando) => {
+        try {
+          const _historia = _dataSnap.historia || {};
+          const _jogs     = _dataSnap.jogadores || {};
+          const _sorted   = Object.values(_historia).sort((a,b) => (a.ts||0)-(b.ts||0));
+          const _lastModelTs = _sorted
+            .filter(e => e.role === 'model' && !e.noTTS)
+            .reduce((mx, e) => Math.max(mx, e.ts||0), 0);
+          const _ups = {};
+          Object.values(_jogs).forEach(j => {
+            if (!j.vivo || j.ausente) return;
+            if (j.acao1 != null) return;
+            const _ultima = _sorted
+              .filter(e => e.role === 'user' && e.uid === j.uid && (e.ts||0) > _lastModelTs)
+              .filter(e => e.content !== `${j.nome} está pronto para avançar a história.`)
+              .pop();
+            if (_ultima?.content) {
+              _ups[`salas/${mySala}/jogadores/${j.uid}/acao1`] = _ultima.content;
+            }
+          });
+          if (forcarAguardando) _ups[`salas/${mySala}/config/estado`] = 'aguardando';
+          if (Object.keys(_ups).length) {
             await update(ref(db), _ups);
             toast('🔄 Sessão anterior recuperada — continuando...', 3000);
-          } catch(e) { console.warn('[auto-recovery]', e); }
-        }, 1200);
+          }
+        } catch(e) { console.warn('[auto-recovery]', e); }
+      };
+
+      if (config.estado === 'narrando' && !chamandoIA) {
+        // Sessão travada em 'narrando' — força aguardando e restaura acao1
+        setTimeout(() => _runRecovery(true), 1200);
+      } else if (config.estado === 'aguardando') {
+        // Estado OK, mas ação já declarada na história ainda sem resposta da IA
+        setTimeout(() => _runRecovery(false), 1200);
       }
     } else if (_primeiraEntrada) {
       _primeiraEntrada = false;
