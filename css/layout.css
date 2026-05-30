@@ -1004,9 +1004,9 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 /* ══ DIÁLOGO INLINE (permanente na história) ══ */
 .dialogo-inline {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 8px;
-  margin: 52px 0 4px;
+  margin: 8px 0 56px;
   padding: 8px 10px 8px 6px;
   background: rgba(8,12,24,.7);
   border-left: 2px solid rgba(200,160,80,.35);
@@ -1020,19 +1020,19 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 .dialogo-inline-portrait {
   flex-shrink: 0;
   width: 76px;
-  height: 48px; /* só reserva espaço horizontal; imagem transborda para cima */
+  height: 48px;
   position: relative;
   overflow: visible;
 }
 .dialogo-inline-portrait img {
   position: absolute;
-  bottom: -8px; /* alinha ao fundo do card compensando padding */
+  top: -4px;
   left: 50%;
   transform: translateX(-50%);
   width: 96px;
   height: 120px;
   object-fit: contain;
-  object-position: center bottom;
+  object-position: center top;
   display: block;
   filter: drop-shadow(0 2px 10px rgba(0,0,0,.9));
   pointer-events: none;
@@ -1063,9 +1063,9 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 /* ══ CARD DE BATALHA INLINE ══ */
 .batalha-inline {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 10px;
-  margin: 52px 0 4px;
+  margin: 8px 0 56px;
   padding: 8px 10px 8px 6px;
   background: rgba(24,6,6,.78);
   border-left: 2px solid rgba(200,70,50,.55);
@@ -1082,13 +1082,13 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 }
 .batalha-inline-portrait img {
   position: absolute;
-  bottom: -8px;
+  top: -4px;
   left: 50%;
   transform: translateX(-50%);
   width: 90px;
   height: 114px;
   object-fit: contain;
-  object-position: center bottom;
+  object-position: center top;
   display: block;
   filter: drop-shadow(0 2px 10px rgba(0,0,0,.9));
   pointer-events: none;
