@@ -231,8 +231,8 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 
 .player-chip {
   display: flex;
-  align-items: center;
-  gap: 5px;
+  align-items: flex-start;
+  gap: 6px;
   padding: 3px 8px;
   border-radius: 10px;
   font-size: 11px;
@@ -243,6 +243,19 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 }
 .player-chip.me { border-color: rgba(76,175,80,.5); background: rgba(76,175,80,.07); }
 .player-chip.offline { opacity: .4; }
+.chip-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+.chip-row1 {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
 .chip-name { color: var(--text); }
 .chip-hp {
   font-size: 9px;
@@ -253,6 +266,38 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 }
 .chip-hp.low { color: var(--red); }
 .chip-hp.ok  { color: var(--green); }
+.chip-ca {
+  font-size: 10px;
+  color: var(--blue);
+  opacity: 0.9;
+}
+.chip-res {
+  font-size: 9px;
+  color: #a0a0ff;
+  opacity: 0.85;
+}
+.chip-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+.chip-bar {
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  width: 100%;
+}
+.chip-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+.hp-fill.ok   { background: linear-gradient(90deg, #2a7a2a, #40c040); }
+.hp-fill.low  { background: linear-gradient(90deg, #7a1a1a, #e04040); }
+.mana-fill    { background: linear-gradient(90deg, #2a3a8a, #6080ff); }
+.stamina-fill { background: linear-gradient(90deg, #6a4a10, #e0a020); }
 .player-chip.ausente { opacity: .45; border-style: dashed; }
 .chip-ausente { font-size: 9px; color: var(--text3); font-style: italic; }
 .presence-dot {

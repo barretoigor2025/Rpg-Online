@@ -131,13 +131,20 @@ function dndDerivados(cls) {
   const conMod = dndMod(cls.CON);
   const dexMod = dndMod(cls.DEX);
   const wisMod = dndMod(cls.WIS);
+  const strMod = dndMod(cls.STR);
+  const intMod = dndMod(cls.INT);
+  const hasMana = cls.will_base >= 2; // Mago and Clérigo
+  const maxMana    = hasMana  ? Math.max(3, Math.max(intMod, wisMod) + 2) : 0;
+  const maxStamina = !hasMana ? Math.max(3, Math.max(strMod, dexMod) + 2) : 0;
   return {
     hp: Math.max(1, cls.dado_vida + conMod),
     ac: 10 + dexMod + cls.ca_armor,
     init: dexMod,
     fort: conMod + cls.fort_base,
     ref:  dexMod + cls.ref_base,
-    will: wisMod + cls.will_base
+    will: wisMod + cls.will_base,
+    mana: maxMana, maxMana,
+    stamina: maxStamina, maxStamina,
   };
 }
 
@@ -206,8 +213,8 @@ function setActionStatus(msg) {
 
 function limparTags(txt) {
   return txt
-    .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV|JOGADOR|AUSENTE|PRESENTE|LESAO|XP|TITULO|POSSE|REPUTACAO|EQUIPAR|ITEM_BAG)[^\]]*\]\s*)*/gi, '')
-    .replace(/\[(?:INIMIGO|MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR|LESAO|XP|TITULO|POSSE|REPUTACAO|EQUIPAR|ITEM_BAG):[^\]\n]*/gi, '')
+    .replace(/STATS:\s*(\[(?:INIMIGO|HP|MATAR|MOV|JOGADOR|AUSENTE|PRESENTE|LESAO|XP|TITULO|POSSE|REPUTACAO|EQUIPAR|ITEM_BAG|MANA|STAMINA)[^\]]*\]\s*)*/gi, '')
+    .replace(/\[(?:INIMIGO|MOV|AUSENTE|PRESENTE|JOGADOR|HP|MATAR|LESAO|XP|TITULO|POSSE|REPUTACAO|EQUIPAR|ITEM_BAG|MANA|STAMINA):[^\]\n]*/gi, '')
     .replace(/^\s*TESTAR:\s*\[.*\]\s*$/gim, '')
     .replace(/^\s*ROLAR:\s*\[.*\]\s*$/gim, '')
     .replace(/^\s*AVANÇAR\s*$/im, '')
@@ -2406,7 +2413,10 @@ window.confirmarCriacaoPersonagem = async function() {
     nome, classe: _selectedClass, sexo: _selectedGender,
     STR: cls.STR, DEX: cls.DEX, CON: cls.CON,
     INT: cls.INT, WIS: cls.WIS, CHA: cls.CHA,
-    hp: d.hp, maxHp: d.hp, ac: d.ac, init: d.init,
+    hp: d.hp, maxHp: d.hp,
+    mana: d.mana, maxMana: d.maxMana,
+    stamina: d.stamina, maxStamina: d.maxStamina,
+    ac: d.ac, init: d.init,
     fort: d.fort, ref: d.ref, will: d.will,
     pericias: [..._selectedAdvs],
     ...(poderesSelecionados ? { poderes_escolhidos: poderesSelecionados } : {}),
@@ -2444,6 +2454,8 @@ function getDadosPersonagem() {
     STR: cls.STR, DEX: cls.DEX, CON: cls.CON,
     INT: cls.INT, WIS: cls.WIS, CHA: cls.CHA,
     hp: d.hp, maxHp: d.hp,
+    mana: d.mana, maxMana: d.maxMana,
+    stamina: d.stamina, maxStamina: d.maxStamina,
     ac: d.ac, init: d.init,
     fort: d.fort, ref: d.ref, will: d.will,
     pericias: [..._selectedAdvs],
@@ -2474,6 +2486,8 @@ window.criarSala = async function() {
     mochila:    classeChanged ? {} : (charData?.mochila    || {}),
   };
   if (!classeChanged && charData?.hp != null) jogData.hp = Math.min(charData.hp, p.maxHp);
+  if (!classeChanged && charData?.mana != null) jogData.mana = charData.mana;
+  if (!classeChanged && charData?.stamina != null) jogData.stamina = charData.stamina;
 
   // Preencher slots vazios com o kit iniciante
   const kit = STARTER_KITS[p.classe];
@@ -2542,6 +2556,8 @@ window.entrarSala = async function() {
     mochila:     classeChangedE ? {} : (charData?.mochila     || {}),
   };
   if (!classeChangedE && charData?.hp != null) jogData.hp = Math.min(charData.hp, p.maxHp);
+  if (!classeChangedE && charData?.mana != null) jogData.mana = charData.mana;
+  if (!classeChangedE && charData?.stamina != null) jogData.stamina = charData.stamina;
 
   // Preencher slots vazios com o kit iniciante
   const kitE = STARTER_KITS[p.classe];
@@ -2572,6 +2588,10 @@ window.entrarSala = async function() {
   amIHost  = data.config?.host === myUid;
 
   const existing = data.jogadores?.[myUid];
+  // Use the sala's live HP (updated during combat) over the stale slot HP
+  if (existing?.hp != null && !classeChangedE) {
+    jogData.hp = existing.hp;
+  }
   if (existing) {
     await update(ref(db, `salas/${code}/jogadores/${myUid}`), { ativo: true, ...jogData });
   } else {
@@ -2777,14 +2797,29 @@ function renderizarJogadores(jogadores, config) {
     const lesaoBadge = lesoesArr.length
       ? `<span class="chip-lesao" title="${lesoesArr.map(l=>l.descricao).join(' | ')}">⚠</span>` : '';
     const nivelBadge = j.nivel > 1 ? `<span class="chip-nivel">Nv${j.nivel}</span>` : '';
+    const resPct   = j.maxMana    ? Math.round((j.mana    / j.maxMana)    * 100) :
+                     j.maxStamina ? Math.round((j.stamina / j.maxStamina) * 100) : 0;
+    const hasRes   = j.maxMana > 0 || j.maxStamina > 0;
+    const resLabel = j.maxMana > 0 ? `✨${j.mana}/${j.maxMana}` : `⚡${j.stamina}/${j.maxStamina}`;
+    const resClass = j.maxMana > 0 ? 'mana' : 'stamina';
+
     return `<div class="player-chip ${isMe ? 'me' : ''} ${j.ativo === false ? 'offline' : ''} ${j.ausente ? 'ausente' : ''}">
-      <span>${icon}</span>
+  <span>${icon}</span>
+  <div class="chip-body">
+    <div class="chip-row1">
       <span class="chip-name">${j.nome}</span>
-      ${j.ausente ? '<span class="chip-ausente">outra cena</span>' : `<span class="chip-hp ${hpCls}">PV ${j.hp}/${j.maxHp}</span>`}
-      ${!j.ausente && j.ac != null ? `<span class="chip-hp" style="color:var(--blue)">CA ${j.ac}</span>` : ''}
-      ${perIcons ? `<span class="chip-adv">${perIcons}</span>` : ''}
-      ${nivelBadge}${lesaoBadge}
-    </div>`;
+      ${j.ausente ? '<span class="chip-ausente">outra cena</span>' : `<span class="chip-hp ${hpCls}">♥${j.hp}/${j.maxHp}</span>`}
+      ${!j.ausente && j.ac != null ? `<span class="chip-ca">🛡${j.ac}</span>` : ''}
+      ${!j.ausente && hasRes ? `<span class="chip-res">${resLabel}</span>` : ''}
+    </div>
+    ${!j.ausente ? `<div class="chip-bars">
+      <div class="chip-bar chip-bar-hp"><div class="chip-bar-fill hp-fill ${hpCls}" style="width:${hpPct}%"></div></div>
+      ${hasRes ? `<div class="chip-bar chip-bar-res"><div class="chip-bar-fill ${resClass}-fill" style="width:${resPct}%"></div></div>` : ''}
+    </div>` : ''}
+    ${perIcons ? `<span class="chip-adv">${perIcons}</span>` : ''}
+    ${nivelBadge}${lesaoBadge}
+  </div>
+</div>`;
   }).join('');
 }
 
@@ -3115,6 +3150,31 @@ async function processarStats(resposta, jogadores, inimigos) {
       const novoHp = Math.max(0, +hp);
       ups[`salas/${mySala}/jogadores/${uid}/hp`] = novoHp;
       ups[`personagens/${uid}/hp`] = novoHp;
+      if (uid === myUid) ups[`chars/${myUid}/s${_activeSlot}/hp`] = novoHp;
+    }
+  }
+
+  // Atualizar Mana do jogador
+  for (const [, nome, val] of resposta.matchAll(/\[MANA:([^:]+):(\d+)\]/gi)) {
+    const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
+    if (entry) {
+      const [uid, j] = entry;
+      const novoMana = Math.max(0, Math.min(+val, j.maxMana || +val));
+      ups[`salas/${mySala}/jogadores/${uid}/mana`] = novoMana;
+      ups[`personagens/${uid}/mana`] = novoMana;
+      if (uid === myUid) ups[`chars/${myUid}/s${_activeSlot}/mana`] = novoMana;
+    }
+  }
+
+  // Atualizar Stamina do jogador
+  for (const [, nome, val] of resposta.matchAll(/\[STAMINA:([^:]+):(\d+)\]/gi)) {
+    const entry = Object.entries(jogadores).find(([,j]) => j.nome === nome.trim());
+    if (entry) {
+      const [uid, j] = entry;
+      const novoStamina = Math.max(0, Math.min(+val, j.maxStamina || +val));
+      ups[`salas/${mySala}/jogadores/${uid}/stamina`] = novoStamina;
+      ups[`personagens/${uid}/stamina`] = novoStamina;
+      if (uid === myUid) ups[`chars/${myUid}/s${_activeSlot}/stamina`] = novoStamina;
     }
   }
 
@@ -3647,7 +3707,7 @@ function buildSystemPrompt(jogadores, inimigos) {
         .filter(Boolean).join(', ');
       habStr = `Magias:[${spellNames}]`;
     }
-    return `${j.nome} (${cls?.nome||j.classe}${nivelStr}) — FOR:${j.STR} DES:${j.DEX} CON:${j.CON} INT:${j.INT} SAB:${j.WIS} CAR:${j.CHA} | PV:${j.hp}/${j.maxHp} CA:${j.ac} Init:${fmt(j.init)}${habStr ? ` | ${habStr}` : ''}${perStr ? ` | Perícias:${perStr}` : ''}${lesoesStr}${titulosStr}${possesStr}${repStr}${equipStr}${mochilaStr}`;
+    return `${j.nome} (${cls?.nome||j.classe}${nivelStr}) — FOR:${j.STR} DES:${j.DEX} CON:${j.CON} INT:${j.INT} SAB:${j.WIS} CAR:${j.CHA} | PV:${j.hp}/${j.maxHp}${j.maxMana > 0 ? ` MANA:${j.mana}/${j.maxMana}` : ''}${j.maxStamina > 0 ? ` STAMINA:${j.stamina}/${j.maxStamina}` : ''} CA:${j.ac} Init:${fmt(j.init)}${habStr ? ` | ${habStr}` : ''}${perStr ? ` | Perícias:${perStr}` : ''}${lesoesStr}${titulosStr}${possesStr}${repStr}${equipStr}${mochilaStr}`;
   }).join('\n');
 
   const iniList = Object.values(inimigos).filter(i => i.hp > 0).map(i => {
@@ -3707,7 +3767,7 @@ TAGS MECÂNICAS — REGRAS ABSOLUTAS:
 ⚠ As tags STATS NUNCA aparecem dentro do texto narrativo. SOMENTE na ÚLTIMA linha da resposta, sozinha, sem nenhum texto depois.
 ⚠ Formato EXATO obrigatório — STATS: seguido dos colchetes com os campos corretos.
 ⚠ INIMIGO exige TODOS os 4 campos: nome, hp, hpMax e ícone emoji. Ex: [INIMIGO:Espantalho 1:10:10:🌾]
-STATS: [INIMIGO:nome:hp:hpMax:ícone] [HP:nome:novoHp] [MATAR:nome] [JOGADOR:nome:novoHp] [AUSENTE:nome] [PRESENTE:nome] [LESAO:nome:descrição] [XP:nome:pontos] [TITULO:nome:título] [POSSE:nome:descrição] [REPUTACAO:nome:local:valor] [EQUIPAR:nome:slot:item] [ITEM_BAG:nome:item:qtd]
+STATS: [INIMIGO:nome:hp:hpMax:ícone] [HP:nome:novoHp] [MATAR:nome] [JOGADOR:nome:novoHp] [MANA:nome:novoMana] [STAMINA:nome:novoStamina] [AUSENTE:nome] [PRESENTE:nome] [LESAO:nome:descrição] [XP:nome:pontos] [TITULO:nome:título] [POSSE:nome:descrição] [REPUTACAO:nome:local:valor] [EQUIPAR:nome:slot:item] [ITEM_BAG:nome:item:qtd]
 Exemplos:
   Introduzir inimigos: "STATS: [INIMIGO:Espantalho 1:10:10:🌾] [INIMIGO:Espantalho 2:10:10:🌾]"
   Fim de combate: "STATS: [MATAR:Espantalho 1] [JOGADOR:Aldric:8] [XP:Aldric:25]"
@@ -3739,7 +3799,15 @@ DIÁLOGOS — sistema de bolhas inline. Regras OBRIGATÓRIAS:
 3. RESPOSTA A FALA DE JOGADOR: se um jogador declarou uma fala direta, narre a reação do NPC e use FALA para a resposta dele. Não deixe perguntas sem resposta.
 
 4. Nunca suprima a fala de um NPC — se o contexto exige que ele fale, ele DEVE falar via tag FALA.
-5. Coloque a fala COMPLETA do NPC na tag, não um resumo.`;
+5. Coloque a fala COMPLETA do NPC na tag, não um resumo.
+
+CURA E DESCANSO — regras obrigatórias:
+• Descanso longo (dormir ≥ 6h): restaura PV, Mana e Stamina totalmente. Use STATS:[JOGADOR:nome:maxHp][MANA:nome:maxMana][STAMINA:nome:maxStamina]
+• Descanso curto (1h de repouso): restaura Stamina totalmente + metade da Mana. Use STATS:[MANA:nome:metade][STAMINA:nome:maxStamina]
+• Poção de cura: +1d4+2 PV, máximo maxHp. Calcule e use STATS:[JOGADOR:nome:novoHp]
+• Clérigo "Curar Ferimentos": +1d6+3 PV ao alvo (máximo maxHp). TESTAR não é necessário — funciona automaticamente 3×/dia. Use STATS:[JOGADOR:nome:novoHp]
+• Segundo Fôlego (Guerreiro): +1d6+2 PV (self). 1×/dia. Use STATS:[JOGADOR:nome:novoHp][STAMINA:nome:novoStamina]
+• Uso de poder/magia: reduza MANA ou STAMINA em 1 por uso. Ex: Clérigo usa "Curar Ferimentos" → STATS:[MANA:nome:manaMinus1]`;
 }
 
 // ═══════════════════════════════════════════════════════════════

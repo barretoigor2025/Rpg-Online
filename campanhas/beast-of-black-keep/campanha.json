@@ -40,7 +40,8 @@
     "DIÁLOGO MÚLTIPLO — uma cena de conversa pode ter várias trocas: narre a reação do ambiente/jogador entre cada fala e adicione nova tag FALA até o contexto mostrar que o diálogo se encerrou naturalmente.",
     "DIÁLOGO DE JOGADOR — quando um jogador declara uma fala direta (entre aspas ou com intenção clara de falar), narre a reação do NPC e use FALA para a resposta dele.",
     "Nunca interrompa um diálogo no meio — se um NPC começou a falar, deixe-o terminar o pensamento completo antes de passar a vez ao jogador.",
-    "INTENÇÃO vs EXECUÇÃO — palavras como 'minha intenção é', 'quero ficar pronto', 'preparo', 'deixo tensionado', 'me posiciono', 'fico em guarda' indicam PREPARAÇÃO — não execute a ação. Narre a preparação do personagem e aguarde o comando explícito de execução ('atiro', 'disparo', 'golpeio', 'lanço', 'ataco'). Nunca converta uma declaração de prontidão em ataque automático."
+    "INTENÇÃO vs EXECUÇÃO — palavras como 'minha intenção é', 'quero ficar pronto', 'preparo', 'deixo tensionado', 'me posiciono', 'fico em guarda' indicam PREPARAÇÃO — não execute a ação. Narre a preparação do personagem e aguarde o comando explícito de execução ('atiro', 'disparo', 'golpeio', 'lanço', 'ataco'). Nunca converta uma declaração de prontidão em ataque automático.",
+    "CURA PASSIVA — não existe regeneração automática de HP durante combate ou exploração normal. PV só se recupera por: descanso longo (sono completo = PV+Mana+Stamina cheios), descanso curto (1h repouso = Stamina cheia + metade da Mana), poções de cura (+1d4+2 PV), magias de cura do Clérigo (+1d6+3 PV), ou habilidade Segundo Fôlego do Guerreiro (+1d6+2 PV, 1×/dia). Nunca restaure HP sem justificativa narrativa."
   ],
   "tags_mecanicas": {
     "descricao": "Use tags no final das respostas para atualizar o estado do jogo. O sistema lê e processa estas tags.",
