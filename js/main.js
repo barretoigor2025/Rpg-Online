@@ -2802,7 +2802,10 @@ function renderizarInimigos(inimigos) {
 // ═══════════════════════════════════════════════════════════════
 let _renderedKeys = new Set();
 
+let _historiaCache = {};
+
 function renderizarHistoria(historia, jogadores) {
+  _historiaCache = historia; // espelho para o editor de histórico
   const el = document.getElementById('story-content');
   if (!el) return;
   const entries = Object.entries(historia).sort(([,a],[,b]) => (a.ts||0)-(b.ts||0));
@@ -3753,14 +3756,12 @@ window.abrirGerenciarHistorico = async function() {
   const modal = document.getElementById('modal-historico');
   const lista = document.getElementById('hist-lista');
   if (!modal || !lista) return;
-  lista.innerHTML = '<div style="color:#888;text-align:center;padding:20px">Carregando...</div>';
   modal.style.display = 'flex';
 
-  const snap = await get(ref(db, `salas/${mySala}/historia`));
-  _histEntradas = [];
-  if (snap.exists()) {
-    snap.forEach(c => _histEntradas.push({ key: c.key, role: c.val().role, content: c.val().content || '', ts: c.val().ts || 0 }));
-  }
+  // Usa o cache local (mesmo snapshot que renderiza a tela) — evita discrepância com get() do Firebase
+  _histEntradas = Object.entries(_historiaCache)
+    .map(([key, val]) => ({ key, role: val.role || 'model', content: val.content || '', ts: val.ts || 0 }))
+    .sort((a, b) => a.ts - b.ts);
 
   const countEl = document.getElementById('hist-count');
   if (countEl) countEl.textContent = `${_histEntradas.length} entrada${_histEntradas.length !== 1 ? 's' : ''}`;
