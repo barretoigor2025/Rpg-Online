@@ -422,6 +422,16 @@
     color: var(--gold2);
   }
 
+  /* ── BREATHING ANIMATION ── */
+  @keyframes breathe {
+    0%, 100% { transform: scaleY(1);     }
+    45%, 55% { transform: scaleY(1.022); }
+  }
+  .breathe {
+    transform-origin: bottom center;
+    animation: breathe 3.8s ease-in-out infinite;
+  }
+
   /* scrollbar */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: #0a0807; }
@@ -1048,6 +1058,15 @@ function filterEnemies(type, btn) {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderEnemyGrid(type);
+  applyBreathing();
+}
+
+function applyBreathing() {
+  document.querySelectorAll('.card-img, .class-portrait img').forEach(img => {
+    if (img.classList.contains('breathe')) return;
+    img.classList.add('breathe');
+    img.style.animationDelay = -(Math.random() * 3.8).toFixed(2) + 's';
+  });
 }
 
 // ═══════════════════════════════════════════ MODALS ═══════════════════════════════════════════
@@ -1059,7 +1078,10 @@ ENEMIES.forEach(e => ENEMY_MAP[e.id] = e);
 
 function openNpcModal(id) {
   const n = NPC_MAP[id];
-  document.getElementById('modal-img').src = n.sprite;
+  const mImg = document.getElementById('modal-img');
+  mImg.src = n.sprite;
+  mImg.classList.add('breathe');
+  mImg.style.animationDelay = -(Math.random() * 3.8).toFixed(2) + 's';
   document.getElementById('modal-name').textContent = n.nome;
   document.getElementById('modal-subtitle').textContent = n.titulo;
   const badgeMap = { aliado: ['badge-aliado','Aliado'], neutro: ['badge-neutro','Neutro'], hostil: ['badge-hostil','Hostil'] };
@@ -1087,7 +1109,10 @@ function openNpcModal(id) {
 
 function openEnemyModal(id) {
   const e = ENEMY_MAP[id];
-  document.getElementById('modal-img').src = e.sprite;
+  const mImg = document.getElementById('modal-img');
+  mImg.src = e.sprite;
+  mImg.classList.add('breathe');
+  mImg.style.animationDelay = -(Math.random() * 3.8).toFixed(2) + 's';
   document.getElementById('modal-name').textContent = e.nome;
   document.getElementById('modal-subtitle').textContent = e.tipo;
   const badgeMap = { construto: ['badge-construto','Construto'], undead: ['badge-undead','Morto-Vivo'], besta: ['badge-besta','Besta'], planta: ['badge-planta','Planta'], espirito: ['badge-espirito','Espírito'], hostil: ['badge-hostil','Humanoide'], neutro: ['badge-neutro','Kobold'] };
@@ -1159,7 +1184,10 @@ function switchTab(name, btn) {
 function openClassModal(id, sexo) {
   const c = CLASSES.find(x => x.id === id);
   const label = sexo === 'm' ? 'Masculino' : 'Feminino';
-  document.getElementById('modal-img').src = `sprites/${id}_${sexo}.png`;
+  const mImg = document.getElementById('modal-img');
+  mImg.src = `sprites/${id}_${sexo}.png`;
+  mImg.classList.add('breathe');
+  mImg.style.animationDelay = -(Math.random() * 3.8).toFixed(2) + 's';
   document.getElementById('modal-name').textContent = c.nome;
   document.getElementById('modal-subtitle').textContent = `${c.icon} ${label}`;
   document.getElementById('modal-badges').innerHTML = `<span class="card-badge badge-neutro">${c.habilidade}</span>`;
@@ -1185,6 +1213,7 @@ renderNpcGrid('grid-viajantes',  NPCS.viajantes);
 renderNpcGrid('grid-sombrias',   NPCS.sombrias);
 renderEnemyFilters();
 renderEnemyGrid('todos');
+applyBreathing();
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') document.getElementById('modal-backdrop').classList.remove('open');
