@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Batalha — Oráculo RPG</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a10;
+      color: #e8d9b0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ─── Header ─── */
+    header {
+      background: #14111c;
+      border-bottom: 1px solid #2a2038;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    header h1 { font-size: 16px; color: #c9a84c; letter-spacing: 0.5px; }
+
+    .toolbar { display: flex; gap: 6px; }
+    .btn {
+      background: #1e1a2c;
+      border: 1px solid #3a2e50;
+      color: #c8b88a;
+      padding: 4px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background .12s, border-color .12s;
+    }
+    .btn:hover { background: #2d2840; border-color: #5a4878; }
+    .btn.danger:hover { background: #3a1a1a; border-color: #7a2a2a; color: #e88a8a; }
+
+    .zoom-btns { display: flex; gap: 2px; }
+    .zoom-btns .btn { padding: 4px 8px; font-size: 14px; font-weight: bold; }
+
+    #status-txt {
+      margin-left: auto;
+      font-size: 11px;
+      color: #5a4a2a;
+      max-width: 260px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ─── Main Layout ─── */
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ─── Sidebar ─── */
+    .sidebar {
+      width: 192px;
+      background: #100e18;
+      border-right: 1px solid #221d30;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .sec-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #5a4830;
+      padding: 8px 10px 4px;
+      flex-shrink: 0;
+    }
+
+    /* Map thumbnails */
+    .map-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 4px 8px 8px;
+      flex-shrink: 0;
+    }
+    .map-thumb {
+      cursor: pointer;
+      border: 2px solid transparent;
+      border-radius: 5px;
+      overflow: hidden;
+      aspect-ratio: 1;
+      transition: border-color .15s, transform .1s;
+      background: #0a0a0f;
+    }
+    .map-thumb:hover { border-color: #5a4830; transform: scale(1.03); }
+    .map-thumb.active { border-color: #c9a84c; }
+    .map-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+    .map-thumb .map-name {
+      font-size: 8px;
+      text-align: center;
+      color: #6a5838;
+      padding: 2px 2px 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Palette */
+    .palette-wrap {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 6px 8px;
+    }
+    .palette-wrap::-webkit-scrollbar { width: 4px; }
+    .palette-wrap::-webkit-scrollbar-track { background: transparent; }
+    .palette-wrap::-webkit-scrollbar-thumb { background: #2a2038; border-radius: 2px; }
+
+    .palette-cat { margin-bottom: 6px; }
+    .palette-cat-title {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #5a4830;
+      padding: 5px 3px 3px;
+    }
+    .palette-tokens {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3px;
+    }
+    .palette-token {
+      cursor: grab;
+      background: #181620;
+      border: 1px solid #2a2238;
+      border-radius: 5px;
+      padding: 4px 2px 3px;
+      text-align: center;
+      transition: background .1s, border-color .1s;
+    }
+    .palette-token:hover { background: #241e34; border-color: #4a3860; }
+    .palette-token:active { cursor: grabbing; }
+    .palette-token img {
+      width: 34px;
+      height: 46px;
+      object-fit: contain;
+      object-position: center bottom;
+      display: block;
+      margin: 0 auto;
+      pointer-events: none;
+      image-rendering: pixelated;
+    }
+    .palette-token span {
+      display: block;
+      font-size: 7.5px;
+      color: #7a6848;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+
+    /* ─── Map Area ─── */
+    .map-area {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: radial-gradient(ellipse at center, #0d0d18 0%, #060608 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .map-viewport {
+      position: relative;
+      display: inline-block;
+      transform-origin: center center;
+      transition: transform .05s;
+    }
+
+    #map-img {
+      display: block;
+      max-width: 100%;
+      max-height: calc(100vh - 44px);
+      pointer-events: none;
+      image-rendering: pixelated;
+    }
+
+    /* Placeholder */
+    .map-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      color: #2a2438;
+      pointer-events: none;
+    }
+    .map-placeholder .icon { font-size: 56px; }
+    .map-placeholder p { font-size: 14px; }
+
+    /* ─── Placed Tokens ─── */
+    .map-token {
+      position: absolute;
+      transform: translate(-50%, -100%);
+      cursor: grab;
+    }
+    .map-token:active { cursor: grabbing; }
+    .map-token.dragging { opacity: 0.6; pointer-events: none; }
+
+    .token-shadow {
+      position: absolute;
+      bottom: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 38px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid;
+      pointer-events: none;
+    }
+    .map-token.type-player .token-shadow { border-color: #d4a844; background: rgba(212,168,68,.18); }
+    .map-token.type-enemy  .token-shadow { border-color: #cc3a2a; background: rgba(204,58,42,.18); }
+    .map-token.type-npc    .token-shadow { border-color: #9b59b6; background: rgba(155,89,182,.18); }
+
+    .map-token img {
+      width: 54px;
+      height: 70px;
+      object-fit: contain;
+      object-position: center bottom;
+      display: block;
+      filter: drop-shadow(0 3px 6px rgba(0,0,0,.9));
+      pointer-events: none;
+      image-rendering: pixelated;
+    }
+
+    .map-token.selected img {
+      filter: drop-shadow(0 0 5px #fff8) drop-shadow(0 3px 6px rgba(0,0,0,.9));
+    }
+
+    .token-label {
+      position: absolute;
+      bottom: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      font-size: 9.5px;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 1px 3px #000, 0 0 8px #000;
+      pointer-events: none;
+    }
+
+    /* Context menu on right-click */
+    #ctx-menu {
+      position: fixed;
+      background: #1a1628;
+      border: 1px solid #3a2e50;
+      border-radius: 6px;
+      padding: 4px 0;
+      z-index: 999;
+      display: none;
+      min-width: 140px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.6);
+    }
+    #ctx-menu .ctx-item {
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 12px;
+      color: #c8b88a;
+      transition: background .1s;
+    }
+    #ctx-menu .ctx-item:hover { background: #2a2440; }
+    #ctx-menu .ctx-item.danger { color: #e88a8a; }
+    #ctx-menu .ctx-item.danger:hover { background: #3a1a1a; }
+    #ctx-menu .ctx-sep { border-top: 1px solid #2a2038; margin: 3px 0; }
+
+    /* Drag ghost */
+    #drag-ghost {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      display: none;
+      transform: translate(-50%, -90%);
+    }
+    #drag-ghost img {
+      width: 54px;
+      height: 70px;
+      object-fit: contain;
+      object-position: center bottom;
+      opacity: 0.75;
+      filter: drop-shadow(0 3px 8px rgba(0,0,0,1));
+      image-rendering: pixelated;
+    }
+
+    /* Hint */
+    .map-hint {
+      position: absolute;
+      bottom: 10px;
+      right: 12px;
+      font-size: 10px;
+      color: #2a2030;
+      pointer-events: none;
+      line-height: 1.6;
+      text-align: right;
+    }
+
+    /* Token count badge */
+    #token-count {
+      font-size: 11px;
+      color: #5a4830;
+      padding: 0 4px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⚔️ Batalha</h1>
+  <div class="toolbar">
+    <div class="zoom-btns">
+      <button class="btn" onclick="changeZoom(0.15)" title="Zoom In">＋</button>
+      <button class="btn" onclick="changeZoom(-0.15)" title="Zoom Out">－</button>
+      <button class="btn" onclick="resetZoom()" title="Reset Zoom">⊙</button>
+    </div>
+    <button class="btn danger" onclick="limparTodos()">🗑 Limpar</button>
+    <button class="btn" onclick="exportarJSON()">📋 Exportar</button>
+  </div>
+  <span id="token-count"></span>
+  <span id="status-txt">Selecione um cenário</span>
+</header>
+
+<div class="main">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sec-label">Cenários — Pack A Mhoried</div>
+    <div class="map-grid" id="map-grid"></div>
+
+    <div class="sec-label">Fichas</div>
+    <div class="palette-wrap" id="palette"></div>
+  </div>
+
+  <!-- Map -->
+  <div class="map-area" id="map-area">
+    <div id="map-viewport" class="map-viewport">
+      <div class="map-placeholder">
+        <div class="icon">🗺️</div>
+        <p>Selecione um cenário ao lado</p>
+      </div>
+    </div>
+    <div class="map-hint">
+      Arraste fichas sobre o mapa<br>
+      Clique direito → opções · Scroll → zoom
+    </div>
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div id="ctx-menu">
+  <div class="ctx-item" id="ctx-rename">✏️ Renomear</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item danger" id="ctx-remove">🗑 Remover</div>
+</div>
+
+<!-- Drag ghost -->
+<div id="drag-ghost"><img id="drag-ghost-img" src="" alt=""></div>
+
+<script>
+// ─── Data ────────────────────────────────────────────────────────────────────
+const MAPS = [
+  { id: 'mhoried-01', name: 'Mercado / Casas',    src: 'campanhas/beast-of-black-keep/cenarios/pack-a-mhoried/mhoried-01-mercado-casas.png' },
+  { id: 'mhoried-02', name: 'Cemitério Floresta', src: 'campanhas/beast-of-black-keep/cenarios/pack-a-mhoried/mhoried-02-cemiterio-floresta.png' },
+  { id: 'mhoried-03', name: 'Mercado Noturno',    src: 'campanhas/beast-of-black-keep/cenarios/pack-a-mhoried/mhoried-03-mercado-noturno.png' },
+  { id: 'mhoried-04', name: 'Praça da Fonte',     src: 'campanhas/beast-of-black-keep/cenarios/pack-a-mhoried/mhoried-04-praca-fonte.png' },
+];
+
+const PALETTE = {
+  'Jogadores': [
+    { name: 'Guerreiro',  sprite: 'sprites/guerreiro_m.png',  type: 'player' },
+    { name: 'Guerreira',  sprite: 'sprites/guerreiro_f.png',  type: 'player' },
+    { name: 'Mago',       sprite: 'sprites/mago_m.png',       type: 'player' },
+    { name: 'Maga',       sprite: 'sprites/mago_f.png',       type: 'player' },
+    { name: 'Ladino',     sprite: 'sprites/ladino_m.png',     type: 'player' },
+    { name: 'Ladina',     sprite: 'sprites/ladino_f.png',     type: 'player' },
+    { name: 'Clérigo',    sprite: 'sprites/clerigo_m.png',    type: 'player' },
+    { name: 'Clériга',    sprite: 'sprites/clerigo_f.png',    type: 'player' },
+    { name: 'Bárbaro',    sprite: 'sprites/barbaro_m.png',    type: 'player' },
+    { name: 'Bárbara',    sprite: 'sprites/barbaro_f.png',    type: 'player' },
+    { name: 'Arqueiro',   sprite: 'sprites/arqueiro_m.png',   type: 'player' },
+    { name: 'Arqueira',   sprite: 'sprites/arqueiro_f.png',   type: 'player' },
+  ],
+  'Inimigos': [
+    { name: 'Ankle Snapper',  sprite: 'sprites/inimigo_ankle_snapper.png',         type: 'enemy' },
+    { name: 'Barkthresher',   sprite: 'sprites/inimigo_barkthresher.png',          type: 'enemy' },
+    { name: 'Bugbear',        sprite: 'sprites/inimigo_bugbear_assassino.png',     type: 'enemy' },
+    { name: 'Caranguejo',     sprite: 'sprites/inimigo_caranguejo_gigante.png',    type: 'enemy' },
+    { name: 'Elfo Sombrio',   sprite: 'sprites/inimigo_elfo_sombrio.png',         type: 'enemy' },
+    { name: 'Espantalho',     sprite: 'sprites/inimigo_espantalho_assombrado.png', type: 'enemy' },
+    { name: 'Esqueleto',      sprite: 'sprites/inimigo_esqueleto_lanceiro.png',    type: 'enemy' },
+    { name: 'Golem',          sprite: 'sprites/inimigo_golem_de_pergaminho.png',   type: 'enemy' },
+    { name: 'Thool',          sprite: 'sprites/inimigo_grimhollow_thool.png',      type: 'enemy' },
+    { name: 'Javali',         sprite: 'sprites/inimigo_javali_ensandecido.png',    type: 'enemy' },
+    { name: 'Kobold Azul',    sprite: 'sprites/inimigo_kobold_azul.png',           type: 'enemy' },
+    { name: 'Larva',          sprite: 'sprites/inimigo_larva_gigante.png',         type: 'enemy' },
+    { name: 'Log Wife',       sprite: 'sprites/inimigo_log_wife.png',              type: 'enemy' },
+    { name: 'Manticora',      sprite: 'sprites/inimigo_manticora_albina.png',      type: 'enemy' },
+    { name: 'Marrowwither',   sprite: 'sprites/inimigo_marrowwither.png',          type: 'enemy' },
+    { name: 'Mother Clutch',  sprite: 'sprites/inimigo_mother_clutch.png',         type: 'enemy' },
+    { name: 'Orc Bandido',    sprite: 'sprites/inimigo_orc_bandido.png',           type: 'enemy' },
+    { name: 'Quay Grabber',   sprite: 'sprites/inimigo_quay_grabber.png',          type: 'enemy' },
+    { name: 'Rei Chutter',    sprite: 'sprites/inimigo_rei_chutter.png',           type: 'enemy' },
+    { name: 'Troll',          sprite: 'sprites/inimigo_troll_moss_belly.png',      type: 'enemy' },
+    { name: 'Spider',         sprite: 'sprites/inimigo_wraithweaver_spider.png',   type: 'enemy' },
+    { name: 'Goblin Arq.',    sprite: 'sprites/goblin_arqueiro.png',               type: 'enemy' },
+    { name: 'Goblin Bat.',    sprite: 'sprites/goblin_batedor.png',                type: 'enemy' },
+    { name: 'Goblin Bruto',   sprite: 'sprites/goblin_bruto.png',                  type: 'enemy' },
+    { name: 'Goblin Líder',   sprite: 'sprites/goblin_lider.png',                  type: 'enemy' },
+  ],
+  'NPCs': [
+    { name: 'Aelar',         sprite: 'sprites/npc_aelar_eisenli.png',        type: 'npc' },
+    { name: 'Blunkin',       sprite: 'sprites/npc_blunkin_esmaga_cranios.png', type: 'npc' },
+    { name: 'Catherine',     sprite: 'sprites/npc_catherine_laskaris.png',    type: 'npc' },
+    { name: 'Choir',         sprite: 'sprites/npc_choir_necromante.png',      type: 'npc' },
+    { name: 'Drizzle',       sprite: 'sprites/npc_drizzle.png',               type: 'npc' },
+    { name: 'Duque Oswald',  sprite: 'sprites/npc_duque_oswald_thool.png',    type: 'npc' },
+    { name: 'Dvalinn',       sprite: 'sprites/npc_dvalinn_anao.png',          type: 'npc' },
+    { name: 'Fariborz',      sprite: 'sprites/npc_fariborz_piromante.png',    type: 'npc' },
+    { name: 'Finn',          sprite: 'sprites/npc_finn_willowheel.png',       type: 'npc' },
+    { name: 'Gregoras',      sprite: 'sprites/npc_gregoras_pellos.png',       type: 'npc' },
+    { name: 'Hobbleboot',    sprite: 'sprites/npc_hobbleboot_sam.png',        type: 'npc' },
+    { name: 'Mac Ronan',     sprite: 'sprites/npc_mac_ronan.png',             type: 'npc' },
+    { name: 'Muirenn',       sprite: 'sprites/npc_muirenn.png',               type: 'npc' },
+    { name: 'Mutter',        sprite: 'sprites/npc_mutter_grimmhaar.png',      type: 'npc' },
+    { name: 'Príncipe Kalos',sprite: 'sprites/npc_principe_kalos.png',        type: 'npc' },
+    { name: 'Ruzalka',       sprite: 'sprites/npc_ruzalka.png',               type: 'npc' },
+    { name: 'Valmorien',     sprite: 'sprites/npc_valmorien.png',             type: 'npc' },
+    { name: 'Wulfram',       sprite: 'sprites/npc_wulfram_chifrado.png',      type: 'npc' },
+    { name: 'Ysoria',        sprite: 'sprites/npc_ysoria.png',                type: 'npc' },
+  ],
+};
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let currentMap = null;
+let tokens = [];          // { id, type, name, sprite, x, y }  x/y = ratio 0..1 of map img
+let nextId  = 1;
+let selectedId = null;
+let zoomScale = 1.0;
+
+// Drag state
+let drag = null;
+// {
+//   kind: 'palette' | 'token',
+//   sprite, name, tokenType,      ← palette drag
+//   tokenId, startX, startY,      ← token drag (offset from token anchor to cursor)
+// }
+
+// ─── DOM refs ────────────────────────────────────────────────────────────────
+const mapViewport  = document.getElementById('map-viewport');
+const mapArea      = document.getElementById('map-area');
+const dragGhost    = document.getElementById('drag-ghost');
+const dragGhostImg = document.getElementById('drag-ghost-img');
+const statusTxt    = document.getElementById('status-txt');
+const tokenCount   = document.getElementById('token-count');
+const ctxMenu      = document.getElementById('ctx-menu');
+
+// ─── Build map grid ──────────────────────────────────────────────────────────
+const mapGrid = document.getElementById('map-grid');
+MAPS.forEach(m => {
+  const d = document.createElement('div');
+  d.className = 'map-thumb';
+  d.title = m.name;
+  d.innerHTML = `<img src="${m.src}" loading="lazy" alt="${m.name}"><div class="map-name">${m.name}</div>`;
+  d.addEventListener('click', () => selectMap(m));
+  mapGrid.appendChild(d);
+});
+
+// ─── Build palette ───────────────────────────────────────────────────────────
+const paletteEl = document.getElementById('palette');
+Object.entries(PALETTE).forEach(([cat, items]) => {
+  const section = document.createElement('div');
+  section.className = 'palette-cat';
+  section.innerHTML = `<div class="palette-cat-title">${cat}</div><div class="palette-tokens"></div>`;
+  const grid = section.querySelector('.palette-tokens');
+  items.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'palette-token';
+    el.title = item.name;
+    el.innerHTML = `<img src="${item.sprite}" alt="${item.name}"><span>${item.name}</span>`;
+    el.addEventListener('mousedown', e => startPaletteDrag(e, item));
+    grid.appendChild(el);
+  });
+  paletteEl.appendChild(section);
+});
+
+// ─── Map selection ───────────────────────────────────────────────────────────
+function selectMap(m) {
+  currentMap = m;
+  document.querySelectorAll('.map-thumb').forEach((el, i) => el.classList.toggle('active', MAPS[i].id === m.id));
+
+  mapViewport.innerHTML = '';
+  const img = document.createElement('img');
+  img.id = 'map-img';
+  img.src = m.src;
+  img.alt = m.name;
+  img.draggable = false;
+  img.addEventListener('load', () => rerenderTokens());
+  mapViewport.appendChild(img);
+
+  rerenderTokens();
+  statusTxt.textContent = m.name;
+}
+
+function getMapImg() { return document.getElementById('map-img'); }
+
+// ─── Token rendering ─────────────────────────────────────────────────────────
+function rerenderTokens() {
+  document.querySelectorAll('.map-token').forEach(el => el.remove());
+  tokens.forEach(tok => mountToken(tok));
+  updateCount();
+}
+
+function mountToken(tok) {
+  const el = document.createElement('div');
+  el.className = `map-token type-${tok.type}${tok.id === selectedId ? ' selected' : ''}`;
+  el.id = `tok-${tok.id}`;
+  el.innerHTML = `
+    <div class="token-shadow"></div>
+    <img src="${tok.sprite}" alt="${tok.name}">
+    <div class="token-label">${tok.name}</div>
+  `;
+  setTokenPos(el, tok);
+  el.addEventListener('mousedown', e => startTokenDrag(e, tok));
+  el.addEventListener('contextmenu', e => openCtxMenu(e, tok));
+  mapViewport.appendChild(el);
+}
+
+function setTokenPos(el, tok) {
+  const img = getMapImg();
+  if (!img || !img.offsetWidth) return;
+  el.style.left = (tok.x * img.offsetWidth)  + 'px';
+  el.style.top  = (tok.y * img.offsetHeight) + 'px';
+}
+
+function updateCount() {
+  const p = tokens.filter(t => t.type === 'player').length;
+  const e = tokens.filter(t => t.type === 'enemy').length;
+  const n = tokens.filter(t => t.type === 'npc').length;
+  const parts = [];
+  if (p) parts.push(`🟡 ${p}`);
+  if (e) parts.push(`🔴 ${e}`);
+  if (n) parts.push(`🟣 ${n}`);
+  tokenCount.textContent = parts.join('  ');
+}
+
+// ─── Palette drag ────────────────────────────────────────────────────────────
+function startPaletteDrag(e, item) {
+  if (!currentMap) return;
+  e.preventDefault();
+  drag = { kind: 'palette', sprite: item.sprite, name: item.name, tokenType: item.type };
+  dragGhostImg.src = item.sprite;
+  dragGhost.style.display = 'block';
+  moveDragGhost(e.clientX, e.clientY);
+}
+
+// ─── Token drag ──────────────────────────────────────────────────────────────
+function startTokenDrag(e, tok) {
+  if (e.button !== 0) return;
+  e.preventDefault();
+  e.stopPropagation();
+
+  // Select it
+  selectedId = tok.id;
+  document.querySelectorAll('.map-token').forEach(el => el.classList.remove('selected'));
+  document.getElementById(`tok-${tok.id}`)?.classList.add('selected');
+
+  const img = getMapImg();
+  if (!img) return;
+  const rect = img.getBoundingClientRect();
+  const curX = (e.clientX - rect.left) / (img.offsetWidth  * zoomScale);
+  const curY = (e.clientY - rect.top)  / (img.offsetHeight * zoomScale);
+
+  drag = {
+    kind: 'token',
+    tokenId: tok.id,
+    offX: curX - tok.x,
+    offY: curY - tok.y,
+  };
+  document.getElementById(`tok-${tok.id}`)?.classList.add('dragging');
+}
+
+// ─── Mouse move / up ─────────────────────────────────────────────────────────
+document.addEventListener('mousemove', e => {
+  if (!drag) return;
+  if (drag.kind === 'palette') {
+    moveDragGhost(e.clientX, e.clientY);
+    return;
+  }
+  // token drag
+  const img = getMapImg();
+  if (!img) return;
+  const rect = img.getBoundingClientRect();
+  const rawX = (e.clientX - rect.left) / rect.width;
+  const rawY = (e.clientY - rect.top)  / rect.height;
+  const x = Math.max(0, Math.min(1, rawX - drag.offX));
+  const y = Math.max(0, Math.min(1, rawY - drag.offY));
+  const tok = tokens.find(t => t.id === drag.tokenId);
+  if (!tok) return;
+  tok.x = x;
+  tok.y = y;
+  const el = document.getElementById(`tok-${tok.id}`);
+  if (el) setTokenPos(el, tok);
+});
+
+document.addEventListener('mouseup', e => {
+  if (!drag) return;
+
+  if (drag.kind === 'palette') {
+    dragGhost.style.display = 'none';
+    const img = getMapImg();
+    if (img) {
+      const rect = img.getBoundingClientRect();
+      if (e.clientX >= rect.left && e.clientX <= rect.right &&
+          e.clientY >= rect.top  && e.clientY <= rect.bottom) {
+        const x = (e.clientX - rect.left) / rect.width;
+        const y = (e.clientY - rect.top)  / rect.height;
+        addToken(drag.tokenType, drag.name, drag.sprite, x, y);
+      }
+    }
+  } else {
+    document.getElementById(`tok-${drag.tokenId}`)?.classList.remove('dragging');
+  }
+
+  drag = null;
+});
+
+function moveDragGhost(cx, cy) {
+  dragGhost.style.left = cx + 'px';
+  dragGhost.style.top  = cy + 'px';
+}
+
+// ─── Add / remove tokens ─────────────────────────────────────────────────────
+function addToken(type, name, sprite, x, y) {
+  const tok = { id: nextId++, type, name, sprite, x, y };
+  tokens.push(tok);
+  mountToken(tok);
+  updateCount();
+}
+
+function removeToken(id) {
+  tokens = tokens.filter(t => t.id !== id);
+  document.getElementById(`tok-${id}`)?.remove();
+  if (selectedId === id) selectedId = null;
+  updateCount();
+}
+
+function limparTodos() {
+  if (tokens.length && !confirm('Remover todos os tokens do mapa?')) return;
+  tokens = [];
+  document.querySelectorAll('.map-token').forEach(el => el.remove());
+  selectedId = null;
+  updateCount();
+}
+
+// ─── Context menu ────────────────────────────────────────────────────────────
+let ctxTarget = null;
+
+function openCtxMenu(e, tok) {
+  e.preventDefault();
+  e.stopPropagation();
+  ctxTarget = tok;
+  ctxMenu.style.display = 'block';
+  let x = e.clientX, y = e.clientY;
+  if (x + 160 > window.innerWidth)  x = window.innerWidth  - 160;
+  if (y + 80  > window.innerHeight) y = window.innerHeight - 80;
+  ctxMenu.style.left = x + 'px';
+  ctxMenu.style.top  = y + 'px';
+}
+
+document.getElementById('ctx-rename').addEventListener('click', () => {
+  if (!ctxTarget) return;
+  const novo = prompt('Novo nome:', ctxTarget.name);
+  if (novo && novo.trim()) {
+    ctxTarget.name = novo.trim();
+    const label = document.querySelector(`#tok-${ctxTarget.id} .token-label`);
+    if (label) label.textContent = ctxTarget.name;
+  }
+  closeCtxMenu();
+});
+
+document.getElementById('ctx-remove').addEventListener('click', () => {
+  if (ctxTarget) removeToken(ctxTarget.id);
+  closeCtxMenu();
+});
+
+function closeCtxMenu() { ctxMenu.style.display = 'none'; ctxTarget = null; }
+
+document.addEventListener('click',       closeCtxMenu);
+document.addEventListener('contextmenu', e => { if (!e.target.closest('#ctx-menu') && !e.target.closest('.map-token')) closeCtxMenu(); });
+
+// ─── Zoom ────────────────────────────────────────────────────────────────────
+function applyZoom() {
+  mapViewport.style.transform = `scale(${zoomScale})`;
+  rerenderTokens();
+}
+
+function changeZoom(delta) {
+  zoomScale = Math.max(0.4, Math.min(3.0, zoomScale + delta));
+  applyZoom();
+}
+
+function resetZoom() {
+  zoomScale = 1.0;
+  applyZoom();
+}
+
+mapArea.addEventListener('wheel', e => {
+  e.preventDefault();
+  changeZoom(e.deltaY < 0 ? 0.1 : -0.1);
+}, { passive: false });
+
+// ─── Resize ──────────────────────────────────────────────────────────────────
+window.addEventListener('resize', rerenderTokens);
+
+// ─── Export ──────────────────────────────────────────────────────────────────
+function exportarJSON() {
+  const data = {
+    mapa: currentMap?.id || null,
+    tokens: tokens.map(t => ({
+      type: t.type,
+      name: t.name,
+      sprite: t.sprite,
+      x: +t.x.toFixed(4),
+      y: +t.y.toFixed(4),
+    })),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(blob),
+    download: `batalha-${currentMap?.id || 'sem-mapa'}-${Date.now()}.json`,
+  });
+  a.click();
+}
+
+// ─── Keyboard shortcuts ──────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    if (selectedId && document.activeElement.tagName !== 'INPUT') {
+      removeToken(selectedId);
+    }
+  }
+  if (e.key === '+' || e.key === '=') changeZoom(0.1);
+  if (e.key === '-') changeZoom(-0.1);
+  if (e.key === '0') resetZoom();
+  if (e.key === 'Escape') { closeCtxMenu(); selectedId = null; document.querySelectorAll('.map-token').forEach(el => el.classList.remove('selected')); }
+});
+</script>
+</body>
+</html>
