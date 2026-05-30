@@ -3446,7 +3446,11 @@ async function chamarIA_jogadoresAvançam(jogadores, data) {
     if (atoTituloAv) mostrarCinematicaAto(atoTituloAv);
   } catch(e) {
     console.warn('[chamarIA_jogadoresAvançam] exceção:', e);
-    try { await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' }); } catch(_) {}
+    try {
+      const upsErr = { [`salas/${mySala}/config/estado`]: 'aguardando' };
+      Object.keys(jogadores).forEach(uid => { upsErr[`salas/${mySala}/jogadores/${uid}/acao1`] = null; });
+      await update(ref(db), upsErr);
+    } catch(_) {}
   } finally {
     chamandoIA = false;
     ocultarRetryUI();
@@ -3495,7 +3499,11 @@ async function chamarIA_continuar() {
     if (atoTituloCont) mostrarCinematicaAto(atoTituloCont);
   } catch(e) {
     console.warn('[chamarIA_continuar] exceção:', e);
-    try { await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' }); } catch(_) {}
+    try {
+      const upsErr = { [`salas/${mySala}/config/estado`]: 'aguardando' };
+      Object.keys(data?.jogadores || {}).forEach(uid => { upsErr[`salas/${mySala}/jogadores/${uid}/acao1`] = null; });
+      await update(ref(db), upsErr);
+    } catch(_) {}
   } finally {
     chamandoIA = false;
     ocultarRetryUI();
@@ -3578,7 +3586,11 @@ async function chamarIA(jogadores, data) {
     }
   } catch(e) {
     console.warn('[chamarIA] exceção:', e);
-    try { await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' }); } catch(_) {}
+    try {
+      const upsErr = { [`salas/${mySala}/config/estado`]: 'aguardando' };
+      Object.keys(jogadores).forEach(uid => { upsErr[`salas/${mySala}/jogadores/${uid}/acao1`] = null; });
+      await update(ref(db), upsErr);
+    } catch(_) {}
   } finally {
     chamandoIA = false;
     ocultarRetryUI();
@@ -3670,7 +3682,8 @@ Exemplo — "Carne quer correr, sacar a faca e arremessá-la nas costas do gobli
   TESTAR: [Carne|Golpe de espada|FOR|13|Espantalho 1]
   TESTAR: [Carne|Corrida pelas barracas|DES|10]
 ⚠ REGRA CRÍTICA: escreva os TESTAR/ROLAR NA PRIMEIRA LINHA da resposta — NUNCA depois de texto narrativo. Qualquer texto escrito ANTES dos TESTAR aparece na tela ANTES dos dados serem rolados; por isso esse texto deve descrever apenas o CENÁRIO e a INTENÇÃO do personagem, NUNCA o impacto, o contato físico ou o som do golpe ("metal corta", "punho acerta", "espada rasga", "madeira estala", "lâmina penetra"). Esses detalhes só existem depois que os dados decidirem. NÃO narre o desfecho — ele depende dos dados.
-Se a ação for simples (atacar de frente, falar com NPC, mover-se para adjacente), não use TESTAR — narre diretamente.
+⚠ EM COMBATE: TODO ataque de jogador contra inimigo (corpo a corpo, à distância, magia ofensiva, empurrão, morder, qualquer forma de dano) EXIGE TESTAR + ROLAR. SEM EXCEÇÃO. "Tiro certeiro", "golpe preciso", "ataque direto", "disparar", "arremessar" — tudo exige TESTAR. A única ação que não exige TESTAR é: falar, se esconder (fora de combate), curar aliado ou mover-se sem atacar.
+Se a ação for puramente narrativa sem risco ou dano (falar com NPC, mover-se para adjacente sem atacar, curar aliado), não use TESTAR — narre diretamente.
 Para danos ou efeitos com dados específicos após um ataque (TESTAR com Alvo), acrescente na linha seguinte:
   ROLAR: [NomeExato|Descrição curta do dano|NotaçãoDados|Alvo]
 Exemplo: ROLAR: [Carne|Dano da faca|1d6+2|Espantalho 1]
