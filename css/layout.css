@@ -624,11 +624,12 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   flex-shrink: 0;
 }
 #char-sprite {
-  width: 64px;
-  height: 80px;
+  width: 130px;
+  height: 150px;
   object-fit: contain;
+  object-position: center bottom;
   image-rendering: pixelated;
-  border-radius: 4px;
+  filter: drop-shadow(0 3px 12px rgba(0,0,0,.9));
 }
 #gender-toggle { display: flex; gap: 4px; }
 .gender-btn {
