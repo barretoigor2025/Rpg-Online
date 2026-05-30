@@ -168,7 +168,8 @@ let _parteAtual = 'parte1'; // ato/parte atual da campanha
 let _introSlides = [];
 let _introIdx    = 0;
 let _introAtivo  = false;
-let _kitMigrado  = false;
+let _kitMigrado     = false;
+let _primeiraEntrada = false;
 let _jogadoresCache   = {};
 let _ultimoNpc        = null; // último NPC que falou, usado como ouvinte quando jogador responde
 let _regras           = {};
@@ -2592,6 +2593,7 @@ function irParaJogo(codigo) {
   _renderedKeys = new Set();
 
   _kitMigrado = false;
+  _primeiraEntrada = true;
   if (unsubSala) unsubSala();
   if (unsubRolagem) { unsubRolagem(); unsubRolagem = null; }
 
@@ -2612,6 +2614,40 @@ function irParaJogo(codigo) {
     const inimigos  = data.inimigos  || {};
 
     amIHost = config.host === myUid;
+
+    // Auto-recovery: host reabre com sessão travada em 'narrando'
+    if (amIHost && _primeiraEntrada) {
+      _primeiraEntrada = false;
+      if (config.estado === 'narrando' && !chamandoIA) {
+        const _dataSnap = data;
+        setTimeout(async () => {
+          try {
+            const _historia = _dataSnap.historia || {};
+            const _jogs     = _dataSnap.jogadores || {};
+            const _sorted   = Object.values(_historia).sort((a,b) => (a.ts||0)-(b.ts||0));
+            const _lastModelTs = _sorted
+              .filter(e => e.role === 'model' && !e.noTTS)
+              .reduce((mx, e) => Math.max(mx, e.ts||0), 0);
+            const _ups = {};
+            Object.values(_jogs).forEach(j => {
+              if (!j.vivo || j.ausente) return;
+              if (j.acao1 != null) return;
+              const _ultima = _sorted
+                .filter(e => e.role === 'user' && e.uid === j.uid && (e.ts||0) > _lastModelTs)
+                .pop();
+              if (_ultima?.content && _ultima.content !== `${j.nome} está pronto para avançar a história.`) {
+                _ups[`salas/${mySala}/jogadores/${j.uid}/acao1`] = _ultima.content;
+              }
+            });
+            _ups[`salas/${mySala}/config/estado`] = 'aguardando';
+            await update(ref(db), _ups);
+            toast('🔄 Sessão anterior recuperada — continuando...', 3000);
+          } catch(e) { console.warn('[auto-recovery]', e); }
+        }, 1200);
+      }
+    } else if (_primeiraEntrada) {
+      _primeiraEntrada = false;
+    }
 
     // Turno
     const rodEl = document.getElementById('round-display');
@@ -2885,6 +2921,9 @@ function atualizarInputArea(eu, config) {
 
   const btnHist = document.getElementById('btn-editar-hist');
   if (btnHist) btnHist.style.display = amIHost ? 'inline-flex' : 'none';
+
+  const btnDestravar = document.getElementById('btn-destravar');
+  if (btnDestravar) btnDestravar.style.display = (amIHost && narrando) ? 'inline-flex' : 'none';
 
   const btnAv = document.getElementById('btn-avançar-hist');
   if (btnAv) {
@@ -3676,6 +3715,20 @@ DIÁLOGOS — sistema de bolhas inline. Regras OBRIGATÓRIAS:
 4. Nunca suprima a fala de um NPC — se o contexto exige que ele fale, ele DEVE falar via tag FALA.
 5. Coloque a fala COMPLETA do NPC na tag, não um resumo.`;
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  DESTRAVAR NARRAÇÃO (host only) — reseta estado preso
+// ═══════════════════════════════════════════════════════════════
+window.destravaNarracao = async function() {
+  if (!amIHost || !mySala) return;
+  chamandoIA = false;
+  await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
+  const snap = await get(ref(db, `salas/${mySala}/jogadores`));
+  const ups = {};
+  snap.forEach(c => { ups[`salas/${mySala}/jogadores/${c.key}/acao1`] = null; });
+  if (Object.keys(ups).length) await update(ref(db), ups);
+  toast('🔓 Narração destravada — estado resetado para aguardando', 3000);
+};
 
 // ═══════════════════════════════════════════════════════════════
 //  GERENCIAR HISTÓRICO (host only)
