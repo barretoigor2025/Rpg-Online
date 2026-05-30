@@ -341,8 +341,10 @@
 <div class="main">
   <!-- Sidebar -->
   <div class="sidebar">
-    <div class="sec-label">Cenários — Pack A Mhoried</div>
-    <div class="map-grid" id="map-grid"></div>
+    <div class="sec-label">Pack A — Mhoried</div>
+    <div class="map-grid" id="map-grid-a"></div>
+    <div class="sec-label">Pack B — Blackwoods</div>
+    <div class="map-grid" id="map-grid-b"></div>
 
     <div class="sec-label">Fichas</div>
     <div class="palette-wrap" id="palette"></div>
@@ -376,10 +378,16 @@
 <script>
 // ─── Data ────────────────────────────────────────────────────────────────────
 const MAPS = [
-  { id: 'mhoried-01', name: 'Mercado / Casas',    src: 'campanhas/beast-of-black-keep/cenarios/pack-a-mhoried/mhoried-01-mercado-casas.png' },
-  { id: 'mhoried-02', name: 'Cemitério Floresta', src: 'campanhas/beast-of-black-keep/cenarios/pack-a-mhoried/mhoried-02-cemiterio-floresta.png' },
-  { id: 'mhoried-03', name: 'Mercado Noturno',    src: 'campanhas/beast-of-black-keep/cenarios/pack-a-mhoried/mhoried-03-mercado-noturno.png' },
-  { id: 'mhoried-04', name: 'Praça da Fonte',     src: 'campanhas/beast-of-black-keep/cenarios/pack-a-mhoried/mhoried-04-praca-fonte.png' },
+  // Pack A — Mhoried
+  { id: 'mhoried-01', pack: 'a', name: 'Mercado / Casas',    src: 'campanhas/beast-of-black-keep/cenarios/pack-a-mhoried/mhoried-01-mercado-casas.png' },
+  { id: 'mhoried-02', pack: 'a', name: 'Cemitério Floresta', src: 'campanhas/beast-of-black-keep/cenarios/pack-a-mhoried/mhoried-02-cemiterio-floresta.png' },
+  { id: 'mhoried-03', pack: 'a', name: 'Mercado Noturno',    src: 'campanhas/beast-of-black-keep/cenarios/pack-a-mhoried/mhoried-03-mercado-noturno.png' },
+  { id: 'mhoried-04', pack: 'a', name: 'Praça da Fonte',     src: 'campanhas/beast-of-black-keep/cenarios/pack-a-mhoried/mhoried-04-praca-fonte.png' },
+  // Pack B — Blackwoods
+  { id: 'blackwoods-01', pack: 'b', name: 'Clareira / Camp.',   src: 'campanhas/beast-of-black-keep/cenarios/pack-b-blackwoods/blackwoods-01-clareira-acampamento.png' },
+  { id: 'blackwoods-02', pack: 'b', name: 'Ruínas Floresta',    src: 'campanhas/beast-of-black-keep/cenarios/pack-b-blackwoods/blackwoods-02-ruinas-floresta.png' },
+  { id: 'blackwoods-03', pack: 'b', name: 'Cemitério / Muros',  src: 'campanhas/beast-of-black-keep/cenarios/pack-b-blackwoods/blackwoods-03-cemiterio-muros.png' },
+  { id: 'blackwoods-04', pack: 'b', name: 'Templo Antigo',      src: 'campanhas/beast-of-black-keep/cenarios/pack-b-blackwoods/blackwoods-04-templo-antigo.png' },
 ];
 
 const PALETTE = {
@@ -471,16 +479,21 @@ const statusTxt    = document.getElementById('status-txt');
 const tokenCount   = document.getElementById('token-count');
 const ctxMenu      = document.getElementById('ctx-menu');
 
-// ─── Build map grid ──────────────────────────────────────────────────────────
-const mapGrid = document.getElementById('map-grid');
-MAPS.forEach(m => {
-  const d = document.createElement('div');
-  d.className = 'map-thumb';
-  d.title = m.name;
-  d.innerHTML = `<img src="${m.src}" loading="lazy" alt="${m.name}"><div class="map-name">${m.name}</div>`;
-  d.addEventListener('click', () => selectMap(m));
-  mapGrid.appendChild(d);
-});
+// ─── Build map grids ─────────────────────────────────────────────────────────
+function buildPackGrid(gridId, packId) {
+  const grid = document.getElementById(gridId);
+  MAPS.filter(m => m.pack === packId).forEach(m => {
+    const d = document.createElement('div');
+    d.className = 'map-thumb';
+    d.id = `thumb-${m.id}`;
+    d.title = m.name;
+    d.innerHTML = `<img src="${m.src}" loading="lazy" alt="${m.name}"><div class="map-name">${m.name}</div>`;
+    d.addEventListener('click', () => selectMap(m));
+    grid.appendChild(d);
+  });
+}
+buildPackGrid('map-grid-a', 'a');
+buildPackGrid('map-grid-b', 'b');
 
 // ─── Build palette ───────────────────────────────────────────────────────────
 const paletteEl = document.getElementById('palette');
@@ -503,7 +516,7 @@ Object.entries(PALETTE).forEach(([cat, items]) => {
 // ─── Map selection ───────────────────────────────────────────────────────────
 function selectMap(m) {
   currentMap = m;
-  document.querySelectorAll('.map-thumb').forEach((el, i) => el.classList.toggle('active', MAPS[i].id === m.id));
+  document.querySelectorAll('.map-thumb').forEach(el => el.classList.toggle('active', el.id === `thumb-${m.id}`));
 
   mapViewport.innerHTML = '';
   const img = document.createElement('img');
