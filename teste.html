@@ -78,7 +78,6 @@ header{
   <header>
     <span id="turn-label">Turno 1 — Heróis</span>
     <button class="hdr-btn" onclick="toggleDebug()">⬡ Grade</button>
-    <button class="hdr-btn" id="btn-cancel" onclick="cancelSel()" style="display:none">✕</button>
     <button class="hdr-btn" id="btn-end-phase" onclick="endHeroPhase()">Encerrar →</button>
   </header>
 
@@ -92,7 +91,7 @@ header{
   <div id="bottom">
     <div id="info-row">
       <div id="unit-panel">
-        <div id="u-empty">Selecione ou digite</div>
+        <div id="u-empty">Passe o mouse</div>
         <div id="u-detail" style="display:none">
           <h3 id="u-name"></h3>
           <div id="hpbar"><div id="hpfill"></div></div>
@@ -377,67 +376,10 @@ function checkEnd(){
 //  BATTLE STATE
 // ═══════════════════════════════════════════════
 let turn=1, phase='hero';
-let selId=null, moveRange=[], atkHexes=[], hovHex=null, debugGrid=false;
-
-function selUnit(unit){
-  cancelSel();
-  if(!unit||!unit.alive)return;
-  if(phase==='hero'&&unit.type==='hero'){
-    selId=unit.id;
-    if(!unit.hasMoved)moveRange=reachable(unit);
-    atkHexes=atkTargets(unit,unit.col,unit.row).map(t=>getUnit(t.id)).flatMap(u=>u.occupiedHexes);
-    document.getElementById('btn-cancel').style.display='';
-    updatePanel(unit);
-    render();
-  }
-}
-
-function cancelSel(){
-  selId=null;moveRange=[];atkHexes=[];
-  document.getElementById('btn-cancel').style.display='none';
-  updatePanel(null);render();
-}
-
-function handleClick(col,row){
-  if(phase==='victory'||phase==='defeat')return;
-  const target=getUnitAt(col,row);
-  const sel=selId?getUnit(selId):null;
-
-  if(!sel){
-    if(target&&target.type==='hero'&&target.alive&&(!target.hasMoved||!target.hasActed))selUnit(target);
-    return;
-  }
-
-  // Click enemy in range → attack
-  if(target&&target.type==='enemy'&&target.alive){
-    const tgts=atkTargets(sel,sel.col,sel.row);
-    const found=tgts.find(t=>target.occupiedHexes.some(h=>hexDist(sel.col,sel.row,h.col,h.row)===t.dist&&t.id===target.id));
-    if(found&&!sel.hasActed){
-      doAttack(sel,target);checkEnd();cancelSel();render();
-    }else if(!found){addLog(`${sel.name} não alcança ${target.name} daqui.`,'s');}
-    else{addLog(`${sel.name} já atacou.`,'s');}
-    return;
-  }
-
-  // Click another hero → switch
-  if(target&&target.type==='hero'&&(!target.hasMoved||!target.hasActed)){selUnit(target);return;}
-
-  // Click empty hex → move
-  if(!target&&!sel.hasMoved){
-    const h=moveRange.find(m=>m.col===col&&m.row===row);
-    if(h){
-      addLog(`${sel.name}: ${hexLbl(sel.col,sel.row)} → ${hexLbl(col,row)} (${h.steps} hex).`,'h');
-      moveUnit(sel,col,row);
-      moveRange=[];
-      atkHexes=atkTargets(sel,sel.col,sel.row).map(t=>getUnit(t.id)).flatMap(u=>u.occupiedHexes);
-      updatePanel(sel);render();
-    }
-  }
-}
+let hovHex=null, debugGrid=false;
 
 function endHeroPhase(){
   heroes().forEach(u=>{u.hasMoved=true;u.hasActed=true;});
-  cancelSel();
   addLog('— Heróis passam a vez. Inimigos agem —','s');
   phase='enemy'; updateHdr(); render();
   setTimeout(runEnemies,600);
@@ -535,6 +477,9 @@ function processCmd(raw){
   const lo=raw.toLowerCase();
   if(phase==='enemy'){addLog('Aguarde — fase dos inimigos.','s');return;}
 
+  // "fim de turno / encerrar / passar turno"
+  if(/fim\s*de\s*turno|encerrar|passar\s*turno|end\s*turn/i.test(lo)){endHeroPhase();return;}
+
   const actor=findUnitByText(lo);
   if(!actor){addLog(`Não identifiquei quem age. Ex: "Bárbaro avança" ou "Mago ataca"`,'s');return;}
   if(!actor.alive){addLog(`${actor.name} está fora de combate.`,'s');return;}
@@ -558,7 +503,7 @@ function processCmd(raw){
     if(h){
       addLog(`${actor.name} move para ${hexLbl(destHex.col,destHex.row)} (${h.steps} hex).`,'h');
       moveUnit(actor,destHex.col,destHex.row);
-      cancelSel();render();
+      render();
     }else{
       const d=hexDist(actor.col,actor.row,destHex.col,destHex.row);
       addLog(`${hexLbl(destHex.col,destHex.row)} está a ${d} hex — fora do alcance de movimento (${actor.moveSpeed}).`,'s');
@@ -572,7 +517,7 @@ function processCmd(raw){
     const tgts=atkTargets(actor,actor.col,actor.row);
     const found=tgts.find(t=>t.id===target.id);
     if(found){
-      doAttack(actor,target);checkEnd();cancelSel();render();
+      doAttack(actor,target);checkEnd();render();
     }else{
       const d=unitDist(actor,target);
       addLog(`${actor.name} não alcança ${target.name} daqui (${d} hex). Avance primeiro.`,'s');
@@ -620,7 +565,7 @@ function processCmd(raw){
         addLog(`${actor.name} avançou mas ${target.name} ainda está longe (${d} hex).`,'s');
       }
     }
-    cancelSel();render();
+    render();
     return;
   }
 
@@ -631,7 +576,7 @@ function processCmd(raw){
     for(const h of reach){const d=distFromPt(h.col,h.row,target);if(d<bd){bd=d;best=h;}}
     if(best){
       addLog(`${actor.name}: ${hexLbl(actor.col,actor.row)} → ${hexLbl(best.col,best.row)}.`,'h');
-      moveUnit(actor,best.col,best.row);cancelSel();render();
+      moveUnit(actor,best.col,best.row);render();
     }
     return;
   }
@@ -683,18 +628,12 @@ function render(){
   if(mapImg.complete&&mapImg.naturalWidth)ctx.drawImage(mapImg,0,0,MAP_W,MAP_H);
   else{ctx.fillStyle='#1a1610';ctx.fillRect(0,0,MAP_W,MAP_H);}
 
-  const sel=selId?getUnit(selId):null;
-  const moveSet=new Set(moveRange.map(h=>`${h.col},${h.row}`));
-  const atkSet =new Set(atkHexes.map(h=>`${h.col},${h.row}`));
-  const hovKey =hovHex?`${hovHex.col},${hovHex.row}`:null;
+  const hovKey=hovHex?`${hovHex.col},${hovHex.row}`:null;
 
   // Fill highlights
   for(let c=0;c<COLS;c++)for(let r=0;r<ROWS;r++){
     const key=`${c},${r}`;
-    drawHex(c,r);
-    if(moveSet.has(key)){ctx.fillStyle='rgba(60,140,220,.22)';ctx.fill();}
-    else if(atkSet.has(key)){ctx.fillStyle='rgba(220,60,60,.30)';ctx.fill();}
-    if(hovKey===key){ctx.fillStyle='rgba(255,255,255,.07)';ctx.fill();}
+    if(hovKey===key){drawHex(c,r);ctx.fillStyle='rgba(255,255,255,.07)';ctx.fill();}
   }
 
   // 2×2 creature occupied hex highlight
@@ -719,23 +658,11 @@ function render(){
     }
   }
 
-  // Movement step numbers
-  if(sel&&moveRange.length){
-    ctx.font='10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    moveRange.forEach(h=>{
-      const{x,y}=hexCtr(h.col,h.row);
-      ctx.fillStyle='rgba(120,200,255,.85)'; ctx.fillText(h.steps,x,y+VR-10);
-    });
-  }
-
-  // Selected hex ring
-  if(sel){drawHex(sel.col,sel.row);ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.stroke();}
-
   // Draw units
-  units.forEach(u=>{if(u.alive)drawUnit(u,u===sel);});
+  units.forEach(u=>{if(u.alive)drawUnit(u,false);});
 }
 
-function drawUnit(u,isSel){
+function drawUnit(u){
   const size=u.size||'1x1';
 
   // For large units, use center of all occupied hexes
@@ -766,12 +693,6 @@ function drawUnit(u,isSel){
   }else{
     ctx.font=`${baseR}px serif`;ctx.textAlign='center';ctx.textBaseline='bottom';
     ctx.fillText(u.icon,cx,cy);
-  }
-
-  // Selection ring
-  if(isSel){
-    ctx.beginPath();ctx.arc(cx,cy-sprH*.4,baseR+6,0,Math.PI*2);
-    ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.stroke();
   }
 
   // HP bar
@@ -880,45 +801,33 @@ function ptDist(touches){
 }
 
 // ═══════════════════════════════════════════════
-//  CLICK / HOVER / TOOLTIP
+//  HOVER / TOOLTIP
 // ═══════════════════════════════════════════════
-canvas.addEventListener('click',e=>{
-  if(_justPinched)return;
-  const rect=canvas.getBoundingClientRect();
-  const px=(e.clientX-rect.left)*MAP_W/rect.width;
-  const py=(e.clientY-rect.top)*MAP_H/rect.height;
-  handleClick(...Object.values(pxToHex(px,py)));
-});
-
 canvas.addEventListener('mousemove',e=>{
   const rect=canvas.getBoundingClientRect();
   const px=(e.clientX-rect.left)*MAP_W/rect.width;
   const py=(e.clientY-rect.top)*MAP_H/rect.height;
   const h=pxToHex(px,py);
+  const tip=document.getElementById('tip');
   if(!hovHex||hovHex.col!==h.col||hovHex.row!==h.row){
     hovHex=h;
-    const tip=document.getElementById('tip');
     const u=getUnitAt(h.col,h.row);
-    const sel=selId?getUnit(selId):null;
     let html=`<b>${hexLbl(h.col,h.row)}</b>`;
     if(u)html+=` — ${u.name}<br>PV:${u.hp}/${u.maxHp} CA:${u.ac}`;
-    if(sel&&u){
-      const d=unitDist(sel,u);
-      html+=`<br>Dist:${d} hex`;
-    }
     const cov=getCover(h.col,h.row);
     if(cov!=='none')html+=`<br>Cobertura:${cov==='partial'?'parcial':'total'}`;
-    const mr=moveRange.find(m=>m.col===h.col&&m.row===h.row);
-    if(mr)html+=`<br>🚶${mr.steps} passos`;
     tip.innerHTML=html; tip.style.display='block';
-    tip.style.left=(e.clientX+14)+'px'; tip.style.top=(e.clientY-8)+'px';
+    updatePanel(u||null);
     render();
-  }else{
-    const tip=document.getElementById('tip');
-    tip.style.left=(e.clientX+14)+'px'; tip.style.top=(e.clientY-8)+'px';
   }
+  tip.style.left=(e.clientX+14)+'px'; tip.style.top=(e.clientY-8)+'px';
 });
-canvas.addEventListener('mouseleave',()=>{hovHex=null;document.getElementById('tip').style.display='none';render();});
+canvas.addEventListener('mouseleave',()=>{
+  hovHex=null;
+  document.getElementById('tip').style.display='none';
+  updatePanel(null);
+  render();
+});
 
 // ═══════════════════════════════════════════════
 //  PANEL
@@ -961,7 +870,7 @@ if(mapImg.complete)render();
 updateHdr();
 addLog('Heróis: Arqueiro (C07) · Bárbaro (E08) · Mago (G07)','h');
 addLog('Inimigos: Espantalho I (D03) · II (H03) · Barkthresher 2×2 (F04-G05)','e');
-addLog('Digite: "Bárbaro ataca o Barkthresher" ou "Mago avança para G06"','s');
+addLog('Narre suas ações: "Bárbaro avança para D05 e ataca o Espantalho" · "fim de turno"','s');
 </script>
 </body>
 </html>
