@@ -669,7 +669,7 @@ function render(){
 
   // Grid lines — visível apenas quando showGrid=true
   if(showGrid){
-    ctx.strokeStyle='rgba(200,175,110,.22)'; ctx.lineWidth=1;
+    ctx.strokeStyle='rgba(210,180,90,.55)'; ctx.lineWidth=1.5;
     for(let c=0;c<COLS;c++)for(let r=0;r<ROWS;r++){drawHex(c,r);ctx.stroke();}
     if(debugGrid){
       ctx.fillStyle='rgba(200,175,110,.7)';ctx.font='10px monospace';
