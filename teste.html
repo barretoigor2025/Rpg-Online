@@ -87,6 +87,32 @@ header{
 .rbtn.on-melee{background:rgba(200,40,40,.35);border-color:#cc4444;color:#ffaaaa}
 .rbtn.on-ranged{background:rgba(200,120,20,.35);border-color:#cc8830;color:#ffcc80}
 
+/* ── Action popup ── */
+#action-popup{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:175px;
+  background:rgba(10,8,5,.97);border:1px solid rgba(180,150,80,.5);
+  border-radius:8px;padding:10px 13px;min-width:240px;max-width:330px;
+  z-index:150;font-size:10.5px;line-height:1.55;color:#d8c898;
+  box-shadow:0 4px 24px rgba(0,0,0,.85);display:none;
+}
+#ap-header{
+  font-size:12px;font-weight:600;color:#d4900c;
+  border-bottom:1px solid rgba(180,150,80,.2);
+  padding-bottom:5px;margin-bottom:6px;
+  display:flex;justify-content:space-between;align-items:center;
+}
+#ap-close{background:none;border:none;color:#907050;cursor:pointer;font-size:15px;padding:0 2px;line-height:1}
+.ap-skill{padding:3px 0;border-bottom:1px solid rgba(180,150,80,.07)}
+.ap-skill:last-child{border-bottom:none}
+.ap-sname{color:#e0cc90;font-weight:600}
+.ap-dmg{color:#c07050;font-size:10px;margin-left:4px}
+.ap-range{color:#6090c0;font-size:10px;margin-left:4px}
+.ap-uses{color:#909050;font-size:10px;margin-left:4px}
+.ap-targets{color:#50c060;font-size:10px;display:block}
+.ap-out{color:#706050;font-size:10px;display:block}
+.ap-passive{color:#808060;font-size:10px;display:block}
+
 /* ── Tooltip ── */
 #tip{
   position:fixed;background:rgba(10,8,4,.94);border:1px solid rgba(180,150,80,.3);
@@ -146,6 +172,13 @@ header{
   </div>
 </div>
 <div id="tip"></div>
+<div id="action-popup">
+  <div id="ap-header">
+    <span id="ap-title"></span>
+    <button id="ap-close" onclick="clearSelection()">✕</button>
+  </div>
+  <div id="ap-list"></div>
+</div>
 
 <script>
 'use strict';
@@ -253,7 +286,74 @@ const UDEFS=[
   {id:'barkthresher', name:'Barkthresher', type:'enemy',
    hex:'F05', maxHp:45, ac:14, moveSpeed:2, size:'2x2',
    sprite:'sprites/inimigo_barkthresher.png', icon:'🌳'},
+  // Maior criatura — Larva Gigante 3×2 (SM+2, "tamanho de uma carroça")
+  {id:'larva_gigante', name:'Larva Gigante', type:'enemy',
+   hex:'H02', maxHp:60, ac:10, moveSpeed:2, size:'3x2',
+   sprite:'sprites/inimigo_larva_gigante.png', icon:'🐛'},
 ];
+
+// ── Skills por classe (nome, tipo, alcance, dano) ──
+const SKILLS={
+  barbaro:[
+    {name:'Golpe',       icon:'🪓', type:'melee',     range:1, dmg:'2d6+3'},
+    {name:'Fúria',       icon:'🔥', type:'self',              dmg:'+2 dano · +4 PV temp.'},
+    {name:'Devastador',  icon:'💥', type:'melee',     range:1, dmg:'3d6+3', uses:'1/desc'},
+    {name:'Uivo de Guerra',icon:'📢',type:'aoe',      range:2, dmg:'CD12 SAB ou −2 atk'},
+    {name:'Pele de Ferro',icon:'🛡', type:'passive',          dmg:'+1 CA em Fúria'},
+  ],
+  arqueiro:[
+    {name:'Arco Longo',  icon:'🏹', type:'ranged',    range:8, dmg:'1d6+2'},
+    {name:'Tiro Preciso',icon:'🎯', type:'ranged',    range:8, dmg:'2d6+2', uses:'1/desc'},
+    {name:'Chuva de Flechas',icon:'🌧',type:'ranged_aoe',range:6,aoe:2,dmg:'1d6 × 3 alvos'},
+    {name:'Passo do Vento',icon:'💨',type:'passive',         dmg:'+2 hex · sem atk de op.'},
+    {name:'Olho de Águia',icon:'👁', type:'passive',         dmg:'Ignora penalidade dist.'},
+  ],
+  mago:[
+    {name:'Raio Arcano', icon:'⚡', type:'ranged',    range:6, dmg:'1d8+2'},
+    {name:'Bola de Fogo',icon:'🔥', type:'ranged_aoe',range:5, aoe:2, dmg:'3d6 (CD13 DEX)'},
+    {name:'Flecha de Gelo',icon:'❄',type:'ranged',    range:7, dmg:'1d10 · lento 1t'},
+    {name:'Escudo Arcano',icon:'🛡', type:'self',             dmg:'+3 CA por 2 turnos'},
+    {name:'Toque do Vazio',icon:'👻',type:'melee',    range:1, dmg:'2d4+2 · ignora CA armadura'},
+  ],
+};
+
+function getSkillTargets(u,sk){
+  const foes=enemies();
+  if(sk.type==='passive'||sk.type==='self')return null;
+  return foes.filter(e=>{
+    if(!e.alive)return false;
+    const d=unitDist(u,e);
+    if(sk.type==='melee')return d<=1;
+    if(sk.type==='ranged')return d>0&&d<=sk.range&&losOk(u.col,u.row,e.col,e.row);
+    if(sk.type==='ranged_aoe')return distFromPt(u.col,u.row,e)<=sk.range;
+    if(sk.type==='aoe')return d<=(sk.range||2);
+    return false;
+  });
+}
+
+function openActionPopup(u){
+  const skList=SKILLS[u.classe]||[];
+  document.getElementById('ap-title').textContent=`${u.name} — ${hexLbl(u.col,u.row)}`;
+  let html='';
+  for(const sk of skList){
+    const targets=getSkillTargets(u,sk);
+    html+=`<div class="ap-skill">`;
+    html+=`<span class="ap-sname">${sk.icon} ${sk.name}</span>`;
+    if(sk.dmg)html+=` <span class="ap-dmg">${sk.dmg}</span>`;
+    if(sk.range)html+=` <span class="ap-range">↗${sk.range}h</span>`;
+    if(sk.uses)html+=` <span class="ap-uses">[${sk.uses}]</span>`;
+    if(targets===null){
+      html+=`<span class="ap-passive">${sk.type==='passive'?'⬤ Passivo':'⬤ Uso pessoal'}</span>`;
+    }else if(targets.length){
+      html+=`<span class="ap-targets">◎ Alcança: ${targets.map(e=>e.name).join(' · ')}</span>`;
+    }else{
+      html+=`<span class="ap-out">✗ Fora de alcance</span>`;
+    }
+    html+=`</div>`;
+  }
+  document.getElementById('ap-list').innerHTML=html||'<span class="ap-out">Sem habilidades registradas.</span>';
+  document.getElementById('action-popup').style.display='';
+}
 
 let units=UDEFS.map(mkUnit);
 
@@ -471,11 +571,15 @@ function selectUnit(id){
   }else _rangedCache=[];
   activeRanges=new Set(['move','melee']);
   if(u.rangedWeapon)activeRanges.add('ranged');
-  updatePanel(u);updateRangeBtns();render();
+  updatePanel(u);updateRangeBtns();
+  if(u.type==='hero')openActionPopup(u);
+  else document.getElementById('action-popup').style.display='none';
+  render();
 }
 
 function clearSelection(){
   selId=null;activeRanges=new Set();_moveCache=[];_meleeCache=[];_rangedCache=[];
+  document.getElementById('action-popup').style.display='none';
   updatePanel(null);updateRangeBtns();render();
 }
 
@@ -592,12 +696,57 @@ function findTargetByText(t,actor){
   return null;
 }
 
+function findAnyUnitByText(t){
+  const lo=t.toLowerCase();
+  for(const u of units.filter(u=>u.alive)){
+    if(lo.includes(u.name.toLowerCase()))return u;
+    if(u.classe&&lo.includes(u.classe.toLowerCase()))return u;
+  }
+  if(/bárbar|barbar/i.test(lo))return getUnit('hero_barbaro');
+  if(/arqueiro|arco/i.test(lo))return getUnit('hero_arqueiro');
+  if(/mago/i.test(lo))return getUnit('hero_mago');
+  if(/larva/i.test(lo))return getUnit('larva_gigante');
+  if(/bark/i.test(lo))return getUnit('barkthresher');
+  if(/espantalho.*(1|i\b|um)/i.test(lo))return getUnit('espa_01');
+  if(/espantalho.*(2|ii\b|dois)/i.test(lo))return getUnit('espa_02');
+  if(/espantalho/i.test(lo))return units.find(u=>u.id.startsWith('espa')&&u.alive)||null;
+  return null;
+}
+
 function processCmd(raw){
   const lo=raw.toLowerCase();
   if(phase==='enemy'){addLog('Aguarde — fase dos inimigos.','s');return;}
 
   // "fim de turno / encerrar / passar turno"
   if(/fim\s*de\s*turno|encerrar|passar\s*turno|end\s*turn/i.test(lo)){endHeroPhase();return;}
+
+  // "X corre pra perto de Y" / "X fica ao lado de Y" — move toward any unit (ally or foe)
+  const nearM=lo.match(/perto\s+d[aeo]\s+(.+)|ao\s+lado\s+d[aeo]\s+(.+)|próximo\s+d[aeo]\s+(.+)/i);
+  if(nearM){
+    const actorHere=findUnitByText(lo);
+    if(actorHere&&actorHere.alive&&actorHere.type==='hero'&&!actorHere.hasMoved){
+      const n=(nearM[1]||nearM[2]||nearM[3]).trim();
+      const nearTarget=findAnyUnitByText(n);
+      if(nearTarget&&nearTarget.id!==actorHere.id){
+        const reach=reachable(actorHere);
+        const adjKeys=new Set(nearTarget.occupiedHexes.flatMap(h=>hexNbrs(h.col,h.row).map(nb=>`${nb.col},${nb.row}`)));
+        let best=null,bd=Infinity;
+        for(const h of reach){
+          if(adjKeys.has(`${h.col},${h.row}`)&&h.steps<bd){bd=h.steps;best=h;}
+        }
+        if(!best){for(const h of reach){const d=distFromPt(h.col,h.row,nearTarget);if(d<bd){bd=d;best=h;}}}
+        if(best){
+          addLog(`${actorHere.name}: ${hexLbl(actorHere.col,actorHere.row)} → ${hexLbl(best.col,best.row)} (${best.steps} hex) — perto de ${nearTarget.name}.`,'h');
+          moveUnit(actorHere,best.col,best.row);
+          if(selId===actorHere.id)selectUnit(actorHere.id);
+          render();
+        }else{
+          addLog(`${actorHere.name} não consegue se aproximar de ${nearTarget.name} neste turno.`,'s');
+        }
+        return;
+      }
+    }
+  }
 
   const actor=findUnitByText(lo);
   if(!actor){addLog(`Não identifiquei quem age. Ex: "Bárbaro avança" ou "Mago ataca"`,'s');return;}
@@ -806,10 +955,10 @@ function drawUnit(u){
     const ctrs=u.occupiedHexes.map(h=>hexCtr(h.col,h.row));
     cx=ctrs.reduce((s,c)=>s+c.x,0)/ctrs.length;
     cy=ctrs.reduce((s,c)=>s+c.y,0)/ctrs.length;
-    sprH=size==='2x2'?140:120;
+    sprH=size==='2x2'?165:size==='3x2'?210:130;
   }
 
-  const baseR=size==='1x1'?26:44;
+  const baseR=size==='1x1'?26:size==='2x2'?52:68;
 
   // Shadow ellipse
   ctx.save();
@@ -1025,7 +1174,7 @@ layoutMap();
 if(mapImg.complete)render();
 updateHdr();
 addLog('Heróis: Bárbaro (E07) · Arqueiro (D08) · Mago (F08)','h');
-addLog('Inimigos: Espantalho I (E03) · II (G03) · Barkthresher 2×2 (F05-G06)','e');
+addLog('Inimigos: Espantalho I (E03) · II (G03) · Barkthresher 2×2 (F05-G06) · Larva Gigante 3×2 (H02-J03)','e');
 addLog('Narre: "Bárbaro avança para E05 e ataca o Espantalho" · "fim de turno"','s');
 </script>
 </body>
