@@ -3,16 +3,16 @@
    ═══════════════════════════════════════════════ */
 
 :root {
-  --bg:      #f5f4ef;
-  --surface: #ffffff;
-  --surface2:#edecea;
-  --border:  rgba(40,35,25,.15);
-  --text:    #18160e;
-  --text2:   #4a4438;
-  --text3:   #8a8070;
-  --gold:    #c8900a;
-  --green:   #2e7d32;
-  --red:     #c62828;
+  --bg:      #0e0c08;
+  --surface: #1a1610;
+  --surface2:#221e14;
+  --border:  rgba(180,150,80,.18);
+  --text:    #e2d5b0;
+  --text2:   #a0906a;
+  --text3:   #6a5a40;
+  --gold:    #d4900c;
+  --green:   #4a8c4a;
+  --red:     #9a2a2a;
   --blue:    #1565c0;
   --r:       8px;
 }
@@ -268,13 +268,13 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 .chip-hp.ok  { color: var(--green); }
 .chip-ca {
   font-size: 10px;
-  color: var(--blue);
+  color: var(--text2);
   opacity: 0.9;
 }
 .chip-res {
   font-size: 9px;
-  color: #a0a0ff;
-  opacity: 0.85;
+  color: var(--text3);
+  opacity: 0.9;
 }
 .chip-bars {
   display: flex;
@@ -284,7 +284,7 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 }
 .chip-bar {
   height: 4px;
-  background: rgba(255,255,255,0.08);
+  background: rgba(0,0,0,.4);
   border-radius: 2px;
   overflow: hidden;
   width: 100%;
@@ -339,7 +339,7 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   pointer-events: auto;
   display: flex; flex-direction: column; align-items: center;
   gap: 16px; max-width: 260px; padding: 24px 20px; text-align: center;
-  background: rgba(252,250,244,.97);
+  background: rgba(10,8,4,.96);
   border: 1px solid rgba(200,160,80,0.35);
   border-radius: 12px;
   box-shadow: 0 0 24px rgba(200,160,80,0.2), 0 4px 32px rgba(0,0,0,0.12);
@@ -393,8 +393,8 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 }
 
 .msg {
-  padding: 10px 13px;
-  border-radius: var(--r);
+  padding: 8px 16px;
+  border-radius: 0;
   line-height: 1.65;
   font-size: 14px;
   animation: fade-in .25s ease;
@@ -402,40 +402,46 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 @keyframes fade-in { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
 
 .msg-gm {
-  background: rgba(200,170,80,.06);
-  border-left: 3px solid var(--gold);
-  color: var(--text);
+  background: none;
+  border-left: none;
+  color: #e2d5b0;
+  font-size: 15px;
+  line-height: 1.85;
+  font-style: italic;
+  padding: 12px 20px;
 }
 .msg-player {
-  background: rgba(46,125,50,.05);
-  border-left: 2px solid rgba(46,125,50,.35);
-  border-radius: 0 6px 6px 0;
-  padding: 8px 12px;
-  font-size: 13px;
+  background: none;
+  border-left: none;
+  border-radius: 0;
+  padding: 4px 20px;
+  font-size: 12px;
 }
 .player-bubble-header {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
-.player-bubble-icon { font-size: 14px; }
+.player-bubble-icon { font-size: 12px; opacity: .6; }
 .player-bubble-nome {
   font-size: 9px;
-  color: #2e7d32;
+  color: var(--text3);
   letter-spacing: 1.2px;
   text-transform: uppercase;
+  font-variant: small-caps;
 }
 .player-bubble-acao {
-  color: var(--text);
-  line-height: 1.6;
-  font-style: italic;
+  color: var(--text3);
+  line-height: 1.55;
+  font-style: normal;
 }
 .msg-system {
   text-align: center;
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text3);
-  padding: 4px;
+  padding: 6px;
+  letter-spacing: 1px;
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   background: none;
@@ -443,9 +449,9 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 .msg-dados {
   font-size: 11px;
   color: var(--text3);
-  border-left: 3px solid rgba(160,140,60,.3);
-  background: rgba(200,190,160,.08);
-  padding: 6px 10px;
+  border-left: 2px solid rgba(180,150,60,.25);
+  background: none;
+  padding: 4px 12px;
 }
 .msg-trade {
   display: flex;
@@ -453,8 +459,8 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   gap: 8px;
   font-size: 12px;
   color: var(--text2);
-  background: rgba(60,130,80,.1);
-  border: 1px solid rgba(60,180,100,.2);
+  background: rgba(40,80,40,.15);
+  border: 1px solid rgba(60,120,60,.25);
   border-radius: 8px;
   padding: 8px 12px;
   margin: 2px 0;
@@ -468,8 +474,8 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 #enemies-bar {
   flex-shrink: 0;
   padding: 6px 10px;
-  background: rgba(198,40,40,.04);
-  border-top: 1px solid rgba(198,40,40,.15);
+  background: rgba(80,10,10,.5);
+  border-top: 1px solid rgba(120,20,20,.4);
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -481,14 +487,14 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   font-size: 11px;
   padding: 3px 8px;
   border-radius: 8px;
-  border: 1px solid rgba(150,30,30,.3);
-  background: rgba(198,40,40,.06);
+  border: 1px solid rgba(120,30,30,.45);
+  background: rgba(120,20,20,.18);
   color: var(--text2);
 }
 .enemy-hp-bar {
   width: 40px;
   height: 4px;
-  background: rgba(0,0,0,.1);
+  background: rgba(0,0,0,.4);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -499,8 +505,8 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   padding: 6px 14px;
   font-size: 11px;
   color: var(--gold);
-  background: rgba(200,160,80,.08);
-  border-top: 1px solid rgba(200,160,80,.15);
+  background: rgba(14,12,8,.8);
+  border-top: 1px solid rgba(180,150,60,.15);
   text-align: center;
   flex-shrink: 0;
 }
@@ -1054,8 +1060,8 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   gap: 8px;
   margin: 8px 0 56px;
   padding: 8px 10px 8px 6px;
-  background: rgba(8,12,24,.7);
-  border-left: 2px solid rgba(200,160,80,.35);
+  background: rgba(10,8,4,.65);
+  border-left: 2px solid rgba(212,144,12,.35);
   border-radius: 0 6px 6px 0;
   position: relative;
   overflow: visible;
@@ -1101,9 +1107,9 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 }
 .dialogo-inline-texto {
   font-size: 13px;
-  color: #ddd8c4;
+  color: #e8dfc8;
   font-style: italic;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 /* ══ CARD DE BATALHA INLINE ══ */
@@ -2517,7 +2523,7 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 }
 .troca-modal {
   position: relative;
-  background: linear-gradient(160deg, #f0efe8 0%, #e8e7e0 100%);
+  background: linear-gradient(160deg, #1a1610 0%, #0e0c08 100%);
   border: 1px solid rgba(100,130,200,.25);
   border-radius: 18px;
   width: min(400px, 94vw);
@@ -2539,7 +2545,7 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   border-bottom: 1px solid rgba(100,130,200,.15);
   position: sticky;
   top: 0;
-  background: #f0efe8;
+  background: #1a1610;
   z-index: 2;
 }
 .troca-header h3 {
