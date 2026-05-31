@@ -609,9 +609,9 @@ function rerenderTokens() {
 
 // Sprites 256×256 — base isométrica ocupa ~22% da parte inferior do sprite.
 // Exibimos o sprite como quadrado e clippamos os 22% de baixo (base/pedestal),
-// usando top:0 na img para que o TOPO do sprite fique visível e o fundo seja cortado.
+// Sprites são RGBA transparente sem base de tile — exibir completo.
 const BASE_W = 130;   // largura base para escala medium (1.0) — preenche ~3 blocos
-const CLIP   = 0.78;  // mostra 78% superiores do sprite (remove base do tile)
+const CLIP   = 1.0;   // sprite completo, sem corte
 
 function mountToken(tok) {
   const s  = tok.scale ?? SZ.medium;
