@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Batalha Tática — Feira Assombrada</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#0e0c08;color:#e2d5b0;font-family:'Segoe UI',system-ui,sans-serif;user-select:none;-webkit-user-select:none}
+
+/* ── Layout ── */
+#app{display:flex;flex-direction:column;height:100dvh}
+
+header{
+  background:#12100c;border-bottom:1px solid rgba(180,150,80,.2);
+  padding:8px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;
+  padding-top:max(8px,env(safe-area-inset-top))
+}
+#turn-label{flex:1;font-size:13px;color:#d4900c;font-weight:600;letter-spacing:.3px}
+.hdr-btn{
+  background:#1c1a14;border:1px solid rgba(180,150,80,.25);color:#c8b070;
+  border-radius:7px;padding:6px 12px;font-size:12px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;transition:background .15s
+}
+.hdr-btn:active{background:#2a2618}
+.hdr-btn.danger{border-color:rgba(180,60,60,.3);color:#c07070}
+#btn-end-phase{background:#1a2010;border-color:rgba(80,160,80,.25);color:#70b070}
+
+/* ── Map area ── */
+#map-area{flex:1;overflow:hidden;position:relative;background:#0a0806;min-height:0}
+#map-viewport{position:absolute;top:0;left:0;transform-origin:top left}
+#map-img{display:block;pointer-events:none}
+#battle-canvas{position:absolute;top:0;left:0;cursor:pointer;touch-action:none}
+
+/* ── Bottom panel ── */
+#bottom{
+  flex-shrink:0;background:#12100c;border-top:1px solid rgba(180,150,80,.2);
+  display:flex;gap:0;max-height:160px;
+  padding-bottom:max(0px,env(safe-area-inset-bottom))
+}
+#unit-panel{
+  width:200px;min-width:160px;padding:10px 12px;border-right:1px solid rgba(180,150,80,.15);
+  flex-shrink:0;overflow:hidden
+}
+#unit-panel h3{font-size:12px;color:#d4900c;margin-bottom:6px}
+.stat-row{display:flex;justify-content:space-between;font-size:11px;color:#a09070;margin:2px 0}
+.stat-val{color:#e2d5b0}
+#hp-bar-wrap{margin:5px 0 3px;height:4px;background:rgba(255,255,255,.1);border-radius:2px}
+#hp-bar{height:100%;border-radius:2px;transition:width .3s}
+#action-info{font-size:11px;color:#c8b070;margin-top:5px}
+#unit-empty{font-size:11px;color:#6a5a40;padding:4px 0}
+
+#log{flex:1;overflow-y:auto;padding:8px 12px;font-size:11px;line-height:1.6}
+#log::-webkit-scrollbar{width:4px}
+#log::-webkit-scrollbar-thumb{background:rgba(180,150,80,.3);border-radius:2px}
+.log-entry{padding:1px 0;border-bottom:1px solid rgba(180,150,80,.05)}
+.log-entry.hero{color:#7ab0d0}
+.log-entry.enemy{color:#c07070}
+.log-entry.system{color:#808060}
+.log-entry.hit{color:#d4900c}
+.log-entry.miss{color:#906050}
+
+/* ── Tooltip ── */
+#tooltip{
+  position:fixed;background:rgba(10,8,4,.92);border:1px solid rgba(180,150,80,.3);
+  border-radius:6px;padding:6px 10px;font-size:11px;color:#e2d5b0;
+  pointer-events:none;z-index:100;display:none;max-width:160px;line-height:1.5
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <span id="turn-label">Turno 1 — Fase dos Heróis</span>
+    <button class="hdr-btn" id="btn-debug" onclick="toggleDebug()">Grade</button>
+    <button class="hdr-btn" id="btn-cancel" onclick="cancelSelection()" style="display:none">✕ Cancelar</button>
+    <button class="hdr-btn" id="btn-end-phase" onclick="endHeroPhase()">Encerrar Turno →</button>
+  </header>
+
+  <div id="map-area">
+    <div id="map-viewport">
+      <img id="map-img" src="maps/feira-limpa.png" draggable="false">
+      <canvas id="battle-canvas"></canvas>
+    </div>
+  </div>
+
+  <div id="bottom">
+    <div id="unit-panel">
+      <div id="unit-empty">Selecione uma unidade</div>
+      <div id="unit-detail" style="display:none">
+        <h3 id="u-name"></h3>
+        <div id="hp-bar-wrap"><div id="hp-bar"></div></div>
+        <div class="stat-row"><span>PV</span><span class="stat-val" id="u-hp"></span></div>
+        <div class="stat-row"><span>CA</span><span class="stat-val" id="u-ac"></span></div>
+        <div class="stat-row"><span>Mov</span><span class="stat-val" id="u-mov"></span></div>
+        <div class="stat-row"><span>Pos</span><span class="stat-val" id="u-pos"></span></div>
+        <div id="action-info"></div>
+      </div>
+    </div>
+    <div id="log"><div class="log-entry system">⚔ Batalha iniciada — Feira Assombrada</div></div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+'use strict';
+// ═══════════════════════════════════════════════════
+//  HEX GRID CONSTANTS (calibrated for 1448×1086 map)
+// ═══════════════════════════════════════════════════
+const MAP_W  = 1448;
+const MAP_H  = 1086;
+const COLS   = 12;  // A–L
+const ROWS   = 12;  // 1–12
+const COL_LABELS = 'ABCDEFGHIJKL';
+
+// Grid calibration — flat-top even-q offset
+// Even columns (A,C,E...) are at base Y; odd columns (B,D,F...) shift down by ODD_OFF
+const GX0     = 104;  // center-x of column A
+const GY0     = 75;   // center-y of row 1 for even columns
+const CS      = 90;   // column step (center-to-center horizontal)
+const RS      = 83;   // row step (center-to-center vertical)
+const ODD_OFF = 42;   // y shift for odd columns (= RS/2 approx)
+const HR      = 46;   // hex horizontal radius (for drawing)
+const VR      = 42;   // hex vertical radius (for drawing, slightly squashed)
+
+// Hex code helpers
+function hexLabel(col, row) {
+  return COL_LABELS[col] + String(row + 1).padStart(2, '0');
+}
+function parseHex(code) {
+  const col = COL_LABELS.indexOf(code[0].toUpperCase());
+  const row = parseInt(code.slice(1)) - 1;
+  return { col, row };
+}
+function hexCenter(col, row) {
+  return {
+    x: GX0 + col * CS,
+    y: GY0 + row * RS + (col % 2 === 1 ? ODD_OFF : 0)
+  };
+}
+function pixelToHex(px, py) {
+  // Find nearest hex center
+  let bestCol = 0, bestRow = 0, bestDist = Infinity;
+  const startCol = Math.max(0, Math.floor((px - GX0) / CS) - 1);
+  const endCol   = Math.min(COLS - 1, startCol + 3);
+  for (let c = startCol; c <= endCol; c++) {
+    const isOdd = c % 2 === 1;
+    const rowEst = Math.round((py - GY0 - (isOdd ? ODD_OFF : 0)) / RS);
+    const startRow = Math.max(0, rowEst - 1);
+    const endRow   = Math.min(ROWS - 1, rowEst + 1);
+    for (let r = startRow; r <= endRow; r++) {
+      const ctr = hexCenter(c, r);
+      const d = (px - ctr.x) ** 2 + (py - ctr.y) ** 2;
+      if (d < bestDist) { bestDist = d; bestCol = c; bestRow = r; }
+    }
+  }
+  return { col: bestCol, row: bestRow };
+}
+
+// Cube coordinates for distance (flat-top even-q)
+function toCube(col, row) {
+  const q = col;
+  const r = row - (col + (col & 1)) / 2;
+  return { q, r, s: -q - r };
+}
+function hexDistance(c1, r1, c2, r2) {
+  const a = toCube(c1, r1), b = toCube(c2, r2);
+  return Math.max(Math.abs(a.q - b.q), Math.abs(a.r - b.r), Math.abs(a.s - b.s));
+}
+function hexNeighbors(col, row) {
+  const dirs = col % 2 === 0
+    ? [[1,-1],[1,0],[0,1],[-1,0],[-1,-1],[0,-1]]
+    : [[1,0],[1,1],[0,1],[-1,1],[-1,0],[0,-1]];
+  return dirs.map(([dc,dr]) => ({ col: col+dc, row: row+dr }))
+             .filter(h => h.col >= 0 && h.col < COLS && h.row >= 0 && h.row < ROWS);
+}
+function hexesInRange(col, row, range) {
+  const result = [];
+  for (let c = 0; c < COLS; c++) {
+    for (let r = 0; r < ROWS; r++) {
+      const d = hexDistance(col, row, c, r);
+      if (d > 0 && d <= range) result.push({ col: c, row: r, dist: d });
+    }
+  }
+  return result;
+}
+function isAdjacent(c1, r1, c2, r2) { return hexDistance(c1, r1, c2, r2) === 1; }
+
+// Simple LOS: check if any blocked hex lies on the line between two hexes
+function hasLineOfSight(c1, r1, c2, r2) {
+  const steps = Math.max(hexDistance(c1, r1, c2, r2), 1);
+  const cu1 = toCube(c1, r1), cu2 = toCube(c2, r2);
+  for (let i = 1; i < steps; i++) {
+    const t = i / steps;
+    const qf = cu1.q + (cu2.q - cu1.q) * t;
+    const rf = cu1.r + (cu2.r - cu1.r) * t;
+    const sf = cu1.s + (cu2.s - cu1.s) * t;
+    // cube_round
+    let q = Math.round(qf), r = Math.round(rf), s = Math.round(sf);
+    const dq = Math.abs(q - qf), dr = Math.abs(r - rf), ds = Math.abs(s - sf);
+    if (dq > dr && dq > ds) q = -r - s;
+    else if (dr > ds) r = -q - s;
+    // Convert back to offset
+    const col = q;
+    const row = r + (q + (q & 1)) / 2;
+    if (isBlocked(col, row)) return false;
+  }
+  return true;
+}
+
+// ═══════════════════════════════════════════════════
+//  MAP DATA
+// ═══════════════════════════════════════════════════
+const MAP_DATA = {
+  // Hexes with full cover (structures, walls) — impassable
+  blocked: [
+    'A01','B01','K01','L01','A02','L02','A10','L10','A11','B11','K11','L11','A12','B12','K12','L12'
+  ].map(parseHex),
+  // Hexes with partial cover
+  coverPartial: [
+    'B02','C02','D02','I02','J02','K02',
+    'B11','C11','D11','I11','J11','K11',
+    'A05','A06','A07','A08','L05','L06','L07','L08'
+  ].map(parseHex),
+};
+
+function isBlocked(col, row) {
+  return MAP_DATA.blocked.some(h => h.col === col && h.row === row);
+}
+function getCover(col, row) {
+  if (isBlocked(col, row)) return 'full';
+  if (MAP_DATA.coverPartial.some(h => h.col === col && h.row === row)) return 'partial';
+  return 'none';
+}
+
+// ═══════════════════════════════════════════════════
+//  UNIT DATA
+// ═══════════════════════════════════════════════════
+function makeUnit(data) {
+  const pos = parseHex(data.hex);
+  return {
+    id: data.id, name: data.name, type: data.type, classe: data.classe || '',
+    col: pos.col, row: pos.row,
+    facing: data.facing || 'N',
+    hp: data.hp, maxHp: data.hp,
+    ac: data.ac, moveSpeed: data.moveSpeed,
+    meleeRange: 1,
+    rangedWeapon: data.rangedWeapon || null,
+    sprite: data.sprite,
+    icon: data.icon, color: data.color,
+    hasMoved: false, hasActed: false,
+    alive: true,
+    _img: null
+  };
+}
+
+const UNIT_DEFS = [
+  { id:'hero_arqueiro', name:'Arqueiro',  type:'hero', classe:'arqueiro',
+    hex:'C07', facing:'N', hp:22, ac:14, moveSpeed:5,
+    rangedWeapon:{ name:'Arco Longo', range:8 },
+    sprite:'sprites/arqueiro_m.png', icon:'🏹', color:'#3a6080' },
+  { id:'hero_barbaro',  name:'Bárbaro',   type:'hero', classe:'barbaro',
+    hex:'E08', facing:'N', hp:32, ac:13, moveSpeed:4,
+    sprite:'sprites/barbaro_m.png', icon:'🪓', color:'#803030' },
+  { id:'hero_mago',     name:'Mago',      type:'hero', classe:'mago',
+    hex:'G07', facing:'N', hp:16, ac:11, moveSpeed:3,
+    rangedWeapon:{ name:'Raio Arcano', range:6 },
+    sprite:'sprites/mago.png', icon:'🔮', color:'#5030a0' },
+  { id:'enemy_espantalho_01', name:'Espantalho I',  type:'enemy',
+    hex:'D03', facing:'S', hp:14, ac:10, moveSpeed:3,
+    sprite:'sprites/inimigo_espantalho_assombrado.png', icon:'🌾', color:'#7a4010' },
+  { id:'enemy_espantalho_02', name:'Espantalho II', type:'enemy',
+    hex:'H03', facing:'S', hp:14, ac:10, moveSpeed:3,
+    sprite:'sprites/inimigo_espantalho_assombrado.png', icon:'🌾', color:'#7a4010' },
+];
+
+let units = UNIT_DEFS.map(makeUnit);
+
+// Preload sprites
+units.forEach(u => {
+  if (!u.sprite) return;
+  const img = new Image();
+  img.onload = () => { u._img = img; render(); };
+  img.src = u.sprite;
+});
+
+// ═══════════════════════════════════════════════════
+//  BATTLE STATE
+// ═══════════════════════════════════════════════════
+let turn    = 1;
+let phase   = 'hero';      // 'hero' | 'enemy' | 'victory' | 'defeat'
+let selected = null;       // selected unit id
+let moveMode = false;      // showing movement range
+let attackMode = false;    // showing attack range
+let hoveredHex = null;     // { col, row }
+let showDebug = false;
+let actionPending = null;  // 'move' | 'attack'
+
+function getUnit(id)       { return units.find(u => u.id === id); }
+function getUnitAt(col,row){ return units.find(u => u.alive && u.col===col && u.row===row); }
+function heroesAlive()     { return units.filter(u => u.type==='hero' && u.alive); }
+function enemiesAlive()    { return units.filter(u => u.type==='enemy' && u.alive); }
+
+// ─── Reachable hexes (flood fill within move range, avoiding blocked/occupied) ───
+function reachableHexes(unit) {
+  const visited = new Set();
+  const result  = [];
+  const start   = `${unit.col},${unit.row}`;
+  const queue   = [{ col: unit.col, row: unit.row, steps: 0 }];
+  visited.add(start);
+
+  while (queue.length) {
+    const { col, row, steps } = queue.shift();
+    if (steps > 0) result.push({ col, row, steps });
+    if (steps >= unit.moveSpeed) continue;
+
+    for (const nb of hexNeighbors(col, row)) {
+      const key = `${nb.col},${nb.row}`;
+      if (visited.has(key)) continue;
+      if (isBlocked(nb.col, nb.row)) continue;
+      if (getUnitAt(nb.col, nb.row)) continue;
+      visited.add(key);
+      queue.push({ col: nb.col, row: nb.row, steps: steps + 1 });
+    }
+  }
+  return result;
+}
+
+// ─── Attack targets visible from a position ───
+function attackTargets(unit, fromCol, fromRow) {
+  const targets = [];
+  const enemies = unit.type === 'hero' ? enemiesAlive() : heroesAlive();
+
+  for (const e of enemies) {
+    const dist = hexDistance(fromCol, fromRow, e.col, e.row);
+    const canMelee  = dist <= unit.meleeRange;
+    const canRanged = unit.rangedWeapon && dist <= unit.rangedWeapon.range && dist > 1;
+    if (!canMelee && !canRanged) continue;
+    const los = hasLineOfSight(fromCol, fromRow, e.col, e.row);
+    if (!los && !canMelee) continue;
+    targets.push({ id: e.id, dist, type: canMelee ? 'melee' : 'ranged', los });
+  }
+  return targets;
+}
+
+// ─── Combat ───
+function rollD20() { return Math.floor(Math.random() * 20) + 1; }
+function rollDice(notation) {
+  // e.g. "1d8+2", "2d6", "1d4-1"
+  const m = notation.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
+  if (!m) return 4;
+  let total = 0;
+  const count = parseInt(m[1]);
+  const sides = parseInt(m[2]);
+  const bonus = m[3] ? parseInt(m[3]) : 0;
+  for (let i = 0; i < count; i++) total += Math.floor(Math.random() * sides) + 1;
+  return total + bonus;
+}
+
+function doAttack(attacker, target) {
+  const dist = hexDistance(attacker.col, attacker.row, target.col, target.row);
+  const isMelee  = dist <= attacker.meleeRange;
+  const isRanged = attacker.rangedWeapon && dist <= attacker.rangedWeapon.range;
+
+  if (!isMelee && !isRanged) {
+    addLog(`${attacker.name} não alcança ${target.name} (distância: ${dist}).`, 'miss');
+    return false;
+  }
+
+  // Check flanking (two allies adjacent to same target)
+  const flanked = (attacker.type === 'hero' ? heroesAlive() : enemiesAlive())
+    .filter(a => a.id !== attacker.id && isAdjacent(a.col, a.row, target.col, target.row)).length >= 1
+    && isAdjacent(attacker.col, attacker.row, target.col, target.row);
+
+  // Check back attack (attacker is behind target)
+  const backAttack = isBackAttack(attacker, target);
+
+  // Modifiers
+  let atkBonus = 3;
+  if (flanked)    atkBonus += 2;
+  if (backAttack) atkBonus += 4;
+
+  // Cover penalty for ranged
+  if (!isMelee) {
+    const cover = getCover(target.col, target.row);
+    if (cover === 'partial') atkBonus -= 2;
+    if (cover === 'full')    { addLog(`${target.name} está em cobertura total — ataque bloqueado.`,'miss'); return false; }
+  }
+
+  const roll = rollD20();
+  const total = roll + atkBonus;
+  const critical = roll === 20;
+  const fumble   = roll === 1;
+
+  let dmgNot = isMelee
+    ? (attacker.classe === 'barbaro' ? '2d6+3' : attacker.classe === 'guerreiro' ? '1d8+2' : '1d6+1')
+    : (attacker.rangedWeapon?.name === 'Raio Arcano' ? '1d8+2' : '1d6+2');
+
+  if (fumble) {
+    addLog(`${attacker.name} errou feio — falha crítica! (d20=1)`, 'miss');
+    attacker.hasActed = true;
+    return false;
+  }
+
+  if (critical || total >= target.ac) {
+    let dmg = rollDice(dmgNot);
+    if (critical) { dmg *= 2; }
+    target.hp = Math.max(0, target.hp - dmg);
+
+    let msg = `${attacker.name} ${critical ? '⚡ CRÍTICO! ' : ''}acerta ${target.name}`;
+    if (backAttack) msg += ' pelas costas';
+    if (flanked)    msg += ' (flanqueado)';
+    msg += ` — ${dmg} de dano! (d20=${roll}+${atkBonus}=${total} vs CA${target.ac})`;
+    if (target.hp <= 0) {
+      msg += ` ${target.name} cai!`;
+      target.alive = false;
+      target.hp = 0;
+    }
+    addLog(msg, 'hit');
+  } else {
+    addLog(`${attacker.name} ataca ${target.name} — ${isMelee?'errou':'falhou'} (d20=${roll}+${atkBonus}=${total} vs CA${target.ac})`, 'miss');
+  }
+
+  attacker.hasActed = true;
+  return true;
+}
+
+function isBackAttack(attacker, target) {
+  // Rough back-attack: if attacker is in a hex "behind" target's facing
+  const FACING_DELTA = {
+    N:  { dCol:  0, dRow: -1 },
+    NE: { dCol:  1, dRow: -1 },
+    SE: { dCol:  1, dRow:  0 },
+    S:  { dCol:  0, dRow:  1 },
+    SW: { dCol: -1, dRow:  0 },
+    NW: { dCol: -1, dRow: -1 },
+  };
+  const fd = FACING_DELTA[target.facing] || { dCol: 0, dRow: -1 };
+  // "behind" means attacker is in the opposite direction of facing
+  const dCol = attacker.col - target.col;
+  const dRow = attacker.row - target.row;
+  return (Math.sign(dCol) === -Math.sign(fd.dCol) || Math.sign(dRow) === -Math.sign(fd.dRow))
+      && Math.abs(dCol) <= 1 && Math.abs(dRow) <= 1;
+}
+
+// ─── Turn update facing ───
+function updateFacing(unit, toCol, toRow) {
+  const dCol = toCol - unit.col;
+  const dRow = toRow - unit.row;
+  if      (dCol === 0 && dRow < 0)  unit.facing = 'N';
+  else if (dCol === 0 && dRow > 0)  unit.facing = 'S';
+  else if (dCol > 0  && dRow <= 0)  unit.facing = 'NE';
+  else if (dCol > 0  && dRow > 0)   unit.facing = 'SE';
+  else if (dCol < 0  && dRow <= 0)  unit.facing = 'NW';
+  else if (dCol < 0  && dRow > 0)   unit.facing = 'SW';
+}
+
+// ═══════════════════════════════════════════════════
+//  INTERACTION
+// ═══════════════════════════════════════════════════
+let _moveRange   = [];
+let _attackHexes = [];
+let _atkTargets  = [];
+
+function cancelSelection() {
+  selected = null; moveMode = false; attackMode = false;
+  actionPending = null; _moveRange = []; _attackHexes = []; _atkTargets = [];
+  document.getElementById('btn-cancel').style.display = 'none';
+  updateUnitPanel(null);
+  render();
+}
+
+function selectUnit(unit) {
+  if (phase !== 'hero' || unit.type !== 'hero' || !unit.alive) return;
+  cancelSelection();
+  selected = unit.id;
+  moveMode = true;
+  document.getElementById('btn-cancel').style.display = '';
+
+  if (!unit.hasMoved) {
+    _moveRange  = reachableHexes(unit);
+    _atkTargets = [];
+    // Also show which enemies can be attacked FROM each reachable hex
+    const atFrom = attackTargets(unit, unit.col, unit.row);
+    _atkTargets = atFrom;
+  }
+  _attackHexes = attackTargets(unit, unit.col, unit.row).map(t => {
+    const e = getUnit(t.id);
+    return { col: e.col, row: e.row };
+  });
+
+  updateUnitPanel(unit);
+  render();
+}
+
+function handleHexClick(col, row) {
+  if (phase !== 'hero') return;
+
+  const clickedUnit = getUnitAt(col, row);
+  const sel = selected ? getUnit(selected) : null;
+
+  // Click on empty or self while nothing selected → ignore or deselect
+  if (!sel) {
+    if (clickedUnit && clickedUnit.type === 'hero' && clickedUnit.alive) {
+      if (!clickedUnit.hasMoved || !clickedUnit.hasActed) selectUnit(clickedUnit);
+    }
+    return;
+  }
+
+  // Click on an enemy → try to attack
+  if (clickedUnit && clickedUnit.type === 'enemy' && clickedUnit.alive) {
+    const tgts = attackTargets(sel, sel.col, sel.row);
+    const tgt  = tgts.find(t => t.id === clickedUnit.id);
+    if (tgt && !sel.hasActed) {
+      doAttack(sel, clickedUnit);
+      if (clickedUnit.alive) {
+        // Update target facing toward attacker
+        updateFacing(clickedUnit, sel.col, sel.row);
+      }
+      checkVictory();
+      cancelSelection();
+      render();
+      return;
+    } else if (!tgt) {
+      addLog(`${sel.name} não alcança ${clickedUnit.name} daqui.`, 'system');
+    } else if (sel.hasActed) {
+      addLog(`${sel.name} já agiu neste turno.`, 'system');
+    }
+    return;
+  }
+
+  // Click on another hero → switch selection
+  if (clickedUnit && clickedUnit.type === 'hero') {
+    if (!clickedUnit.hasMoved || !clickedUnit.hasActed) {
+      selectUnit(clickedUnit);
+    }
+    return;
+  }
+
+  // Click on empty hex → try to move
+  if (!clickedUnit && !sel.hasMoved) {
+    const inRange = _moveRange.find(h => h.col === col && h.row === row);
+    if (inRange) {
+      addLog(`${sel.name} move de ${hexLabel(sel.col,sel.row)} para ${hexLabel(col,row)} (${inRange.steps} hex).`, 'hero');
+      updateFacing(sel, col, row);
+      sel.col = col; sel.row = row;
+      sel.hasMoved = true;
+
+      // Refresh attack hexes from new position
+      _moveRange = [];
+      _attackHexes = attackTargets(sel, sel.col, sel.row).map(t => {
+        const e = getUnit(t.id);
+        return { col: e.col, row: e.row };
+      });
+      _atkTargets = attackTargets(sel, sel.col, sel.row);
+
+      // Auto-done if no attack available
+      if (_attackHexes.length === 0) {
+        addLog(`${sel.name} não tem alvos ao alcance.`, 'system');
+      }
+      updateUnitPanel(sel);
+      render();
+      return;
+    }
+  }
+
+  // Click on occupied hex (blocked) → do nothing
+}
+
+function endHeroPhase() {
+  // Mark unacted heroes as done
+  heroesAlive().forEach(u => { u.hasMoved = true; u.hasActed = true; });
+  cancelSelection();
+  addLog('— Heróis encerraram o turno. Inimigos agem —', 'system');
+  phase = 'enemy';
+  updateTurnLabel();
+  render();
+  setTimeout(runEnemyPhase, 600);
+}
+
+// ─── Enemy AI ───
+async function runEnemyPhase() {
+  const enemies = enemiesAlive();
+  for (const enemy of enemies) {
+    if (!enemy.alive) continue;
+    await sleep(500);
+
+    const heroes = heroesAlive();
+    if (!heroes.length) break;
+
+    // Find nearest hero
+    let nearestHero = null, nearestDist = Infinity;
+    for (const h of heroes) {
+      const d = hexDistance(enemy.col, enemy.row, h.col, h.row);
+      if (d < nearestDist) { nearestDist = d; nearestHero = h; }
+    }
+    if (!nearestHero) continue;
+
+    // Try to attack if adjacent
+    if (isAdjacent(enemy.col, enemy.row, nearestHero.col, nearestHero.row)) {
+      doAttack(enemy, nearestHero);
+      if (!nearestHero.alive) checkDefeat();
+    } else {
+      // Move toward nearest hero
+      const reach = reachableHexes(enemy);
+      if (reach.length) {
+        // Pick hex closest to nearestHero
+        let bestHex = null, bestD = Infinity;
+        for (const h of reach) {
+          const d = hexDistance(h.col, h.row, nearestHero.col, nearestHero.row);
+          if (d < bestD) { bestD = d; bestHex = h; }
+        }
+        if (bestHex) {
+          addLog(`${enemy.name} avança de ${hexLabel(enemy.col,enemy.row)} para ${hexLabel(bestHex.col,bestHex.row)}.`, 'enemy');
+          updateFacing(enemy, bestHex.col, bestHex.row);
+          enemy.col = bestHex.col; enemy.row = bestHex.row;
+          render();
+          await sleep(300);
+          // Try to attack after moving
+          if (isAdjacent(enemy.col, enemy.row, nearestHero.col, nearestHero.row)) {
+            await sleep(200);
+            doAttack(enemy, nearestHero);
+            if (!nearestHero.alive) checkDefeat();
+          }
+        }
+      }
+    }
+    render();
+  }
+
+  // Start next hero phase
+  await sleep(500);
+  enemiesAlive().forEach(u => { u.hasMoved = false; u.hasActed = false; });
+  heroesAlive().forEach(u => { u.hasMoved = false; u.hasActed = false; });
+  turn++;
+  phase = 'hero';
+  updateTurnLabel();
+  addLog(`— Turno ${turn} — Fase dos Heróis —`, 'system');
+  render();
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function checkVictory() {
+  if (enemiesAlive().length === 0) {
+    phase = 'victory';
+    addLog('⚔ VITÓRIA! Todos os inimigos foram derrotados.', 'hit');
+    updateTurnLabel();
+  }
+}
+function checkDefeat() {
+  if (heroesAlive().length === 0) {
+    phase = 'defeat';
+    addLog('💀 DERROTA. Todos os heróis caíram.', 'enemy');
+    updateTurnLabel();
+  }
+}
+
+function updateTurnLabel() {
+  const labels = {
+    hero:    `Turno ${turn} — Fase dos Heróis`,
+    enemy:   `Turno ${turn} — Fase dos Inimigos`,
+    victory: `⚔ Vitória — Turno ${turn}`,
+    defeat:  `💀 Derrota — Turno ${turn}`,
+  };
+  document.getElementById('turn-label').textContent = labels[phase] || '';
+  document.getElementById('btn-end-phase').style.display = phase === 'hero' ? '' : 'none';
+}
+
+// ═══════════════════════════════════════════════════
+//  UI PANELS
+// ═══════════════════════════════════════════════════
+function addLog(msg, cls = 'system') {
+  const log = document.getElementById('log');
+  const div = document.createElement('div');
+  div.className = `log-entry ${cls}`;
+  div.textContent = msg;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+  while (log.children.length > 80) log.removeChild(log.firstChild);
+}
+
+function updateUnitPanel(unit) {
+  const empty  = document.getElementById('unit-empty');
+  const detail = document.getElementById('unit-detail');
+  if (!unit) { empty.style.display=''; detail.style.display='none'; return; }
+  empty.style.display  = 'none';
+  detail.style.display = '';
+
+  document.getElementById('u-name').textContent = unit.name;
+  document.getElementById('u-hp').textContent   = `${unit.hp}/${unit.maxHp}`;
+  document.getElementById('u-ac').textContent   = unit.ac;
+  document.getElementById('u-mov').textContent  = unit.hasMoved ? '—' : `${unit.moveSpeed} hex`;
+  document.getElementById('u-pos').textContent  = hexLabel(unit.col, unit.row);
+
+  const bar = document.getElementById('hp-bar');
+  const pct = (unit.hp / unit.maxHp) * 100;
+  bar.style.width = pct + '%';
+  bar.style.background = pct > 50 ? '#4a8a4a' : pct > 25 ? '#c8a030' : '#c03030';
+
+  const info = document.getElementById('action-info');
+  const parts = [];
+  if (!unit.hasMoved)  parts.push('🚶 pode mover');
+  if (!unit.hasActed)  parts.push('⚔ pode atacar');
+  if (unit.rangedWeapon) parts.push(`🎯 ${unit.rangedWeapon.name} (${unit.rangedWeapon.range}hex)`);
+  info.textContent = parts.join(' · ') || 'Ações esgotadas';
+}
+
+function toggleDebug() { showDebug = !showDebug; render(); }
+
+// ═══════════════════════════════════════════════════
+//  CANVAS RENDERING
+// ═══════════════════════════════════════════════════
+const canvas = document.getElementById('battle-canvas');
+const ctx    = canvas.getContext('2d');
+const mapImg = document.getElementById('map-img');
+
+canvas.width  = MAP_W;
+canvas.height = MAP_H;
+
+let scale = 1;
+
+function layoutMap() {
+  const area    = document.getElementById('map-area');
+  const areaW   = area.clientWidth;
+  const areaH   = area.clientHeight;
+  const scaleX  = areaW / MAP_W;
+  const scaleY  = areaH / MAP_H;
+  scale         = Math.min(scaleX, scaleY);
+  const dispW   = MAP_W * scale;
+  const dispH   = MAP_H * scale;
+  const vp      = document.getElementById('map-viewport');
+  vp.style.transform = `scale(${scale})`;
+  vp.style.left   = ((areaW - dispW) / 2) + 'px';
+  vp.style.top    = ((areaH - dispH) / 2) + 'px';
+}
+
+function drawHexPath(col, row) {
+  const { x, y } = hexCenter(col, row);
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const a = (Math.PI / 3) * i;  // flat-top: 0°, 60°, 120°...
+    const px = x + HR * Math.cos(a);
+    const py = y + VR * Math.sin(a);
+    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+}
+
+function render() {
+  ctx.clearRect(0, 0, MAP_W, MAP_H);
+
+  // ── 1. Background map ──
+  if (mapImg.complete && mapImg.naturalWidth) {
+    ctx.drawImage(mapImg, 0, 0, MAP_W, MAP_H);
+  } else {
+    ctx.fillStyle = '#1a1610';
+    ctx.fillRect(0, 0, MAP_W, MAP_H);
+  }
+
+  const sel      = selected ? getUnit(selected) : null;
+  const moveSet  = new Set(_moveRange.map(h => `${h.col},${h.row}`));
+  const atkSet   = new Set(_attackHexes.map(h => `${h.col},${h.row}`));
+  const hovKey   = hoveredHex ? `${hoveredHex.col},${hoveredHex.row}` : null;
+
+  // ── 2. Hex fills (highlights) ──
+  for (let c = 0; c < COLS; c++) {
+    for (let r = 0; r < ROWS; r++) {
+      const key = `${c},${r}`;
+      drawHexPath(c, r);
+
+      if (moveSet.has(key)) {
+        ctx.fillStyle = 'rgba(60,140,220,0.22)';
+        ctx.fill();
+      } else if (atkSet.has(key)) {
+        ctx.fillStyle = 'rgba(220,60,60,0.28)';
+        ctx.fill();
+      }
+
+      if (hovKey === key && key !== (sel ? `${sel.col},${sel.row}` : '')) {
+        ctx.fillStyle = 'rgba(255,255,255,0.08)';
+        ctx.fill();
+      }
+    }
+  }
+
+  // ── 3. Hex grid lines ──
+  ctx.strokeStyle = 'rgba(200,175,110,0.20)';
+  ctx.lineWidth = 1;
+  for (let c = 0; c < COLS; c++) {
+    for (let r = 0; r < ROWS; r++) {
+      drawHexPath(c, r);
+      ctx.stroke();
+    }
+  }
+
+  // ── 4. Hex labels (debug or highlights) ──
+  if (showDebug) {
+    ctx.fillStyle = 'rgba(200,175,110,0.7)';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (let c = 0; c < COLS; c++) {
+      for (let r = 0; r < ROWS; r++) {
+        const { x, y } = hexCenter(c, r);
+        ctx.fillText(hexLabel(c, r), x, y);
+      }
+    }
+  }
+
+  // ── 5. Movement/attack highlights label ──
+  if (sel) {
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    _moveRange.forEach(h => {
+      const { x, y } = hexCenter(h.col, h.row);
+      ctx.fillStyle = 'rgba(100,200,255,0.8)';
+      ctx.fillText(h.steps, x, y + VR - 10);
+    });
+  }
+
+  // ── 6. Selected hex ring ──
+  if (sel) {
+    drawHexPath(sel.col, sel.row);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+  }
+
+  // ── 7. Units ──
+  units.forEach(unit => {
+    if (!unit.alive) return;
+    drawUnit(unit, unit === sel);
+  });
+}
+
+function drawUnit(unit, isSelected) {
+  const { x, y } = hexCenter(unit.col, unit.row);
+  const baseR = 28;
+
+  // ── Shadow/base ellipse ──
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(x, y + 5, baseR, baseR * 0.45, 0, 0, Math.PI * 2);
+  ctx.fillStyle = unit.type === 'hero'
+    ? 'rgba(50,110,180,0.35)'
+    : 'rgba(160,50,40,0.35)';
+  ctx.fill();
+  ctx.restore();
+
+  // ── Sprite ──
+  const sprH = 80;
+  if (unit._img && unit._img.complete && unit._img.naturalWidth) {
+    const aspect = unit._img.naturalWidth / unit._img.naturalHeight;
+    const sprW = sprH * aspect;
+    ctx.drawImage(unit._img, x - sprW / 2, y - sprH, sprW, sprH);
+  } else {
+    ctx.font = '32px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(unit.icon, x, y);
+  }
+
+  // ── Selection ring ──
+  if (isSelected) {
+    ctx.beginPath();
+    ctx.arc(x, y - sprH * 0.35, baseR + 6, 0, Math.PI * 2);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+  }
+
+  // ── HP bar ──
+  const barW = 48, barH = 5;
+  const barX = x - barW / 2, barY = y + 10;
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+  const pct = unit.hp / unit.maxHp;
+  ctx.fillStyle = pct > 0.5 ? '#4a8a4a' : pct > 0.25 ? '#c8a030' : '#c03030';
+  ctx.fillRect(barX, barY, barW * pct, barH);
+
+  // ── Name label ──
+  ctx.font = 'bold 11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  const label = unit.name;
+  const tw = ctx.measureText(label).width;
+  ctx.fillStyle = 'rgba(0,0,0,0.65)';
+  ctx.fillRect(x - tw / 2 - 3, barY + barH + 3, tw + 6, 15);
+  ctx.fillStyle = unit.type === 'hero' ? '#9ad0f0' : '#f09090';
+  ctx.fillText(label, x, barY + barH + 4);
+
+  // ── "Done" overlay ──
+  if (unit.hasMoved && unit.hasActed && unit.type === 'hero') {
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    drawHexPath(unit.col, unit.row);
+    ctx.fill();
+  }
+
+  // ── Facing indicator ──
+  const FACING_ANGLES = { N:-90, NE:-30, SE:30, S:90, SW:150, NW:-150 };
+  const ang = ((FACING_ANGLES[unit.facing] || 0) * Math.PI) / 180;
+  ctx.beginPath();
+  ctx.moveTo(x + Math.cos(ang) * (baseR - 2), y + 5 + Math.sin(ang) * (baseR - 2) * 0.45);
+  ctx.lineTo(x + Math.cos(ang) * (baseR + 10), y + 5 + Math.sin(ang) * (baseR + 10) * 0.45);
+  ctx.strokeStyle = unit.type === 'hero' ? 'rgba(100,200,255,0.8)' : 'rgba(255,100,100,0.8)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+// ═══════════════════════════════════════════════════
+//  EVENTS
+// ═══════════════════════════════════════════════════
+mapImg.addEventListener('load', () => { layoutMap(); render(); });
+
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  const px   = (e.clientX - rect.left) / scale;
+  const py   = (e.clientY - rect.top)  / scale;
+  const hex  = pixelToHex(px, py);
+  handleHexClick(hex.col, hex.row);
+});
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const px   = (e.clientX - rect.left) / scale;
+  const py   = (e.clientY - rect.top)  / scale;
+  const hex  = pixelToHex(px, py);
+
+  if (!hoveredHex || hoveredHex.col !== hex.col || hoveredHex.row !== hex.row) {
+    hoveredHex = hex;
+
+    // Tooltip
+    const tip   = document.getElementById('tooltip');
+    const unit  = getUnitAt(hex.col, hex.row);
+    const cover = getCover(hex.col, hex.row);
+
+    let tipHtml = `<b>${hexLabel(hex.col, hex.row)}</b>`;
+    if (unit) {
+      tipHtml += ` — ${unit.name}<br>PV: ${unit.hp}/${unit.maxHp} · CA: ${unit.ac}`;
+      if (selected) {
+        const sel = getUnit(selected);
+        const dist = hexDistance(sel.col, sel.row, hex.col, hex.row);
+        tipHtml += `<br>Distância: ${dist} hex`;
+      }
+    }
+    if (cover !== 'none') tipHtml += `<br>Cobertura: ${cover === 'partial' ? 'parcial' : 'total'}`;
+    if (selected) {
+      const sel = getUnit(selected);
+      const inMove = _moveRange.find(h => h.col === hex.col && h.row === hex.row);
+      if (inMove) tipHtml += `<br>🚶 ${inMove.steps} passos`;
+    }
+
+    tip.innerHTML = tipHtml;
+    tip.style.display = 'block';
+    tip.style.left = (e.clientX + 12) + 'px';
+    tip.style.top  = (e.clientY - 10) + 'px';
+
+    render();
+  } else {
+    const tip = document.getElementById('tooltip');
+    tip.style.left = (e.clientX + 12) + 'px';
+    tip.style.top  = (e.clientY - 10) + 'px';
+  }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  hoveredHex = null;
+  document.getElementById('tooltip').style.display = 'none';
+  render();
+});
+
+// Touch support
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const px = (t.clientX - rect.left) / scale;
+  const py = (t.clientY - rect.top)  / scale;
+  const hex = pixelToHex(px, py);
+  handleHexClick(hex.col, hex.row);
+}, { passive: false });
+
+window.addEventListener('resize', () => { layoutMap(); render(); });
+
+// ─── Init ───
+layoutMap();
+if (mapImg.complete) render();
+updateTurnLabel();
+addLog('Arqueiro, Bárbaro e Mago — toque numa unidade para selecionar.', 'hero');
+</script>
+</body>
+</html>
