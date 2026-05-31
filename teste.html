@@ -307,15 +307,18 @@ const UDEFS=[
   {id:'hero_arqueiro', name:'Arqueiro', type:'hero', classe:'arqueiro',
    hex:'D08', maxHp:22, ac:14, moveSpeed:5, size:'1x1',
    attrMod:3, attrName:'DES',
-   rangedWeapon:{name:'Arco Longo',range:11}, sprite:'sprites/arqueiro_m.png', icon:'🏹'},
+   rangedWeapon:{name:'Arco Longo',range:11},
+   sprite:'sprites/arqueiro_m.png', spriteCostas:'sprites/arqueiro_m_costas.png', icon:'🏹'},
   {id:'hero_barbaro', name:'Bárbaro', type:'hero', classe:'barbaro',
    hex:'E07', maxHp:32, ac:13, moveSpeed:4, size:'1x1',
    attrMod:4, attrName:'FOR',
-   rangedWeapon:null, sprite:'sprites/barbaro_m.png', icon:'🪓'},
+   rangedWeapon:null,
+   sprite:'sprites/barbaro_m.png', spriteCostas:'sprites/barbaro_m_costas.png', icon:'🪓'},
   {id:'hero_mago', name:'Mago', type:'hero', classe:'mago',
    hex:'F08', maxHp:16, ac:11, moveSpeed:3, size:'1x1',
    attrMod:3, attrName:'INT',
-   rangedWeapon:{name:'Raio Arcano',range:9}, sprite:'sprites/mago.png', icon:'🔮'},
+   rangedWeapon:{name:'Raio Arcano',range:9},
+   sprite:'sprites/mago.png', spriteCostas:'sprites/mago_m_costas.png', icon:'🔮'},
   // Inimigos
   {id:'espa_01', name:'Espantalho I',  type:'enemy',
    hex:'E03', maxHp:14, ac:10, moveSpeed:3, size:'1x1',
@@ -415,6 +418,12 @@ units.forEach(u=>{
   const img=new Image();
   img.onload=()=>{u._img=img;render();};
   img.src=u.sprite;
+  // Heroes: also load costas sprite; falls back to front if file doesn't exist
+  if(u.type==='hero'&&u.spriteCostas){
+    const imgC=new Image();
+    imgC.onload=()=>{u._imgCostas=imgC;render();};
+    imgC.src=u.spriteCostas;
+  }
 });
 
 // ═══════════════════════════════════════════════
@@ -1021,11 +1030,13 @@ function drawUnit(u){
   ctx.fillStyle=u.type==='hero'?'rgba(50,110,180,.35)':'rgba(160,50,40,.35)';
   ctx.fill(); ctx.restore();
 
-  // Sprite
-  if(u._img&&u._img.complete&&u._img.naturalWidth){
-    const asp=u._img.naturalWidth/u._img.naturalHeight;
+  // Sprite — heroes use costas by default, front only during backstab (_showFront)
+  const useCostas=u.type==='hero'&&!u._showFront&&u._imgCostas&&u._imgCostas.complete&&u._imgCostas.naturalWidth;
+  const srcImg=useCostas?u._imgCostas:u._img;
+  if(srcImg&&srcImg.complete&&srcImg.naturalWidth){
+    const asp=srcImg.naturalWidth/srcImg.naturalHeight;
     const sw=sprH*asp;
-    ctx.drawImage(u._img,cx-sw/2,footY-sprH,sw,sprH);
+    ctx.drawImage(srcImg,cx-sw/2,footY-sprH,sw,sprH);
   }else{
     ctx.font=`${baseR}px serif`;ctx.textAlign='center';ctx.textBaseline='bottom';
     ctx.fillText(u.icon,cx,footY);
@@ -1461,7 +1472,11 @@ function rollSkillVsTarget(actorId,sk,targetId){
   }
   document.getElementById('action-popup').style.display='none';
   selId=null;
+  // Backstab: hero is behind enemy → show front sprite during animation
+  const isBack=target&&actor.type==='hero'&&isBackAtk(actor,target);
+  if(isBack){actor._showFront=true;render();}
   DiceOverlay.mostrar(playlist,(results)=>{
+    if(isBack){actor._showFront=false;}
     const atk=results[0];
     if(atk.catastrofe){
       addLog(`💀 CATÁSTROFE! ${actor.name} erra e sofre as consequências.`,'f');
@@ -1469,7 +1484,7 @@ function rollSkillVsTarget(actorId,sk,targetId){
       const dmgRoll=results[1];
       const dmg=dmgRoll?dmgRoll.resultado:0;
       target.hp=Math.max(0,target.hp-dmg);
-      addLog(`${atk.critico?'⭐':'✦'} ${actor.name}: ${sk.name}${atk.critico?' (CRÍTICO!)':''} → ${target.name} sofre ${dmg} dano (${target.hp}/${target.maxHp} PV)`,'s');
+      addLog(`${atk.critico?'⭐':'✦'} ${actor.name}: ${sk.name}${atk.critico?' (CRÍTICO!)':''} → ${target.name} sofre ${dmg} dano (${target.hp}/${target.maxHp} PV)${isBack?' (pelas costas!)':''}`,'s');
       if(target.hp<=0){target.alive=false;addLog(`☠ ${target.name} foi derrotado!`,'x');}
     }else{
       addLog(`✕ ${actor.name}: ${sk.name} errou ${target.name} (${atk.total} vs CA ${target.ac})`,'f');
