@@ -2497,13 +2497,11 @@ window.criarSala = async function() {
   mySala   = codigo;
   amIHost  = true;
 
+  // Wipe any stale data at this code path before writing fresh sala
+  await ref(db, `salas/${codigo}`).remove();
   await set(ref(db, `salas/${codigo}`), {
-    config:    { host: myUid, estado: 'lobby', rodada: 0, criadoEm: serverTimestamp() },
+    config:    { host: myUid, estado: 'lobby', rodada: 0, criadoEm: Date.now() },
     jogadores: { [myUid]: jogData },
-    historia:  null,
-    inimigos:  null,
-    troca:     null,
-    rolagem:   null
   });
   onDisconnect(ref(db, `salas/${codigo}/jogadores/${myUid}/ativo`)).set(false);
   irParaJogo(codigo);
@@ -2712,7 +2710,7 @@ function irParaJogo(codigo) {
 
     renderizarJogadores(jogadores, config);
     renderizarInimigos(inimigos);
-    renderizarHistoria(historia, jogadores);
+    renderizarHistoria(historia, jogadores, config);
     atualizarInputArea(jogadores[myUid], config);
 
     // Intro slides: abrir para todos quando estado = 'intro'
@@ -2834,11 +2832,14 @@ let _renderedKeys = new Set();
 
 let _historiaCache = {};
 
-function renderizarHistoria(historia, jogadores) {
+function renderizarHistoria(historia, jogadores, config) {
   _historiaCache = historia; // espelho para o editor de histórico
   const el = document.getElementById('story-content');
   if (!el) return;
-  const entries = Object.entries(historia).sort(([,a],[,b]) => (a.ts||0)-(b.ts||0));
+  const salaTs = (typeof config?.criadoEm === 'number') ? config.criadoEm : 0;
+  const entries = Object.entries(historia)
+    .filter(([, e]) => !salaTs || (e.ts || 0) >= salaTs - 5000)
+    .sort(([,a],[,b]) => (a.ts||0)-(b.ts||0));
 
   let adicionou = false;
 
