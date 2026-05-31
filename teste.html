@@ -184,10 +184,11 @@ header{
 'use strict';
 // ═══════════════════════════════════════════════
 //  HEX GRID  (flat-top even-q, 13×13, 1086×1448 portrait)
+//  Tessellation: CS = 3*HR/2, RS = 2*VR*sin60°, OOFF = RS/2
 // ═══════════════════════════════════════════════
 const MAP_W=1086, MAP_H=1448, COLS=13, ROWS=13;
 const CL='ABCDEFGHIJKLM';
-const GX0=108, GY0=102, CS=72, RS=78, OOFF=39, HR=36, VR=38;
+const GX0=108, GY0=100, CS=72, RS=83, OOFF=42, HR=48, VR=48;
 
 const hexLbl=(c,r)=>CL[c]+String(r+1).padStart(2,'0');
 const parseHex=s=>({col:CL.indexOf(s[0].toUpperCase()),row:parseInt(s.slice(1))-1});
@@ -289,7 +290,7 @@ const UDEFS=[
   // Maior criatura — Larva Gigante 3×2 (SM+2, "tamanho de uma carroça")
   {id:'larva_gigante', name:'Larva Gigante', type:'enemy',
    hex:'H02', maxHp:60, ac:10, moveSpeed:2, size:'3x2',
-   sprite:'sprites/inimigo_larva_gigante.png', icon:'🐛'},
+   sprite:null, icon:'🐛'},
 ];
 
 // ── Skills por classe (nome, tipo, alcance, dano) ──
