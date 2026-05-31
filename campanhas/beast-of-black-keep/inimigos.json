@@ -85,7 +85,8 @@
         "Vantagem em Percepção (olfato aguçado)",
         "Resistência a dano físico por pele grossa de ogro"
       ],
-      "resistencias": []
+      "resistencias": [],
+      "sprite": "inimigo_grimhollow_thool"
     },
     {
       "id": "rei_chutter",
@@ -127,7 +128,8 @@
       ],
       "resistencias": [
         "magia da floresta"
-      ]
+      ],
+      "sprite": "inimigo_rei_chutter"
     },
     {
       "id": "golem_de_pergaminho",
@@ -215,7 +217,8 @@
       "resistencias": [
         "dano cortante",
         "dano perfurante"
-      ]
+      ],
+      "sprite": "inimigo_mother_clutch"
     },
     {
       "id": "marrowwither",
@@ -258,7 +261,8 @@
       ],
       "resistencias": [
         "veneno"
-      ]
+      ],
+      "sprite": "inimigo_marrowwither"
     },
     {
       "id": "larva_gigante",
@@ -344,7 +348,8 @@
       "resistencias": [
         "dano psíquico",
         "dano necrótico"
-      ]
+      ],
+      "sprite": "inimigo_wraithweaver_spider"
     },
     {
       "id": "manticora_albina",
@@ -385,7 +390,8 @@
         "Asas vestigiais: queda controlada sem dano",
         "Rastejo silencioso (+5 Furtividade)"
       ],
-      "resistencias": []
+      "resistencias": [],
+      "sprite": "inimigo_manticora_albina"
     },
     {
       "id": "barkthresher",
@@ -429,7 +435,8 @@
       ],
       "resistencias": [
         "dano físico não-mágico"
-      ]
+      ],
+      "sprite": "inimigo_barkthresher"
     },
     {
       "id": "esqueleto_lanceiro",
@@ -593,7 +600,8 @@
         "Carga: +1d6 se mover 3m antes de atacar",
         "Fúria ferida: com HP < metade, ataque duplo por turno"
       ],
-      "resistencias": []
+      "resistencias": [],
+      "sprite": "inimigo_javali_ensandecido"
     },
     {
       "id": "quay_grabber",
@@ -633,7 +641,8 @@
         "Regeneração troll 2 HP/turno (exceto fogo ou ácido)",
         "Visão no escuro 18m subaquática"
       ],
-      "resistencias": []
+      "resistencias": [],
+      "sprite": "inimigo_quay_grabber"
     },
     {
       "id": "caranguejo_gigante",
@@ -670,7 +679,8 @@
         "Anfíbio (respira ar e água)",
         "Carapaça dura: imune a dano crítico de projéteis pequenos"
       ],
-      "resistencias": []
+      "resistencias": [],
+      "sprite": "inimigo_caranguejo_gigante"
     },
     {
       "id": "log_wife",
@@ -709,7 +719,8 @@
       ],
       "resistencias": [
         "dano físico não-mágico"
-      ]
+      ],
+      "sprite": "inimigo_log_wife"
     },
     {
       "id": "ankle_snapper",
@@ -748,7 +759,8 @@
         "Tremorsense 6m",
         "Imune a charme e medo"
       ],
-      "resistencias": []
+      "resistencias": [],
+      "sprite": "inimigo_ankle_snapper"
     },
     {
       "id": "troll_moss_belly",
@@ -788,7 +800,8 @@
         "Detecção de carne: fareja criaturas vivas a 18m",
         "Musgo venenoso: quem ataca corpo a corpo leva 1 dano de veneno por contato"
       ],
-      "resistencias": []
+      "resistencias": [],
+      "sprite": "inimigo_troll_moss_belly"
     },
     {
       "id": "bugbear_assassino",
@@ -862,7 +875,8 @@
         "Visão no escuro 18m",
         "Tática de emboscada noturna: preferem atacar à noite com vantagem"
       ],
-      "resistencias": []
+      "resistencias": [],
+      "sprite": "inimigo_orc_bandido"
     }
   ]
 }

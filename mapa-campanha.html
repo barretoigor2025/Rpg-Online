@@ -28,6 +28,21 @@ canvas { display: block; cursor: default; }
 const c = document.getElementById('c');
 const cx = c.getContext('2d');
 
+// ── Sprite preloading ────────────────────────────────────────────────────────
+const SPRITES = {};
+const _spriteDefs = [
+  ['manticora',    'sprites/inimigo_manticora_albina.png'],
+  ['marrowwither', 'sprites/inimigo_marrowwither.png'],
+  ['barkthresher', 'sprites/inimigo_barkthresher.png'],
+];
+let _spritesLoaded = 0;
+_spriteDefs.forEach(([key, src]) => {
+  const img = new Image();
+  img.onload  = () => { SPRITES[key] = img; _spritesLoaded++; if (_spritesLoaded === _spriteDefs.length) render(); };
+  img.onerror = () => {                     _spritesLoaded++; if (_spritesLoaded === _spriteDefs.length) render(); };
+  img.src = src;
+});
+
 // ── Hex geometry (flat-top) ─────────────────────────────────────────────────
 const R  = 62;           // circumradius
 const dx = R * 1.5;      // col step
@@ -215,30 +230,16 @@ function drawHut(x, y) {
 }
 
 function drawManticore(x, y) {
+  if (SPRITES.manticora) {
+    cx.drawImage(SPRITES.manticora, x - 40, y - 54, 80, 88);
+    return;
+  }
   const by = y + 22;
-  // Body silhouette
   cx.fillStyle = '#0e1a06';
   cx.beginPath(); cx.ellipse(x, by, 26, 14, 0, 0, Math.PI * 2); cx.fill();
-  // Head
   cx.beginPath(); cx.arc(x + 24, by - 4, 12, 0, Math.PI * 2); cx.fill();
-  // Mane
-  cx.fillStyle = '#1a2a08';
-  for (let a = -Math.PI/2; a <= Math.PI/2; a += 0.4) {
-    cx.beginPath(); cx.moveTo(x + 24, by - 4); cx.lineTo(x + 24 + 16 * Math.cos(a), by - 4 + 16 * Math.sin(a)); cx.lineWidth = 3; cx.strokeStyle = '#1a2a08'; cx.stroke();
-  }
-  // Tail with spines
-  cx.strokeStyle = '#0e1a06'; cx.lineWidth = 3;
-  cx.beginPath(); cx.moveTo(x - 26, by); cx.quadraticCurveTo(x - 50, by - 30, x - 40, by - 50); cx.stroke();
-  cx.fillStyle = '#0e1a06';
-  for (let i = 0; i < 4; i++) {
-    cx.beginPath(); cx.moveTo(x - 38 + i * 4, by - 48 + i * 5);
-    cx.lineTo(x - 34 + i * 4, by - 58 + i * 5);
-    cx.lineTo(x - 30 + i * 4, by - 48 + i * 5); cx.fill();
-  }
-  // Eyes
   cx.fillStyle = '#e04000';
   cx.beginPath(); cx.arc(x + 28, by - 6, 2.5, 0, Math.PI * 2); cx.fill();
-  // Tree in back
   drawSmallTree(x - 18, by - 26);
 }
 
@@ -374,23 +375,19 @@ function drawStones(x, y) {
 }
 
 function drawTwoFace(x, y) {
+  if (SPRITES.barkthresher) {
+    cx.drawImage(SPRITES.barkthresher, x - 38, y - 58, 76, 90);
+    return;
+  }
   const by = y + 10;
   cx.fillStyle = '#1a2e0e';
-  // Trunk
   cx.fillRect(x - 5, by, 10, 40);
-  // Canopy - left (angry face)
   cx.fillStyle = '#142408';
   cx.beginPath(); cx.arc(x - 14, by - 6, 24, 0, Math.PI * 2); cx.fill();
-  // Left face features
-  cx.fillStyle = '#e04020'; cx.fillRect(x - 22, by - 10, 6, 3); // eye
-  cx.fillStyle = '#1a0e06';
-  cx.beginPath(); cx.moveTo(x - 20, by - 2); cx.lineTo(x - 8, by + 2); cx.lineTo(x - 8, by - 2); cx.fill(); // frown
-  // Canopy - right (friendly face)
   cx.fillStyle = '#1e3410';
   cx.beginPath(); cx.arc(x + 14, by - 6, 24, 0, Math.PI * 2); cx.fill();
-  cx.fillStyle = '#40c040'; cx.fillRect(x + 8, by - 10, 6, 3); // eye
-  cx.fillStyle = '#0a1806';
-  cx.beginPath(); cx.moveTo(x + 8, by - 2); cx.quadraticCurveTo(x + 14, by + 6, x + 20, by - 2); cx.lineTo(x + 20, by - 4); cx.quadraticCurveTo(x + 14, by + 2, x + 8, by - 4); cx.fill(); // smile
+  cx.fillStyle = '#e04020'; cx.fillRect(x - 22, by - 10, 6, 3);
+  cx.fillStyle = '#40c040'; cx.fillRect(x + 8, by - 10, 6, 3);
 }
 
 function drawLake(x, y) {
@@ -418,28 +415,20 @@ function drawLake(x, y) {
 }
 
 function drawLarva(x, y) {
+  if (SPRITES.marrowwither) {
+    cx.drawImage(SPRITES.marrowwither, x - 42, y - 36, 84, 72);
+    return;
+  }
   const by = y + 24;
-  // Carcass
   cx.fillStyle = '#c0c8a0';
   cx.beginPath(); cx.ellipse(x, by - 4, 28, 16, 0, 0, Math.PI * 2); cx.fill();
-  // Segments
   cx.strokeStyle = '#a0a870'; cx.lineWidth = 2;
   for (let i = -18; i <= 18; i += 10) {
     cx.beginPath(); cx.arc(x + i, by - 4, 12, -Math.PI / 2, Math.PI / 2); cx.stroke();
   }
-  // Ooze
   cx.fillStyle = '#c8a030'; cx.globalAlpha = 0.7;
   cx.beginPath(); cx.ellipse(x + 4, by + 8, 16, 6, 0, 0, Math.PI * 2); cx.fill();
   cx.globalAlpha = 1;
-  // Necromantic runes
-  cx.strokeStyle = '#602080'; cx.lineWidth = 1.5;
-  cx.beginPath(); cx.moveTo(x - 12, by - 10); cx.lineTo(x - 6, by + 2); cx.lineTo(x - 18, by + 2); cx.closePath(); cx.stroke();
-  // Mushrooms nearby
-  cx.fillStyle = '#a06040';
-  [[x + 22, by - 12], [x + 30, by - 8]].forEach(([mx, my]) => {
-    cx.beginPath(); cx.arc(mx, my, 6, Math.PI, 0); cx.fill();
-    cx.fillStyle = '#604020'; cx.fillRect(mx - 2, my, 4, 8); cx.fillStyle = '#a06040';
-  });
 }
 
 function drawAntler(x, y) {
@@ -818,7 +807,7 @@ function render() {
   drawTitle();
 }
 
-render();
+// render() is called by the sprite loader above once all images are resolved
 </script>
 </body>
 </html>
