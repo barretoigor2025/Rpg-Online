@@ -44,7 +44,8 @@
       "resistencias": [
         "veneno",
         "necrótico"
-      ]
+      ],
+      "sprite": "inimigo_espantalho_assombrado"
     },
     {
       "id": "grimhollow_thool",
@@ -171,7 +172,8 @@
       ],
       "resistencias": [
         "dano perfurante de projéteis"
-      ]
+      ],
+      "sprite": "inimigo_golem_de_pergaminho"
     },
     {
       "id": "mother_clutch",
@@ -304,7 +306,8 @@
       ],
       "resistencias": [
         "magia elemental"
-      ]
+      ],
+      "sprite": "inimigo_larva_gigante"
     },
     {
       "id": "wraithweaver_spider",
@@ -480,7 +483,8 @@
       "resistencias": [
         "dano cortante",
         "dano perfurante"
-      ]
+      ],
+      "sprite": "inimigo_esqueleto_lanceiro"
     },
     {
       "id": "kobold_azul",
@@ -519,7 +523,8 @@
         "Tática de matilha: vantagem em ataques quando aliado adjacente",
         "Fuga instintiva: com HP < 4 foge sem testar moral"
       ],
-      "resistencias": []
+      "resistencias": [],
+      "sprite": "inimigo_kobold_azul"
     },
     {
       "id": "elfo_sombrio",
@@ -561,7 +566,8 @@
         "Imune a sono mágico",
         "Vantagem vs. charme"
       ],
-      "resistencias": []
+      "resistencias": [],
+      "sprite": "inimigo_elfo_sombrio"
     }
   ],
   "encontros": [
@@ -838,7 +844,8 @@
         "Ataque furtivo: +2d6 extra com vantagem ou flanqueamento",
         "Furtividade +4"
       ],
-      "resistencias": []
+      "resistencias": [],
+      "sprite": "inimigo_bugbear_assassino"
     },
     {
       "id": "orc_bandido",

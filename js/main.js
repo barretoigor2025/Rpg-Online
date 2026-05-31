@@ -280,7 +280,7 @@ function getEnemyAttrMod(ini, attr) {
   return Math.floor(((s[key] ?? 10) - 10) / 2);
 }
 
-function getPortraitAtaque(nome, costas = false) {
+function getPortraitAtaque(nome) {
   const jog = Object.values(_jogadoresCache).find(j =>
     j.nome && (nome.toLowerCase().includes(j.nome.toLowerCase()) || j.nome.toLowerCase().includes(nome.toLowerCase()))
   );
@@ -288,8 +288,7 @@ function getPortraitAtaque(nome, costas = false) {
 
   const ini = getInimigo(nome);
   if (ini) {
-    const suf = costas ? '_costas' : '';
-    return { src: `sprites/inimigo_${ini.id}${suf}.png`, icon: ini.icon || '💀', cor: ini.cor_hp || '#7a1a1a' };
+    return { src: `sprites/inimigo_${ini.id}.png`, icon: ini.icon || '💀', cor: ini.cor_hp || '#7a1a1a' };
   }
 
   const npcKey = Object.keys(NPC_DATA).find(
@@ -575,7 +574,7 @@ const DiceOverlay = (function () {
       const _esq = document.getElementById('dado-portrait-esq');
       const _dir = document.getElementById('dado-portrait-dir');
       if (_esq) {
-        const _p = getPortraitAtaque(r.nomeJog || '', false);
+        const _p = getPortraitAtaque(r.nomeJog || '');
         _esq.style.cssText += `;background:${_p.cor}22;border-color:${_p.cor}55`;
         _esq.innerHTML = _p.src
           ? `<img src="${_p.src}" class="espelhado" onerror="this.style.opacity='.15'"><div class="dado-portrait-nome">${r.nomeJog||''}</div>`
@@ -583,7 +582,7 @@ const DiceOverlay = (function () {
       }
       if (_dir) {
         if (r.alvo) {
-          const _p = getPortraitAtaque(r.alvo, false);
+          const _p = getPortraitAtaque(r.alvo);
           _dir.style.cssText += `;display:flex;background:${_p.cor}22;border-color:${_p.cor}55`;
           _dir.innerHTML = _p.src
             ? `<img src="${_p.src}" onerror="this.style.opacity='.15'"><div class="dado-portrait-nome">${r.alvo}</div>`
@@ -922,8 +921,8 @@ function renderizarSegmentos(container, segs, falas) {
       container.appendChild(bubble);
     } else if (it.tipo === 'ataque') {
       // Card de batalha: ATACANTE à esquerda (espelhado), ALVO à direita
-      const pAtac = getPortraitAtaque(it.atacante, false);
-      const pAlvo = getPortraitAtaque(it.alvo, it.surpresa);
+      const pAtac = getPortraitAtaque(it.atacante);
+      const pAlvo = getPortraitAtaque(it.alvo);
       const _phb = (p, espelhar) =>
         `<div class="batalha-inline-portrait" style="background:${p.cor}22;border-color:${p.cor}55">
           ${p.src ? `<img src="${p.src}" alt=""${espelhar ? ' class="espelhado"' : ''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
@@ -2499,8 +2498,12 @@ window.criarSala = async function() {
   amIHost  = true;
 
   await set(ref(db, `salas/${codigo}`), {
-    config: { host: myUid, estado: 'lobby', rodada: 0, criadoEm: serverTimestamp() },
-    jogadores: { [myUid]: jogData }
+    config:    { host: myUid, estado: 'lobby', rodada: 0, criadoEm: serverTimestamp() },
+    jogadores: { [myUid]: jogData },
+    historia:  null,
+    inimigos:  null,
+    troca:     null,
+    rolagem:   null
   });
   onDisconnect(ref(db, `salas/${codigo}/jogadores/${myUid}/ativo`)).set(false);
   irParaJogo(codigo);
@@ -2927,9 +2930,9 @@ function renderizarHistoria(historia, jogadores) {
           ${danoStr}
         </div>`;
       }).join('');
-      const pAtac = getPortraitAtaque(rolls[0]?.nome || '', false);
+      const pAtac = getPortraitAtaque(rolls[0]?.nome || '');
       const alvoPrincipal = rolls.find(r => r.alvo)?.alvo || '';
-      const pAlvo = alvoPrincipal ? getPortraitAtaque(alvoPrincipal, false) : null;
+      const pAlvo = alvoPrincipal ? getPortraitAtaque(alvoPrincipal) : null;
       const _ph = (p, mirror) =>
         `<div class="combate-teste-portrait" style="background:${p.cor}22;border-color:${p.cor}55">
           ${p.src ? `<img src="${p.src}"${mirror?' class="espelhado"':''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
