@@ -76,6 +76,17 @@ header{
 #grid-toggle.active #hex-bg{fill:rgba(130,100,35,.6);stroke:rgba(210,175,80,.9)}
 #grid-toggle.active #hex-icon{fill:rgba(230,195,100,.95)}
 
+/* ── Range buttons ── */
+#u-ranges{margin-top:5px;display:none;gap:3px;flex-wrap:wrap}
+.rbtn{
+  background:#1a1610;border:1px solid rgba(180,150,80,.25);color:#8a7050;
+  border-radius:4px;padding:2px 7px;font-size:10px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;white-space:nowrap;
+}
+.rbtn.on-move{background:rgba(40,100,220,.35);border-color:#4488ee;color:#90c0ff}
+.rbtn.on-melee{background:rgba(200,40,40,.35);border-color:#cc4444;color:#ffaaaa}
+.rbtn.on-ranged{background:rgba(200,120,20,.35);border-color:#cc8830;color:#ffcc80}
+
 /* ── Tooltip ── */
 #tip{
   position:fixed;background:rgba(10,8,4,.94);border:1px solid rgba(180,150,80,.3);
@@ -119,6 +130,11 @@ header{
           <div class="stat">Mov<span id="u-mov"></span></div>
           <div class="stat">Pos<span id="u-pos"></span></div>
           <div id="u-acts"></div>
+          <div id="u-ranges">
+            <button class="rbtn" id="rbtn-move"   onclick="toggleRange('move')"  >🚶 Mov</button>
+            <button class="rbtn" id="rbtn-melee"  onclick="toggleRange('melee')" >⚔ Corpo</button>
+            <button class="rbtn" id="rbtn-ranged" onclick="toggleRange('ranged')" style="display:none">🎯 Dist</button>
+          </div>
         </div>
       </div>
       <div id="log"><div class="le s">⚔ Batalha — Feira Assombrada</div></div>
@@ -399,8 +415,89 @@ function checkEnd(){
 // ═══════════════════════════════════════════════
 let turn=1, phase='hero';
 let hovHex=null, showGrid=false, debugGrid=false;
+let selId=null, activeRanges=new Set();
+let _moveCache=[], _meleeCache=[], _rangedCache=[];
+
+// ═══════════════════════════════════════════════
+//  SELECTION + RANGE DISPLAY (visual only — actions via text)
+// ═══════════════════════════════════════════════
+function hexNbrs6(c,r){
+  const d=c%2===0?[[1,-1],[1,0],[0,1],[-1,0],[-1,-1],[0,-1]]:[[1,0],[1,1],[0,1],[-1,1],[-1,0],[0,-1]];
+  return d.map(([dc,dr])=>{const nc=c+dc,nr=r+dr;return(nc>=0&&nc<COLS&&nr>=0&&nr<ROWS)?{col:nc,row:nr}:null;});
+}
+
+function drawPerimeter(hexList,stroke,fill,lineW=2.5,glow=8){
+  if(!hexList.length)return;
+  const sk=new Set(hexList.map(h=>`${h.col},${h.row}`));
+  if(fill){ctx.fillStyle=fill;for(const{col,row}of hexList){drawHex(col,row);ctx.fill();}}
+  ctx.save();
+  ctx.strokeStyle=stroke;ctx.lineWidth=lineW;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.shadowColor=stroke;ctx.shadowBlur=glow;
+  ctx.beginPath();
+  for(const{col,row}of hexList){
+    const nb6=hexNbrs6(col,row);
+    const{x,y}=hexCtr(col,row);
+    for(let i=0;i<6;i++){
+      const nb=nb6[(i+1)%6];
+      if(!nb||!sk.has(`${nb.col},${nb.row}`)){
+        ctx.moveTo(x+HR*Math.cos((Math.PI/3)*i),y+VR*Math.sin((Math.PI/3)*i));
+        ctx.lineTo(x+HR*Math.cos((Math.PI/3)*(i+1)),y+VR*Math.sin((Math.PI/3)*(i+1)));
+      }
+    }
+  }
+  ctx.stroke();ctx.restore();
+}
+
+function selectUnit(id){
+  const u=getUnit(id);
+  if(!u||!u.alive){clearSelection();return;}
+  selId=id;
+  const ownKeys=new Set(u.occupiedHexes.map(h=>`${h.col},${h.row}`));
+  _moveCache=u.hasMoved?[]:reachable(u);
+  const ms=new Map();
+  for(const oh of u.occupiedHexes)for(const nb of hexNbrs(oh.col,oh.row)){
+    const k=`${nb.col},${nb.row}`;if(!ownKeys.has(k)&&!isBlocked(nb.col,nb.row))ms.set(k,nb);
+  }
+  _meleeCache=[...ms.values()];
+  if(u.rangedWeapon){
+    const ra=[];
+    for(let c=0;c<COLS;c++)for(let r=0;r<ROWS;r++){
+      if(!isBlocked(c,r)&&!ownKeys.has(`${c},${r}`)){
+        const d=distFromPt(c,r,u);
+        if(d>1&&d<=u.rangedWeapon.range)ra.push({col:c,row:r});
+      }
+    }
+    _rangedCache=ra;
+  }else _rangedCache=[];
+  activeRanges=new Set(['move','melee']);
+  if(u.rangedWeapon)activeRanges.add('ranged');
+  updatePanel(u);updateRangeBtns();render();
+}
+
+function clearSelection(){
+  selId=null;activeRanges=new Set();_moveCache=[];_meleeCache=[];_rangedCache=[];
+  updatePanel(null);updateRangeBtns();render();
+}
+
+function toggleRange(type){
+  if(activeRanges.has(type))activeRanges.delete(type);else activeRanges.add(type);
+  updateRangeBtns();render();
+}
+
+function updateRangeBtns(){
+  const rows=document.getElementById('u-ranges');
+  const sel=selId?getUnit(selId):null;
+  if(!sel){rows.style.display='none';return;}
+  rows.style.display='flex';
+  const bm=document.getElementById('rbtn-move'),bc=document.getElementById('rbtn-melee'),br=document.getElementById('rbtn-ranged');
+  bm.className='rbtn'+(activeRanges.has('move')?' on-move':'');
+  bc.className='rbtn'+(activeRanges.has('melee')?' on-melee':'');
+  br.style.display=sel.rangedWeapon?'':'none';
+  br.className='rbtn'+(activeRanges.has('ranged')?' on-ranged':'');
+}
 
 function endHeroPhase(){
+  clearSelection();
   heroes().forEach(u=>{u.hasMoved=true;u.hasActed=true;});
   addLog('— Heróis passam a vez. Inimigos agem —','s');
   phase='enemy'; updateHdr(); render();
@@ -667,17 +764,31 @@ function render(){
     }
   }
 
-  // Grid lines — visível apenas quando showGrid=true
+  // Grid lines — visível apenas quando showGrid=true (branco)
   if(showGrid){
-    ctx.strokeStyle='rgba(210,180,90,.55)'; ctx.lineWidth=1.5;
+    ctx.strokeStyle='rgba(255,255,255,.40)'; ctx.lineWidth=1.5;
     for(let c=0;c<COLS;c++)for(let r=0;r<ROWS;r++){drawHex(c,r);ctx.stroke();}
     if(debugGrid){
-      ctx.fillStyle='rgba(200,175,110,.7)';ctx.font='10px monospace';
+      ctx.fillStyle='rgba(255,255,255,.85)';ctx.font='bold 10px monospace';
       ctx.textAlign='center';ctx.textBaseline='middle';
       for(let c=0;c<COLS;c++)for(let r=0;r<ROWS;r++){
         const{x,y}=hexCtr(c,r);ctx.fillText(hexLbl(c,r),x,y);
       }
     }
+  }
+
+  // Range overlays (visual only — perimeter glow)
+  if(selId){
+    if(activeRanges.has('move')&&_moveCache.length)
+      drawPerimeter(_moveCache,'rgba(70,160,255,1)','rgba(50,120,240,.10)',2.5,10);
+    if(activeRanges.has('melee')&&_meleeCache.length)
+      drawPerimeter(_meleeCache,'rgba(255,60,60,1)','rgba(220,30,30,.08)',2.5,10);
+    if(activeRanges.has('ranged')&&_rangedCache.length)
+      drawPerimeter(_rangedCache,'rgba(255,145,30,1)','rgba(220,110,20,.08)',2,8);
+    // Selected unit outline (all occupied hexes)
+    ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=2.5;
+    const sel=getUnit(selId);
+    if(sel)for(const oh of sel.occupiedHexes){drawHex(oh.col,oh.row);ctx.stroke();}
   }
 
   // Draw units
@@ -823,6 +934,20 @@ function ptDist(touches){
 }
 
 // ═══════════════════════════════════════════════
+//  CLICK — seleciona unidade (visual) / deseleciona
+// ═══════════════════════════════════════════════
+canvas.addEventListener('click',e=>{
+  if(_justPinched)return;
+  const rect=canvas.getBoundingClientRect();
+  const px=(e.clientX-rect.left)*MAP_W/rect.width;
+  const py=(e.clientY-rect.top)*MAP_H/rect.height;
+  const h=pxToHex(px,py);
+  const u=getUnitAt(h.col,h.row);
+  if(u&&u.alive){selId===u.id?clearSelection():selectUnit(u.id);}
+  else clearSelection();
+});
+
+// ═══════════════════════════════════════════════
 //  HOVER / TOOLTIP
 // ═══════════════════════════════════════════════
 canvas.addEventListener('mousemove',e=>{
@@ -839,7 +964,7 @@ canvas.addEventListener('mousemove',e=>{
     const cov=getCover(h.col,h.row);
     if(cov!=='none')html+=`<br>Cobertura:${cov==='partial'?'parcial':'total'}`;
     tip.innerHTML=html; tip.style.display='block';
-    updatePanel(u||null);
+    if(!selId)updatePanel(u||null);
     render();
   }
   tip.style.left=(e.clientX+14)+'px'; tip.style.top=(e.clientY-8)+'px';
@@ -847,7 +972,7 @@ canvas.addEventListener('mousemove',e=>{
 canvas.addEventListener('mouseleave',()=>{
   hovHex=null;
   document.getElementById('tip').style.display='none';
-  updatePanel(null);
+  if(!selId)updatePanel(null);
   render();
 });
 
