@@ -94,7 +94,6 @@
     .map-token.type-npc    .token-shadow { border-color: #9b59b6; background: rgba(155,89,182,.2); }
 
     .map-token img {
-      width: 60px; height: 78px;
       object-fit: contain;
       object-position: center bottom;
       display: block;
@@ -384,6 +383,10 @@
 <div id="drag-ghost"><img id="dg-img" src="" alt=""></div>
 
 <script>
+// ─── Tamanhos ────────────────────────────────────────────────────────────────
+// Multiplier aplicado à base 60×78px do token
+const SZ = { tiny: 0.52, small: 0.72, medium: 1.0, large: 1.58, huge: 2.15 };
+
 // ─── Data ─────────────────────────────────────────────────────────────────────
 const MAP_PACKS = [
   { label: 'Pack A — Mhoried', maps: [
@@ -416,31 +419,36 @@ const PALETTE = {
     { name: 'Arqueira',  sprite: 'sprites/arqueiro_f.png',  type: 'player' },
   ],
   'Inimigos': [
-    { name: 'Ankle Snapper', sprite: 'sprites/inimigo_ankle_snapper.png',         type: 'enemy' },
-    { name: 'Barkthresher',  sprite: 'sprites/inimigo_barkthresher.png',          type: 'enemy' },
-    { name: 'Bugbear',       sprite: 'sprites/inimigo_bugbear_assassino.png',     type: 'enemy' },
-    { name: 'Caranguejo',    sprite: 'sprites/inimigo_caranguejo_gigante.png',    type: 'enemy' },
-    { name: 'Elfo Sombrio',  sprite: 'sprites/inimigo_elfo_sombrio.png',         type: 'enemy' },
-    { name: 'Espantalho',    sprite: 'sprites/inimigo_espantalho_assombrado.png', type: 'enemy' },
-    { name: 'Esqueleto',     sprite: 'sprites/inimigo_esqueleto_lanceiro.png',    type: 'enemy' },
-    { name: 'Golem',         sprite: 'sprites/inimigo_golem_de_pergaminho.png',   type: 'enemy' },
-    { name: 'Thool',         sprite: 'sprites/inimigo_grimhollow_thool.png',      type: 'enemy' },
-    { name: 'Javali',        sprite: 'sprites/inimigo_javali_ensandecido.png',    type: 'enemy' },
-    { name: 'Kobold Azul',   sprite: 'sprites/inimigo_kobold_azul.png',           type: 'enemy' },
-    { name: 'Larva',         sprite: 'sprites/inimigo_larva_gigante.png',         type: 'enemy' },
-    { name: 'Log Wife',      sprite: 'sprites/inimigo_log_wife.png',              type: 'enemy' },
-    { name: 'Manticora',     sprite: 'sprites/inimigo_manticora_albina.png',      type: 'enemy' },
-    { name: 'Marrowwither',  sprite: 'sprites/inimigo_marrowwither.png',          type: 'enemy' },
-    { name: 'Mother Clutch', sprite: 'sprites/inimigo_mother_clutch.png',         type: 'enemy' },
-    { name: 'Orc Bandido',   sprite: 'sprites/inimigo_orc_bandido.png',           type: 'enemy' },
-    { name: 'Quay Grabber',  sprite: 'sprites/inimigo_quay_grabber.png',          type: 'enemy' },
-    { name: 'Rei Chutter',   sprite: 'sprites/inimigo_rei_chutter.png',           type: 'enemy' },
-    { name: 'Troll',         sprite: 'sprites/inimigo_troll_moss_belly.png',      type: 'enemy' },
-    { name: 'Spider',        sprite: 'sprites/inimigo_wraithweaver_spider.png',   type: 'enemy' },
-    { name: 'Goblin Arq.',   sprite: 'sprites/goblin_arqueiro.png',               type: 'enemy' },
-    { name: 'Goblin Bat.',   sprite: 'sprites/goblin_batedor.png',                type: 'enemy' },
-    { name: 'Goblin Bruto',  sprite: 'sprites/goblin_bruto.png',                  type: 'enemy' },
-    { name: 'Goblin Líder',  sprite: 'sprites/goblin_lider.png',                  type: 'enemy' },
+    // tiny
+    { name: 'Ankle Snapper', sprite: 'sprites/inimigo_ankle_snapper.png',         type: 'enemy', scale: SZ.tiny   },
+    // small
+    { name: 'Kobold Azul',   sprite: 'sprites/inimigo_kobold_azul.png',           type: 'enemy', scale: SZ.small  },
+    { name: 'Goblin Arq.',   sprite: 'sprites/goblin_arqueiro.png',               type: 'enemy', scale: SZ.small  },
+    { name: 'Goblin Bat.',   sprite: 'sprites/goblin_batedor.png',                type: 'enemy', scale: SZ.small  },
+    { name: 'Goblin Líder',  sprite: 'sprites/goblin_lider.png',                  type: 'enemy', scale: SZ.small  },
+    { name: 'Goblin Bruto',  sprite: 'sprites/goblin_bruto.png',                  type: 'enemy', scale: SZ.small  },
+    // medium
+    { name: 'Elfo Sombrio',  sprite: 'sprites/inimigo_elfo_sombrio.png',         type: 'enemy', scale: SZ.medium },
+    { name: 'Esqueleto',     sprite: 'sprites/inimigo_esqueleto_lanceiro.png',    type: 'enemy', scale: SZ.medium },
+    { name: 'Espantalho',    sprite: 'sprites/inimigo_espantalho_assombrado.png', type: 'enemy', scale: SZ.medium },
+    { name: 'Orc Bandido',   sprite: 'sprites/inimigo_orc_bandido.png',           type: 'enemy', scale: SZ.medium },
+    { name: 'Log Wife',      sprite: 'sprites/inimigo_log_wife.png',              type: 'enemy', scale: SZ.medium },
+    // large
+    { name: 'Bugbear',       sprite: 'sprites/inimigo_bugbear_assassino.png',     type: 'enemy', scale: SZ.large  },
+    { name: 'Javali',        sprite: 'sprites/inimigo_javali_ensandecido.png',    type: 'enemy', scale: SZ.large  },
+    { name: 'Caranguejo',    sprite: 'sprites/inimigo_caranguejo_gigante.png',    type: 'enemy', scale: SZ.large  },
+    { name: 'Spider',        sprite: 'sprites/inimigo_wraithweaver_spider.png',   type: 'enemy', scale: SZ.large  },
+    { name: 'Barkthresher',  sprite: 'sprites/inimigo_barkthresher.png',          type: 'enemy', scale: SZ.large  },
+    { name: 'Larva',         sprite: 'sprites/inimigo_larva_gigante.png',         type: 'enemy', scale: SZ.large  },
+    { name: 'Golem',         sprite: 'sprites/inimigo_golem_de_pergaminho.png',   type: 'enemy', scale: SZ.large  },
+    { name: 'Thool',         sprite: 'sprites/inimigo_grimhollow_thool.png',      type: 'enemy', scale: SZ.large  },
+    { name: 'Manticora',     sprite: 'sprites/inimigo_manticora_albina.png',      type: 'enemy', scale: SZ.large  },
+    { name: 'Troll',         sprite: 'sprites/inimigo_troll_moss_belly.png',      type: 'enemy', scale: SZ.large  },
+    { name: 'Marrowwither',  sprite: 'sprites/inimigo_marrowwither.png',          type: 'enemy', scale: SZ.large  },
+    { name: 'Quay Grabber',  sprite: 'sprites/inimigo_quay_grabber.png',          type: 'enemy', scale: SZ.large  },
+    // huge
+    { name: 'Mother Clutch', sprite: 'sprites/inimigo_mother_clutch.png',         type: 'enemy', scale: SZ.huge   },
+    { name: 'Rei Chutter',   sprite: 'sprites/inimigo_rei_chutter.png',           type: 'enemy', scale: SZ.huge   },
   ],
   'NPCs': [
     { name: 'Aelar',          sprite: 'sprites/npc_aelar_eisenli.png',         type: 'npc' },
@@ -608,13 +616,20 @@ function rerenderTokens() {
   updateCount();
 }
 
+const BASE_W = 60, BASE_H = 78;
 function mountToken(tok) {
+  const s  = tok.scale ?? SZ.medium;
+  const iw = Math.round(BASE_W * s);
+  const ih = Math.round(BASE_H * s);
+  const sw = Math.round(40 * s);   // shadow width
+  const sh = Math.round(13 * s);   // shadow height
+
   const el = document.createElement('div');
   el.className = `map-token type-${tok.type}${tok.id === selectedId ? ' selected' : ''}`;
   el.id = `tok-${tok.id}`;
   el.innerHTML = `
-    <div class="token-shadow"></div>
-    <img src="${tok.sprite}" alt="${tok.name}">
+    <div class="token-shadow" style="width:${sw}px;height:${sh}px"></div>
+    <img src="${tok.sprite}" alt="${tok.name}" style="width:${iw}px;height:${ih}px">
     <div class="token-label">${tok.name}</div>`;
   placeTokenEl(el, tok);
   el.addEventListener('touchstart', e => onTokenTouch(e, tok), { passive: false });
@@ -691,7 +706,7 @@ function startPaletteDrag(e, item) {
   e.preventDefault();
   closeSheet();
   const t = e.touches[0];
-  drag = { kind: 'palette', sprite: item.sprite, name: item.name, tokenType: item.type };
+  drag = { kind: 'palette', sprite: item.sprite, name: item.name, tokenType: item.type, scale: item.scale ?? SZ.medium };
   dgImg.src = item.sprite;
   dragGhost.style.display = 'block';
   moveDragGhost(t.clientX, t.clientY);
@@ -819,7 +834,7 @@ function onAreaTouchEnd(e) {
     if (img) {
       const pos = vpToRatio(t.clientX - aRect.left, t.clientY - aRect.top);
       if (pos.x >= 0 && pos.x <= 1 && pos.y >= 0 && pos.y <= 1) {
-        addToken(drag.tokenType, drag.name, drag.sprite, pos.x, pos.y);
+        addToken(drag.tokenType, drag.name, drag.sprite, pos.x, pos.y, drag.scale);
       }
     }
     drag = null;
@@ -844,8 +859,8 @@ function onAreaTouchEnd(e) {
 }
 
 // ─── Add / Remove ─────────────────────────────────────────────────────────────
-function addToken(type, name, sprite, x, y) {
-  const tok = { id: nextId++, type, name, sprite, x, y };
+function addToken(type, name, sprite, x, y, scale) {
+  const tok = { id: nextId++, type, name, sprite, x, y, scale: scale ?? SZ.medium };
   tokens.push(tok);
   mountToken(tok);
   updateCount();
