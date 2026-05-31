@@ -305,7 +305,7 @@
       transform: translate(-50%, -88%);
     }
     #drag-ghost img {
-      width: 72px; height: 72px;
+      width: 130px; height: 130px;
       object-fit: contain;
       object-position: center bottom;
       opacity: 0.80;
@@ -607,27 +607,28 @@ function rerenderTokens() {
   updateCount();
 }
 
-// Sprites são 256×256 com base isométrica (tile 3D) ocupando ~22% da altura inferior.
-// Clippamos a base mostrando apenas os 78% superiores (o personagem real).
-const BASE_W  = 72;   // largura base do token (escala 1.0 = medium)
-const CLIP    = 0.78; // fração da altura visível do sprite (oculta base do tile)
+// Sprites 256×256 — base isométrica ocupa ~22% da parte inferior do sprite.
+// Exibimos o sprite como quadrado e clippamos os 22% de baixo (base/pedestal),
+// usando top:0 na img para que o TOPO do sprite fique visível e o fundo seja cortado.
+const BASE_W = 130;   // largura base para escala medium (1.0) — preenche ~3 blocos
+const CLIP   = 0.78;  // mostra 78% superiores do sprite (remove base do tile)
 
 function mountToken(tok) {
   const s  = tok.scale ?? SZ.medium;
-  const iw = Math.round(BASE_W * s);          // lado do sprite (quadrado)
-  const ch = Math.round(iw * CLIP);           // altura visível após clip da base
-  const sw = Math.round(iw * 0.58);           // largura da sombra elíptica
-  const sh = Math.round(iw * 0.14);           // altura da sombra elíptica
+  const iw = Math.round(BASE_W * s);   // lado do sprite (quadrado)
+  const ch = Math.round(iw * CLIP);    // altura do clip (sem a base)
+  const sw = Math.round(iw * 0.55);    // largura da sombra
+  const sh = Math.round(iw * 0.13);    // altura da sombra
 
   const el = document.createElement('div');
   el.className = `map-token type-${tok.type}${tok.id === selectedId ? ' selected' : ''}`;
   el.id = `tok-${tok.id}`;
-  // tok-clip: janela que oculta a base; img fica bottom-aligned dentro dela
+  // wrapper overflow:hidden com top:0 na img → clipa o FUNDO (base), não o topo
   el.innerHTML = `
     <div style="width:${iw}px;height:${ch}px;overflow:hidden;position:relative;flex-shrink:0">
       <img src="${tok.sprite}" alt="${tok.name}"
-        style="position:absolute;bottom:0;width:${iw}px;height:${iw}px;
-               object-fit:contain;object-position:center bottom;
+        style="position:absolute;top:0;width:${iw}px;height:${iw}px;
+               object-fit:contain;object-position:center top;
                image-rendering:pixelated;pointer-events:none;
                filter:drop-shadow(0 3px 8px rgba(0,0,0,.9))">
     </div>
