@@ -72,35 +72,26 @@
       position: absolute;
       transform: translate(-50%, -100%);
       touch-action: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     .map-token.dragging { opacity: 0.55; }
 
+    /* shadow: em-flow abaixo do sprite clippado — representa o chão */
     .token-shadow {
-      position: absolute;
-      bottom: 2px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 40px; height: 13px;
       border-radius: 50%;
       border: 2px solid;
       pointer-events: none;
       transition: box-shadow .15s;
+      flex-shrink: 0;
     }
     .map-token.selected .token-shadow {
-      box-shadow: 0 0 8px 3px rgba(255,255,255,.25);
+      box-shadow: 0 0 10px 4px rgba(255,255,255,.3);
     }
-    .map-token.type-player .token-shadow { border-color: #d4a844; background: rgba(212,168,68,.2); }
-    .map-token.type-enemy  .token-shadow { border-color: #cc3a2a; background: rgba(204,58,42,.2); }
-    .map-token.type-npc    .token-shadow { border-color: #9b59b6; background: rgba(155,89,182,.2); }
-
-    .map-token img {
-      object-fit: contain;
-      object-position: center bottom;
-      display: block;
-      filter: drop-shadow(0 3px 6px rgba(0,0,0,.85));
-      pointer-events: none;
-      image-rendering: pixelated;
-    }
+    .map-token.type-player .token-shadow { border-color: #d4a844; background: rgba(212,168,68,.22); }
+    .map-token.type-enemy  .token-shadow { border-color: #cc3a2a; background: rgba(204,58,42,.22); }
+    .map-token.type-npc    .token-shadow { border-color: #9b59b6; background: rgba(155,89,182,.22); }
 
     .token-label {
       position: absolute;
@@ -314,10 +305,10 @@
       transform: translate(-50%, -88%);
     }
     #drag-ghost img {
-      width: 60px; height: 78px;
+      width: 72px; height: 72px;
       object-fit: contain;
       object-position: center bottom;
-      opacity: 0.78;
+      opacity: 0.80;
       filter: drop-shadow(0 4px 12px rgba(0,0,0,1));
       image-rendering: pixelated;
     }
@@ -616,20 +607,31 @@ function rerenderTokens() {
   updateCount();
 }
 
-const BASE_W = 60, BASE_H = 78;
+// Sprites são 256×256 com base isométrica (tile 3D) ocupando ~22% da altura inferior.
+// Clippamos a base mostrando apenas os 78% superiores (o personagem real).
+const BASE_W  = 72;   // largura base do token (escala 1.0 = medium)
+const CLIP    = 0.78; // fração da altura visível do sprite (oculta base do tile)
+
 function mountToken(tok) {
   const s  = tok.scale ?? SZ.medium;
-  const iw = Math.round(BASE_W * s);
-  const ih = Math.round(BASE_H * s);
-  const sw = Math.round(40 * s);   // shadow width
-  const sh = Math.round(13 * s);   // shadow height
+  const iw = Math.round(BASE_W * s);          // lado do sprite (quadrado)
+  const ch = Math.round(iw * CLIP);           // altura visível após clip da base
+  const sw = Math.round(iw * 0.58);           // largura da sombra elíptica
+  const sh = Math.round(iw * 0.14);           // altura da sombra elíptica
 
   const el = document.createElement('div');
   el.className = `map-token type-${tok.type}${tok.id === selectedId ? ' selected' : ''}`;
   el.id = `tok-${tok.id}`;
+  // tok-clip: janela que oculta a base; img fica bottom-aligned dentro dela
   el.innerHTML = `
+    <div style="width:${iw}px;height:${ch}px;overflow:hidden;position:relative;flex-shrink:0">
+      <img src="${tok.sprite}" alt="${tok.name}"
+        style="position:absolute;bottom:0;width:${iw}px;height:${iw}px;
+               object-fit:contain;object-position:center bottom;
+               image-rendering:pixelated;pointer-events:none;
+               filter:drop-shadow(0 3px 8px rgba(0,0,0,.9))">
+    </div>
     <div class="token-shadow" style="width:${sw}px;height:${sh}px"></div>
-    <img src="${tok.sprite}" alt="${tok.name}" style="width:${iw}px;height:${ih}px">
     <div class="token-label">${tok.name}</div>`;
   placeTokenEl(el, tok);
   el.addEventListener('touchstart', e => onTokenTouch(e, tok), { passive: false });
