@@ -6,19 +6,19 @@
 <title>A Fera do Forte Negro — Classes, Personagens &amp; Bestiário</title>
 <style>
   :root {
-    --bg: #0e0b07;
-    --panel: #1a140c;
-    --border: #4a3820;
-    --gold: #c8a040;
-    --gold2: #e8c060;
-    --text: #d8c898;
-    --muted: #907860;
-    --red: #8a2020;
-    --green: #2a5a2a;
-    --blue: #1a3a5a;
-    --purple: #3a1a5a;
-    --card-bg: #16110a;
-    --modal-bg: #120e08;
+    --bg: #f5f4ef;
+    --panel: #edecea;
+    --border: rgba(40,35,25,.15);
+    --gold: #c8900a;
+    --gold2: #b07808;
+    --text: #18160e;
+    --muted: #4a4438;
+    --text3: #8a8070;
+    --red: #c62828;
+    --green: #2e7d32;
+    --blue: #1565c0;
+    --card-bg: #ffffff;
+    --modal-bg: #ffffff;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -33,14 +33,14 @@
     text-align: center;
     padding: 2.5rem 1rem 1.5rem;
     border-bottom: 1px solid var(--border);
-    background: linear-gradient(180deg, #1a0e06 0%, var(--bg) 100%);
+    background: linear-gradient(180deg, #edecea 0%, var(--bg) 100%);
   }
   header h1 {
     font-size: clamp(1.4rem, 4vw, 2.4rem);
-    color: var(--gold2);
+    color: var(--gold);
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    text-shadow: 0 0 24px #c8a04055;
+    text-shadow: 0 0 24px rgba(200,144,10,.2);
   }
   header p {
     margin-top: 0.5rem;
@@ -75,11 +75,11 @@
   }
   .tab-btn:last-child { border-right: none; }
   .tab-btn.active {
-    background: #28200f;
-    color: var(--gold2);
+    background: #fff;
+    color: var(--gold);
   }
   .tab-btn:hover:not(.active) {
-    background: #20180a;
+    background: #f0efe8;
     color: var(--text);
   }
 
@@ -131,13 +131,13 @@
   .card:hover {
     border-color: var(--gold);
     transform: translateY(-3px);
-    box-shadow: 0 6px 24px #00000088;
+    box-shadow: 0 6px 24px rgba(0,0,0,.12);
   }
   .card-img {
     width: 100%;
     aspect-ratio: 1;
     object-fit: contain;
-    background: #0a0807;
+    background: #f0efe8;
     display: block;
     image-rendering: pixelated;
   }
@@ -150,7 +150,7 @@
   }
   .card-name {
     font-size: 0.88rem;
-    color: var(--gold2);
+    color: var(--gold);
     line-height: 1.25;
     font-weight: bold;
   }
@@ -171,15 +171,15 @@
     font-family: monospace;
     align-self: flex-start;
   }
-  .badge-aliado   { background: #1a3a1a; color: #60b060; border: 1px solid #2a5a2a; }
-  .badge-neutro   { background: #2a2510; color: #c0a040; border: 1px solid #4a4020; }
-  .badge-hostil   { background: #3a1010; color: #c04040; border: 1px solid #5a2020; }
-  .badge-sombra   { background: #1a1030; color: #8060c0; border: 1px solid #3a2060; }
-  .badge-besta    { background: #1a1505; color: #a07030; border: 1px solid #3a2a10; }
-  .badge-construto{ background: #101828; color: #4090c0; border: 1px solid #2a4060; }
-  .badge-undead   { background: #121220; color: #6060a0; border: 1px solid #303060; }
-  .badge-planta   { background: #0e1a0a; color: #50a040; border: 1px solid #1a4010; }
-  .badge-espirito { background: #101828; color: #60a0c0; border: 1px solid #2a5060; }
+  .badge-aliado   { background: rgba(46,125,50,.08);  color: #2e7d32; border: 1px solid rgba(46,125,50,.25); }
+  .badge-neutro   { background: rgba(200,144,10,.08); color: #c8900a; border: 1px solid rgba(200,144,10,.25); }
+  .badge-hostil   { background: rgba(198,40,40,.08);  color: #c62828; border: 1px solid rgba(198,40,40,.25); }
+  .badge-sombra   { background: rgba(100,60,160,.08); color: #7040b0; border: 1px solid rgba(100,60,160,.25); }
+  .badge-besta    { background: rgba(140,80,20,.08);  color: #7a4a14; border: 1px solid rgba(140,80,20,.25); }
+  .badge-construto{ background: rgba(21,101,192,.08); color: #1565c0; border: 1px solid rgba(21,101,192,.25); }
+  .badge-undead   { background: rgba(80,80,140,.08);  color: #505090; border: 1px solid rgba(80,80,140,.25); }
+  .badge-planta   { background: rgba(46,125,50,.08);  color: #2e7d32; border: 1px solid rgba(46,125,50,.25); }
+  .badge-espirito { background: rgba(21,101,192,.08); color: #1565c0; border: 1px solid rgba(21,101,192,.25); }
 
   /* ── FILTER BAR ── */
   .filter-bar {
@@ -201,8 +201,8 @@
     transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
   .filter-btn.active, .filter-btn:hover {
-    background: #28200f;
-    color: var(--gold2);
+    background: #fff;
+    color: var(--gold);
     border-color: var(--gold);
   }
 
@@ -211,7 +211,7 @@
     display: none;
     position: fixed;
     inset: 0;
-    background: #000000cc;
+    background: rgba(0,0,0,.55);
     z-index: 100;
     align-items: center;
     justify-content: center;
@@ -220,13 +220,13 @@
   .modal-backdrop.open { display: flex; }
   .modal {
     background: var(--modal-bg);
-    border: 1px solid var(--gold);
+    border: 1px solid rgba(200,144,10,.3);
     border-radius: 10px;
     max-width: 640px;
     width: 100%;
     max-height: 92vh;
     overflow-y: auto;
-    box-shadow: 0 0 60px #00000099;
+    box-shadow: 0 0 60px rgba(0,0,0,.2), 0 4px 32px rgba(0,0,0,.1);
     animation: fadeUp 0.18s ease;
   }
   @keyframes fadeUp {
@@ -244,7 +244,7 @@
     width: 110px;
     height: 110px;
     object-fit: contain;
-    background: #0a0807;
+    background: #f0efe8;
     border: 1px solid var(--border);
     border-radius: 6px;
     flex-shrink: 0;
@@ -253,7 +253,7 @@
   .modal-title-block { flex: 1; }
   .modal-name {
     font-size: 1.25rem;
-    color: var(--gold2);
+    color: var(--gold);
     line-height: 1.2;
   }
   .modal-subtitle {
@@ -266,14 +266,14 @@
   .modal-close {
     background: none;
     border: none;
-    color: var(--muted);
+    color: var(--text3);
     font-size: 1.4rem;
     cursor: pointer;
     padding: 0 0.25rem;
     line-height: 1;
     transition: color 0.15s;
   }
-  .modal-close:hover { color: var(--gold2); }
+  .modal-close:hover { color: var(--gold); }
   .modal-body { padding: 1.25rem 1.5rem 1.5rem; }
   .modal-section { margin-bottom: 1.1rem; }
   .modal-section-label {
@@ -340,11 +340,11 @@
   }
   .class-card:hover {
     border-color: var(--gold);
-    box-shadow: 0 6px 28px #00000099;
+    box-shadow: 0 6px 28px rgba(0,0,0,.12);
   }
   .class-portraits {
     display: flex;
-    background: #0a0807;
+    background: #f0efe8;
     border-bottom: 1px solid var(--border);
   }
   .class-portrait {
@@ -357,7 +357,7 @@
     cursor: pointer;
     transition: background 0.15s;
   }
-  .class-portrait:hover { background: #12100a; }
+  .class-portrait:hover { background: #e8e7e0; }
   .class-portrait img {
     width: 120px;
     height: 120px;
@@ -389,7 +389,7 @@
   .class-icon { font-size: 1.5rem; }
   .class-name {
     font-size: 1.15rem;
-    color: var(--gold2);
+    color: var(--gold);
     letter-spacing: 0.05em;
   }
   .class-habilidade {
@@ -409,7 +409,7 @@
     gap: 0.4rem;
   }
   .power-tag {
-    background: #20180a;
+    background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 4px;
     padding: 0.2rem 0.6rem;
@@ -417,15 +417,15 @@
     color: var(--text);
   }
   .power-tag.habilidade {
-    background: #28200a;
+    background: rgba(200,144,10,.08);
     border-color: var(--gold);
-    color: var(--gold2);
+    color: var(--gold);
   }
 
   /* scrollbar */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: #0a0807; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: rgba(160,140,60,.3); border-radius: 3px; }
 </style>
 </head>
 <body>
