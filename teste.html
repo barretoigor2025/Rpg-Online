@@ -1002,20 +1002,22 @@ function drawUnit(u){
   // For large units, use center of all occupied hexes
   let cx,cy,sprH;
   if(size==='1x1'){
-    const c=hexCtr(u.col,u.row); cx=c.x; cy=c.y; sprH=80;
+    const c=hexCtr(u.col,u.row); cx=c.x; cy=c.y; sprH=160;
   }else{
     const ctrs=u.occupiedHexes.map(h=>hexCtr(h.col,h.row));
     cx=ctrs.reduce((s,c)=>s+c.x,0)/ctrs.length;
     cy=ctrs.reduce((s,c)=>s+c.y,0)/ctrs.length;
-    sprH=size==='2x2'?165:size==='3x2'?210:130;
+    sprH=size==='2x2'?280:size==='3x2'?360:200;
   }
 
-  const baseR=size==='1x1'?26:size==='2x2'?52:68;
+  const baseR=size==='1x1'?42:size==='2x2'?66:90;
+  // anchor feet slightly below hex center so character stands on ground
+  const footY=cy+baseR*0.35;
 
   // Shadow ellipse
   ctx.save();
   ctx.beginPath();
-  ctx.ellipse(cx,cy+6,baseR,baseR*.42,0,0,Math.PI*2);
+  ctx.ellipse(cx,footY+4,baseR,baseR*.38,0,0,Math.PI*2);
   ctx.fillStyle=u.type==='hero'?'rgba(50,110,180,.35)':'rgba(160,50,40,.35)';
   ctx.fill(); ctx.restore();
 
@@ -1023,24 +1025,24 @@ function drawUnit(u){
   if(u._img&&u._img.complete&&u._img.naturalWidth){
     const asp=u._img.naturalWidth/u._img.naturalHeight;
     const sw=sprH*asp;
-    ctx.drawImage(u._img,cx-sw/2,cy-sprH,sw,sprH);
+    ctx.drawImage(u._img,cx-sw/2,footY-sprH,sw,sprH);
   }else{
     ctx.font=`${baseR}px serif`;ctx.textAlign='center';ctx.textBaseline='bottom';
-    ctx.fillText(u.icon,cx,cy);
+    ctx.fillText(u.icon,cx,footY);
   }
 
   // HP bar
-  const bw=baseR*2-4,bh=5,bx=cx-bw/2,by=cy+10;
-  ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(bx-1,by-1,bw+2,bh+2);
+  const bw=baseR*2,bh=6,bx=cx-bw/2,by=footY+14;
+  ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(bx-1,by-1,bw+2,bh+2);
   const pct=u.hp/u.maxHp;
   ctx.fillStyle=pct>.5?'#4a8a4a':pct>.25?'#c8a030':'#c03030';
   ctx.fillRect(bx,by,bw*pct,bh);
 
   // Name label
-  ctx.font=`bold ${size==='1x1'?10:12}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.font=`bold ${size==='1x1'?11:13}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='top';
   const lbl=`${u.name} ${u.hp}/${u.maxHp}`;
   const tw=ctx.measureText(lbl).width;
-  ctx.fillStyle='rgba(0,0,0,.65)';ctx.fillRect(cx-tw/2-3,by+bh+2,tw+6,15);
+  ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(cx-tw/2-3,by+bh+2,tw+6,16);
   ctx.fillStyle=u.type==='hero'?'#9ad0f0':'#f09090';
   ctx.fillText(lbl,cx,by+bh+3);
 
@@ -1053,10 +1055,10 @@ function drawUnit(u){
   const FA={N:-90,NE:-30,SE:30,S:90,SW:150,NW:-150};
   const ang=((FA[u.facing||'N']||0)*Math.PI)/180;
   ctx.beginPath();
-  ctx.moveTo(cx+Math.cos(ang)*baseR,cy+6+Math.sin(ang)*baseR*.42);
-  ctx.lineTo(cx+Math.cos(ang)*(baseR+12),cy+6+Math.sin(ang)*(baseR+12)*.42);
+  ctx.moveTo(cx+Math.cos(ang)*baseR,footY+4+Math.sin(ang)*baseR*.38);
+  ctx.lineTo(cx+Math.cos(ang)*(baseR+14),footY+4+Math.sin(ang)*(baseR+14)*.38);
   ctx.strokeStyle=u.type==='hero'?'rgba(100,200,255,.8)':'rgba(255,100,100,.8)';
-  ctx.lineWidth=2;ctx.stroke();
+  ctx.lineWidth=2.5;ctx.stroke();
 }
 
 // ═══════════════════════════════════════════════
