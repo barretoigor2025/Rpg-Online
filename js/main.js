@@ -678,42 +678,21 @@ function iniciarTestes(testes, roles, jogadores, afterCb) {
 
   _testeResultados = testeRes;
   DiceOverlay.mostrar(playlist, () => {
-    // Clear broadcast node before processing results
     if (mySala) update(ref(db), { [`salas/${mySala}/rolagem`]: null });
-    // Registrar card resumo no story
-    const el = document.getElementById('story-content');
-    if (el) {
-      const card = document.createElement('div');
-      card.className = 'combate-teste-card';
-      const linhasHTML = testeRes.map((r, i) => {
-        const cor = r.sucesso ? '#5a9a5a' : '#c05050';
-        const badge = r.critico ? ' ⭐' : r.catastrofe ? ' 💀' : '';
+    // Persist roll results to Firebase historia so all players see them on reload
+    if (mySala && amIHost) {
+      const rollsPayload = testeRes.map((r, i) => {
         const danos = rolarRes.filter(d => d.condicionalDe === i && r.sucesso);
         const danoTotal = danos.reduce((s, d) => s + d.resultado, 0);
         const danoFinal = r.critico ? danoTotal * 2 : danoTotal;
-        const danoStr = danoFinal > 0 ? `<span class="combate-teste-dano">💥${danoFinal}</span>` : '';
-        return `<div class="combate-teste-linha" style="color:${cor}">
-          <span class="combate-teste-num">${i+1}.</span>
-          <span class="combate-teste-resultado">${r.sucesso?'ACERTO':'FALHA'}${badge}</span>
-          <span class="combate-teste-roll">${r.d20}${r.modStr}=${r.total} <span class="combate-teste-cd">CD${r.dc}</span></span>
-          ${danoStr}
-        </div>`;
-      }).join('');
-      // Portraits
-      const pAtac = getPortraitAtaque(testeRes[0]?.nomeJog || '', false);
-      const alvoPrincipal = testeRes.find(r => r.alvo)?.alvo || '';
-      const pAlvo = alvoPrincipal ? getPortraitAtaque(alvoPrincipal, false) : null;
-      const _ph = (p, mirror) =>
-        `<div class="combate-teste-portrait" style="background:${p.cor}22;border-color:${p.cor}55">
-          ${p.src ? `<img src="${p.src}"${mirror?' class="espelhado"':''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
-          <div class="combate-teste-icon-fb"${p.src?' style="display:none"':''}>${p.icon}</div>
-        </div>`;
-      card.innerHTML = `${_ph(pAtac,true)}<div class="combate-teste-centro">
-        <div class="combate-teste-acao">${testeRes[0]?.acao||''}</div>
-        ${linhasHTML}
-      </div>${pAlvo?_ph(pAlvo,false):''}`;
-      el.appendChild(card);
-      scrollDown();
+        return {
+          nome: r.nomeJog, acao: r.acao, alvo: r.alvo || null,
+          d20: r.d20, mod: r.mod, modStr: r.modStr, total: r.total, dc: r.dc,
+          sucesso: r.sucesso, critico: r.critico, catastrofe: r.catastrofe,
+          dano: danoFinal || null
+        };
+      });
+      push(ref(db, `salas/${mySala}/historia`), { role: 'rolls', rolls: rollsPayload, ts: Date.now() });
     }
     afterCb(testeRes, rolarRes);
   });
@@ -2660,7 +2639,10 @@ function irParaJogo(codigo) {
               _ups[`salas/${mySala}/jogadores/${j.uid}/acao1`] = _ultima.content;
             }
           });
-          if (forcarAguardando) _ups[`salas/${mySala}/config/estado`] = 'aguardando';
+          if (forcarAguardando) {
+            _ups[`salas/${mySala}/config/estado`] = 'aguardando';
+            _ups[`salas/${mySala}/config/falhouNarracao`] = null;
+          }
           if (Object.keys(_ups).length) {
             await update(ref(db), _ups);
             toast('🔄 Sessão anterior recuperada — continuando...', 3000);
@@ -2768,7 +2750,7 @@ function irParaJogo(codigo) {
     if (amIHost && config.estado === 'aguardando') {
       const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
       const todosEnviaram = ativos.length > 0 && ativos.every(j => j.acao1 != null);
-      if (todosEnviaram && !chamandoIA) {
+      if (todosEnviaram && !chamandoIA && !config.falhouNarracao) {
         const todosAvançar = ativos.every(j => j.acao1 === '__avançar__');
         const haInimigos = Object.values(inimigos).some(i => (i.hp || 0) > 0);
         // Em combate chamarIA processa TESTAR/ROLAR corretamente;
@@ -2930,6 +2912,33 @@ function renderizarHistoria(historia, jogadores) {
       div.className = 'msg msg-trade';
       const itensStr = (entry.itens || []).join(', ');
       div.innerHTML = `<span class="trade-card-icon">🤝</span><span class="trade-card-txt"><strong>${entry.de}</strong> entregou <em>${itensStr}</em> para <strong>${entry.para}</strong>.</span>`;
+    } else if (entry.role === 'rolls') {
+      div.className = 'combate-teste-card';
+      const rolls = entry.rolls || [];
+      const linhasHTML = rolls.map((r, i) => {
+        const cor = r.sucesso ? '#5a9a5a' : '#c05050';
+        const badge = r.critico ? ' ⭐' : r.catastrofe ? ' 💀' : '';
+        const modStr = r.mod >= 0 ? `+${r.mod}` : `${r.mod}`;
+        const danoStr = r.dano > 0 ? `<span class="combate-teste-dano">💥${r.dano}</span>` : '';
+        return `<div class="combate-teste-linha" style="color:${cor}">
+          <span class="combate-teste-num">${i+1}.</span>
+          <span class="combate-teste-resultado">${r.sucesso?'ACERTO':'FALHA'}${badge}</span>
+          <span class="combate-teste-roll">${r.d20}${modStr}=${r.total} <span class="combate-teste-cd">CD${r.dc}</span></span>
+          ${danoStr}
+        </div>`;
+      }).join('');
+      const pAtac = getPortraitAtaque(rolls[0]?.nome || '', false);
+      const alvoPrincipal = rolls.find(r => r.alvo)?.alvo || '';
+      const pAlvo = alvoPrincipal ? getPortraitAtaque(alvoPrincipal, false) : null;
+      const _ph = (p, mirror) =>
+        `<div class="combate-teste-portrait" style="background:${p.cor}22;border-color:${p.cor}55">
+          ${p.src ? `<img src="${p.src}"${mirror?' class="espelhado"':''} onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+          <div class="combate-teste-icon-fb"${p.src?' style="display:none"':''}>${p.icon}</div>
+        </div>`;
+      div.innerHTML = `${_ph(pAtac,true)}<div class="combate-teste-centro">
+        <div class="combate-teste-acao">${rolls[0]?.acao||''}</div>
+        ${linhasHTML}
+      </div>${pAlvo?_ph(pAlvo,false):''}`;
     } else {
       return;
     }
@@ -3616,16 +3625,19 @@ async function chamarIA(jogadores, data) {
     const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), hist, msg, mostrarRetryUI);
     ocultarRetryUI();
 
-    // Sempre limpar acao1 (evita loop infinito em caso de falha da API)
-    const ups = {};
-    Object.keys(jogadores).forEach(uid => { ups[`salas/${mySala}/jogadores/${uid}/acao1`] = null; });
-
     if (!resposta) {
-      ups[`salas/${mySala}/config/estado`] = 'aguardando';
-      ups[`salas/${mySala}/config/rodada`] = rodada + 1;
-      await update(ref(db), ups);
+      // Preserva acao1 dos jogadores — falhouNarracao bloqueia re-trigger até destravaNarracao
+      await update(ref(db), {
+        [`salas/${mySala}/config/estado`]: 'aguardando',
+        [`salas/${mySala}/config/rodada`]: rodada + 1,
+        [`salas/${mySala}/config/falhouNarracao`]: true,
+      });
       return;
     }
+
+    // Ações consumidas após resposta bem-sucedida da IA
+    const ups = {};
+    Object.keys(jogadores).forEach(uid => { ups[`salas/${mySala}/jogadores/${uid}/acao1`] = null; });
 
     // Verificar se a IA pediu testes sequenciais e/ou dados de dano
     const testes = extrairTestes(resposta);
@@ -3660,9 +3672,10 @@ async function chamarIA(jogadores, data) {
   } catch(e) {
     console.warn('[chamarIA] exceção:', e);
     try {
-      const upsErr = { [`salas/${mySala}/config/estado`]: 'aguardando' };
-      Object.keys(jogadores).forEach(uid => { upsErr[`salas/${mySala}/jogadores/${uid}/acao1`] = null; });
-      await update(ref(db), upsErr);
+      await update(ref(db), {
+        [`salas/${mySala}/config/estado`]: 'aguardando',
+        [`salas/${mySala}/config/falhouNarracao`]: true,
+      });
     } catch(_) {}
   } finally {
     chamandoIA = false;
@@ -3816,12 +3829,8 @@ CURA E DESCANSO — regras obrigatórias:
 window.destravaNarracao = async function() {
   if (!amIHost || !mySala) return;
   chamandoIA = false;
-  await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando' });
-  const snap = await get(ref(db, `salas/${mySala}/jogadores`));
-  const ups = {};
-  snap.forEach(c => { ups[`salas/${mySala}/jogadores/${c.key}/acao1`] = null; });
-  if (Object.keys(ups).length) await update(ref(db), ups);
-  toast('🔓 Narração destravada — estado resetado para aguardando', 3000);
+  await update(ref(db, `salas/${mySala}/config`), { estado: 'aguardando', falhouNarracao: null });
+  toast('🔓 Narração destravada — ações preservadas, retentando...', 3000);
 };
 
 // ═══════════════════════════════════════════════════════════════
