@@ -809,7 +809,7 @@ async function narrarResultadoTestes(resultados, rolarRes, jogadores, inimigos, 
     return `${r.nomeJog} — ${r.acao}${r.alvo ? ` vs ${r.alvo}` : ''}: ${status} (${r.d20}${r.modStr}=${r.total} CD${r.dc})${danoStr}`;
   }).join('\n');
 
-  const msg = `Resultados dos testes de ação:\n${resumo}\n\nNarre o que DE FATO aconteceu — máximo 60 palavras, sem mencionar números ou cálculos. OBRIGATÓRIO: inclua STATS na última linha atualizando HP dos inimigos atingidos (HP atual listado em INIMIGOS EM CENA menos o DANO acima). Se HP ≤ 0, use MATAR. Se CATÁSTROFE, aplique dano ao próprio atacante.`;
+  const msg = `Resultados dos testes de ação:\n${resumo}\n\nNarre o que DE FATO aconteceu de forma dramática e vívida, sem mencionar números ou cálculos. OBRIGATÓRIO: inclua STATS na última linha atualizando HP dos inimigos atingidos (HP atual listado em INIMIGOS EM CENA menos o DANO acima). Se HP ≤ 0, use MATAR. Se CATÁSTROFE, aplique dano ao próprio atacante.`;
 
   const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), hist, msg, mostrarRetryUI, 250);
   ocultarRetryUI();
@@ -873,7 +873,7 @@ function renderizarSegmentos(container, segs, falas) {
   const items = [];
   segs.forEach(s => {
     if (s.tipo === 'texto') {
-      chuncarTexto(s.conteudo, 50).forEach(c => { if (c.trim()) items.push({ tipo:'chunk', texto:c }); });
+      chuncarTexto(s.conteudo, 300).forEach(c => { if (c.trim()) items.push({ tipo:'chunk', texto:c }); });
     } else if (s.tipo === 'ataque') {
       items.push({ tipo:'ataque', atacante: s.atacante, alvo: s.alvo, resultado: s.resultado, surpresa: s.surpresa });
     } else {
@@ -3515,7 +3515,7 @@ async function chamarIA_jogadoresAvançam(jogadores, data) {
       .sort((a,b)=>(a.ts||0)-(b.ts||0))
       .filter(e=>e.role==='model'||e.role==='user'||e.role==='trade')
       .slice(-10);
-    const msg = `Rodada ${rodada}.\n\n[Os aventureiros estão prontos para prosseguir. Como Mestre, retome a cena — aja como NPCs presentes, descreva o que acontece ao redor, ou introduza um novo elemento. Máximo 80 palavras. Não mencione que os jogadores pediram para avançar.]`;
+    const msg = `Rodada ${rodada}.\n\n[Os aventureiros estão prontos para prosseguir. Como Mestre, retome a cena — aja como NPCs presentes, descreva o que acontece ao redor, ou introduza um novo elemento. Não mencione que os jogadores pediram para avançar.]`;
     const resposta = await chamarOpenAI(buildSystemPrompt(jogadores, inimigos), hist, msg, mostrarRetryUI);
     ocultarRetryUI();
     if (!resposta) {
@@ -3749,8 +3749,8 @@ VOZ:
 - Foque no RESULTADO das ações, não na preparação.
 - Separe blocos temáticos distintos com linha em branco (\n\n) entre eles.
 - ${iniList
-  ? `COMBATE ATIVO — inimigos são entidades VIVAS com instintos, táticas e emoções próprias. Eles não esperam. Regras:\n  • Após QUALQUER ação dos jogadores (incluindo quando passaram o turno sem agir), os inimigos REAGEM IMEDIATAMENTE — atacam, usam poderes, se reposicionam ou agem conforme seu comportamento e motivação.\n  • Se o jogador passou o turno sem ação específica: os inimigos APROVEITAM A ABERTURA — pressionam com força total, gritam bravatas, usam poderes especiais.\n  • Expresse o estado emocional dos inimigos: raiva ao ver companheiros cair, euforia quando dominam, desespero quando acuados, determinação fria se forem calculistas. Use o campo comportamento de cada criatura.\n  • Use TESTAR para cada ataque inimigo (nome exato | ação | atributo | CD | jogador alvo), seguido de ROLAR de dano. Inclua STATS:[JOGADOR:nome:novoHp] ao acertar.\n  • CRÍTICO/CATÁSTROFE: narração dramática e detalhada.\n  • Criaturas com PODE NEGOCIAR podem pausar para diálogo — use fraqueza_social como gatilho. BESTIAL e BERSERK jamais param.\n  • NUNCA mencione dados, modificadores ou CD. Tom seco e direto, máximo 60 palavras de narração.\n  • ORDEM OBRIGATÓRIA: TESTAR/ROLAR vêm PRIMEIRO. Texto antes dos dados = apenas contexto de cena. NUNCA descreva impacto, som de golpe ou contato físico antes de rolar — isso só aparece na narração pós-dado de narrarResultadoTestes.`
-  : 'EXPLORAÇÃO — máximo 70 palavras por bloco narrativo (tags FALA não contam no limite). Em diálogos, negociações, missões e conversas com NPCs: seja expressivo e detalhado, sem limite de palavras — desenvolva personalidade, emoção e contexto.'}
+  ? `COMBATE ATIVO — inimigos são entidades VIVAS com instintos, táticas e emoções próprias. Eles não esperam. Regras:\n  • Após QUALQUER ação dos jogadores (incluindo quando passaram o turno sem agir), os inimigos REAGEM IMEDIATAMENTE — atacam, usam poderes, se reposicionam ou agem conforme seu comportamento e motivação.\n  • Se o jogador passou o turno sem ação específica: os inimigos APROVEITAM A ABERTURA — pressionam com força total, gritam bravatas, usam poderes especiais.\n  • Expresse o estado emocional dos inimigos: raiva ao ver companheiros cair, euforia quando dominam, desespero quando acuados, determinação fria se forem calculistas. Use o campo comportamento de cada criatura.\n  • Use TESTAR para cada ataque inimigo (nome exato | ação | atributo | CD | jogador alvo), seguido de ROLAR de dano. Inclua STATS:[JOGADOR:nome:novoHp] ao acertar.\n  • CRÍTICO/CATÁSTROFE: narração dramática e detalhada.\n  • Criaturas com PODE NEGOCIAR podem pausar para diálogo — use fraqueza_social como gatilho. BESTIAL e BERSERK jamais param.\n  • NUNCA mencione dados, modificadores ou CD. Tom seco e direto.\n  • ORDEM OBRIGATÓRIA: TESTAR/ROLAR vêm PRIMEIRO. Texto antes dos dados = apenas contexto de cena. NUNCA descreva impacto, som de golpe ou contato físico antes de rolar — isso só aparece na narração pós-dado de narrarResultadoTestes.`
+  : 'EXPLORAÇÃO — escreva cenas completas, sem limite de palavras. Desenvolva personalidade, emoção e contexto. Separe blocos temáticos com linha em branco.'}
 - Mantenha o tom: a floresta observa, os NPCs têm segredos, nada é seguro.
 - NUNCA termine com pergunta ao jogador. A narração termina com a consequência da cena.
 - Use AVANÇAR (sozinho, última linha da resposta) quando a cena não exige decisão do jogador — ex: consequência já resolvida, transição narrativa natural, momento puramente descritivo, NPC despedindo-se, multidão dispersando. O sistema continuará automaticamente. Não use AVANÇAR se o jogador precisar escolher algo. Em combate, use AVANÇAR SOMENTE quando o último inimigo morrer nesta resposta (todos receberem MATAR nesta mesma resposta) — sinaliza fim de combate e o sistema narrará o desfecho automaticamente.
