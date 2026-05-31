@@ -7,989 +7,961 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden;background:#0e0c08;color:#e2d5b0;font-family:'Segoe UI',system-ui,sans-serif;user-select:none;-webkit-user-select:none}
-
-/* ── Layout ── */
 #app{display:flex;flex-direction:column;height:100dvh}
 
 header{
   background:#12100c;border-bottom:1px solid rgba(180,150,80,.2);
-  padding:8px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;
+  padding:8px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;
   padding-top:max(8px,env(safe-area-inset-top))
 }
-#turn-label{flex:1;font-size:13px;color:#d4900c;font-weight:600;letter-spacing:.3px}
+#turn-label{flex:1;font-size:12px;color:#d4900c;font-weight:600}
 .hdr-btn{
   background:#1c1a14;border:1px solid rgba(180,150,80,.25);color:#c8b070;
-  border-radius:7px;padding:6px 12px;font-size:12px;cursor:pointer;
-  -webkit-tap-highlight-color:transparent;transition:background .15s
+  border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;white-space:nowrap
 }
 .hdr-btn:active{background:#2a2618}
-.hdr-btn.danger{border-color:rgba(180,60,60,.3);color:#c07070}
 #btn-end-phase{background:#1a2010;border-color:rgba(80,160,80,.25);color:#70b070}
 
-/* ── Map area ── */
-#map-area{flex:1;overflow:hidden;position:relative;background:#0a0806;min-height:0}
-#map-viewport{position:absolute;top:0;left:0;transform-origin:top left}
+/* ── Map ── */
+#map-area{flex:1;overflow:hidden;position:relative;background:#0a0806;min-height:0;touch-action:none}
+#map-vp{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
 #map-img{display:block;pointer-events:none}
-#battle-canvas{position:absolute;top:0;left:0;cursor:pointer;touch-action:none}
+#battle-canvas{position:absolute;top:0;left:0;touch-action:none}
 
-/* ── Bottom panel ── */
-#bottom{
-  flex-shrink:0;background:#12100c;border-top:1px solid rgba(180,150,80,.2);
-  display:flex;gap:0;max-height:160px;
-  padding-bottom:max(0px,env(safe-area-inset-bottom))
-}
-#unit-panel{
-  width:200px;min-width:160px;padding:10px 12px;border-right:1px solid rgba(180,150,80,.15);
-  flex-shrink:0;overflow:hidden
-}
-#unit-panel h3{font-size:12px;color:#d4900c;margin-bottom:6px}
-.stat-row{display:flex;justify-content:space-between;font-size:11px;color:#a09070;margin:2px 0}
-.stat-val{color:#e2d5b0}
-#hp-bar-wrap{margin:5px 0 3px;height:4px;background:rgba(255,255,255,.1);border-radius:2px}
-#hp-bar{height:100%;border-radius:2px;transition:width .3s}
-#action-info{font-size:11px;color:#c8b070;margin-top:5px}
-#unit-empty{font-size:11px;color:#6a5a40;padding:4px 0}
+/* ── Bottom ── */
+#bottom{flex-shrink:0;background:#12100c;border-top:1px solid rgba(180,150,80,.18)}
+#info-row{display:flex;gap:0;height:100px;overflow:hidden}
+#unit-panel{width:170px;min-width:130px;padding:8px 10px;border-right:1px solid rgba(180,150,80,.12);flex-shrink:0;overflow:hidden}
+#unit-panel h3{font-size:11px;color:#d4900c;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat{display:flex;justify-content:space-between;font-size:10px;color:#a09070;margin:1px 0}
+.stat span{color:#e2d5b0}
+#hpbar{height:3px;background:rgba(255,255,255,.1);border-radius:2px;margin:4px 0 2px}
+#hpfill{height:100%;border-radius:2px;transition:width .3s}
+#u-acts{font-size:10px;color:#c8b070;margin-top:3px}
+#u-empty{font-size:10px;color:#6a5a40;padding-top:8px}
+#log{flex:1;overflow-y:auto;padding:6px 10px;font-size:10px;line-height:1.6}
+#log::-webkit-scrollbar{width:3px}
+#log::-webkit-scrollbar-thumb{background:rgba(180,150,80,.3)}
+.le{padding:1px 0;border-bottom:1px solid rgba(180,150,80,.04)}
+.le.h{color:#7ab0d0}.le.e{color:#c07070}.le.s{color:#706850}.le.x{color:#d4900c}.le.m{color:#906050}
 
-#log{flex:1;overflow-y:auto;padding:8px 12px;font-size:11px;line-height:1.6}
-#log::-webkit-scrollbar{width:4px}
-#log::-webkit-scrollbar-thumb{background:rgba(180,150,80,.3);border-radius:2px}
-.log-entry{padding:1px 0;border-bottom:1px solid rgba(180,150,80,.05)}
-.log-entry.hero{color:#7ab0d0}
-.log-entry.enemy{color:#c07070}
-.log-entry.system{color:#808060}
-.log-entry.hit{color:#d4900c}
-.log-entry.miss{color:#906050}
+/* ── Input row ── */
+#input-row{
+  display:flex;gap:6px;padding:6px 10px;
+  border-top:1px solid rgba(180,150,80,.12);
+  padding-bottom:max(6px,env(safe-area-inset-bottom))
+}
+#cmd-input{
+  flex:1;background:#1a1610;border:1px solid rgba(180,150,80,.2);border-radius:6px;
+  color:#e2d5b0;font-size:12px;padding:7px 10px;outline:none;
+  font-family:inherit
+}
+#cmd-input::placeholder{color:#5a4a30}
+#cmd-input:focus{border-color:rgba(180,150,80,.4)}
+#cmd-send{
+  background:#1c1a14;border:1px solid rgba(180,150,80,.3);color:#d4900c;
+  border-radius:6px;padding:7px 14px;font-size:14px;cursor:pointer;flex-shrink:0
+}
+#cmd-send:active{background:#2a2618}
 
 /* ── Tooltip ── */
-#tooltip{
-  position:fixed;background:rgba(10,8,4,.92);border:1px solid rgba(180,150,80,.3);
-  border-radius:6px;padding:6px 10px;font-size:11px;color:#e2d5b0;
-  pointer-events:none;z-index:100;display:none;max-width:160px;line-height:1.5
+#tip{
+  position:fixed;background:rgba(10,8,4,.94);border:1px solid rgba(180,150,80,.3);
+  border-radius:5px;padding:5px 9px;font-size:10px;color:#e2d5b0;
+  pointer-events:none;z-index:200;display:none;max-width:150px;line-height:1.5
 }
 </style>
 </head>
 <body>
 <div id="app">
   <header>
-    <span id="turn-label">Turno 1 — Fase dos Heróis</span>
-    <button class="hdr-btn" id="btn-debug" onclick="toggleDebug()">Grade</button>
-    <button class="hdr-btn" id="btn-cancel" onclick="cancelSelection()" style="display:none">✕ Cancelar</button>
-    <button class="hdr-btn" id="btn-end-phase" onclick="endHeroPhase()">Encerrar Turno →</button>
+    <span id="turn-label">Turno 1 — Heróis</span>
+    <button class="hdr-btn" onclick="toggleDebug()">⬡ Grade</button>
+    <button class="hdr-btn" id="btn-cancel" onclick="cancelSel()" style="display:none">✕</button>
+    <button class="hdr-btn" id="btn-end-phase" onclick="endHeroPhase()">Encerrar →</button>
   </header>
 
   <div id="map-area">
-    <div id="map-viewport">
+    <div id="map-vp">
       <img id="map-img" src="maps/feira-limpa.png" draggable="false">
       <canvas id="battle-canvas"></canvas>
     </div>
   </div>
 
   <div id="bottom">
-    <div id="unit-panel">
-      <div id="unit-empty">Selecione uma unidade</div>
-      <div id="unit-detail" style="display:none">
-        <h3 id="u-name"></h3>
-        <div id="hp-bar-wrap"><div id="hp-bar"></div></div>
-        <div class="stat-row"><span>PV</span><span class="stat-val" id="u-hp"></span></div>
-        <div class="stat-row"><span>CA</span><span class="stat-val" id="u-ac"></span></div>
-        <div class="stat-row"><span>Mov</span><span class="stat-val" id="u-mov"></span></div>
-        <div class="stat-row"><span>Pos</span><span class="stat-val" id="u-pos"></span></div>
-        <div id="action-info"></div>
+    <div id="info-row">
+      <div id="unit-panel">
+        <div id="u-empty">Selecione ou digite</div>
+        <div id="u-detail" style="display:none">
+          <h3 id="u-name"></h3>
+          <div id="hpbar"><div id="hpfill"></div></div>
+          <div class="stat">PV<span id="u-hp"></span></div>
+          <div class="stat">CA<span id="u-ac"></span></div>
+          <div class="stat">Mov<span id="u-mov"></span></div>
+          <div class="stat">Pos<span id="u-pos"></span></div>
+          <div id="u-acts"></div>
+        </div>
       </div>
+      <div id="log"><div class="le s">⚔ Batalha — Feira Assombrada</div></div>
     </div>
-    <div id="log"><div class="log-entry system">⚔ Batalha iniciada — Feira Assombrada</div></div>
+    <div id="input-row">
+      <input id="cmd-input" placeholder='Ex: "Bárbaro ataca o Barkthresher" ou "Mago avança para F06"' type="text" autocomplete="off">
+      <button id="cmd-send" onclick="submitCmd()">→</button>
+    </div>
   </div>
 </div>
-
-<div id="tooltip"></div>
+<div id="tip"></div>
 
 <script>
 'use strict';
-// ═══════════════════════════════════════════════════
-//  HEX GRID CONSTANTS (calibrated for 1448×1086 map)
-// ═══════════════════════════════════════════════════
-const MAP_W  = 1448;
-const MAP_H  = 1086;
-const COLS   = 12;  // A–L
-const ROWS   = 12;  // 1–12
-const COL_LABELS = 'ABCDEFGHIJKL';
+// ═══════════════════════════════════════════════
+//  HEX GRID  (flat-top even-q, 12×12, 1448×1086)
+// ═══════════════════════════════════════════════
+const MAP_W=1448, MAP_H=1086, COLS=12, ROWS=12;
+const CL='ABCDEFGHIJKL';
+const GX0=104, GY0=75, CS=90, RS=83, OOFF=42, HR=46, VR=42;
 
-// Grid calibration — flat-top even-q offset
-// Even columns (A,C,E...) are at base Y; odd columns (B,D,F...) shift down by ODD_OFF
-const GX0     = 104;  // center-x of column A
-const GY0     = 75;   // center-y of row 1 for even columns
-const CS      = 90;   // column step (center-to-center horizontal)
-const RS      = 83;   // row step (center-to-center vertical)
-const ODD_OFF = 42;   // y shift for odd columns (= RS/2 approx)
-const HR      = 46;   // hex horizontal radius (for drawing)
-const VR      = 42;   // hex vertical radius (for drawing, slightly squashed)
+const hexLbl=(c,r)=>CL[c]+String(r+1).padStart(2,'0');
+const parseHex=s=>({col:CL.indexOf(s[0].toUpperCase()),row:parseInt(s.slice(1))-1});
+const hexCtr=(c,r)=>({x:GX0+c*CS, y:GY0+r*RS+(c%2?OOFF:0)});
 
-// Hex code helpers
-function hexLabel(col, row) {
-  return COL_LABELS[col] + String(row + 1).padStart(2, '0');
-}
-function parseHex(code) {
-  const col = COL_LABELS.indexOf(code[0].toUpperCase());
-  const row = parseInt(code.slice(1)) - 1;
-  return { col, row };
-}
-function hexCenter(col, row) {
-  return {
-    x: GX0 + col * CS,
-    y: GY0 + row * RS + (col % 2 === 1 ? ODD_OFF : 0)
-  };
-}
-function pixelToHex(px, py) {
-  // Find nearest hex center
-  let bestCol = 0, bestRow = 0, bestDist = Infinity;
-  const startCol = Math.max(0, Math.floor((px - GX0) / CS) - 1);
-  const endCol   = Math.min(COLS - 1, startCol + 3);
-  for (let c = startCol; c <= endCol; c++) {
-    const isOdd = c % 2 === 1;
-    const rowEst = Math.round((py - GY0 - (isOdd ? ODD_OFF : 0)) / RS);
-    const startRow = Math.max(0, rowEst - 1);
-    const endRow   = Math.min(ROWS - 1, rowEst + 1);
-    for (let r = startRow; r <= endRow; r++) {
-      const ctr = hexCenter(c, r);
-      const d = (px - ctr.x) ** 2 + (py - ctr.y) ** 2;
-      if (d < bestDist) { bestDist = d; bestCol = c; bestRow = r; }
+function pxToHex(px,py){
+  let bc=0,br=0,bd=Infinity;
+  const sc=Math.max(0,Math.floor((px-GX0)/CS)-1);
+  const ec=Math.min(COLS-1,sc+3);
+  for(let c=sc;c<=ec;c++){
+    const re=Math.round((py-GY0-(c%2?OOFF:0))/RS);
+    for(let r=Math.max(0,re-1);r<=Math.min(ROWS-1,re+1);r++){
+      const ct=hexCtr(c,r), d=(px-ct.x)**2+(py-ct.y)**2;
+      if(d<bd){bd=d;bc=c;br=r;}
     }
   }
-  return { col: bestCol, row: bestRow };
+  return{col:bc,row:br};
 }
 
-// Cube coordinates for distance (flat-top even-q)
-function toCube(col, row) {
-  const q = col;
-  const r = row - (col + (col & 1)) / 2;
-  return { q, r, s: -q - r };
+function toCube(c,r){const q=c,rv=r-(c+(c&1))/2;return{q,r:rv,s:-q-rv};}
+function hexDist(c1,r1,c2,r2){const a=toCube(c1,r1),b=toCube(c2,r2);return Math.max(Math.abs(a.q-b.q),Math.abs(a.r-b.r),Math.abs(a.s-b.s));}
+function hexNbrs(c,r){
+  const d=c%2===0?[[1,-1],[1,0],[0,1],[-1,0],[-1,-1],[0,-1]]:[[1,0],[1,1],[0,1],[-1,1],[-1,0],[0,-1]];
+  return d.map(([dc,dr])=>({col:c+dc,row:r+dr})).filter(h=>h.col>=0&&h.col<COLS&&h.row>=0&&h.row<ROWS);
 }
-function hexDistance(c1, r1, c2, r2) {
-  const a = toCube(c1, r1), b = toCube(c2, r2);
-  return Math.max(Math.abs(a.q - b.q), Math.abs(a.r - b.r), Math.abs(a.s - b.s));
-}
-function hexNeighbors(col, row) {
-  const dirs = col % 2 === 0
-    ? [[1,-1],[1,0],[0,1],[-1,0],[-1,-1],[0,-1]]
-    : [[1,0],[1,1],[0,1],[-1,1],[-1,0],[0,-1]];
-  return dirs.map(([dc,dr]) => ({ col: col+dc, row: row+dr }))
-             .filter(h => h.col >= 0 && h.col < COLS && h.row >= 0 && h.row < ROWS);
-}
-function hexesInRange(col, row, range) {
-  const result = [];
-  for (let c = 0; c < COLS; c++) {
-    for (let r = 0; r < ROWS; r++) {
-      const d = hexDistance(col, row, c, r);
-      if (d > 0 && d <= range) result.push({ col: c, row: r, dist: d });
-    }
-  }
-  return result;
-}
-function isAdjacent(c1, r1, c2, r2) { return hexDistance(c1, r1, c2, r2) === 1; }
 
-// Simple LOS: check if any blocked hex lies on the line between two hexes
-function hasLineOfSight(c1, r1, c2, r2) {
-  const steps = Math.max(hexDistance(c1, r1, c2, r2), 1);
-  const cu1 = toCube(c1, r1), cu2 = toCube(c2, r2);
-  for (let i = 1; i < steps; i++) {
-    const t = i / steps;
-    const qf = cu1.q + (cu2.q - cu1.q) * t;
-    const rf = cu1.r + (cu2.r - cu1.r) * t;
-    const sf = cu1.s + (cu2.s - cu1.s) * t;
-    // cube_round
-    let q = Math.round(qf), r = Math.round(rf), s = Math.round(sf);
-    const dq = Math.abs(q - qf), dr = Math.abs(r - rf), ds = Math.abs(s - sf);
-    if (dq > dr && dq > ds) q = -r - s;
-    else if (dr > ds) r = -q - s;
-    // Convert back to offset
-    const col = q;
-    const row = r + (q + (q & 1)) / 2;
-    if (isBlocked(col, row)) return false;
+function losOk(c1,r1,c2,r2){
+  const steps=Math.max(hexDist(c1,r1,c2,r2),1);
+  const a=toCube(c1,r1),b=toCube(c2,r2);
+  for(let i=1;i<steps;i++){
+    const t=i/steps;
+    let q=Math.round(a.q+(b.q-a.q)*t),rv=Math.round(a.r+(b.r-a.r)*t),s=Math.round(a.s+(b.s-a.s)*t);
+    const dq=Math.abs(q-(a.q+(b.q-a.q)*t)),dr=Math.abs(rv-(a.r+(b.r-a.r)*t)),ds=Math.abs(s-(a.s+(b.s-a.s)*t));
+    if(dq>dr&&dq>ds)q=-rv-s; else if(dr>ds)rv=-q-s;
+    const col=q, row=rv+(q+(q&1))/2;
+    if(isBlocked(col,row))return false;
   }
   return true;
 }
 
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 //  MAP DATA
-// ═══════════════════════════════════════════════════
-const MAP_DATA = {
-  // Hexes with full cover (structures, walls) — impassable
-  blocked: [
-    'A01','B01','K01','L01','A02','L02','A10','L10','A11','B11','K11','L11','A12','B12','K12','L12'
-  ].map(parseHex),
-  // Hexes with partial cover
-  coverPartial: [
-    'B02','C02','D02','I02','J02','K02',
-    'B11','C11','D11','I11','J11','K11',
-    'A05','A06','A07','A08','L05','L06','L07','L08'
-  ].map(parseHex),
-};
+// ═══════════════════════════════════════════════
+const BLOCKED_CODES=['A01','B01','K01','L01','A02','L02','A10','L10','A11','B11','K11','L11','A12','B12','K12','L12'];
+const BLOCKED=new Set(BLOCKED_CODES);
+const COVER_P=new Set(['B02','C02','D02','I02','J02','K02','B11','C11','D11','I11','J11','A05','A06','A07','A08','L05','L06','L07','L08']);
+const isBlocked=(c,r)=>BLOCKED.has(hexLbl(c,r));
+const getCover=(c,r)=>BLOCKED.has(hexLbl(c,r))?'full':COVER_P.has(hexLbl(c,r))?'partial':'none';
 
-function isBlocked(col, row) {
-  return MAP_DATA.blocked.some(h => h.col === col && h.row === row);
-}
-function getCover(col, row) {
-  if (isBlocked(col, row)) return 'full';
-  if (MAP_DATA.coverPartial.some(h => h.col === col && h.row === row)) return 'partial';
-  return 'none';
-}
-
-// ═══════════════════════════════════════════════════
-//  UNIT DATA
-// ═══════════════════════════════════════════════════
-function makeUnit(data) {
-  const pos = parseHex(data.hex);
-  return {
-    id: data.id, name: data.name, type: data.type, classe: data.classe || '',
-    col: pos.col, row: pos.row,
-    facing: data.facing || 'N',
-    hp: data.hp, maxHp: data.hp,
-    ac: data.ac, moveSpeed: data.moveSpeed,
-    meleeRange: 1,
-    rangedWeapon: data.rangedWeapon || null,
-    sprite: data.sprite,
-    icon: data.icon, color: data.color,
-    hasMoved: false, hasActed: false,
-    alive: true,
-    _img: null
-  };
+// ═══════════════════════════════════════════════
+//  UNITS
+// ═══════════════════════════════════════════════
+function occupiedHexes(anchorC,anchorR,size){
+  if(size==='1x1')return[{col:anchorC,row:anchorR}];
+  if(size==='2x2')return[
+    {col:anchorC,   row:anchorR  },
+    {col:anchorC+1, row:anchorR  },
+    {col:anchorC,   row:anchorR+1},
+    {col:anchorC+1, row:anchorR+1},
+  ].filter(h=>h.col>=0&&h.col<COLS&&h.row>=0&&h.row<ROWS);
+  if(size==='3x2')return[
+    {col:anchorC,row:anchorR},{col:anchorC+1,row:anchorR},{col:anchorC+2,row:anchorR},
+    {col:anchorC,row:anchorR+1},{col:anchorC+1,row:anchorR+1},{col:anchorC+2,row:anchorR+1},
+  ].filter(h=>h.col>=0&&h.col<COLS&&h.row>=0&&h.row<ROWS);
+  return[{col:anchorC,row:anchorR}];
 }
 
-const UNIT_DEFS = [
-  { id:'hero_arqueiro', name:'Arqueiro',  type:'hero', classe:'arqueiro',
-    hex:'C07', facing:'N', hp:22, ac:14, moveSpeed:5,
-    rangedWeapon:{ name:'Arco Longo', range:8 },
-    sprite:'sprites/arqueiro_m.png', icon:'🏹', color:'#3a6080' },
-  { id:'hero_barbaro',  name:'Bárbaro',   type:'hero', classe:'barbaro',
-    hex:'E08', facing:'N', hp:32, ac:13, moveSpeed:4,
-    sprite:'sprites/barbaro_m.png', icon:'🪓', color:'#803030' },
-  { id:'hero_mago',     name:'Mago',      type:'hero', classe:'mago',
-    hex:'G07', facing:'N', hp:16, ac:11, moveSpeed:3,
-    rangedWeapon:{ name:'Raio Arcano', range:6 },
-    sprite:'sprites/mago.png', icon:'🔮', color:'#5030a0' },
-  { id:'enemy_espantalho_01', name:'Espantalho I',  type:'enemy',
-    hex:'D03', facing:'S', hp:14, ac:10, moveSpeed:3,
-    sprite:'sprites/inimigo_espantalho_assombrado.png', icon:'🌾', color:'#7a4010' },
-  { id:'enemy_espantalho_02', name:'Espantalho II', type:'enemy',
-    hex:'H03', facing:'S', hp:14, ac:10, moveSpeed:3,
-    sprite:'sprites/inimigo_espantalho_assombrado.png', icon:'🌾', color:'#7a4010' },
+function mkUnit(d){
+  const p=parseHex(d.hex);
+  const u={...d, col:p.col, row:p.row, hp:d.maxHp, hasMoved:false, hasActed:false, alive:true, _img:null, occupiedHexes:[]};
+  u.occupiedHexes=occupiedHexes(u.col,u.row,u.size||'1x1');
+  return u;
+}
+
+const UDEFS=[
+  {id:'hero_arqueiro', name:'Arqueiro', type:'hero', classe:'arqueiro',
+   hex:'C07', maxHp:22, ac:14, moveSpeed:5, size:'1x1',
+   rangedWeapon:{name:'Arco Longo',range:8}, sprite:'sprites/arqueiro_m.png', icon:'🏹'},
+  {id:'hero_barbaro', name:'Bárbaro', type:'hero', classe:'barbaro',
+   hex:'E08', maxHp:32, ac:13, moveSpeed:4, size:'1x1',
+   rangedWeapon:null, sprite:'sprites/barbaro_m.png', icon:'🪓'},
+  {id:'hero_mago', name:'Mago', type:'hero', classe:'mago',
+   hex:'G07', maxHp:16, ac:11, moveSpeed:3, size:'1x1',
+   rangedWeapon:{name:'Raio Arcano',range:6}, sprite:'sprites/mago.png', icon:'🔮'},
+  // Enemies
+  {id:'espa_01', name:'Espantalho I',  type:'enemy',
+   hex:'D03', maxHp:14, ac:10, moveSpeed:3, size:'1x1',
+   sprite:'sprites/inimigo_espantalho_assombrado.png', icon:'🌾'},
+  {id:'espa_02', name:'Espantalho II', type:'enemy',
+   hex:'H03', maxHp:14, ac:10, moveSpeed:3, size:'1x1',
+   sprite:'sprites/inimigo_espantalho_assombrado.png', icon:'🌾'},
+  // 2×2 boss
+  {id:'barkthresher', name:'Barkthresher', type:'enemy',
+   hex:'F04', maxHp:45, ac:14, moveSpeed:2, size:'2x2',
+   sprite:'sprites/inimigo_barkthresher.png', icon:'🌳'},
 ];
 
-let units = UNIT_DEFS.map(makeUnit);
+let units=UDEFS.map(mkUnit);
 
 // Preload sprites
-units.forEach(u => {
-  if (!u.sprite) return;
-  const img = new Image();
-  img.onload = () => { u._img = img; render(); };
-  img.src = u.sprite;
+units.forEach(u=>{
+  if(!u.sprite)return;
+  const img=new Image();
+  img.onload=()=>{u._img=img;render();};
+  img.src=u.sprite;
 });
 
-// ═══════════════════════════════════════════════════
-//  BATTLE STATE
-// ═══════════════════════════════════════════════════
-let turn    = 1;
-let phase   = 'hero';      // 'hero' | 'enemy' | 'victory' | 'defeat'
-let selected = null;       // selected unit id
-let moveMode = false;      // showing movement range
-let attackMode = false;    // showing attack range
-let hoveredHex = null;     // { col, row }
-let showDebug = false;
-let actionPending = null;  // 'move' | 'attack'
+// ═══════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════
+const heroes  =()=>units.filter(u=>u.type==='hero' &&u.alive);
+const enemies =()=>units.filter(u=>u.type==='enemy'&&u.alive);
+const getUnit =id=>units.find(u=>u.id===id);
+const getUnitAt=(c,r)=>units.find(u=>u.alive&&u.occupiedHexes.some(h=>h.col===c&&h.row===r));
 
-function getUnit(id)       { return units.find(u => u.id === id); }
-function getUnitAt(col,row){ return units.find(u => u.alive && u.col===col && u.row===row); }
-function heroesAlive()     { return units.filter(u => u.type==='hero' && u.alive); }
-function enemiesAlive()    { return units.filter(u => u.type==='enemy' && u.alive); }
+function unitDist(u1,u2){
+  let m=Infinity;
+  for(const a of u1.occupiedHexes)for(const b of u2.occupiedHexes)m=Math.min(m,hexDist(a.col,a.row,b.col,b.row));
+  return m;
+}
+function distFromPt(col,row,unit){return Math.min(...unit.occupiedHexes.map(h=>hexDist(col,row,h.col,h.row)));}
 
-// ─── Reachable hexes (flood fill within move range, avoiding blocked/occupied) ───
-function reachableHexes(unit) {
-  const visited = new Set();
-  const result  = [];
-  const start   = `${unit.col},${unit.row}`;
-  const queue   = [{ col: unit.col, row: unit.row, steps: 0 }];
-  visited.add(start);
+function canPlace(unit,anchorC,anchorR,newHexes){
+  for(const h of (newHexes||occupiedHexes(anchorC,anchorR,unit.size||'1x1'))){
+    if(h.col<0||h.col>=COLS||h.row<0||h.row>=ROWS)return false;
+    if(isBlocked(h.col,h.row))return false;
+    const occ=units.find(u=>u.alive&&u.id!==unit.id&&u.occupiedHexes.some(oh=>oh.col===h.col&&oh.row===h.row));
+    if(occ)return false;
+  }
+  return true;
+}
 
-  while (queue.length) {
-    const { col, row, steps } = queue.shift();
-    if (steps > 0) result.push({ col, row, steps });
-    if (steps >= unit.moveSpeed) continue;
-
-    for (const nb of hexNeighbors(col, row)) {
-      const key = `${nb.col},${nb.row}`;
-      if (visited.has(key)) continue;
-      if (isBlocked(nb.col, nb.row)) continue;
-      if (getUnitAt(nb.col, nb.row)) continue;
+function reachable(unit){
+  // BFS from anchor; for large units check all occupied hexes at destination
+  const visited=new Set(), result=[];
+  visited.add(`${unit.col},${unit.row}`);
+  const q=[{col:unit.col,row:unit.row,steps:0}];
+  while(q.length){
+    const{col,row,steps}=q.shift();
+    if(steps>0)result.push({col,row,steps});
+    if(steps>=unit.moveSpeed)continue;
+    for(const nb of hexNbrs(col,row)){
+      const key=`${nb.col},${nb.row}`;
+      if(visited.has(key))continue;
       visited.add(key);
-      queue.push({ col: nb.col, row: nb.row, steps: steps + 1 });
+      const newOcc=occupiedHexes(nb.col,nb.row,unit.size||'1x1');
+      if(isBlocked(nb.col,nb.row))continue;
+      // Check all hexes of the unit fit there
+      if(!canPlace(unit,nb.col,nb.row,newOcc))continue;
+      q.push({col:nb.col,row:nb.row,steps:steps+1});
     }
   }
   return result;
 }
 
-// ─── Attack targets visible from a position ───
-function attackTargets(unit, fromCol, fromRow) {
-  const targets = [];
-  const enemies = unit.type === 'hero' ? enemiesAlive() : heroesAlive();
-
-  for (const e of enemies) {
-    const dist = hexDistance(fromCol, fromRow, e.col, e.row);
-    const canMelee  = dist <= unit.meleeRange;
-    const canRanged = unit.rangedWeapon && dist <= unit.rangedWeapon.range && dist > 1;
-    if (!canMelee && !canRanged) continue;
-    const los = hasLineOfSight(fromCol, fromRow, e.col, e.row);
-    if (!los && !canMelee) continue;
-    targets.push({ id: e.id, dist, type: canMelee ? 'melee' : 'ranged', los });
-  }
-  return targets;
+function atkTargets(unit,fromCol,fromRow){
+  const foes=unit.type==='hero'?enemies():heroes();
+  return foes.map(e=>{
+    const dist=distFromPt(fromCol,fromRow,e);
+    const melee=dist<=1;
+    const ranged=unit.rangedWeapon&&dist<=unit.rangedWeapon.range&&dist>1;
+    if(!melee&&!ranged)return null;
+    const lo=losOk(fromCol,fromRow,e.col,e.row);
+    if(!lo&&!melee)return null;
+    return{id:e.id,dist,type:melee?'melee':'ranged',los:lo};
+  }).filter(Boolean);
 }
 
-// ─── Combat ───
-function rollD20() { return Math.floor(Math.random() * 20) + 1; }
-function rollDice(notation) {
-  // e.g. "1d8+2", "2d6", "1d4-1"
-  const m = notation.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
-  if (!m) return 4;
-  let total = 0;
-  const count = parseInt(m[1]);
-  const sides = parseInt(m[2]);
-  const bonus = m[3] ? parseInt(m[3]) : 0;
-  for (let i = 0; i < count; i++) total += Math.floor(Math.random() * sides) + 1;
-  return total + bonus;
+function updateFacing(u,tc,tr){
+  const dc=tc-u.col,dr=tr-u.row;
+  if(dc===0&&dr<0)u.facing='N';
+  else if(dc===0&&dr>0)u.facing='S';
+  else if(dc>0&&dr<=0)u.facing='NE';
+  else if(dc>0&&dr>0)u.facing='SE';
+  else if(dc<0&&dr<=0)u.facing='NW';
+  else u.facing='SW';
 }
 
-function doAttack(attacker, target) {
-  const dist = hexDistance(attacker.col, attacker.row, target.col, target.row);
-  const isMelee  = dist <= attacker.meleeRange;
-  const isRanged = attacker.rangedWeapon && dist <= attacker.rangedWeapon.range;
+function moveUnit(unit,tc,tr){
+  updateFacing(unit,tc,tr);
+  unit.col=tc; unit.row=tr;
+  unit.hasMoved=true;
+  unit.occupiedHexes=occupiedHexes(tc,tr,unit.size||'1x1');
+}
 
-  if (!isMelee && !isRanged) {
-    addLog(`${attacker.name} não alcança ${target.name} (distância: ${dist}).`, 'miss');
-    return false;
-  }
+// ═══════════════════════════════════════════════
+//  COMBAT
+// ═══════════════════════════════════════════════
+const d20=()=>Math.floor(Math.random()*20)+1;
+function rollDice(n){
+  const m=n.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
+  if(!m)return 4;
+  let t=0;
+  for(let i=0;i<+m[1];i++)t+=Math.floor(Math.random()*+m[2])+1;
+  return t+(m[3]?+m[3]:0);
+}
 
-  // Check flanking (two allies adjacent to same target)
-  const flanked = (attacker.type === 'hero' ? heroesAlive() : enemiesAlive())
-    .filter(a => a.id !== attacker.id && isAdjacent(a.col, a.row, target.col, target.row)).length >= 1
-    && isAdjacent(attacker.col, attacker.row, target.col, target.row);
-
-  // Check back attack (attacker is behind target)
-  const backAttack = isBackAttack(attacker, target);
+function doAttack(atk,def){
+  const dist=unitDist(atk,def);
+  const isMelee=dist<=1;
+  const isRanged=atk.rangedWeapon&&dist<=atk.rangedWeapon.range;
+  if(!isMelee&&!isRanged){addLog(`${atk.name} não alcança ${def.name} (${dist} hex).`,'m');return;}
 
   // Modifiers
-  let atkBonus = 3;
-  if (flanked)    atkBonus += 2;
-  if (backAttack) atkBonus += 4;
-
-  // Cover penalty for ranged
-  if (!isMelee) {
-    const cover = getCover(target.col, target.row);
-    if (cover === 'partial') atkBonus -= 2;
-    if (cover === 'full')    { addLog(`${target.name} está em cobertura total — ataque bloqueado.`,'miss'); return false; }
+  let bonus=3;
+  // Flanking: another ally adjacent to target
+  const flank=(atk.type==='hero'?heroes():enemies()).filter(a=>a.id!==atk.id&&unitDist(a,def)<=1).length>=1;
+  if(flank)bonus+=2;
+  // Back attack
+  const back=isBackAtk(atk,def);
+  if(back)bonus+=4;
+  // Ranged cover
+  if(!isMelee){
+    const cov=getCover(def.col,def.row);
+    if(cov==='partial')bonus-=2;
+    if(cov==='full'){addLog(`${def.name} está em cobertura total.`,'m');return;}
   }
 
-  const roll = rollD20();
-  const total = roll + atkBonus;
-  const critical = roll === 20;
-  const fumble   = roll === 1;
+  const roll=d20();
+  const total=roll+bonus;
+  const crit=roll===20, fumb=roll===1;
 
-  let dmgNot = isMelee
-    ? (attacker.classe === 'barbaro' ? '2d6+3' : attacker.classe === 'guerreiro' ? '1d8+2' : '1d6+1')
-    : (attacker.rangedWeapon?.name === 'Raio Arcano' ? '1d8+2' : '1d6+2');
+  const dmgN=isMelee
+    ?({barbaro:'2d6+3',guerreiro:'1d8+2',mago:'1d4',arqueiro:'1d6+1',clerigo:'1d6+2'}[atk.classe||'']||'1d6')
+    :(atk.rangedWeapon?.name==='Raio Arcano'?'1d8+2':'1d6+2');
 
-  if (fumble) {
-    addLog(`${attacker.name} errou feio — falha crítica! (d20=1)`, 'miss');
-    attacker.hasActed = true;
-    return false;
-  }
+  if(fumb){addLog(`${atk.name} — falha crítica! (d20=1)`,'m');atk.hasActed=true;return;}
 
-  if (critical || total >= target.ac) {
-    let dmg = rollDice(dmgNot);
-    if (critical) { dmg *= 2; }
-    target.hp = Math.max(0, target.hp - dmg);
-
-    let msg = `${attacker.name} ${critical ? '⚡ CRÍTICO! ' : ''}acerta ${target.name}`;
-    if (backAttack) msg += ' pelas costas';
-    if (flanked)    msg += ' (flanqueado)';
-    msg += ` — ${dmg} de dano! (d20=${roll}+${atkBonus}=${total} vs CA${target.ac})`;
-    if (target.hp <= 0) {
-      msg += ` ${target.name} cai!`;
-      target.alive = false;
-      target.hp = 0;
-    }
-    addLog(msg, 'hit');
+  if(crit||total>=def.ac){
+    let dmg=rollDice(dmgN); if(crit)dmg*=2;
+    def.hp=Math.max(0,def.hp-dmg);
+    let msg=`${atk.name}${crit?' ⚡CRÍTICO!':''} → ${def.name}${back?' (costas)':''}${flank?' (flanco)':''}: ${dmg} dano (d20=${roll}+${bonus}=${total} vs CA${def.ac})`;
+    if(def.hp<=0){def.alive=false;def.hp=0;msg+=` — ${def.name} cai!`;}
+    addLog(msg,'x');
   } else {
-    addLog(`${attacker.name} ataca ${target.name} — ${isMelee?'errou':'falhou'} (d20=${roll}+${atkBonus}=${total} vs CA${target.ac})`, 'miss');
+    addLog(`${atk.name} errou ${def.name} (d20=${roll}+${bonus}=${total} vs CA${def.ac})`,'m');
   }
-
-  attacker.hasActed = true;
-  return true;
+  atk.hasActed=true;
 }
 
-function isBackAttack(attacker, target) {
-  // Rough back-attack: if attacker is in a hex "behind" target's facing
-  const FACING_DELTA = {
-    N:  { dCol:  0, dRow: -1 },
-    NE: { dCol:  1, dRow: -1 },
-    SE: { dCol:  1, dRow:  0 },
-    S:  { dCol:  0, dRow:  1 },
-    SW: { dCol: -1, dRow:  0 },
-    NW: { dCol: -1, dRow: -1 },
-  };
-  const fd = FACING_DELTA[target.facing] || { dCol: 0, dRow: -1 };
-  // "behind" means attacker is in the opposite direction of facing
-  const dCol = attacker.col - target.col;
-  const dRow = attacker.row - target.row;
-  return (Math.sign(dCol) === -Math.sign(fd.dCol) || Math.sign(dRow) === -Math.sign(fd.dRow))
-      && Math.abs(dCol) <= 1 && Math.abs(dRow) <= 1;
+function isBackAtk(atk,def){
+  const FD={N:{dc:0,dr:-1},NE:{dc:1,dr:-1},SE:{dc:1,dr:0},S:{dc:0,dr:1},SW:{dc:-1,dr:0},NW:{dc:-1,dr:-1}};
+  const fd=FD[def.facing||'N']||{dc:0,dr:-1};
+  const dc=atk.col-def.col, dr=atk.row-def.row;
+  return(Math.sign(dc)===-Math.sign(fd.dc)||Math.sign(dr)===-Math.sign(fd.dr))&&Math.abs(dc)<=1&&Math.abs(dr)<=1;
 }
 
-// ─── Turn update facing ───
-function updateFacing(unit, toCol, toRow) {
-  const dCol = toCol - unit.col;
-  const dRow = toRow - unit.row;
-  if      (dCol === 0 && dRow < 0)  unit.facing = 'N';
-  else if (dCol === 0 && dRow > 0)  unit.facing = 'S';
-  else if (dCol > 0  && dRow <= 0)  unit.facing = 'NE';
-  else if (dCol > 0  && dRow > 0)   unit.facing = 'SE';
-  else if (dCol < 0  && dRow <= 0)  unit.facing = 'NW';
-  else if (dCol < 0  && dRow > 0)   unit.facing = 'SW';
+function checkEnd(){
+  if(!enemies().length){addLog('🏆 VITÓRIA — todos os inimigos derrotados!','x');phase='victory';updateHdr();}
+  if(!heroes().length){addLog('💀 DERROTA — todos os heróis caíram.','e');phase='defeat';updateHdr();}
 }
 
-// ═══════════════════════════════════════════════════
-//  INTERACTION
-// ═══════════════════════════════════════════════════
-let _moveRange   = [];
-let _attackHexes = [];
-let _atkTargets  = [];
+// ═══════════════════════════════════════════════
+//  BATTLE STATE
+// ═══════════════════════════════════════════════
+let turn=1, phase='hero';
+let selId=null, moveRange=[], atkHexes=[], hovHex=null, debugGrid=false;
 
-function cancelSelection() {
-  selected = null; moveMode = false; attackMode = false;
-  actionPending = null; _moveRange = []; _attackHexes = []; _atkTargets = [];
-  document.getElementById('btn-cancel').style.display = 'none';
-  updateUnitPanel(null);
-  render();
-}
-
-function selectUnit(unit) {
-  if (phase !== 'hero' || unit.type !== 'hero' || !unit.alive) return;
-  cancelSelection();
-  selected = unit.id;
-  moveMode = true;
-  document.getElementById('btn-cancel').style.display = '';
-
-  if (!unit.hasMoved) {
-    _moveRange  = reachableHexes(unit);
-    _atkTargets = [];
-    // Also show which enemies can be attacked FROM each reachable hex
-    const atFrom = attackTargets(unit, unit.col, unit.row);
-    _atkTargets = atFrom;
+function selUnit(unit){
+  cancelSel();
+  if(!unit||!unit.alive)return;
+  if(phase==='hero'&&unit.type==='hero'){
+    selId=unit.id;
+    if(!unit.hasMoved)moveRange=reachable(unit);
+    atkHexes=atkTargets(unit,unit.col,unit.row).map(t=>getUnit(t.id)).flatMap(u=>u.occupiedHexes);
+    document.getElementById('btn-cancel').style.display='';
+    updatePanel(unit);
+    render();
   }
-  _attackHexes = attackTargets(unit, unit.col, unit.row).map(t => {
-    const e = getUnit(t.id);
-    return { col: e.col, row: e.row };
-  });
-
-  updateUnitPanel(unit);
-  render();
 }
 
-function handleHexClick(col, row) {
-  if (phase !== 'hero') return;
+function cancelSel(){
+  selId=null;moveRange=[];atkHexes=[];
+  document.getElementById('btn-cancel').style.display='none';
+  updatePanel(null);render();
+}
 
-  const clickedUnit = getUnitAt(col, row);
-  const sel = selected ? getUnit(selected) : null;
+function handleClick(col,row){
+  if(phase==='victory'||phase==='defeat')return;
+  const target=getUnitAt(col,row);
+  const sel=selId?getUnit(selId):null;
 
-  // Click on empty or self while nothing selected → ignore or deselect
-  if (!sel) {
-    if (clickedUnit && clickedUnit.type === 'hero' && clickedUnit.alive) {
-      if (!clickedUnit.hasMoved || !clickedUnit.hasActed) selectUnit(clickedUnit);
-    }
+  if(!sel){
+    if(target&&target.type==='hero'&&target.alive&&(!target.hasMoved||!target.hasActed))selUnit(target);
     return;
   }
 
-  // Click on an enemy → try to attack
-  if (clickedUnit && clickedUnit.type === 'enemy' && clickedUnit.alive) {
-    const tgts = attackTargets(sel, sel.col, sel.row);
-    const tgt  = tgts.find(t => t.id === clickedUnit.id);
-    if (tgt && !sel.hasActed) {
-      doAttack(sel, clickedUnit);
-      if (clickedUnit.alive) {
-        // Update target facing toward attacker
-        updateFacing(clickedUnit, sel.col, sel.row);
-      }
-      checkVictory();
-      cancelSelection();
-      render();
-      return;
-    } else if (!tgt) {
-      addLog(`${sel.name} não alcança ${clickedUnit.name} daqui.`, 'system');
-    } else if (sel.hasActed) {
-      addLog(`${sel.name} já agiu neste turno.`, 'system');
-    }
+  // Click enemy in range → attack
+  if(target&&target.type==='enemy'&&target.alive){
+    const tgts=atkTargets(sel,sel.col,sel.row);
+    const found=tgts.find(t=>target.occupiedHexes.some(h=>hexDist(sel.col,sel.row,h.col,h.row)===t.dist&&t.id===target.id));
+    if(found&&!sel.hasActed){
+      doAttack(sel,target);checkEnd();cancelSel();render();
+    }else if(!found){addLog(`${sel.name} não alcança ${target.name} daqui.`,'s');}
+    else{addLog(`${sel.name} já atacou.`,'s');}
     return;
   }
 
-  // Click on another hero → switch selection
-  if (clickedUnit && clickedUnit.type === 'hero') {
-    if (!clickedUnit.hasMoved || !clickedUnit.hasActed) {
-      selectUnit(clickedUnit);
-    }
-    return;
-  }
+  // Click another hero → switch
+  if(target&&target.type==='hero'&&(!target.hasMoved||!target.hasActed)){selUnit(target);return;}
 
-  // Click on empty hex → try to move
-  if (!clickedUnit && !sel.hasMoved) {
-    const inRange = _moveRange.find(h => h.col === col && h.row === row);
-    if (inRange) {
-      addLog(`${sel.name} move de ${hexLabel(sel.col,sel.row)} para ${hexLabel(col,row)} (${inRange.steps} hex).`, 'hero');
-      updateFacing(sel, col, row);
-      sel.col = col; sel.row = row;
-      sel.hasMoved = true;
-
-      // Refresh attack hexes from new position
-      _moveRange = [];
-      _attackHexes = attackTargets(sel, sel.col, sel.row).map(t => {
-        const e = getUnit(t.id);
-        return { col: e.col, row: e.row };
-      });
-      _atkTargets = attackTargets(sel, sel.col, sel.row);
-
-      // Auto-done if no attack available
-      if (_attackHexes.length === 0) {
-        addLog(`${sel.name} não tem alvos ao alcance.`, 'system');
-      }
-      updateUnitPanel(sel);
-      render();
-      return;
+  // Click empty hex → move
+  if(!target&&!sel.hasMoved){
+    const h=moveRange.find(m=>m.col===col&&m.row===row);
+    if(h){
+      addLog(`${sel.name}: ${hexLbl(sel.col,sel.row)} → ${hexLbl(col,row)} (${h.steps} hex).`,'h');
+      moveUnit(sel,col,row);
+      moveRange=[];
+      atkHexes=atkTargets(sel,sel.col,sel.row).map(t=>getUnit(t.id)).flatMap(u=>u.occupiedHexes);
+      updatePanel(sel);render();
     }
   }
-
-  // Click on occupied hex (blocked) → do nothing
 }
 
-function endHeroPhase() {
-  // Mark unacted heroes as done
-  heroesAlive().forEach(u => { u.hasMoved = true; u.hasActed = true; });
-  cancelSelection();
-  addLog('— Heróis encerraram o turno. Inimigos agem —', 'system');
-  phase = 'enemy';
-  updateTurnLabel();
-  render();
-  setTimeout(runEnemyPhase, 600);
+function endHeroPhase(){
+  heroes().forEach(u=>{u.hasMoved=true;u.hasActed=true;});
+  cancelSel();
+  addLog('— Heróis passam a vez. Inimigos agem —','s');
+  phase='enemy'; updateHdr(); render();
+  setTimeout(runEnemies,600);
 }
 
-// ─── Enemy AI ───
-async function runEnemyPhase() {
-  const enemies = enemiesAlive();
-  for (const enemy of enemies) {
-    if (!enemy.alive) continue;
+async function runEnemies(){
+  for(const e of enemies()){
+    if(!e.alive)continue;
     await sleep(500);
-
-    const heroes = heroesAlive();
-    if (!heroes.length) break;
-
-    // Find nearest hero
-    let nearestHero = null, nearestDist = Infinity;
-    for (const h of heroes) {
-      const d = hexDistance(enemy.col, enemy.row, h.col, h.row);
-      if (d < nearestDist) { nearestDist = d; nearestHero = h; }
-    }
-    if (!nearestHero) continue;
-
-    // Try to attack if adjacent
-    if (isAdjacent(enemy.col, enemy.row, nearestHero.col, nearestHero.row)) {
-      doAttack(enemy, nearestHero);
-      if (!nearestHero.alive) checkDefeat();
-    } else {
-      // Move toward nearest hero
-      const reach = reachableHexes(enemy);
-      if (reach.length) {
-        // Pick hex closest to nearestHero
-        let bestHex = null, bestD = Infinity;
-        for (const h of reach) {
-          const d = hexDistance(h.col, h.row, nearestHero.col, nearestHero.row);
-          if (d < bestD) { bestD = d; bestHex = h; }
-        }
-        if (bestHex) {
-          addLog(`${enemy.name} avança de ${hexLabel(enemy.col,enemy.row)} para ${hexLabel(bestHex.col,bestHex.row)}.`, 'enemy');
-          updateFacing(enemy, bestHex.col, bestHex.row);
-          enemy.col = bestHex.col; enemy.row = bestHex.row;
-          render();
-          await sleep(300);
-          // Try to attack after moving
-          if (isAdjacent(enemy.col, enemy.row, nearestHero.col, nearestHero.row)) {
-            await sleep(200);
-            doAttack(enemy, nearestHero);
-            if (!nearestHero.alive) checkDefeat();
-          }
-        }
+    const hs=heroes();
+    if(!hs.length)break;
+    let near=hs[0];
+    for(const h of hs)if(unitDist(e,h)<unitDist(e,near))near=h;
+    if(unitDist(e,near)<=1){
+      doAttack(e,near);checkEnd();
+    }else{
+      const reach=reachable(e);
+      if(reach.length){
+        let best=reach[0];
+        for(const h of reach)if(distFromPt(h.col,h.row,near)<distFromPt(best.col,best.row,near))best=h;
+        addLog(`${e.name}: ${hexLbl(e.col,e.row)} → ${hexLbl(best.col,best.row)}.`,'e');
+        moveUnit(e,best.col,best.row);
+        render(); await sleep(250);
+        if(unitDist(e,near)<=1){doAttack(e,near);checkEnd();}
       }
     }
     render();
   }
-
-  // Start next hero phase
-  await sleep(500);
-  enemiesAlive().forEach(u => { u.hasMoved = false; u.hasActed = false; });
-  heroesAlive().forEach(u => { u.hasMoved = false; u.hasActed = false; });
-  turn++;
-  phase = 'hero';
-  updateTurnLabel();
-  addLog(`— Turno ${turn} — Fase dos Heróis —`, 'system');
+  await sleep(400);
+  enemies().forEach(u=>{u.hasMoved=false;u.hasActed=false;});
+  heroes().forEach(u=>{u.hasMoved=false;u.hasActed=false;});
+  turn++; phase='hero'; updateHdr();
+  addLog(`— Turno ${turn} — Heróis agem —`,'s');
   render();
 }
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function updateHdr(){
+  const l={hero:`Turno ${turn} — Heróis`,enemy:`Turno ${turn} — Inimigos`,victory:'🏆 Vitória!',defeat:'💀 Derrota'};
+  document.getElementById('turn-label').textContent=l[phase]||'';
+  document.getElementById('btn-end-phase').style.display=phase==='hero'?'':'none';
+}
 
-function checkVictory() {
-  if (enemiesAlive().length === 0) {
-    phase = 'victory';
-    addLog('⚔ VITÓRIA! Todos os inimigos foram derrotados.', 'hit');
-    updateTurnLabel();
+// ═══════════════════════════════════════════════
+//  TEXT COMMAND PARSER
+// ═══════════════════════════════════════════════
+function submitCmd(){
+  const el=document.getElementById('cmd-input');
+  const txt=el.value.trim();
+  if(!txt)return;
+  el.value='';
+  processCmd(txt);
+}
+document.getElementById('cmd-input').addEventListener('keydown',e=>{if(e.key==='Enter')submitCmd();});
+
+function findUnitByText(t){
+  const lo=t.toLowerCase();
+  // Try heroes first if phase=hero, enemies otherwise
+  const all=[...heroes(),...enemies()];
+  for(const u of all){
+    if(lo.includes(u.name.toLowerCase()))return u;
+    if(u.classe&&lo.includes(u.classe.toLowerCase()))return u;
   }
+  // Aliases
+  if(/bárbar|barbar/i.test(lo))return getUnit('hero_barbaro');
+  if(/arqueiro|archer|arco/i.test(lo))return getUnit('hero_arqueiro');
+  if(/mago|mage|wizard/i.test(lo))return getUnit('hero_mago');
+  if(/espantalho.*(1|i\b|um)/i.test(lo))return getUnit('espa_01');
+  if(/espantalho.*(2|ii\b|dois)/i.test(lo))return getUnit('espa_02');
+  if(/espantalho/i.test(lo)){const e=enemies().find(u=>u.id.startsWith('espa'));return e||null;}
+  if(/bark/i.test(lo))return getUnit('barkthresher');
+  return null;
 }
-function checkDefeat() {
-  if (heroesAlive().length === 0) {
-    phase = 'defeat';
-    addLog('💀 DERROTA. Todos os heróis caíram.', 'enemy');
-    updateTurnLabel();
+
+function findTargetByText(t,actor){
+  const lo=t.toLowerCase();
+  const foes=actor.type==='hero'?enemies():heroes();
+  for(const u of foes)if(lo.includes(u.name.toLowerCase()))return u;
+  // Aliases
+  if(/bárbar|barbar/i.test(lo))return getUnit('hero_barbaro');
+  if(/arqueiro|arco/i.test(lo))return getUnit('hero_arqueiro');
+  if(/mago/i.test(lo))return getUnit('hero_mago');
+  if(/espantalho.*(1|i\b|um)/i.test(lo))return getUnit('espa_01');
+  if(/espantalho.*(2|ii\b|dois)/i.test(lo))return getUnit('espa_02');
+  if(/espantalho/i.test(lo)){const e=enemies().find(u=>u.id.startsWith('espa'));return e||null;}
+  if(/bark/i.test(lo))return getUnit('barkthresher');
+  // "mais próximo / próxim"
+  if(/próximo|perto|closest|nearest/i.test(lo)){
+    return foes.reduce((b,u)=>b==null||unitDist(actor,u)<unitDist(actor,b)?u:b,null);
   }
+  return null;
 }
 
-function updateTurnLabel() {
-  const labels = {
-    hero:    `Turno ${turn} — Fase dos Heróis`,
-    enemy:   `Turno ${turn} — Fase dos Inimigos`,
-    victory: `⚔ Vitória — Turno ${turn}`,
-    defeat:  `💀 Derrota — Turno ${turn}`,
-  };
-  document.getElementById('turn-label').textContent = labels[phase] || '';
-  document.getElementById('btn-end-phase').style.display = phase === 'hero' ? '' : 'none';
+function processCmd(raw){
+  const lo=raw.toLowerCase();
+  if(phase==='enemy'){addLog('Aguarde — fase dos inimigos.','s');return;}
+
+  const actor=findUnitByText(lo);
+  if(!actor){addLog(`Não identifiquei quem age. Ex: "Bárbaro avança" ou "Mago ataca"`,'s');return;}
+  if(!actor.alive){addLog(`${actor.name} está fora de combate.`,'s');return;}
+  if(actor.type==='enemy'){addLog(`Inimigos agem automaticamente.`,'s');return;}
+  if(actor.hasMoved&&actor.hasActed){addLog(`${actor.name} já usou toda a ação neste turno.`,'s');return;}
+
+  const isAtk=/ataca?|golpeia?|desfere?|corta?|machado|espada|flecha|lança?|dispara?|raio|magia|feitiç/i.test(lo);
+  const isMov=/corre?|anda?|avança?|move?|vai\b|chega?|aproxima?|recua?|posiciona?|fica\b|vai até|até\s+\w/i.test(lo);
+
+  // Explicit hex destination e.g. "F06", "f 6"
+  const hexM=lo.match(/\b([a-l])\s*0?(1[0-2]|[1-9])\b/);
+  const destHex=hexM?parseHex((hexM[1]+hexM[2]).toUpperCase()):null;
+
+  const target=findTargetByText(lo,actor);
+
+  // ── Case 1: explicit hex move ──
+  if(destHex&&!isAtk){
+    if(actor.hasMoved){addLog(`${actor.name} já se moveu.`,'s');return;}
+    const reach=reachable(actor);
+    const h=reach.find(r=>r.col===destHex.col&&r.row===destHex.row);
+    if(h){
+      addLog(`${actor.name} move para ${hexLbl(destHex.col,destHex.row)} (${h.steps} hex).`,'h');
+      moveUnit(actor,destHex.col,destHex.row);
+      cancelSel();render();
+    }else{
+      const d=hexDist(actor.col,actor.row,destHex.col,destHex.row);
+      addLog(`${hexLbl(destHex.col,destHex.row)} está a ${d} hex — fora do alcance de movimento (${actor.moveSpeed}).`,'s');
+    }
+    return;
+  }
+
+  // ── Case 2: attack only (no move needed or already moved) ──
+  if(isAtk&&target&&!isMov){
+    if(actor.hasActed){addLog(`${actor.name} já atacou.`,'s');return;}
+    const tgts=atkTargets(actor,actor.col,actor.row);
+    const found=tgts.find(t=>t.id===target.id);
+    if(found){
+      doAttack(actor,target);checkEnd();cancelSel();render();
+    }else{
+      const d=unitDist(actor,target);
+      addLog(`${actor.name} não alcança ${target.name} daqui (${d} hex). Avance primeiro.`,'s');
+    }
+    return;
+  }
+
+  // ── Case 3: move + attack (combined action) ──
+  if((isAtk||isMov)&&target){
+    // Move toward target if needed and hasn't moved
+    if(!actor.hasMoved){
+      const tgts=atkTargets(actor,actor.col,actor.row);
+      if(!tgts.find(t=>t.id===target.id)){
+        // Need to move closer
+        const reach=reachable(actor);
+        // Find closest reachable hex to target from which we can attack
+        let bestDest=null,bestD=Infinity;
+        for(const h of reach){
+          const d=distFromPt(h.col,h.row,target);
+          const canAtk=d<=1||(actor.rangedWeapon&&d<=actor.rangedWeapon.range);
+          if(canAtk&&d<bestD){bestD=d;bestDest=h;}
+        }
+        // If none reachable in attack range, get as close as possible
+        if(!bestDest){
+          for(const h of reach){
+            const d=distFromPt(h.col,h.row,target);
+            if(d<bestD){bestD=d;bestDest=h;}
+          }
+        }
+        if(bestDest){
+          addLog(`${actor.name}: ${hexLbl(actor.col,actor.row)} → ${hexLbl(bestDest.col,bestDest.row)} (${bestDest.steps} hex).`,'h');
+          moveUnit(actor,bestDest.col,bestDest.row);
+          render();
+        }
+      }
+    }
+    // Now attack if in range
+    if(isAtk&&!actor.hasActed){
+      const tgts=atkTargets(actor,actor.col,actor.row);
+      const found=tgts.find(t=>t.id===target.id);
+      if(found){
+        doAttack(actor,target);checkEnd();
+      }else{
+        const d=unitDist(actor,target);
+        addLog(`${actor.name} avançou mas ${target.name} ainda está longe (${d} hex).`,'s');
+      }
+    }
+    cancelSel();render();
+    return;
+  }
+
+  // ── Case 4: just move toward target ──
+  if(isMov&&target&&!actor.hasMoved){
+    const reach=reachable(actor);
+    let best=null,bd=Infinity;
+    for(const h of reach){const d=distFromPt(h.col,h.row,target);if(d<bd){bd=d;best=h;}}
+    if(best){
+      addLog(`${actor.name}: ${hexLbl(actor.col,actor.row)} → ${hexLbl(best.col,best.row)}.`,'h');
+      moveUnit(actor,best.col,best.row);cancelSel();render();
+    }
+    return;
+  }
+
+  addLog(`Não entendi a ação. Ex: "${actor.name} ataca ${enemies()[0]?.name||'inimigo'}" ou "${actor.name} avança para G05"`,'s');
 }
 
-// ═══════════════════════════════════════════════════
-//  UI PANELS
-// ═══════════════════════════════════════════════════
-function addLog(msg, cls = 'system') {
-  const log = document.getElementById('log');
-  const div = document.createElement('div');
-  div.className = `log-entry ${cls}`;
-  div.textContent = msg;
-  log.appendChild(div);
-  log.scrollTop = log.scrollHeight;
-  while (log.children.length > 80) log.removeChild(log.firstChild);
-}
-
-function updateUnitPanel(unit) {
-  const empty  = document.getElementById('unit-empty');
-  const detail = document.getElementById('unit-detail');
-  if (!unit) { empty.style.display=''; detail.style.display='none'; return; }
-  empty.style.display  = 'none';
-  detail.style.display = '';
-
-  document.getElementById('u-name').textContent = unit.name;
-  document.getElementById('u-hp').textContent   = `${unit.hp}/${unit.maxHp}`;
-  document.getElementById('u-ac').textContent   = unit.ac;
-  document.getElementById('u-mov').textContent  = unit.hasMoved ? '—' : `${unit.moveSpeed} hex`;
-  document.getElementById('u-pos').textContent  = hexLabel(unit.col, unit.row);
-
-  const bar = document.getElementById('hp-bar');
-  const pct = (unit.hp / unit.maxHp) * 100;
-  bar.style.width = pct + '%';
-  bar.style.background = pct > 50 ? '#4a8a4a' : pct > 25 ? '#c8a030' : '#c03030';
-
-  const info = document.getElementById('action-info');
-  const parts = [];
-  if (!unit.hasMoved)  parts.push('🚶 pode mover');
-  if (!unit.hasActed)  parts.push('⚔ pode atacar');
-  if (unit.rangedWeapon) parts.push(`🎯 ${unit.rangedWeapon.name} (${unit.rangedWeapon.range}hex)`);
-  info.textContent = parts.join(' · ') || 'Ações esgotadas';
-}
-
-function toggleDebug() { showDebug = !showDebug; render(); }
-
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 //  CANVAS RENDERING
-// ═══════════════════════════════════════════════════
-const canvas = document.getElementById('battle-canvas');
-const ctx    = canvas.getContext('2d');
-const mapImg = document.getElementById('map-img');
+// ═══════════════════════════════════════════════
+const canvas=document.getElementById('battle-canvas');
+const ctx=canvas.getContext('2d');
+const mapImg=document.getElementById('map-img');
+canvas.width=MAP_W; canvas.height=MAP_H;
 
-canvas.width  = MAP_W;
-canvas.height = MAP_H;
+let baseScale=1;
 
-let scale = 1;
-
-function layoutMap() {
-  const area    = document.getElementById('map-area');
-  const areaW   = area.clientWidth;
-  const areaH   = area.clientHeight;
-  const scaleX  = areaW / MAP_W;
-  const scaleY  = areaH / MAP_H;
-  scale         = Math.min(scaleX, scaleY);
-  const dispW   = MAP_W * scale;
-  const dispH   = MAP_H * scale;
-  const vp      = document.getElementById('map-viewport');
-  vp.style.transform = `scale(${scale})`;
-  vp.style.left   = ((areaW - dispW) / 2) + 'px';
-  vp.style.top    = ((areaH - dispH) / 2) + 'px';
+function layoutMap(){
+  const ar=document.getElementById('map-area');
+  const sx=ar.clientWidth/MAP_W, sy=ar.clientHeight/MAP_H;
+  baseScale=Math.min(sx,sy);
+  const vp=document.getElementById('map-vp');
+  vp.style.transform=`translate(${(ar.clientWidth-MAP_W*baseScale*zoom)/2+panX}px,${(ar.clientHeight-MAP_H*baseScale*zoom)/2+panY}px) scale(${baseScale*zoom})`;
 }
 
-function drawHexPath(col, row) {
-  const { x, y } = hexCenter(col, row);
+function applyVP(){
+  const ar=document.getElementById('map-area');
+  const total=baseScale*zoom;
+  const vp=document.getElementById('map-vp');
+  // Center by default, then add user pan
+  const cx=(ar.clientWidth-MAP_W*total)/2+panX;
+  const cy=(ar.clientHeight-MAP_H*total)/2+panY;
+  vp.style.transform=`translate(${cx}px,${cy}px) scale(${total})`;
+}
+
+function drawHex(c,r){
+  const{x,y}=hexCtr(c,r);
   ctx.beginPath();
-  for (let i = 0; i < 6; i++) {
-    const a = (Math.PI / 3) * i;  // flat-top: 0°, 60°, 120°...
-    const px = x + HR * Math.cos(a);
-    const py = y + VR * Math.sin(a);
-    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+  for(let i=0;i<6;i++){
+    const a=(Math.PI/3)*i;
+    const px=x+HR*Math.cos(a),py=y+VR*Math.sin(a);
+    i?ctx.lineTo(px,py):ctx.moveTo(px,py);
   }
   ctx.closePath();
 }
 
-function render() {
-  ctx.clearRect(0, 0, MAP_W, MAP_H);
+function render(){
+  ctx.clearRect(0,0,MAP_W,MAP_H);
+  if(mapImg.complete&&mapImg.naturalWidth)ctx.drawImage(mapImg,0,0,MAP_W,MAP_H);
+  else{ctx.fillStyle='#1a1610';ctx.fillRect(0,0,MAP_W,MAP_H);}
 
-  // ── 1. Background map ──
-  if (mapImg.complete && mapImg.naturalWidth) {
-    ctx.drawImage(mapImg, 0, 0, MAP_W, MAP_H);
-  } else {
-    ctx.fillStyle = '#1a1610';
-    ctx.fillRect(0, 0, MAP_W, MAP_H);
+  const sel=selId?getUnit(selId):null;
+  const moveSet=new Set(moveRange.map(h=>`${h.col},${h.row}`));
+  const atkSet =new Set(atkHexes.map(h=>`${h.col},${h.row}`));
+  const hovKey =hovHex?`${hovHex.col},${hovHex.row}`:null;
+
+  // Fill highlights
+  for(let c=0;c<COLS;c++)for(let r=0;r<ROWS;r++){
+    const key=`${c},${r}`;
+    drawHex(c,r);
+    if(moveSet.has(key)){ctx.fillStyle='rgba(60,140,220,.22)';ctx.fill();}
+    else if(atkSet.has(key)){ctx.fillStyle='rgba(220,60,60,.30)';ctx.fill();}
+    if(hovKey===key){ctx.fillStyle='rgba(255,255,255,.07)';ctx.fill();}
   }
 
-  const sel      = selected ? getUnit(selected) : null;
-  const moveSet  = new Set(_moveRange.map(h => `${h.col},${h.row}`));
-  const atkSet   = new Set(_attackHexes.map(h => `${h.col},${h.row}`));
-  const hovKey   = hoveredHex ? `${hoveredHex.col},${hoveredHex.row}` : null;
-
-  // ── 2. Hex fills (highlights) ──
-  for (let c = 0; c < COLS; c++) {
-    for (let r = 0; r < ROWS; r++) {
-      const key = `${c},${r}`;
-      drawHexPath(c, r);
-
-      if (moveSet.has(key)) {
-        ctx.fillStyle = 'rgba(60,140,220,0.22)';
-        ctx.fill();
-      } else if (atkSet.has(key)) {
-        ctx.fillStyle = 'rgba(220,60,60,0.28)';
-        ctx.fill();
-      }
-
-      if (hovKey === key && key !== (sel ? `${sel.col},${sel.row}` : '')) {
-        ctx.fillStyle = 'rgba(255,255,255,0.08)';
-        ctx.fill();
-      }
+  // 2×2 creature occupied hex highlight
+  for(const u of units.filter(u=>u.alive&&(u.size==='2x2'||u.size==='3x2'))){
+    for(const h of u.occupiedHexes){
+      drawHex(h.col,h.row);
+      ctx.strokeStyle=u.type==='enemy'?'rgba(200,80,40,.5)':'rgba(80,180,80,.5)';
+      ctx.lineWidth=2; ctx.stroke();
     }
   }
 
-  // ── 3. Hex grid lines ──
-  ctx.strokeStyle = 'rgba(200,175,110,0.20)';
-  ctx.lineWidth = 1;
-  for (let c = 0; c < COLS; c++) {
-    for (let r = 0; r < ROWS; r++) {
-      drawHexPath(c, r);
-      ctx.stroke();
+  // Grid lines
+  ctx.strokeStyle='rgba(200,175,110,.18)'; ctx.lineWidth=1;
+  for(let c=0;c<COLS;c++)for(let r=0;r<ROWS;r++){drawHex(c,r);ctx.stroke();}
+
+  // Debug labels
+  if(debugGrid){
+    ctx.fillStyle='rgba(200,175,110,.7)';ctx.font='11px monospace';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    for(let c=0;c<COLS;c++)for(let r=0;r<ROWS;r++){
+      const{x,y}=hexCtr(c,r);ctx.fillText(hexLbl(c,r),x,y);
     }
   }
 
-  // ── 4. Hex labels (debug or highlights) ──
-  if (showDebug) {
-    ctx.fillStyle = 'rgba(200,175,110,0.7)';
-    ctx.font = '11px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    for (let c = 0; c < COLS; c++) {
-      for (let r = 0; r < ROWS; r++) {
-        const { x, y } = hexCenter(c, r);
-        ctx.fillText(hexLabel(c, r), x, y);
-      }
-    }
-  }
-
-  // ── 5. Movement/attack highlights label ──
-  if (sel) {
-    ctx.font = '10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    _moveRange.forEach(h => {
-      const { x, y } = hexCenter(h.col, h.row);
-      ctx.fillStyle = 'rgba(100,200,255,0.8)';
-      ctx.fillText(h.steps, x, y + VR - 10);
+  // Movement step numbers
+  if(sel&&moveRange.length){
+    ctx.font='10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    moveRange.forEach(h=>{
+      const{x,y}=hexCtr(h.col,h.row);
+      ctx.fillStyle='rgba(120,200,255,.85)'; ctx.fillText(h.steps,x,y+VR-10);
     });
   }
 
-  // ── 6. Selected hex ring ──
-  if (sel) {
-    drawHexPath(sel.col, sel.row);
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
-  }
+  // Selected hex ring
+  if(sel){drawHex(sel.col,sel.row);ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.stroke();}
 
-  // ── 7. Units ──
-  units.forEach(unit => {
-    if (!unit.alive) return;
-    drawUnit(unit, unit === sel);
-  });
+  // Draw units
+  units.forEach(u=>{if(u.alive)drawUnit(u,u===sel);});
 }
 
-function drawUnit(unit, isSelected) {
-  const { x, y } = hexCenter(unit.col, unit.row);
-  const baseR = 28;
+function drawUnit(u,isSel){
+  const size=u.size||'1x1';
 
-  // ── Shadow/base ellipse ──
+  // For large units, use center of all occupied hexes
+  let cx,cy,sprH;
+  if(size==='1x1'){
+    const c=hexCtr(u.col,u.row); cx=c.x; cy=c.y; sprH=80;
+  }else{
+    const ctrs=u.occupiedHexes.map(h=>hexCtr(h.col,h.row));
+    cx=ctrs.reduce((s,c)=>s+c.x,0)/ctrs.length;
+    cy=ctrs.reduce((s,c)=>s+c.y,0)/ctrs.length;
+    sprH=size==='2x2'?140:120;
+  }
+
+  const baseR=size==='1x1'?26:44;
+
+  // Shadow ellipse
   ctx.save();
   ctx.beginPath();
-  ctx.ellipse(x, y + 5, baseR, baseR * 0.45, 0, 0, Math.PI * 2);
-  ctx.fillStyle = unit.type === 'hero'
-    ? 'rgba(50,110,180,0.35)'
-    : 'rgba(160,50,40,0.35)';
-  ctx.fill();
-  ctx.restore();
+  ctx.ellipse(cx,cy+6,baseR,baseR*.42,0,0,Math.PI*2);
+  ctx.fillStyle=u.type==='hero'?'rgba(50,110,180,.35)':'rgba(160,50,40,.35)';
+  ctx.fill(); ctx.restore();
 
-  // ── Sprite ──
-  const sprH = 80;
-  if (unit._img && unit._img.complete && unit._img.naturalWidth) {
-    const aspect = unit._img.naturalWidth / unit._img.naturalHeight;
-    const sprW = sprH * aspect;
-    ctx.drawImage(unit._img, x - sprW / 2, y - sprH, sprW, sprH);
-  } else {
-    ctx.font = '32px serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText(unit.icon, x, y);
+  // Sprite
+  if(u._img&&u._img.complete&&u._img.naturalWidth){
+    const asp=u._img.naturalWidth/u._img.naturalHeight;
+    const sw=sprH*asp;
+    ctx.drawImage(u._img,cx-sw/2,cy-sprH,sw,sprH);
+  }else{
+    ctx.font=`${baseR}px serif`;ctx.textAlign='center';ctx.textBaseline='bottom';
+    ctx.fillText(u.icon,cx,cy);
   }
 
-  // ── Selection ring ──
-  if (isSelected) {
-    ctx.beginPath();
-    ctx.arc(x, y - sprH * 0.35, baseR + 6, 0, Math.PI * 2);
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
+  // Selection ring
+  if(isSel){
+    ctx.beginPath();ctx.arc(cx,cy-sprH*.4,baseR+6,0,Math.PI*2);
+    ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.stroke();
   }
 
-  // ── HP bar ──
-  const barW = 48, barH = 5;
-  const barX = x - barW / 2, barY = y + 10;
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
-  const pct = unit.hp / unit.maxHp;
-  ctx.fillStyle = pct > 0.5 ? '#4a8a4a' : pct > 0.25 ? '#c8a030' : '#c03030';
-  ctx.fillRect(barX, barY, barW * pct, barH);
+  // HP bar
+  const bw=baseR*2-4,bh=5,bx=cx-bw/2,by=cy+10;
+  ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(bx-1,by-1,bw+2,bh+2);
+  const pct=u.hp/u.maxHp;
+  ctx.fillStyle=pct>.5?'#4a8a4a':pct>.25?'#c8a030':'#c03030';
+  ctx.fillRect(bx,by,bw*pct,bh);
 
-  // ── Name label ──
-  ctx.font = 'bold 11px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  const label = unit.name;
-  const tw = ctx.measureText(label).width;
-  ctx.fillStyle = 'rgba(0,0,0,0.65)';
-  ctx.fillRect(x - tw / 2 - 3, barY + barH + 3, tw + 6, 15);
-  ctx.fillStyle = unit.type === 'hero' ? '#9ad0f0' : '#f09090';
-  ctx.fillText(label, x, barY + barH + 4);
+  // Name label
+  ctx.font=`bold ${size==='1x1'?10:12}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='top';
+  const lbl=`${u.name} ${u.hp}/${u.maxHp}`;
+  const tw=ctx.measureText(lbl).width;
+  ctx.fillStyle='rgba(0,0,0,.65)';ctx.fillRect(cx-tw/2-3,by+bh+2,tw+6,15);
+  ctx.fillStyle=u.type==='hero'?'#9ad0f0':'#f09090';
+  ctx.fillText(lbl,cx,by+bh+3);
 
-  // ── "Done" overlay ──
-  if (unit.hasMoved && unit.hasActed && unit.type === 'hero') {
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    drawHexPath(unit.col, unit.row);
-    ctx.fill();
+  // Done overlay
+  if(u.hasMoved&&u.hasActed&&u.type==='hero'){
+    drawHex(u.col,u.row);ctx.fillStyle='rgba(0,0,0,.32)';ctx.fill();
   }
 
-  // ── Facing indicator ──
-  const FACING_ANGLES = { N:-90, NE:-30, SE:30, S:90, SW:150, NW:-150 };
-  const ang = ((FACING_ANGLES[unit.facing] || 0) * Math.PI) / 180;
+  // Facing arrow
+  const FA={N:-90,NE:-30,SE:30,S:90,SW:150,NW:-150};
+  const ang=((FA[u.facing||'N']||0)*Math.PI)/180;
   ctx.beginPath();
-  ctx.moveTo(x + Math.cos(ang) * (baseR - 2), y + 5 + Math.sin(ang) * (baseR - 2) * 0.45);
-  ctx.lineTo(x + Math.cos(ang) * (baseR + 10), y + 5 + Math.sin(ang) * (baseR + 10) * 0.45);
-  ctx.strokeStyle = unit.type === 'hero' ? 'rgba(100,200,255,0.8)' : 'rgba(255,100,100,0.8)';
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  ctx.moveTo(cx+Math.cos(ang)*baseR,cy+6+Math.sin(ang)*baseR*.42);
+  ctx.lineTo(cx+Math.cos(ang)*(baseR+12),cy+6+Math.sin(ang)*(baseR+12)*.42);
+  ctx.strokeStyle=u.type==='hero'?'rgba(100,200,255,.8)':'rgba(255,100,100,.8)';
+  ctx.lineWidth=2;ctx.stroke();
 }
 
-// ═══════════════════════════════════════════════════
-//  EVENTS
-// ═══════════════════════════════════════════════════
-mapImg.addEventListener('load', () => { layoutMap(); render(); });
+// ═══════════════════════════════════════════════
+//  ZOOM + PAN
+// ═══════════════════════════════════════════════
+let zoom=1, panX=0, panY=0;
+let _pinch=null, _drag=null, _justPinched=false;
 
-canvas.addEventListener('click', e => {
-  const rect = canvas.getBoundingClientRect();
-  const px   = (e.clientX - rect.left) / scale;
-  const py   = (e.clientY - rect.top)  / scale;
-  const hex  = pixelToHex(px, py);
-  handleHexClick(hex.col, hex.row);
+function pxFromEvent(e){
+  const rect=canvas.getBoundingClientRect();
+  return{px:(e.clientX-rect.left)*MAP_W/rect.width,py:(e.clientY-rect.top)*MAP_H/rect.height};
+}
+
+const mapArea=document.getElementById('map-area');
+
+mapArea.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const ar=mapArea.getBoundingClientRect();
+  const mx=e.clientX-ar.left, my=e.clientY-ar.top;
+  const f=e.deltaY<0?1.15:0.87;
+  const nz=Math.max(.5,Math.min(4,zoom*f));
+  const tot=baseScale*zoom, nTot=baseScale*nz;
+  const natX=(ar.width-MAP_W*tot)/2+panX, natY=(ar.height-MAP_H*tot)/2+panY;
+  panX=(natX-(mx*(nTot-tot)/tot))-((ar.width-MAP_W*nTot)/2);
+  panY=(natY-(my*(nTot-tot)/tot))-((ar.height-MAP_H*nTot)/2);
+  zoom=nz; applyVP();
+},{passive:false});
+
+mapArea.addEventListener('touchstart',e=>{
+  if(e.touches.length===2){
+    e.preventDefault(); _justPinched=false;
+    _pinch={
+      dist:ptDist(e.touches),zoom,panX,panY,
+      mx:(e.touches[0].clientX+e.touches[1].clientX)/2,
+      my:(e.touches[0].clientY+e.touches[1].clientY)/2,
+    };
+    _drag=null;
+  }else if(e.touches.length===1&&zoom>1.05){
+    _drag={x:e.touches[0].clientX,y:e.touches[0].clientY};
+  }
+},{passive:false});
+
+mapArea.addEventListener('touchmove',e=>{
+  if(e.touches.length===2&&_pinch){
+    e.preventDefault();
+    const dist=ptDist(e.touches);
+    const nz=Math.max(.5,Math.min(4,_pinch.zoom*(dist/_pinch.dist)));
+    const ar=mapArea.getBoundingClientRect();
+    const cx=(e.touches[0].clientX+e.touches[1].clientX)/2-ar.left;
+    const cy=(e.touches[0].clientY+e.touches[1].clientY)/2-ar.top;
+    const midX=(_pinch.mx+cx)/2-ar.left; // average between start and current
+    const tot0=baseScale*_pinch.zoom, totN=baseScale*nz;
+    const nat0X=(ar.width-MAP_W*tot0)/2+_pinch.panX;
+    const nat0Y=(ar.height-MAP_H*tot0)/2+_pinch.panY;
+    panX=(nat0X-(midX*(totN-tot0)/tot0))-((ar.width-MAP_W*totN)/2);
+    panY=(nat0Y-((cy-ar.top)*(totN-tot0)/tot0))-((ar.height-MAP_H*totN)/2);
+    zoom=nz; applyVP(); _justPinched=true;
+  }else if(e.touches.length===1&&_drag&&zoom>1.05){
+    e.preventDefault();
+    panX+=e.touches[0].clientX-_drag.x;
+    panY+=e.touches[0].clientY-_drag.y;
+    _drag={x:e.touches[0].clientX,y:e.touches[0].clientY};
+    applyVP();
+  }
+},{passive:false});
+
+mapArea.addEventListener('touchend',e=>{
+  if(e.touches.length<2){_pinch=null;}
+  if(!e.touches.length){_drag=null;setTimeout(()=>{_justPinched=false;},300);}
+},{passive:true});
+
+function ptDist(touches){
+  const dx=touches[0].clientX-touches[1].clientX;
+  const dy=touches[0].clientY-touches[1].clientY;
+  return Math.sqrt(dx*dx+dy*dy);
+}
+
+// ═══════════════════════════════════════════════
+//  CLICK / HOVER / TOOLTIP
+// ═══════════════════════════════════════════════
+canvas.addEventListener('click',e=>{
+  if(_justPinched)return;
+  const rect=canvas.getBoundingClientRect();
+  const px=(e.clientX-rect.left)*MAP_W/rect.width;
+  const py=(e.clientY-rect.top)*MAP_H/rect.height;
+  handleClick(...Object.values(pxToHex(px,py)));
 });
 
-canvas.addEventListener('mousemove', e => {
-  const rect = canvas.getBoundingClientRect();
-  const px   = (e.clientX - rect.left) / scale;
-  const py   = (e.clientY - rect.top)  / scale;
-  const hex  = pixelToHex(px, py);
-
-  if (!hoveredHex || hoveredHex.col !== hex.col || hoveredHex.row !== hex.row) {
-    hoveredHex = hex;
-
-    // Tooltip
-    const tip   = document.getElementById('tooltip');
-    const unit  = getUnitAt(hex.col, hex.row);
-    const cover = getCover(hex.col, hex.row);
-
-    let tipHtml = `<b>${hexLabel(hex.col, hex.row)}</b>`;
-    if (unit) {
-      tipHtml += ` — ${unit.name}<br>PV: ${unit.hp}/${unit.maxHp} · CA: ${unit.ac}`;
-      if (selected) {
-        const sel = getUnit(selected);
-        const dist = hexDistance(sel.col, sel.row, hex.col, hex.row);
-        tipHtml += `<br>Distância: ${dist} hex`;
-      }
+canvas.addEventListener('mousemove',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const px=(e.clientX-rect.left)*MAP_W/rect.width;
+  const py=(e.clientY-rect.top)*MAP_H/rect.height;
+  const h=pxToHex(px,py);
+  if(!hovHex||hovHex.col!==h.col||hovHex.row!==h.row){
+    hovHex=h;
+    const tip=document.getElementById('tip');
+    const u=getUnitAt(h.col,h.row);
+    const sel=selId?getUnit(selId):null;
+    let html=`<b>${hexLbl(h.col,h.row)}</b>`;
+    if(u)html+=` — ${u.name}<br>PV:${u.hp}/${u.maxHp} CA:${u.ac}`;
+    if(sel&&u){
+      const d=unitDist(sel,u);
+      html+=`<br>Dist:${d} hex`;
     }
-    if (cover !== 'none') tipHtml += `<br>Cobertura: ${cover === 'partial' ? 'parcial' : 'total'}`;
-    if (selected) {
-      const sel = getUnit(selected);
-      const inMove = _moveRange.find(h => h.col === hex.col && h.row === hex.row);
-      if (inMove) tipHtml += `<br>🚶 ${inMove.steps} passos`;
-    }
-
-    tip.innerHTML = tipHtml;
-    tip.style.display = 'block';
-    tip.style.left = (e.clientX + 12) + 'px';
-    tip.style.top  = (e.clientY - 10) + 'px';
-
+    const cov=getCover(h.col,h.row);
+    if(cov!=='none')html+=`<br>Cobertura:${cov==='partial'?'parcial':'total'}`;
+    const mr=moveRange.find(m=>m.col===h.col&&m.row===h.row);
+    if(mr)html+=`<br>🚶${mr.steps} passos`;
+    tip.innerHTML=html; tip.style.display='block';
+    tip.style.left=(e.clientX+14)+'px'; tip.style.top=(e.clientY-8)+'px';
     render();
-  } else {
-    const tip = document.getElementById('tooltip');
-    tip.style.left = (e.clientX + 12) + 'px';
-    tip.style.top  = (e.clientY - 10) + 'px';
+  }else{
+    const tip=document.getElementById('tip');
+    tip.style.left=(e.clientX+14)+'px'; tip.style.top=(e.clientY-8)+'px';
   }
 });
+canvas.addEventListener('mouseleave',()=>{hovHex=null;document.getElementById('tip').style.display='none';render();});
 
-canvas.addEventListener('mouseleave', () => {
-  hoveredHex = null;
-  document.getElementById('tooltip').style.display = 'none';
-  render();
-});
+// ═══════════════════════════════════════════════
+//  PANEL
+// ═══════════════════════════════════════════════
+function updatePanel(u){
+  const em=document.getElementById('u-empty'),de=document.getElementById('u-detail');
+  if(!u){em.style.display='';de.style.display='none';return;}
+  em.style.display='none';de.style.display='';
+  document.getElementById('u-name').textContent=u.name+(u.size!=='1x1'?` (${u.size})`:'');
+  document.getElementById('u-hp').textContent=`${u.hp}/${u.maxHp}`;
+  document.getElementById('u-ac').textContent=u.ac;
+  document.getElementById('u-mov').textContent=u.hasMoved?'—':`${u.moveSpeed} hex`;
+  document.getElementById('u-pos').textContent=hexLbl(u.col,u.row);
+  const f=document.getElementById('hpfill');
+  const p=u.hp/u.maxHp*100;
+  f.style.width=p+'%'; f.style.background=p>50?'#4a8a4a':p>25?'#c8a030':'#c03030';
+  const acts=[];
+  if(!u.hasMoved)acts.push('🚶mov');
+  if(!u.hasActed)acts.push('⚔atk');
+  if(u.rangedWeapon)acts.push(`🎯${u.rangedWeapon.range}h`);
+  document.getElementById('u-acts').textContent=acts.join(' · ')||'Esgotado';
+}
 
-// Touch support
-canvas.addEventListener('touchstart', e => {
-  e.preventDefault();
-  const t = e.touches[0];
-  const rect = canvas.getBoundingClientRect();
-  const px = (t.clientX - rect.left) / scale;
-  const py = (t.clientY - rect.top)  / scale;
-  const hex = pixelToHex(px, py);
-  handleHexClick(hex.col, hex.row);
-}, { passive: false });
+function addLog(msg,cls='s'){
+  const log=document.getElementById('log');
+  const d=document.createElement('div'); d.className=`le ${cls}`; d.textContent=msg;
+  log.appendChild(d); log.scrollTop=log.scrollHeight;
+  while(log.children.length>100)log.removeChild(log.firstChild);
+}
 
-window.addEventListener('resize', () => { layoutMap(); render(); });
+function toggleDebug(){debugGrid=!debugGrid;render();}
 
-// ─── Init ───
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+mapImg.addEventListener('load',()=>{layoutMap();render();});
+window.addEventListener('resize',()=>{layoutMap();render();});
 layoutMap();
-if (mapImg.complete) render();
-updateTurnLabel();
-addLog('Arqueiro, Bárbaro e Mago — toque numa unidade para selecionar.', 'hero');
+if(mapImg.complete)render();
+updateHdr();
+addLog('Heróis: Arqueiro (C07) · Bárbaro (E08) · Mago (G07)','h');
+addLog('Inimigos: Espantalho I (D03) · II (H03) · Barkthresher 2×2 (F04-G05)','e');
+addLog('Digite: "Bárbaro ataca o Barkthresher" ou "Mago avança para G06"','s');
 </script>
 </body>
 </html>
