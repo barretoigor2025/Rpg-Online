@@ -65,6 +65,17 @@ header{
 }
 #cmd-send:active{background:#2a2618}
 
+/* ── Grid hex toggle button (positioned inside #map-area) ── */
+#grid-toggle{
+  position:absolute;top:10px;right:10px;z-index:50;
+  background:none;border:none;cursor:pointer;padding:0;
+  -webkit-tap-highlight-color:transparent;outline:none;
+  opacity:.75;transition:opacity .15s;
+}
+#grid-toggle:hover{opacity:1}
+#grid-toggle.active #hex-bg{fill:rgba(130,100,35,.6);stroke:rgba(210,175,80,.9)}
+#grid-toggle.active #hex-icon{fill:rgba(230,195,100,.95)}
+
 /* ── Tooltip ── */
 #tip{
   position:fixed;background:rgba(10,8,4,.94);border:1px solid rgba(180,150,80,.3);
@@ -77,7 +88,7 @@ header{
 <div id="app">
   <header>
     <span id="turn-label">Turno 1 — Heróis</span>
-    <button class="hdr-btn" onclick="toggleDebug()">⬡ Grade</button>
+    <button class="hdr-btn" onclick="toggleDebug()">⊞ Coords</button>
     <button class="hdr-btn" id="btn-end-phase" onclick="endHeroPhase()">Encerrar →</button>
   </header>
 
@@ -86,6 +97,14 @@ header{
       <img id="map-img" src="maps/feira-limpa.png" draggable="false">
       <canvas id="battle-canvas"></canvas>
     </div>
+    <button id="grid-toggle" onclick="toggleGrid()" title="Mostrar/ocultar grade hexagonal">
+      <svg width="42" height="48" viewBox="0 0 42 48">
+        <polygon id="hex-bg" points="21,2 40,13 40,35 21,46 2,35 2,13"
+                 fill="rgba(10,8,4,.82)" stroke="rgba(180,150,80,.45)" stroke-width="1.5"/>
+        <text id="hex-icon" x="21" y="30" text-anchor="middle"
+              font-size="16" fill="rgba(180,150,80,.7)" font-family="sans-serif">⬡</text>
+      </svg>
+    </button>
   </div>
 
   <div id="bottom">
@@ -115,11 +134,11 @@ header{
 <script>
 'use strict';
 // ═══════════════════════════════════════════════
-//  HEX GRID  (flat-top even-q, 12×12, 1448×1086)
+//  HEX GRID  (flat-top even-q, 13×13, 1086×1448 portrait)
 // ═══════════════════════════════════════════════
-const MAP_W=1448, MAP_H=1086, COLS=12, ROWS=12;
-const CL='ABCDEFGHIJKL';
-const GX0=104, GY0=75, CS=90, RS=83, OOFF=42, HR=46, VR=42;
+const MAP_W=1086, MAP_H=1448, COLS=13, ROWS=13;
+const CL='ABCDEFGHIJKLM';
+const GX0=108, GY0=102, CS=72, RS=78, OOFF=39, HR=36, VR=38;
 
 const hexLbl=(c,r)=>CL[c]+String(r+1).padStart(2,'0');
 const parseHex=s=>({col:CL.indexOf(s[0].toUpperCase()),row:parseInt(s.slice(1))-1});
@@ -163,9 +182,11 @@ function losOk(c1,r1,c2,r2){
 // ═══════════════════════════════════════════════
 //  MAP DATA
 // ═══════════════════════════════════════════════
-const BLOCKED_CODES=['A01','B01','K01','L01','A02','L02','A10','L10','A11','B11','K11','L11','A12','B12','K12','L12'];
+// Corners blocked (fora do oval jogável)
+const BLOCKED_CODES=['A01','B01','L01','M01','A02','M02','A12','M12','A13','B13','L13','M13'];
 const BLOCKED=new Set(BLOCKED_CODES);
-const COVER_P=new Set(['B02','C02','D02','I02','J02','K02','B11','C11','D11','I11','J11','A05','A06','A07','A08','L05','L06','L07','L08']);
+// Cobertura parcial: hexes próximos das barracas nas bordas
+const COVER_P=new Set(['B02','C02','D02','J02','K02','L02','B12','C12','D12','J12','K12','L12','A04','A05','A06','A07','A08','A09','M04','M05','M06','M07','M08','M09']);
 const isBlocked=(c,r)=>BLOCKED.has(hexLbl(c,r));
 const getCover=(c,r)=>BLOCKED.has(hexLbl(c,r))?'full':COVER_P.has(hexLbl(c,r))?'partial':'none';
 
@@ -195,25 +216,26 @@ function mkUnit(d){
 }
 
 const UDEFS=[
+  // Heróis — posições conforme ficha técnica
   {id:'hero_arqueiro', name:'Arqueiro', type:'hero', classe:'arqueiro',
-   hex:'C07', maxHp:22, ac:14, moveSpeed:5, size:'1x1',
+   hex:'D08', maxHp:22, ac:14, moveSpeed:5, size:'1x1',
    rangedWeapon:{name:'Arco Longo',range:8}, sprite:'sprites/arqueiro_m.png', icon:'🏹'},
   {id:'hero_barbaro', name:'Bárbaro', type:'hero', classe:'barbaro',
-   hex:'E08', maxHp:32, ac:13, moveSpeed:4, size:'1x1',
+   hex:'E07', maxHp:32, ac:13, moveSpeed:4, size:'1x1',
    rangedWeapon:null, sprite:'sprites/barbaro_m.png', icon:'🪓'},
   {id:'hero_mago', name:'Mago', type:'hero', classe:'mago',
-   hex:'G07', maxHp:16, ac:11, moveSpeed:3, size:'1x1',
+   hex:'F08', maxHp:16, ac:11, moveSpeed:3, size:'1x1',
    rangedWeapon:{name:'Raio Arcano',range:6}, sprite:'sprites/mago.png', icon:'🔮'},
-  // Enemies
+  // Inimigos
   {id:'espa_01', name:'Espantalho I',  type:'enemy',
-   hex:'D03', maxHp:14, ac:10, moveSpeed:3, size:'1x1',
+   hex:'E03', maxHp:14, ac:10, moveSpeed:3, size:'1x1',
    sprite:'sprites/inimigo_espantalho_assombrado.png', icon:'🌾'},
   {id:'espa_02', name:'Espantalho II', type:'enemy',
-   hex:'H03', maxHp:14, ac:10, moveSpeed:3, size:'1x1',
+   hex:'G03', maxHp:14, ac:10, moveSpeed:3, size:'1x1',
    sprite:'sprites/inimigo_espantalho_assombrado.png', icon:'🌾'},
-  // 2×2 boss
+  // Boss 2×2 — âncora F05, ocupa F05 G05 F06 G06
   {id:'barkthresher', name:'Barkthresher', type:'enemy',
-   hex:'F04', maxHp:45, ac:14, moveSpeed:2, size:'2x2',
+   hex:'F05', maxHp:45, ac:14, moveSpeed:2, size:'2x2',
    sprite:'sprites/inimigo_barkthresher.png', icon:'🌳'},
 ];
 
@@ -376,7 +398,7 @@ function checkEnd(){
 //  BATTLE STATE
 // ═══════════════════════════════════════════════
 let turn=1, phase='hero';
-let hovHex=null, debugGrid=false;
+let hovHex=null, showGrid=false, debugGrid=false;
 
 function endHeroPhase(){
   heroes().forEach(u=>{u.hasMoved=true;u.hasActed=true;});
@@ -490,7 +512,7 @@ function processCmd(raw){
   const isMov=/corre?|anda?|avança?|move?|vai\b|chega?|aproxima?|recua?|posiciona?|fica\b|vai até|até\s+\w/i.test(lo);
 
   // Explicit hex destination e.g. "F06", "f 6"
-  const hexM=lo.match(/\b([a-l])\s*0?(1[0-2]|[1-9])\b/);
+  const hexM=lo.match(/\b([a-m])\s*0?(1[0-3]|[1-9])\b/);
   const destHex=hexM?parseHex((hexM[1]+hexM[2]).toUpperCase()):null;
 
   const target=findTargetByText(lo,actor);
@@ -645,16 +667,16 @@ function render(){
     }
   }
 
-  // Grid lines
-  ctx.strokeStyle='rgba(200,175,110,.18)'; ctx.lineWidth=1;
-  for(let c=0;c<COLS;c++)for(let r=0;r<ROWS;r++){drawHex(c,r);ctx.stroke();}
-
-  // Debug labels
-  if(debugGrid){
-    ctx.fillStyle='rgba(200,175,110,.7)';ctx.font='11px monospace';
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    for(let c=0;c<COLS;c++)for(let r=0;r<ROWS;r++){
-      const{x,y}=hexCtr(c,r);ctx.fillText(hexLbl(c,r),x,y);
+  // Grid lines — visível apenas quando showGrid=true
+  if(showGrid){
+    ctx.strokeStyle='rgba(200,175,110,.22)'; ctx.lineWidth=1;
+    for(let c=0;c<COLS;c++)for(let r=0;r<ROWS;r++){drawHex(c,r);ctx.stroke();}
+    if(debugGrid){
+      ctx.fillStyle='rgba(200,175,110,.7)';ctx.font='10px monospace';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      for(let c=0;c<COLS;c++)for(let r=0;r<ROWS;r++){
+        const{x,y}=hexCtr(c,r);ctx.fillText(hexLbl(c,r),x,y);
+      }
     }
   }
 
@@ -858,7 +880,16 @@ function addLog(msg,cls='s'){
   while(log.children.length>100)log.removeChild(log.firstChild);
 }
 
-function toggleDebug(){debugGrid=!debugGrid;render();}
+function toggleGrid(){
+  showGrid=!showGrid;
+  document.getElementById('grid-toggle').classList.toggle('active',showGrid);
+  if(!showGrid)debugGrid=false;
+  render();
+}
+function toggleDebug(){
+  if(!showGrid){showGrid=true;document.getElementById('grid-toggle').classList.add('active');}
+  debugGrid=!debugGrid;render();
+}
 
 // ═══════════════════════════════════════════════
 //  INIT
@@ -868,9 +899,9 @@ window.addEventListener('resize',()=>{layoutMap();render();});
 layoutMap();
 if(mapImg.complete)render();
 updateHdr();
-addLog('Heróis: Arqueiro (C07) · Bárbaro (E08) · Mago (G07)','h');
-addLog('Inimigos: Espantalho I (D03) · II (H03) · Barkthresher 2×2 (F04-G05)','e');
-addLog('Narre suas ações: "Bárbaro avança para D05 e ataca o Espantalho" · "fim de turno"','s');
+addLog('Heróis: Bárbaro (E07) · Arqueiro (D08) · Mago (F08)','h');
+addLog('Inimigos: Espantalho I (E03) · II (G03) · Barkthresher 2×2 (F05-G06)','e');
+addLog('Narre: "Bárbaro avança para E05 e ataca o Espantalho" · "fim de turno"','s');
 </script>
 </body>
 </html>
