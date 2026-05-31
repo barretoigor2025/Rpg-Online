@@ -163,6 +163,7 @@ let _activeSlot  = parseInt(localStorage.getItem('rpg_active_slot') || '0');
 let _charSlots   = new Array(4).fill(null);
 let amIHost     = false;
 let chamandoIA  = false;
+let _autoDestravTimer = null;
 let unsubSala   = null;
 let unsubRolagem = null;
 let _apiKeyPendingCb = null;
@@ -2158,6 +2159,7 @@ window.deixarSala = function() {
   localStorage.removeItem(`rpg_sala_s${_activeSlot}`);
   if (unsubSala) { unsubSala(); unsubSala = null; }
   if (unsubRolagem) { unsubRolagem(); unsubRolagem = null; }
+  if (_autoDestravTimer) { clearTimeout(_autoDestravTimer); _autoDestravTimer = null; }
   mySala = null; amIHost = false; _kitMigrado = false;
   _jogadoresCache = {};
   irParaPersonagens();
@@ -2747,6 +2749,19 @@ function irParaJogo(codigo) {
       }
     }
 
+    // Auto-retry quando API falhou: aguarda 15s e destravar automaticamente
+    if (amIHost && config.falhouNarracao) {
+      if (!_autoDestravTimer) {
+        _autoDestravTimer = setTimeout(() => {
+          _autoDestravTimer = null;
+          if (mySala) destravaNarracao();
+        }, 15000);
+      }
+    } else if (_autoDestravTimer) {
+      clearTimeout(_autoDestravTimer);
+      _autoDestravTimer = null;
+    }
+
     // Host narra quando estado = 'aguardando' e todos enviaram ação
     if (amIHost && config.estado === 'aguardando') {
       const ativos = Object.values(jogadores).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente);
@@ -2971,10 +2986,11 @@ function atualizarInputArea(eu, config) {
 
   const totalAtivos = Object.values(_jogadoresCache || {}).filter(j => j.vivo && j.consciente && j.ativo && !j.ausente).length;
   const soloMode    = totalAtivos <= 1;
-  if (morto)         setActionStatus('Seu personagem está fora de combate.');
-  else if (narrando) setActionStatus('⏳ Narrando...');
-  else if (jaEnviou) setActionStatus(soloMode ? '⏳ Processando ação...' : '⏳ Aguardando os outros jogadores...');
-  else               setActionStatus('');
+  if (morto)                            setActionStatus('Seu personagem está fora de combate.');
+  else if (narrando)                    setActionStatus('⏳ Narrando...');
+  else if (config.falhouNarracao && jaEnviou) setActionStatus('⚠ API falhou — retentando em breve...');
+  else if (jaEnviou)                    setActionStatus(soloMode ? '⏳ Processando ação...' : '⏳ Aguardando os outros jogadores...');
+  else                                  setActionStatus('');
 
   atualizarPromptAcao(eu, config);
 
@@ -2984,7 +3000,7 @@ function atualizarInputArea(eu, config) {
   if (btnHist) btnHist.style.display = amIHost ? 'inline-flex' : 'none';
 
   const btnDestravar = document.getElementById('btn-destravar');
-  if (btnDestravar) btnDestravar.style.display = (amIHost && narrando) ? 'inline-flex' : 'none';
+  if (btnDestravar) btnDestravar.style.display = (amIHost && (narrando || config.falhouNarracao)) ? 'inline-flex' : 'none';
 
   const btnAv = document.getElementById('btn-avançar-hist');
   if (btnAv) {
