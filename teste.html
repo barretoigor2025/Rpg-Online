@@ -412,6 +412,23 @@ function handleSkillClick(actorId, skillIdx){
 
 let units=UDEFS.map(mkUnit);
 
+// Set initial facing for heroes toward nearest enemy
+function initHeroFacings(){
+  units.filter(u=>u.type==='hero').forEach(hero=>{
+    const enems=units.filter(u=>u.type==='enemy'&&u.alive);
+    if(!enems.length)return;
+    const nearest=enems.reduce((a,b)=>unitDist(hero,a)<=unitDist(hero,b)?a:b);
+    const dc=nearest.col-hero.col, dr=nearest.row-hero.row;
+    if(dc===0&&dr<0)hero.facing='N';
+    else if(dc===0&&dr>0)hero.facing='S';
+    else if(dc>0&&dr<=0)hero.facing='NE';
+    else if(dc>0&&dr>0)hero.facing='SE';
+    else if(dc<0&&dr<=0)hero.facing='NW';
+    else hero.facing='SW';
+  });
+}
+initHeroFacings();
+
 // Preload sprites
 units.forEach(u=>{
   if(!u.sprite)return;
@@ -1036,7 +1053,30 @@ function drawUnit(u){
   if(srcImg&&srcImg.complete&&srcImg.naturalWidth){
     const asp=srcImg.naturalWidth/srcImg.naturalHeight;
     const sw=sprH*asp;
-    ctx.drawImage(srcImg,cx-sw/2,footY-sprH,sw,sprH);
+    // Flip costas sprite horizontally based on facing direction
+    // (sprites are drawn facing LEFT by default; flip when enemies are to the right)
+    let flipH=false;
+    if(useCostas){
+      const f=u.facing||'N';
+      if(f==='NE'||f==='SE'){flipH=true;}
+      else if(f==='N'||f==='S'){
+        // ambiguous — use average enemy column
+        const enems=units.filter(e=>e.type==='enemy'&&e.alive);
+        if(enems.length){
+          const avgDc=enems.reduce((s,e)=>s+(e.col-u.col),0)/enems.length;
+          flipH=avgDc>0;
+        }
+      }
+    }
+    if(flipH){
+      ctx.save();
+      ctx.translate(cx,0);
+      ctx.scale(-1,1);
+      ctx.drawImage(srcImg,-sw/2,footY-sprH,sw,sprH);
+      ctx.restore();
+    }else{
+      ctx.drawImage(srcImg,cx-sw/2,footY-sprH,sw,sprH);
+    }
   }else{
     ctx.font=`${baseR}px serif`;ctx.textAlign='center';ctx.textBaseline='bottom';
     ctx.fillText(u.icon,cx,footY);
