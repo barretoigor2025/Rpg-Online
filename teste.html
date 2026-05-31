@@ -307,7 +307,7 @@ const UDEFS=[
   {id:'hero_arqueiro', name:'Arqueiro', type:'hero', classe:'arqueiro',
    hex:'D08', maxHp:22, ac:14, moveSpeed:5, size:'1x1',
    attrMod:3, attrName:'DES',
-   rangedWeapon:{name:'Arco Longo',range:8}, sprite:'sprites/arqueiro_m.png', icon:'🏹'},
+   rangedWeapon:{name:'Arco Longo',range:11}, sprite:'sprites/arqueiro_m.png', icon:'🏹'},
   {id:'hero_barbaro', name:'Bárbaro', type:'hero', classe:'barbaro',
    hex:'E07', maxHp:32, ac:13, moveSpeed:4, size:'1x1',
    attrMod:4, attrName:'FOR',
@@ -315,7 +315,7 @@ const UDEFS=[
   {id:'hero_mago', name:'Mago', type:'hero', classe:'mago',
    hex:'F08', maxHp:16, ac:11, moveSpeed:3, size:'1x1',
    attrMod:3, attrName:'INT',
-   rangedWeapon:{name:'Raio Arcano',range:6}, sprite:'sprites/mago.png', icon:'🔮'},
+   rangedWeapon:{name:'Raio Arcano',range:9}, sprite:'sprites/mago.png', icon:'🔮'},
   // Inimigos
   {id:'espa_01', name:'Espantalho I',  type:'enemy',
    hex:'E03', maxHp:14, ac:10, moveSpeed:3, size:'1x1',
@@ -339,20 +339,20 @@ const SKILLS={
     {name:'Golpe',       icon:'🪓', type:'melee',     range:1, dmg:'2d6+3'},
     {name:'Fúria',       icon:'🔥', type:'self',              dmg:'+2 dano · +4 PV temp.'},
     {name:'Devastador',  icon:'💥', type:'melee',     range:1, dmg:'3d6+3', uses:'1/desc'},
-    {name:'Uivo de Guerra',icon:'📢',type:'aoe',      range:2, dmg:'CD12 SAB ou −2 atk'},
+    {name:'Uivo de Guerra',icon:'📢',type:'aoe',      range:4, dmg:'CD12 SAB ou −2 atk'},
     {name:'Pele de Ferro',icon:'🛡', type:'passive',          dmg:'+1 CA em Fúria'},
   ],
   arqueiro:[
-    {name:'Arco Longo',  icon:'🏹', type:'ranged',    range:8, dmg:'1d6+2'},
-    {name:'Tiro Preciso',icon:'🎯', type:'ranged',    range:8, dmg:'2d6+2', uses:'1/desc'},
-    {name:'Chuva de Flechas',icon:'🌧',type:'ranged_aoe',range:6,aoe:2,dmg:'1d6 × 3 alvos'},
+    {name:'Arco Longo',  icon:'🏹', type:'ranged',    range:11, dmg:'1d6+2'},
+    {name:'Tiro Preciso',icon:'🎯', type:'ranged',    range:11, dmg:'2d6+2', uses:'1/desc'},
+    {name:'Chuva de Flechas',icon:'🌧',type:'ranged_aoe',range:9,aoe:2,dmg:'1d6 × 3 alvos'},
     {name:'Passo do Vento',icon:'💨',type:'passive',         dmg:'+2 hex · sem atk de op.'},
     {name:'Olho de Águia',icon:'👁', type:'passive',         dmg:'Ignora penalidade dist.'},
   ],
   mago:[
-    {name:'Raio Arcano', icon:'⚡', type:'ranged',    range:6, dmg:'1d8+2'},
-    {name:'Bola de Fogo',icon:'🔥', type:'ranged_aoe',range:5, aoe:2, dmg:'3d6 (CD13 DEX)'},
-    {name:'Flecha de Gelo',icon:'❄',type:'ranged',    range:7, dmg:'1d10 · lento 1t'},
+    {name:'Raio Arcano', icon:'⚡', type:'ranged',    range:9, dmg:'1d8+2'},
+    {name:'Bola de Fogo',icon:'🔥', type:'ranged_aoe',range:9, aoe:3, dmg:'3d6 (CD13 DEX)'},
+    {name:'Flecha de Gelo',icon:'❄',type:'ranged',    range:10, dmg:'1d10 · lento 1t'},
     {name:'Escudo Arcano',icon:'🛡', type:'self',             dmg:'+3 CA por 2 turnos'},
     {name:'Toque do Vazio',icon:'👻',type:'melee',    range:1, dmg:'2d4+2 · ignora CA armadura'},
   ],
@@ -1218,55 +1218,34 @@ function toggleDebug(){
 }
 
 // ═══════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════
-mapImg.addEventListener('load',()=>{layoutMap();render();});
-window.addEventListener('resize',()=>{layoutMap();render();});
-layoutMap();
-if(mapImg.complete)render();
-updateHdr();
-addLog('Heróis: Bárbaro (E07) · Arqueiro (D08) · Mago (F08)','h');
-addLog('Inimigos: Espantalho I (E03) · II (G03) · Barkthresher 2×2 (F05-G06) · Larva Gigante 3×2 (H02-J03)','e');
-addLog('Narre: "Bárbaro avança para E05 e ataca o Espantalho" · "fim de turno"','s');
-
-// ═══════════════════════════════════════════════
-//  DICE OVERLAY — portrait helper
+//  DICE OVERLAY — helpers
 // ═══════════════════════════════════════════════
 function getPortraitAtaque(name){
   const u=units.find(un=>un.name===name||un.id===name);
   if(u)return{src:u.sprite||null,cor:u.type==='hero'?'#4488cc':'#cc4444',icon:u.icon||'⚔'};
   return{src:null,cor:'#888',icon:'⚔'};
 }
-
-// ═══════════════════════════════════════════════
-//  DICE OVERLAY — notation parser
-// ═══════════════════════════════════════════════
 function parseNotacao(str){
-  // extracts first dice expression, ignoring trailing text like " · +4 PV temp."
   const m=str.match(/(\d+)d(\d+)([+-]\d+)?/);
   if(!m)return null;
   return{dice:parseInt(m[1]),sides:parseInt(m[2]),bonus:m[3]?parseInt(m[3]):0};
 }
 function rollNotacao(str){
-  const p=parseNotacao(str);if(!p)return{total:0,notation:str};
+  const p=parseNotacao(str);if(!p)return{total:0,notation:str,sides:6};
   let t=p.bonus;for(let i=0;i<p.dice;i++)t+=Math.floor(Math.random()*p.sides)+1;
-  return{total:Math.max(0,t),notation:str,sides:p.sides};
+  return{total:Math.max(1,t),notation:str,sides:p.sides};
 }
 
-// ═══════════════════════════════════════════════
-//  DICE OVERLAY (Three.js)
-// ═══════════════════════════════════════════════
-const DiceOverlay = (function () {
-  let _rend = null, _scene = null, _cam = null;
-  let _mesh = null, _raf = null, _t0 = null, _lastTS = null;
-  let _svx = 0, _svy = 0, _svz = 0, _resultShown = false, _onStop = null;
-  const FE = 1.15, SF = 1.8, SS = 2.35;
-
-  function _buildDOM() {
-    const ov = document.getElementById('teste-overlay');
-    if (!ov || ov.querySelector('.dado-card-jogo')) return ov;
-    const SZ = Math.min(window.innerWidth * 0.32, 130) | 0;
-    ov.innerHTML = `<div class="dado-card-jogo">
+const DiceOverlay=(function(){
+  let _rend=null,_scene=null,_cam=null;
+  let _mesh=null,_raf=null,_t0=null,_lastTS=null;
+  let _svx=0,_svy=0,_svz=0,_resultShown=false,_onStop=null;
+  const FE=1.15,SF=1.8,SS=2.35;
+  function _buildDOM(){
+    const ov=document.getElementById('teste-overlay');
+    if(!ov||ov.querySelector('.dado-card-jogo'))return ov;
+    const SZ=Math.min(window.innerWidth*0.32,130)|0;
+    ov.innerHTML=`<div class="dado-card-jogo">
       <div id="dado-titulo-acao" class="dado-titulo-acao"></div>
       <div id="dado-label-atual" class="dado-label-atual"></div>
       <div class="dado-versus-row">
@@ -1285,134 +1264,102 @@ const DiceOverlay = (function () {
     </div>`;
     return ov;
   }
-
-  function _initThree() {
-    if (_rend) return true;
-    if (typeof THREE === 'undefined') return false;
-    const cv = document.getElementById('dado-canvas-jogo');
-    if (!cv) return false;
-    const SZ = cv.width;
-    _rend = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true });
-    _rend.setPixelRatio(Math.min(devicePixelRatio, 2));
-    _rend.setSize(SZ, SZ);
-    _rend.setClearColor(0x000000, 0);
-    _scene = new THREE.Scene();
-    _cam = new THREE.PerspectiveCamera(38, 1, 1, 2000);
-    _cam.position.set(0, 0, 350);
-    _scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-    const key = new THREE.DirectionalLight(0xffe8cc, 1.15);
-    key.position.set(100, 180, 120);
-    _scene.add(key);
-    const fill = new THREE.DirectionalLight(0xaad0ff, 0.38);
-    fill.position.set(-80, 40, 60);
-    _scene.add(fill);
-    const rim = new THREE.PointLight(0xff3311, 0.55, 900);
-    rim.position.set(-150, 80, -220);
-    _scene.add(rim);
+  function _initThree(){
+    if(_rend)return true;
+    if(typeof THREE==='undefined')return false;
+    const cv=document.getElementById('dado-canvas-jogo');
+    if(!cv)return false;
+    const SZ=cv.width;
+    _rend=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+    _rend.setPixelRatio(Math.min(devicePixelRatio,2));
+    _rend.setSize(SZ,SZ);
+    _rend.setClearColor(0x000000,0);
+    _scene=new THREE.Scene();
+    _cam=new THREE.PerspectiveCamera(38,1,1,2000);
+    _cam.position.set(0,0,350);
+    _scene.add(new THREE.AmbientLight(0xffffff,0.5));
+    const key=new THREE.DirectionalLight(0xffe8cc,1.15);key.position.set(100,180,120);_scene.add(key);
+    const fill=new THREE.DirectionalLight(0xaad0ff,0.38);fill.position.set(-80,40,60);_scene.add(fill);
+    const rim=new THREE.PointLight(0xff3311,0.55,900);rim.position.set(-150,80,-220);_scene.add(rim);
     return true;
   }
-
-  function _geoD10() {
-    const v = [0,95,0, 0,-95,0];
-    for (let i=0;i<5;i++){const a=(Math.PI*2*i/5)-Math.PI/2;v.push(74*Math.cos(a),0,74*Math.sin(a));}
-    const idx=[];
-    for(let i=0;i<5;i++){idx.push(0,2+i,2+(i+1)%5);idx.push(1,2+(i+1)%5,2+i);}
+  function _geoD10(){
+    const v=[0,95,0,0,-95,0];
+    for(let i=0;i<5;i++){const a=(Math.PI*2*i/5)-Math.PI/2;v.push(74*Math.cos(a),0,74*Math.sin(a));}
+    const idx=[];for(let i=0;i<5;i++){idx.push(0,2+i,2+(i+1)%5);idx.push(1,2+(i+1)%5,2+i);}
     const g=new THREE.BufferGeometry();
     g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));
     g.setIndex(idx);g.computeVertexNormals();return g;
   }
-
-  function _geo(lados) {
-    if (lados===4)  return new THREE.TetrahedronGeometry(72);
-    if (lados===6)  return new THREE.BoxGeometry(105,105,105);
-    if (lados===8)  return new THREE.OctahedronGeometry(72);
-    if (lados===10) return _geoD10();
-    if (lados===12) return new THREE.DodecahedronGeometry(68);
+  function _geo(lados){
+    if(lados===4)return new THREE.TetrahedronGeometry(72);
+    if(lados===6)return new THREE.BoxGeometry(105,105,105);
+    if(lados===8)return new THREE.OctahedronGeometry(72);
+    if(lados===10)return _geoD10();
+    if(lados===12)return new THREE.DodecahedronGeometry(68);
     return new THREE.IcosahedronGeometry(72,0);
   }
-
-  function _makeMesh(lados) {
-    const g = _geo(lados);
-    const mat = new THREE.MeshStandardMaterial({ color:0xbf1a0c, roughness:0.28, metalness:0.08, side:THREE.DoubleSide });
-    const m = new THREE.Mesh(g, mat);
-    m.castShadow = true;
-    const edges = new THREE.EdgesGeometry(g, lados<=6?20:30);
-    m.add(new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color:0xffffff, transparent:true, opacity:0.45 })));
+  function _makeMesh(lados){
+    const g=_geo(lados);
+    const mat=new THREE.MeshStandardMaterial({color:0xbf1a0c,roughness:0.28,metalness:0.08,side:THREE.DoubleSide});
+    const m=new THREE.Mesh(g,mat);m.castShadow=true;
+    m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g,lados<=6?20:30),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.45})));
     return m;
   }
-
-  function _bounce(t) {
+  function _bounce(t){
     if(t<1/2.75)return 7.5625*t*t;
     if(t<2/2.75){t-=1.5/2.75;return 7.5625*t*t+.75;}
     if(t<2.5/2.75){t-=2.25/2.75;return 7.5625*t*t+.9375;}
     t-=2.625/2.75;return 7.5625*t*t+.984375;
   }
-
-  function _loop(ts) {
-    if (!_t0) _t0 = ts;
-    const dt = _lastTS ? (ts-_lastTS)/1000 : 0;
-    _lastTS = ts;
-    const t = (ts-_t0)/1000;
-    if (_mesh) {
-      _mesh.position.y = 140 - 140*_bounce(Math.min(t/FE,1));
-      const fp = Math.min(t/FE,1);
-      if (fp>0.70&&fp<0.88){const i=(0.88-fp)/0.18;_cam.position.x=(Math.random()-.5)*7*i;_cam.position.y=(Math.random()-.5)*5*i;}
+  function _loop(ts){
+    if(!_t0)_t0=ts;
+    const dt=_lastTS?(ts-_lastTS)/1000:0;_lastTS=ts;
+    const t=(ts-_t0)/1000;
+    if(_mesh){
+      _mesh.position.y=140-140*_bounce(Math.min(t/FE,1));
+      const fp=Math.min(t/FE,1);
+      if(fp>0.70&&fp<0.88){const i=(0.88-fp)/0.18;_cam.position.x=(Math.random()-.5)*7*i;_cam.position.y=(Math.random()-.5)*5*i;}
       else{_cam.position.x*=0.85;_cam.position.y*=0.85;}
       let sm;
-      if(t<SF) sm=1;
-      else if(t<SS) sm=Math.pow(1-(t-SF)/(SS-SF),2.5);
-      else {
-        sm=0;
-        if(!_resultShown){_resultShown=true;_rend.render(_scene,_cam);if(_onStop)_onStop();}
-        return;
-      }
-      _mesh.rotation.x+=_svx*sm*dt;
-      _mesh.rotation.y+=_svy*sm*dt;
-      _mesh.rotation.z+=_svz*sm*dt;
+      if(t<SF)sm=1;
+      else if(t<SS)sm=Math.pow(1-(t-SF)/(SS-SF),2.5);
+      else{sm=0;if(!_resultShown){_resultShown=true;_rend.render(_scene,_cam);if(_onStop)_onStop();}return;}
+      _mesh.rotation.x+=_svx*sm*dt;_mesh.rotation.y+=_svy*sm*dt;_mesh.rotation.z+=_svz*sm*dt;
     }
-    _rend.render(_scene,_cam);
-    _raf=requestAnimationFrame(_loop);
+    _rend.render(_scene,_cam);_raf=requestAnimationFrame(_loop);
   }
-
-  function _launch(lados, onStop) {
-    if (!_initThree()) { onStop(); return; }
-    if (_mesh){_scene.remove(_mesh);_mesh=null;}
-    if (_raf){cancelAnimationFrame(_raf);_raf=null;}
+  function _launch(lados,onStop){
+    if(!_initThree()){onStop();return;}
+    if(_mesh){_scene.remove(_mesh);_mesh=null;}
+    if(_raf){cancelAnimationFrame(_raf);_raf=null;}
     _mesh=_makeMesh(lados);_mesh.position.set(0,140,0);_scene.add(_mesh);
     const b=18;
     _svx=(Math.random()-.5)*b+(Math.random()>.5?8:-8);
     _svy=(Math.random()-.5)*b+(Math.random()>.5?8:-8);
     _svz=(Math.random()-.5)*(b*.7);
-    _t0=null;_lastTS=null;_resultShown=false;_onStop=onStop;
-    _raf=requestAnimationFrame(_loop);
+    _t0=null;_lastTS=null;_resultShown=false;_onStop=onStop;_raf=requestAnimationFrame(_loop);
   }
-
-  function _clean() {
+  function _clean(){
     if(_raf){cancelAnimationFrame(_raf);_raf=null;}
     if(_mesh&&_scene){_scene.remove(_mesh);_mesh=null;}
     if(_rend&&_cam&&_scene){_cam.position.set(0,0,350);_rend.render(_scene,_cam);}
   }
-
-  function mostrar(rolls, afterCb) {
-    const ov = _buildDOM();
-    if (!ov) { afterCb(rolls); return; }
-    // Reset Three.js if canvas was rebuilt
-    const cv = document.getElementById('dado-canvas-jogo');
-    if (cv && (!_rend || _rend.domElement !== cv)) _rend = null;
-    ov.style.display = 'flex';
-
-    const titulo = document.getElementById('dado-titulo-acao');
-    const label  = document.getElementById('dado-label-atual');
-    const resDiv = document.getElementById('dado-resultado-atual');
-    const numEl  = document.getElementById('dado-num-jogo');
-    const detEl  = document.getElementById('dado-detalhe-jogo');
-    const vered  = document.getElementById('dado-veredicto-jogo');
-    const hist   = document.getElementById('dado-historico');
-
-    titulo.textContent = rolls[0]?.nomeJog || '';
-    hist.innerHTML = '';
-
-    function addHist(r) {
+  function mostrar(rolls,afterCb){
+    const ov=_buildDOM();
+    if(!ov){afterCb(rolls);return;}
+    const cv=document.getElementById('dado-canvas-jogo');
+    if(cv&&(!_rend||_rend.domElement!==cv))_rend=null;
+    ov.style.display='flex';
+    const titulo=document.getElementById('dado-titulo-acao');
+    const label=document.getElementById('dado-label-atual');
+    const resDiv=document.getElementById('dado-resultado-atual');
+    const numEl=document.getElementById('dado-num-jogo');
+    const detEl=document.getElementById('dado-detalhe-jogo');
+    const vered=document.getElementById('dado-veredicto-jogo');
+    const hist=document.getElementById('dado-historico');
+    titulo.textContent=rolls[0]?.nomeJog||'';hist.innerHTML='';
+    function addHist(r){
       let ic,vc,vt,rs;
       if(r.tipo==='testar'){
         if(r.catastrofe){ic='💀';vc='ct';vt='CATÁSTROFE';}
@@ -1420,172 +1367,124 @@ const DiceOverlay = (function () {
         else if(r.sucesso){ic='✓';vc='s';vt='ACERTO';}
         else{ic='✕';vc='f';vt='FALHA';}
         rs=`${r.d20}${r.modStr}=${r.total} CD${r.dc}`;
-      } else {ic='🎲';vc='d';vt=String(r.resultado);rs=r.notacao;}
-      const ln=document.createElement('div');
-      ln.className='dado-hist-linha';
+      }else{ic='🎲';vc='d';vt=String(r.resultado);rs=r.notacao;}
+      const ln=document.createElement('div');ln.className='dado-hist-linha';
       ln.innerHTML=`<span class="dado-hist-icone">${ic}</span><span class="dado-hist-label">${r.label}</span><span class="dado-hist-roll">${rs}</span><span class="dado-hist-vered ${vc}">${vt}</span>`;
-      hist.appendChild(ln);
-      hist.scrollTop=hist.scrollHeight;
+      hist.appendChild(ln);hist.scrollTop=hist.scrollHeight;
     }
-
-    function next(idx) {
-      if (idx >= rolls.length) {
-        setTimeout(() => { ov.style.display='none'; _clean(); afterCb(rolls); }, 1200);
-        return;
-      }
-      const r = rolls[idx];
-      // Dado de dano cancelado se ataque pai errou
-      if (r.condicionalDe !== undefined && rolls[r.condicionalDe] && !rolls[r.condicionalDe].sucesso) {
-        const sk=document.createElement('div');
-        sk.className='dado-hist-linha';
+    function next(idx){
+      if(idx>=rolls.length){setTimeout(()=>{ov.style.display='none';_clean();afterCb(rolls);},1200);return;}
+      const r=rolls[idx];
+      if(r.condicionalDe!==undefined&&rolls[r.condicionalDe]&&!rolls[r.condicionalDe].sucesso){
+        const sk=document.createElement('div');sk.className='dado-hist-linha';
         sk.innerHTML=`<span class="dado-hist-icone">—</span><span class="dado-hist-label">${r.label}</span><span class="dado-hist-roll" style="opacity:.35">ataque errou</span><span class="dado-hist-vered f">CANCELADO</span>`;
-        hist.appendChild(sk);
-        setTimeout(()=>next(idx+1),700);
-        return;
+        hist.appendChild(sk);setTimeout(()=>next(idx+1),700);return;
       }
-
-      numEl.classList.remove('visivel');
-      resDiv.classList.remove('visivel');
-      numEl.textContent='';detEl.textContent='';
-      vered.textContent='';vered.className='dado-veredicto-jogo';
-      label.textContent = r.label;
-
-      // Atualizar portraits versus
-      const _esq = document.getElementById('dado-portrait-esq');
-      const _dir = document.getElementById('dado-portrait-dir');
-      if (_esq) {
-        const _p = getPortraitAtaque(r.nomeJog || '');
-        _esq.style.cssText += `;background:${_p.cor}22;border-color:${_p.cor}55`;
-        _esq.innerHTML = _p.src
-          ? `<img src="${_p.src}" class="espelhado" onerror="this.style.opacity='.15'"><div class="dado-portrait-nome">${r.nomeJog||''}</div>`
-          : `<span>${_p.icon}</span><div class="dado-portrait-nome">${r.nomeJog||''}</div>`;
+      numEl.classList.remove('visivel');resDiv.classList.remove('visivel');
+      numEl.textContent='';detEl.textContent='';vered.textContent='';vered.className='dado-veredicto-jogo';
+      label.textContent=r.label;
+      const _esq=document.getElementById('dado-portrait-esq');
+      const _dir=document.getElementById('dado-portrait-dir');
+      if(_esq){
+        const _p=getPortraitAtaque(r.nomeJog||'');
+        _esq.style.cssText+=`;background:${_p.cor}22;border-color:${_p.cor}55`;
+        _esq.innerHTML=_p.src?`<img src="${_p.src}" class="espelhado" onerror="this.style.opacity='.15'"><div class="dado-portrait-nome">${r.nomeJog||''}</div>`:`<span>${_p.icon}</span><div class="dado-portrait-nome">${r.nomeJog||''}</div>`;
       }
-      if (_dir) {
-        if (r.alvo) {
-          const _p = getPortraitAtaque(r.alvo);
-          _dir.style.cssText += `;display:flex;background:${_p.cor}22;border-color:${_p.cor}55`;
-          _dir.innerHTML = _p.src
-            ? `<img src="${_p.src}" onerror="this.style.opacity='.15'"><div class="dado-portrait-nome">${r.alvo}</div>`
-            : `<span>${_p.icon}</span><div class="dado-portrait-nome">${r.alvo}</div>`;
-        } else {
-          _dir.style.display = 'none';
-        }
+      if(_dir){
+        if(r.alvo){
+          const _p=getPortraitAtaque(r.alvo);
+          _dir.style.cssText+=`;display:flex;background:${_p.cor}22;border-color:${_p.cor}55`;
+          _dir.innerHTML=_p.src?`<img src="${_p.src}" onerror="this.style.opacity='.15'"><div class="dado-portrait-nome">${r.alvo}</div>`:`<span>${_p.icon}</span><div class="dado-portrait-nome">${r.alvo}</div>`;
+        }else{_dir.style.display='none';}
       }
-
-      const lados = r.tipo==='testar' ? 20 : (r.dados||20);
-      _launch(lados, () => {
-        if (r.tipo==='testar') {
+      const lados=r.tipo==='testar'?20:(r.dados||20);
+      _launch(lados,()=>{
+        if(r.tipo==='testar'){
           numEl.textContent=String(r.total);
           const glow=r.critico?'rgba(255,215,0,.9)':r.catastrofe?'rgba(255,40,40,.9)':r.sucesso?'rgba(100,230,100,.9)':'rgba(230,80,80,.9)';
           numEl.style.textShadow=`0 2px 10px rgba(0,0,0,.95),0 0 24px ${glow}`;
           detEl.textContent=`${r.d20}${r.modStr} = ${r.total} · CD ${r.dc}`;
-        } else {
+        }else{
           numEl.textContent=String(r.resultado);
           numEl.style.textShadow='0 2px 10px rgba(0,0,0,.95),0 0 24px rgba(255,160,40,.85)';
           detEl.textContent=r.notacao;
         }
-        numEl.classList.add('visivel');
-        resDiv.classList.add('visivel');
-        // +0.5s → veredicto
-        setTimeout(() => {
+        numEl.classList.add('visivel');resDiv.classList.add('visivel');
+        setTimeout(()=>{
           if(r.tipo==='testar'){
             if(r.catastrofe){vered.textContent='💀 CATÁSTROFE!';vered.className='dado-veredicto-jogo catastrofe visivel';}
             else if(r.critico){vered.textContent='⭐ CRÍTICO!';vered.className='dado-veredicto-jogo critico visivel';}
             else if(r.sucesso){vered.textContent='✦ ACERTO ✦';vered.className='dado-veredicto-jogo sucesso visivel';}
             else{vered.textContent='✕ FALHA ✕';vered.className='dado-veredicto-jogo falha visivel';}
-          } else {
-            vered.textContent=`🎲 ${r.resultado}`;
-            vered.className='dado-veredicto-jogo critico visivel';
-          }
-          // +1.0s → historico + próximo
-          setTimeout(() => { addHist(r); setTimeout(()=>next(idx+1), 900); }, 1000);
-        }, 500);
+          }else{vered.textContent=`🎲 ${r.resultado}`;vered.className='dado-veredicto-jogo critico visivel';}
+          setTimeout(()=>{addHist(r);setTimeout(()=>next(idx+1),900);},1000);
+        },500);
       });
     }
     next(0);
   }
-
-  return { mostrar };
+  return{mostrar};
 })();
 
 // ═══════════════════════════════════════════════
 //  ROLL SKILL — trigger dice for a skill click
 // ═══════════════════════════════════════════════
-function rollSkillVsTarget(actorId, sk, targetId){
+function rollSkillVsTarget(actorId,sk,targetId){
   const actor=getUnit(actorId);
   const target=targetId?getUnit(targetId):null;
   if(!actor)return;
-
-  const playlist=[];
   const atMod=actor.attrMod||2;
-  const atName=actor.attrName||'ATK';
-
+  const playlist=[];
   if(sk.type==='self'||sk.type==='passive'){
-    // Self-use or passive: just log, no roll
-    addLog(`${actor.name} usa ${sk.icon} ${sk.name}${sk.dmg?' — '+sk.dmg:''}`, 'n');
-    return;
+    addLog(`${actor.name} usa ${sk.icon} ${sk.name}${sk.dmg?' — '+sk.dmg:''}`,'n');return;
   }
-
   if(sk.type==='aoe'){
-    // AOE: roll damage, no attack roll
     const dmgR=rollNotacao(sk.dmg||'1d6');
-    const tgts=enemies().filter(e=>unitDist(actor,e)<=sk.range);
-    addLog(`${actor.name} usa ${sk.icon} ${sk.name} — ${dmgR.total} dano a ${tgts.length} alvo(s)`, 'n');
-    tgts.forEach(e=>{e.hp=Math.max(0,e.hp-dmgR.total);if(e.hp<=0){e.alive=false;addLog(`${e.name} derrotado!`,'s');}});
-    render();
-    return;
+    const tgts=enemies().filter(e=>unitDist(actor,e)<=(sk.range||2));
+    tgts.forEach(e=>{e.hp=Math.max(0,e.hp-dmgR.total);if(e.hp<=0)e.alive=false;});
+    addLog(`${actor.name} usa ${sk.icon} ${sk.name} — ${dmgR.total} dano a ${tgts.length} alvo(s)`,'s');
+    render();return;
   }
-
   if(!target){addLog(`${sk.icon} ${sk.name}: selecione um alvo.`,'n');return;}
-
-  // Attack roll (testar)
   const d20=Math.floor(Math.random()*20)+1;
   const total=d20+atMod;
-  const sucesso=total>=target.ac||d20===20;
   const critico=d20===20;
   const catastrofe=d20===1;
-  playlist.push({
-    tipo:'testar',label:`${sk.icon} ${sk.name}`,
-    nomeJog:actor.name,alvo:target.name,
-    d20,modStr:atMod>=0?`+${atMod}`:`${atMod}`,total,
-    dc:target.ac,sucesso:sucesso&&!catastrofe,critico,catastrofe
-  });
-
-  // Damage roll if hit and skill has dmg
+  const sucesso=(total>=target.ac||critico)&&!catastrofe;
+  playlist.push({tipo:'testar',label:`${sk.icon} ${sk.name}`,nomeJog:actor.name,alvo:target.name,d20,modStr:atMod>=0?`+${atMod}`:`${atMod}`,total,dc:target.ac,sucesso,critico,catastrofe});
   if((sucesso||critico)&&!catastrofe&&sk.dmg){
     const dmgR=rollNotacao(sk.dmg);
     const finalDmg=critico?dmgR.total*2:dmgR.total;
-    playlist.push({
-      tipo:'rolar',label:`Dano ${sk.icon}`,
-      nomeJog:actor.name,alvo:target.name,
-      resultado:finalDmg,notacao:critico?`${sk.dmg} (CRÍTICO×2)`:sk.dmg,
-      dados:parseNotacao(sk.dmg)?.sides||6,
-      condicionalDe:0
-    });
-    // Apply damage after overlay finishes (in afterCb)
+    playlist.push({tipo:'rolar',label:`Dano ${sk.icon}`,nomeJog:actor.name,alvo:target.name,resultado:finalDmg,notacao:critico?`${sk.dmg} (CRÍTICO×2)`:sk.dmg,dados:parseNotacao(sk.dmg)?.sides||6,condicionalDe:0});
   }
-
   document.getElementById('action-popup').style.display='none';
   selId=null;
-
-  DiceOverlay.mostrar(playlist, (results)=>{
+  DiceOverlay.mostrar(playlist,(results)=>{
     const atk=results[0];
     if(atk.catastrofe){
-      addLog(`💀 CATÁSTROFE! ${actor.name} erra feio.`,'f');
-    } else if(atk.sucesso||atk.critico){
+      addLog(`💀 CATÁSTROFE! ${actor.name} erra e sofre as consequências.`,'f');
+    }else if(atk.sucesso||atk.critico){
       const dmgRoll=results[1];
       const dmg=dmgRoll?dmgRoll.resultado:0;
       target.hp=Math.max(0,target.hp-dmg);
-      const crit=atk.critico?' (CRÍTICO!)':'';
-      addLog(`${atk.critico?'⭐':'✦'} ${actor.name}: ${sk.name}${crit} → ${target.name} sofre ${dmg} dano (${target.hp}/${target.maxHp} PV)`,'s');
-      if(target.hp<=0){target.alive=false;addLog(`☠ ${target.name} foi derrotado!`,'s');}
-    } else {
+      addLog(`${atk.critico?'⭐':'✦'} ${actor.name}: ${sk.name}${atk.critico?' (CRÍTICO!)':''} → ${target.name} sofre ${dmg} dano (${target.hp}/${target.maxHp} PV)`,'s');
+      if(target.hp<=0){target.alive=false;addLog(`☠ ${target.name} foi derrotado!`,'x');}
+    }else{
       addLog(`✕ ${actor.name}: ${sk.name} errou ${target.name} (${atk.total} vs CA ${target.ac})`,'f');
     }
-    actor.hasActed=true;
-    render();
+    actor.hasActed=true;render();
   });
 }
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+mapImg.addEventListener('load',()=>{layoutMap();render();});
+window.addEventListener('resize',()=>{layoutMap();render();});
+layoutMap();
+if(mapImg.complete)render();
+updateHdr();
+addLog('Heróis: Bárbaro (E07) · Arqueiro (D08) · Mago (F08)','h');
 </script>
 </body>
 </html>
