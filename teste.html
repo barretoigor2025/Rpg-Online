@@ -119,7 +119,43 @@ header{
   border-radius:5px;padding:5px 9px;font-size:10px;color:#e2d5b0;
   pointer-events:none;z-index:200;display:none;max-width:150px;line-height:1.5
 }
+
+/* ══ OVERLAY DE DADOS 3D ══ */
+#teste-overlay{position:fixed;inset:0;z-index:300;background:rgba(3,5,10,.93);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;}
+.dado-card-jogo{background:rgba(8,10,20,.96);border:1px solid rgba(191,26,12,.3);border-radius:18px;width:min(340px,90vw);max-height:88vh;display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 18px 16px;box-shadow:0 8px 48px rgba(0,0,0,.8);overflow:hidden;}
+.dado-titulo-acao{font-size:10px;color:rgba(200,160,80,.65);letter-spacing:2px;text-transform:uppercase;text-align:center;min-height:14px;}
+.dado-label-atual{font-size:9px;color:rgba(200,160,80,.38);letter-spacing:2.5px;text-transform:uppercase;text-align:center;min-height:12px;}
+#dado-canvas-jogo{border-radius:8px;display:block;}
+.dado-canvas-wrap{position:relative;flex-shrink:0;}
+.dado-resultado-atual{display:flex;flex-direction:column;align-items:center;gap:3px;min-height:40px;justify-content:center;opacity:0;transform:scale(.65);transition:opacity .35s ease,transform .35s cubic-bezier(.15,.9,.25,1.2);}
+.dado-resultado-atual.visivel{opacity:1;transform:scale(1);}
+.dado-num-jogo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:62px;font-weight:900;color:#fff;line-height:1;letter-spacing:-3px;pointer-events:none;z-index:10;opacity:0;transform:scale(.75);transition:opacity .28s,transform .32s cubic-bezier(.15,.9,.25,1.2);}
+.dado-num-jogo.visivel{opacity:1;transform:scale(1);}
+.dado-detalhe-jogo{font-size:11px;color:rgba(255,255,255,.38);font-style:italic;min-height:15px;}
+.dado-veredicto-jogo{font-size:13px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;padding:2px 14px;border-radius:4px;min-height:22px;opacity:0;transform:scale(.7);transition:opacity .28s ease .05s,transform .28s cubic-bezier(.15,.9,.25,1.2) .05s;}
+.dado-veredicto-jogo.visivel{opacity:1;transform:scale(1);}
+.dado-veredicto-jogo.sucesso{color:#7adc7a;background:rgba(80,180,80,.1);border:1px solid rgba(100,200,100,.25);}
+.dado-veredicto-jogo.falha{color:#e06060;background:rgba(180,50,50,.1);border:1px solid rgba(200,80,80,.25);}
+.dado-veredicto-jogo.critico{color:#ffd700;background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.4);text-shadow:0 0 12px rgba(255,215,0,.7);}
+.dado-veredicto-jogo.catastrofe{color:#ff4444;background:rgba(200,20,20,.15);border:1px solid rgba(200,30,30,.5);text-shadow:0 0 12px rgba(255,50,50,.8);}
+.dado-versus-row{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;}
+.dado-portrait-vs{flex-shrink:0;width:72px;display:flex;flex-direction:column;align-items:center;border-radius:8px;border:1px solid rgba(255,255,255,.12);overflow:hidden;background:rgba(255,255,255,.04);transition:background .3s,border-color .3s;}
+.dado-portrait-vs img{width:100%;height:100px;object-fit:cover;object-position:top center;display:block;}
+.dado-portrait-vs span{font-size:26px;margin:10px 0 4px;}
+.dado-portrait-nome{font-size:7px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;text-align:center;padding:3px 2px;background:rgba(0,0,0,.45);width:100%;}
+.dado-historico{width:100%;display:flex;flex-direction:column;gap:3px;max-height:150px;overflow-y:auto;margin-top:2px;}
+.dado-hist-linha{display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:4px;background:rgba(255,255,255,.03);font-size:10px;animation:dado-hist-in .22s ease both;}
+@keyframes dado-hist-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.dado-hist-icone{flex-shrink:0;font-size:12px;}
+.dado-hist-label{flex:1;color:rgba(220,210,190,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dado-hist-roll{color:rgba(200,180,140,.7);font-variant-numeric:tabular-nums;white-space:nowrap;}
+.dado-hist-vered{font-weight:700;white-space:nowrap;font-size:9px;letter-spacing:.5px;}
+.dado-hist-vered.s{color:#7adc7a;}.dado-hist-vered.f{color:#e06060;}.dado-hist-vered.c{color:#ffd700;}.dado-hist-vered.ct{color:#ff4444;}.dado-hist-vered.d{color:#ffa040;}
+.espelhado{transform:scaleX(-1);}
+.ap-clickable{cursor:pointer;border-bottom:1px solid rgba(180,150,80,.15)!important;transition:background .15s;}
+.ap-clickable:hover{background:rgba(180,150,80,.07);}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 </head>
 <body>
 <div id="app">
@@ -172,6 +208,7 @@ header{
   </div>
 </div>
 <div id="tip"></div>
+<div id="teste-overlay" style="display:none"></div>
 <div id="action-popup">
   <div id="ap-header">
     <span id="ap-title"></span>
@@ -269,28 +306,31 @@ const UDEFS=[
   // Heróis — posições conforme ficha técnica
   {id:'hero_arqueiro', name:'Arqueiro', type:'hero', classe:'arqueiro',
    hex:'D08', maxHp:22, ac:14, moveSpeed:5, size:'1x1',
+   attrMod:3, attrName:'DES',
    rangedWeapon:{name:'Arco Longo',range:8}, sprite:'sprites/arqueiro_m.png', icon:'🏹'},
   {id:'hero_barbaro', name:'Bárbaro', type:'hero', classe:'barbaro',
    hex:'E07', maxHp:32, ac:13, moveSpeed:4, size:'1x1',
+   attrMod:4, attrName:'FOR',
    rangedWeapon:null, sprite:'sprites/barbaro_m.png', icon:'🪓'},
   {id:'hero_mago', name:'Mago', type:'hero', classe:'mago',
    hex:'F08', maxHp:16, ac:11, moveSpeed:3, size:'1x1',
+   attrMod:3, attrName:'INT',
    rangedWeapon:{name:'Raio Arcano',range:6}, sprite:'sprites/mago.png', icon:'🔮'},
   // Inimigos
   {id:'espa_01', name:'Espantalho I',  type:'enemy',
    hex:'E03', maxHp:14, ac:10, moveSpeed:3, size:'1x1',
-   sprite:'sprites/inimigo_espantalho_assombrado_costas.png', icon:'🌾'},
+   sprite:'sprites/inimigo_espantalho_assombrado.png', icon:'🌾'},
   {id:'espa_02', name:'Espantalho II', type:'enemy',
    hex:'G03', maxHp:14, ac:10, moveSpeed:3, size:'1x1',
-   sprite:'sprites/inimigo_espantalho_assombrado_costas.png', icon:'🌾'},
+   sprite:'sprites/inimigo_espantalho_assombrado.png', icon:'🌾'},
   // Boss 2×2 — âncora F05, ocupa F05 G05 F06 G06
   {id:'barkthresher', name:'Barkthresher', type:'enemy',
    hex:'F05', maxHp:45, ac:14, moveSpeed:2, size:'2x2',
-   sprite:'sprites/inimigo_barkthresher_costas.png', icon:'🌳'},
+   sprite:'sprites/inimigo_barkthresher.png', icon:'🌳'},
   // Maior criatura — Larva Gigante 3×2 (SM+2, "tamanho de uma carroça")
   {id:'larva_gigante', name:'Larva Gigante', type:'enemy',
    hex:'H02', maxHp:60, ac:10, moveSpeed:2, size:'3x2',
-   sprite:'sprites/inimigo_larva_gigante_costas.png', icon:'🐛'},
+   sprite:'sprites/inimigo_larva_gigante.png', icon:'🐛'},
 ];
 
 // ── Skills por classe (nome, tipo, alcance, dano) ──
@@ -336,9 +376,11 @@ function openActionPopup(u){
   const skList=SKILLS[u.classe]||[];
   document.getElementById('ap-title').textContent=`${u.name} — ${hexLbl(u.col,u.row)}`;
   let html='';
-  for(const sk of skList){
+  for(let i=0;i<skList.length;i++){
+    const sk=skList[i];
     const targets=getSkillTargets(u,sk);
-    html+=`<div class="ap-skill">`;
+    const canUse=targets&&targets.length>0&&!u.hasActed;
+    html+=`<div class="ap-skill${canUse?' ap-clickable':''}" ${canUse?`onclick="handleSkillClick('${u.id}',${i})"`:''}">`;
     html+=`<span class="ap-sname">${sk.icon} ${sk.name}</span>`;
     if(sk.dmg)html+=` <span class="ap-dmg">${sk.dmg}</span>`;
     if(sk.range)html+=` <span class="ap-range">↗${sk.range}h</span>`;
@@ -346,14 +388,23 @@ function openActionPopup(u){
     if(targets===null){
       html+=`<span class="ap-passive">${sk.type==='passive'?'⬤ Passivo':'⬤ Uso pessoal'}</span>`;
     }else if(targets.length){
-      html+=`<span class="ap-targets">◎ Alcança: ${targets.map(e=>e.name).join(' · ')}</span>`;
+      html+=`<span class="ap-targets">◎ ${targets.map(e=>`<span onclick="event.stopPropagation();rollSkillVsTarget('${u.id}',SKILLS['${u.classe}'][${i}],'${targets[0].id}')" style="cursor:pointer;text-decoration:underline">${e.name}</span>`).join(' · ')}</span>`;
     }else{
       html+=`<span class="ap-out">✗ Fora de alcance</span>`;
     }
     html+=`</div>`;
   }
   document.getElementById('ap-list').innerHTML=html||'<span class="ap-out">Sem habilidades registradas.</span>';
-  document.getElementById('action-popup').style.display='';
+  document.getElementById('action-popup').style.display='block';
+}
+
+function handleSkillClick(actorId, skillIdx){
+  const u=getUnit(actorId);if(!u)return;
+  const sk=SKILLS[u.classe]?.[skillIdx];if(!sk)return;
+  const targets=getSkillTargets(u,sk);
+  // Use first available target (or null for self/aoe)
+  const targetId=targets&&targets.length?targets[0].id:null;
+  rollSkillVsTarget(actorId,sk,targetId);
 }
 
 let units=UDEFS.map(mkUnit);
@@ -1177,6 +1228,364 @@ updateHdr();
 addLog('Heróis: Bárbaro (E07) · Arqueiro (D08) · Mago (F08)','h');
 addLog('Inimigos: Espantalho I (E03) · II (G03) · Barkthresher 2×2 (F05-G06) · Larva Gigante 3×2 (H02-J03)','e');
 addLog('Narre: "Bárbaro avança para E05 e ataca o Espantalho" · "fim de turno"','s');
+
+// ═══════════════════════════════════════════════
+//  DICE OVERLAY — portrait helper
+// ═══════════════════════════════════════════════
+function getPortraitAtaque(name){
+  const u=units.find(un=>un.name===name||un.id===name);
+  if(u)return{src:u.sprite||null,cor:u.type==='hero'?'#4488cc':'#cc4444',icon:u.icon||'⚔'};
+  return{src:null,cor:'#888',icon:'⚔'};
+}
+
+// ═══════════════════════════════════════════════
+//  DICE OVERLAY — notation parser
+// ═══════════════════════════════════════════════
+function parseNotacao(str){
+  // extracts first dice expression, ignoring trailing text like " · +4 PV temp."
+  const m=str.match(/(\d+)d(\d+)([+-]\d+)?/);
+  if(!m)return null;
+  return{dice:parseInt(m[1]),sides:parseInt(m[2]),bonus:m[3]?parseInt(m[3]):0};
+}
+function rollNotacao(str){
+  const p=parseNotacao(str);if(!p)return{total:0,notation:str};
+  let t=p.bonus;for(let i=0;i<p.dice;i++)t+=Math.floor(Math.random()*p.sides)+1;
+  return{total:Math.max(0,t),notation:str,sides:p.sides};
+}
+
+// ═══════════════════════════════════════════════
+//  DICE OVERLAY (Three.js)
+// ═══════════════════════════════════════════════
+const DiceOverlay = (function () {
+  let _rend = null, _scene = null, _cam = null;
+  let _mesh = null, _raf = null, _t0 = null, _lastTS = null;
+  let _svx = 0, _svy = 0, _svz = 0, _resultShown = false, _onStop = null;
+  const FE = 1.15, SF = 1.8, SS = 2.35;
+
+  function _buildDOM() {
+    const ov = document.getElementById('teste-overlay');
+    if (!ov || ov.querySelector('.dado-card-jogo')) return ov;
+    const SZ = Math.min(window.innerWidth * 0.32, 130) | 0;
+    ov.innerHTML = `<div class="dado-card-jogo">
+      <div id="dado-titulo-acao" class="dado-titulo-acao"></div>
+      <div id="dado-label-atual" class="dado-label-atual"></div>
+      <div class="dado-versus-row">
+        <div id="dado-portrait-esq" class="dado-portrait-vs"></div>
+        <div class="dado-canvas-wrap">
+          <canvas id="dado-canvas-jogo" width="${SZ}" height="${SZ}"></canvas>
+          <div id="dado-num-jogo" class="dado-num-jogo"></div>
+        </div>
+        <div id="dado-portrait-dir" class="dado-portrait-vs" style="display:none"></div>
+      </div>
+      <div id="dado-resultado-atual" class="dado-resultado-atual">
+        <div id="dado-detalhe-jogo" class="dado-detalhe-jogo"></div>
+        <div id="dado-veredicto-jogo" class="dado-veredicto-jogo"></div>
+      </div>
+      <div id="dado-historico" class="dado-historico"></div>
+    </div>`;
+    return ov;
+  }
+
+  function _initThree() {
+    if (_rend) return true;
+    if (typeof THREE === 'undefined') return false;
+    const cv = document.getElementById('dado-canvas-jogo');
+    if (!cv) return false;
+    const SZ = cv.width;
+    _rend = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true });
+    _rend.setPixelRatio(Math.min(devicePixelRatio, 2));
+    _rend.setSize(SZ, SZ);
+    _rend.setClearColor(0x000000, 0);
+    _scene = new THREE.Scene();
+    _cam = new THREE.PerspectiveCamera(38, 1, 1, 2000);
+    _cam.position.set(0, 0, 350);
+    _scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const key = new THREE.DirectionalLight(0xffe8cc, 1.15);
+    key.position.set(100, 180, 120);
+    _scene.add(key);
+    const fill = new THREE.DirectionalLight(0xaad0ff, 0.38);
+    fill.position.set(-80, 40, 60);
+    _scene.add(fill);
+    const rim = new THREE.PointLight(0xff3311, 0.55, 900);
+    rim.position.set(-150, 80, -220);
+    _scene.add(rim);
+    return true;
+  }
+
+  function _geoD10() {
+    const v = [0,95,0, 0,-95,0];
+    for (let i=0;i<5;i++){const a=(Math.PI*2*i/5)-Math.PI/2;v.push(74*Math.cos(a),0,74*Math.sin(a));}
+    const idx=[];
+    for(let i=0;i<5;i++){idx.push(0,2+i,2+(i+1)%5);idx.push(1,2+(i+1)%5,2+i);}
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));
+    g.setIndex(idx);g.computeVertexNormals();return g;
+  }
+
+  function _geo(lados) {
+    if (lados===4)  return new THREE.TetrahedronGeometry(72);
+    if (lados===6)  return new THREE.BoxGeometry(105,105,105);
+    if (lados===8)  return new THREE.OctahedronGeometry(72);
+    if (lados===10) return _geoD10();
+    if (lados===12) return new THREE.DodecahedronGeometry(68);
+    return new THREE.IcosahedronGeometry(72,0);
+  }
+
+  function _makeMesh(lados) {
+    const g = _geo(lados);
+    const mat = new THREE.MeshStandardMaterial({ color:0xbf1a0c, roughness:0.28, metalness:0.08, side:THREE.DoubleSide });
+    const m = new THREE.Mesh(g, mat);
+    m.castShadow = true;
+    const edges = new THREE.EdgesGeometry(g, lados<=6?20:30);
+    m.add(new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color:0xffffff, transparent:true, opacity:0.45 })));
+    return m;
+  }
+
+  function _bounce(t) {
+    if(t<1/2.75)return 7.5625*t*t;
+    if(t<2/2.75){t-=1.5/2.75;return 7.5625*t*t+.75;}
+    if(t<2.5/2.75){t-=2.25/2.75;return 7.5625*t*t+.9375;}
+    t-=2.625/2.75;return 7.5625*t*t+.984375;
+  }
+
+  function _loop(ts) {
+    if (!_t0) _t0 = ts;
+    const dt = _lastTS ? (ts-_lastTS)/1000 : 0;
+    _lastTS = ts;
+    const t = (ts-_t0)/1000;
+    if (_mesh) {
+      _mesh.position.y = 140 - 140*_bounce(Math.min(t/FE,1));
+      const fp = Math.min(t/FE,1);
+      if (fp>0.70&&fp<0.88){const i=(0.88-fp)/0.18;_cam.position.x=(Math.random()-.5)*7*i;_cam.position.y=(Math.random()-.5)*5*i;}
+      else{_cam.position.x*=0.85;_cam.position.y*=0.85;}
+      let sm;
+      if(t<SF) sm=1;
+      else if(t<SS) sm=Math.pow(1-(t-SF)/(SS-SF),2.5);
+      else {
+        sm=0;
+        if(!_resultShown){_resultShown=true;_rend.render(_scene,_cam);if(_onStop)_onStop();}
+        return;
+      }
+      _mesh.rotation.x+=_svx*sm*dt;
+      _mesh.rotation.y+=_svy*sm*dt;
+      _mesh.rotation.z+=_svz*sm*dt;
+    }
+    _rend.render(_scene,_cam);
+    _raf=requestAnimationFrame(_loop);
+  }
+
+  function _launch(lados, onStop) {
+    if (!_initThree()) { onStop(); return; }
+    if (_mesh){_scene.remove(_mesh);_mesh=null;}
+    if (_raf){cancelAnimationFrame(_raf);_raf=null;}
+    _mesh=_makeMesh(lados);_mesh.position.set(0,140,0);_scene.add(_mesh);
+    const b=18;
+    _svx=(Math.random()-.5)*b+(Math.random()>.5?8:-8);
+    _svy=(Math.random()-.5)*b+(Math.random()>.5?8:-8);
+    _svz=(Math.random()-.5)*(b*.7);
+    _t0=null;_lastTS=null;_resultShown=false;_onStop=onStop;
+    _raf=requestAnimationFrame(_loop);
+  }
+
+  function _clean() {
+    if(_raf){cancelAnimationFrame(_raf);_raf=null;}
+    if(_mesh&&_scene){_scene.remove(_mesh);_mesh=null;}
+    if(_rend&&_cam&&_scene){_cam.position.set(0,0,350);_rend.render(_scene,_cam);}
+  }
+
+  function mostrar(rolls, afterCb) {
+    const ov = _buildDOM();
+    if (!ov) { afterCb(rolls); return; }
+    // Reset Three.js if canvas was rebuilt
+    const cv = document.getElementById('dado-canvas-jogo');
+    if (cv && (!_rend || _rend.domElement !== cv)) _rend = null;
+    ov.style.display = 'flex';
+
+    const titulo = document.getElementById('dado-titulo-acao');
+    const label  = document.getElementById('dado-label-atual');
+    const resDiv = document.getElementById('dado-resultado-atual');
+    const numEl  = document.getElementById('dado-num-jogo');
+    const detEl  = document.getElementById('dado-detalhe-jogo');
+    const vered  = document.getElementById('dado-veredicto-jogo');
+    const hist   = document.getElementById('dado-historico');
+
+    titulo.textContent = rolls[0]?.nomeJog || '';
+    hist.innerHTML = '';
+
+    function addHist(r) {
+      let ic,vc,vt,rs;
+      if(r.tipo==='testar'){
+        if(r.catastrofe){ic='💀';vc='ct';vt='CATÁSTROFE';}
+        else if(r.critico){ic='⭐';vc='c';vt='CRÍTICO';}
+        else if(r.sucesso){ic='✓';vc='s';vt='ACERTO';}
+        else{ic='✕';vc='f';vt='FALHA';}
+        rs=`${r.d20}${r.modStr}=${r.total} CD${r.dc}`;
+      } else {ic='🎲';vc='d';vt=String(r.resultado);rs=r.notacao;}
+      const ln=document.createElement('div');
+      ln.className='dado-hist-linha';
+      ln.innerHTML=`<span class="dado-hist-icone">${ic}</span><span class="dado-hist-label">${r.label}</span><span class="dado-hist-roll">${rs}</span><span class="dado-hist-vered ${vc}">${vt}</span>`;
+      hist.appendChild(ln);
+      hist.scrollTop=hist.scrollHeight;
+    }
+
+    function next(idx) {
+      if (idx >= rolls.length) {
+        setTimeout(() => { ov.style.display='none'; _clean(); afterCb(rolls); }, 1200);
+        return;
+      }
+      const r = rolls[idx];
+      // Dado de dano cancelado se ataque pai errou
+      if (r.condicionalDe !== undefined && rolls[r.condicionalDe] && !rolls[r.condicionalDe].sucesso) {
+        const sk=document.createElement('div');
+        sk.className='dado-hist-linha';
+        sk.innerHTML=`<span class="dado-hist-icone">—</span><span class="dado-hist-label">${r.label}</span><span class="dado-hist-roll" style="opacity:.35">ataque errou</span><span class="dado-hist-vered f">CANCELADO</span>`;
+        hist.appendChild(sk);
+        setTimeout(()=>next(idx+1),700);
+        return;
+      }
+
+      numEl.classList.remove('visivel');
+      resDiv.classList.remove('visivel');
+      numEl.textContent='';detEl.textContent='';
+      vered.textContent='';vered.className='dado-veredicto-jogo';
+      label.textContent = r.label;
+
+      // Atualizar portraits versus
+      const _esq = document.getElementById('dado-portrait-esq');
+      const _dir = document.getElementById('dado-portrait-dir');
+      if (_esq) {
+        const _p = getPortraitAtaque(r.nomeJog || '');
+        _esq.style.cssText += `;background:${_p.cor}22;border-color:${_p.cor}55`;
+        _esq.innerHTML = _p.src
+          ? `<img src="${_p.src}" class="espelhado" onerror="this.style.opacity='.15'"><div class="dado-portrait-nome">${r.nomeJog||''}</div>`
+          : `<span>${_p.icon}</span><div class="dado-portrait-nome">${r.nomeJog||''}</div>`;
+      }
+      if (_dir) {
+        if (r.alvo) {
+          const _p = getPortraitAtaque(r.alvo);
+          _dir.style.cssText += `;display:flex;background:${_p.cor}22;border-color:${_p.cor}55`;
+          _dir.innerHTML = _p.src
+            ? `<img src="${_p.src}" onerror="this.style.opacity='.15'"><div class="dado-portrait-nome">${r.alvo}</div>`
+            : `<span>${_p.icon}</span><div class="dado-portrait-nome">${r.alvo}</div>`;
+        } else {
+          _dir.style.display = 'none';
+        }
+      }
+
+      const lados = r.tipo==='testar' ? 20 : (r.dados||20);
+      _launch(lados, () => {
+        if (r.tipo==='testar') {
+          numEl.textContent=String(r.total);
+          const glow=r.critico?'rgba(255,215,0,.9)':r.catastrofe?'rgba(255,40,40,.9)':r.sucesso?'rgba(100,230,100,.9)':'rgba(230,80,80,.9)';
+          numEl.style.textShadow=`0 2px 10px rgba(0,0,0,.95),0 0 24px ${glow}`;
+          detEl.textContent=`${r.d20}${r.modStr} = ${r.total} · CD ${r.dc}`;
+        } else {
+          numEl.textContent=String(r.resultado);
+          numEl.style.textShadow='0 2px 10px rgba(0,0,0,.95),0 0 24px rgba(255,160,40,.85)';
+          detEl.textContent=r.notacao;
+        }
+        numEl.classList.add('visivel');
+        resDiv.classList.add('visivel');
+        // +0.5s → veredicto
+        setTimeout(() => {
+          if(r.tipo==='testar'){
+            if(r.catastrofe){vered.textContent='💀 CATÁSTROFE!';vered.className='dado-veredicto-jogo catastrofe visivel';}
+            else if(r.critico){vered.textContent='⭐ CRÍTICO!';vered.className='dado-veredicto-jogo critico visivel';}
+            else if(r.sucesso){vered.textContent='✦ ACERTO ✦';vered.className='dado-veredicto-jogo sucesso visivel';}
+            else{vered.textContent='✕ FALHA ✕';vered.className='dado-veredicto-jogo falha visivel';}
+          } else {
+            vered.textContent=`🎲 ${r.resultado}`;
+            vered.className='dado-veredicto-jogo critico visivel';
+          }
+          // +1.0s → historico + próximo
+          setTimeout(() => { addHist(r); setTimeout(()=>next(idx+1), 900); }, 1000);
+        }, 500);
+      });
+    }
+    next(0);
+  }
+
+  return { mostrar };
+})();
+
+// ═══════════════════════════════════════════════
+//  ROLL SKILL — trigger dice for a skill click
+// ═══════════════════════════════════════════════
+function rollSkillVsTarget(actorId, sk, targetId){
+  const actor=getUnit(actorId);
+  const target=targetId?getUnit(targetId):null;
+  if(!actor)return;
+
+  const playlist=[];
+  const atMod=actor.attrMod||2;
+  const atName=actor.attrName||'ATK';
+
+  if(sk.type==='self'||sk.type==='passive'){
+    // Self-use or passive: just log, no roll
+    addLog(`${actor.name} usa ${sk.icon} ${sk.name}${sk.dmg?' — '+sk.dmg:''}`, 'n');
+    return;
+  }
+
+  if(sk.type==='aoe'){
+    // AOE: roll damage, no attack roll
+    const dmgR=rollNotacao(sk.dmg||'1d6');
+    const tgts=enemies().filter(e=>unitDist(actor,e)<=sk.range);
+    addLog(`${actor.name} usa ${sk.icon} ${sk.name} — ${dmgR.total} dano a ${tgts.length} alvo(s)`, 'n');
+    tgts.forEach(e=>{e.hp=Math.max(0,e.hp-dmgR.total);if(e.hp<=0){e.alive=false;addLog(`${e.name} derrotado!`,'s');}});
+    render();
+    return;
+  }
+
+  if(!target){addLog(`${sk.icon} ${sk.name}: selecione um alvo.`,'n');return;}
+
+  // Attack roll (testar)
+  const d20=Math.floor(Math.random()*20)+1;
+  const total=d20+atMod;
+  const sucesso=total>=target.ac||d20===20;
+  const critico=d20===20;
+  const catastrofe=d20===1;
+  playlist.push({
+    tipo:'testar',label:`${sk.icon} ${sk.name}`,
+    nomeJog:actor.name,alvo:target.name,
+    d20,modStr:atMod>=0?`+${atMod}`:`${atMod}`,total,
+    dc:target.ac,sucesso:sucesso&&!catastrofe,critico,catastrofe
+  });
+
+  // Damage roll if hit and skill has dmg
+  if((sucesso||critico)&&!catastrofe&&sk.dmg){
+    const dmgR=rollNotacao(sk.dmg);
+    const finalDmg=critico?dmgR.total*2:dmgR.total;
+    playlist.push({
+      tipo:'rolar',label:`Dano ${sk.icon}`,
+      nomeJog:actor.name,alvo:target.name,
+      resultado:finalDmg,notacao:critico?`${sk.dmg} (CRÍTICO×2)`:sk.dmg,
+      dados:parseNotacao(sk.dmg)?.sides||6,
+      condicionalDe:0
+    });
+    // Apply damage after overlay finishes (in afterCb)
+  }
+
+  document.getElementById('action-popup').style.display='none';
+  selId=null;
+
+  DiceOverlay.mostrar(playlist, (results)=>{
+    const atk=results[0];
+    if(atk.catastrofe){
+      addLog(`💀 CATÁSTROFE! ${actor.name} erra feio.`,'f');
+    } else if(atk.sucesso||atk.critico){
+      const dmgRoll=results[1];
+      const dmg=dmgRoll?dmgRoll.resultado:0;
+      target.hp=Math.max(0,target.hp-dmg);
+      const crit=atk.critico?' (CRÍTICO!)':'';
+      addLog(`${atk.critico?'⭐':'✦'} ${actor.name}: ${sk.name}${crit} → ${target.name} sofre ${dmg} dano (${target.hp}/${target.maxHp} PV)`,'s');
+      if(target.hp<=0){target.alive=false;addLog(`☠ ${target.name} foi derrotado!`,'s');}
+    } else {
+      addLog(`✕ ${actor.name}: ${sk.name} errou ${target.name} (${atk.total} vs CA ${target.ac})`,'f');
+    }
+    actor.hasActed=true;
+    render();
+  });
+}
 </script>
 </body>
 </html>
