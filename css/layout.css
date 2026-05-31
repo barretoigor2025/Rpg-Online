@@ -3,17 +3,17 @@
    ═══════════════════════════════════════════════ */
 
 :root {
-  --bg:      #06080f;
-  --surface: #0d1120;
-  --surface2:#111828;
-  --border:  rgba(120,140,190,.45);
-  --text:    #c8d0e0;
-  --text2:   #8090a8;
-  --text3:   #4a5570;
-  --gold:    #c8a050;
-  --green:   #4caf50;
-  --red:     #cc4444;
-  --blue:    #3a72b0;
+  --bg:      #f5f4ef;
+  --surface: #ffffff;
+  --surface2:#edecea;
+  --border:  rgba(40,35,25,.15);
+  --text:    #18160e;
+  --text2:   #4a4438;
+  --text3:   #8a8070;
+  --gold:    #c8900a;
+  --green:   #2e7d32;
+  --red:     #c62828;
+  --blue:    #1565c0;
   --r:       8px;
 }
 
@@ -32,7 +32,7 @@ body {
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(88,104,160,.3); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: rgba(160,140,60,.3); border-radius: 2px; }
 
 /* ══ LOBBY ══ */
 #screen-lobby {
@@ -127,7 +127,7 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   transition: all .12s;
   text-align: center;
 }
-.class-btn:hover { border-color: rgba(88,104,160,.5); color: var(--text); }
+.class-btn:hover { border-color: rgba(200,160,60,.5); color: var(--text); }
 .class-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(200,160,80,.08); }
 
 .room-actions { display: flex; flex-direction: column; gap: 10px; }
@@ -145,8 +145,8 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 .btn-primary {
   width: 100%;
   padding: 12px;
-  background: var(--blue);
-  color: #fff;
+  background: #1c1a14;
+  color: var(--gold);
   border: none;
   border-radius: var(--r);
   font-family: inherit;
@@ -156,7 +156,7 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   letter-spacing: .5px;
   transition: background .15s;
 }
-.btn-primary:hover { background: #4a82c0; }
+.btn-primary:hover { background: #2e2b1e; }
 
 .btn-sm {
   padding: 8px 14px;
@@ -171,7 +171,7 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   transition: all .12s;
   flex-shrink: 0;
 }
-.btn-sm:hover { border-color: rgba(88,104,160,.5); color: var(--text); }
+.btn-sm:hover { border-color: rgba(200,160,60,.5); color: var(--text); }
 
 /* ══ GAME SCREEN ══ */
 #screen-game {
@@ -236,7 +236,7 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   padding: 3px 8px;
   border-radius: 10px;
   font-size: 11px;
-  border: 1px solid rgba(88,104,160,.25);
+  border: 1px solid rgba(40,35,25,.18);
   background: var(--surface);
   white-space: nowrap;
   flex-shrink: 0;
@@ -261,7 +261,7 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   font-size: 9px;
   color: var(--text3);
   padding: 1px 5px;
-  background: rgba(0,0,0,.3);
+  background: rgba(40,35,25,.06);
   border-radius: 6px;
 }
 .chip-hp.low { color: var(--red); }
@@ -339,10 +339,10 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   pointer-events: auto;
   display: flex; flex-direction: column; align-items: center;
   gap: 16px; max-width: 260px; padding: 24px 20px; text-align: center;
-  background: rgba(10,13,24,0.92);
+  background: rgba(252,250,244,.97);
   border: 1px solid rgba(200,160,80,0.35);
   border-radius: 12px;
-  box-shadow: 0 0 24px rgba(200,160,80,0.12), 0 4px 32px rgba(0,0,0,0.6);
+  box-shadow: 0 0 24px rgba(200,160,80,0.2), 0 4px 32px rgba(0,0,0,0.12);
 }
 .hg-wrap {
   position: relative;
@@ -353,7 +353,7 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   position: absolute; inset: 0;
   border-radius: 50%;
   border: 3px solid rgba(200,160,80,0.15);
-  border-top: 3px solid #c8a050;
+  border-top: 3px solid var(--gold);
   border-right: 3px solid rgba(200,160,80,0.5);
   animation: hg-rotate 1.4s linear infinite;
   box-shadow: 0 0 16px rgba(200,160,80,0.3);
@@ -371,7 +371,7 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   50%       { opacity: 1.0;  transform: scale(1.04); }
 }
 .loading-status {
-  font-size: 0.82rem; color: #8090a8;
+  font-size: 0.82rem; color: var(--text3);
   font-family: Georgia, serif; letter-spacing: 0.02em;
 }
 .loading-lore {
@@ -402,13 +402,13 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 @keyframes fade-in { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
 
 .msg-gm {
-  background: rgba(12,16,28,.7);
+  background: rgba(200,170,80,.06);
   border-left: 3px solid var(--gold);
-  color: #d8c8a8;
+  color: var(--text);
 }
 .msg-player {
-  background: rgba(20,30,20,.5);
-  border-left: 2px solid rgba(76,175,80,.4);
+  background: rgba(46,125,50,.05);
+  border-left: 2px solid rgba(46,125,50,.35);
   border-radius: 0 6px 6px 0;
   padding: 8px 12px;
   font-size: 13px;
@@ -422,7 +422,7 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 .player-bubble-icon { font-size: 14px; }
 .player-bubble-nome {
   font-size: 9px;
-  color: rgba(76,175,80,.8);
+  color: #2e7d32;
   letter-spacing: 1.2px;
   text-transform: uppercase;
 }
@@ -443,8 +443,8 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 .msg-dados {
   font-size: 11px;
   color: var(--text3);
-  border-left: 3px solid rgba(88,104,160,.3);
-  background: rgba(8,12,22,.5);
+  border-left: 3px solid rgba(160,140,60,.3);
+  background: rgba(200,190,160,.08);
   padding: 6px 10px;
 }
 .msg-trade {
@@ -468,8 +468,8 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
 #enemies-bar {
   flex-shrink: 0;
   padding: 6px 10px;
-  background: rgba(20,8,8,.8);
-  border-top: 1px solid rgba(150,30,30,.2);
+  background: rgba(198,40,40,.04);
+  border-top: 1px solid rgba(198,40,40,.15);
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -482,13 +482,13 @@ input::placeholder, textarea::placeholder { color: var(--text3); font-style: ita
   padding: 3px 8px;
   border-radius: 8px;
   border: 1px solid rgba(150,30,30,.3);
-  background: rgba(150,30,30,.08);
+  background: rgba(198,40,40,.06);
   color: var(--text2);
 }
 .enemy-hp-bar {
   width: 40px;
   height: 4px;
-  background: rgba(0,0,0,.4);
+  background: rgba(0,0,0,.1);
   border-radius: 2px;
   overflow: hidden;
 }
