@@ -1860,7 +1860,7 @@ function endHeroPhase() {
 async function runEnemies() {
   // IA narrates enemy turn if key available
   if (apiKey) {
-    callAI(`É a vez dos inimigos (turno ${turn}). Descreva brevemente as ações dos inimigos e execute-as usando as tags MOVER e ATACAR.`);
+    callAI(`É a vez dos inimigos (turno ${turn}). Execute as ações deles com MOVER e ATACAR.`);
   }
   for (const e of enemies()) {
     if (!e.alive) continue;
@@ -1876,8 +1876,26 @@ async function runEnemies() {
       if (reach.length) {
         let best=reach[0];
         for (const h of reach) if (distFromPt(h.col,h.row,near)<distFromPt(best.col,best.row,near)) best=h;
-        addLog(`${e.name}: ${hexLbl(e.col,e.row)} → ${hexLbl(best.col,best.row)}.`,'e');
-        await moveUnitAnimated(e,best.col,best.row);
+        // Movement dice check for enemy
+        const eMod = dndMod(e.stats?.DEX || e.stats?.DES || 10);
+        const eRoll = Math.floor(Math.random()*20)+1;
+        const eTotal = eRoll + eMod;
+        const eModStr = (eMod>=0?'+':'')+eMod;
+        if (eRoll === 1) {
+          addLog(`${e.name} tropeça! (d20=1) — perde movimentação.`,'e');
+        } else if (eTotal < 8) {
+          // Partial: find halfway point
+          const ePath = bfsPath(e, best.col, best.row);
+          const partialSteps = Math.max(1, Math.floor(ePath.length/2));
+          const partDest = ePath[partialSteps-1];
+          if (partDest) {
+            addLog(`${e.name} vacila (d20=${eRoll}${eModStr}=${eTotal}) — move ${partialSteps} hex.`,'e');
+            await moveUnitAnimated(e, partDest.col, partDest.row);
+          }
+        } else {
+          addLog(`${e.name}: move para ${hexLbl(best.col,best.row)} (d20=${eRoll}${eModStr}=${eTotal}).`,'e');
+          await moveUnitAnimated(e,best.col,best.row);
+        }
         if (unitDist(e,near)<=1) { doAttack(e,near); checkEnd(); }
       }
     }
@@ -2087,6 +2105,200 @@ function actionBarMode(mode) {
 function toggleRange(type) {
   if (activeRanges.has(type)) activeRanges.delete(type); else activeRanges.add(type);
   render();
+}
+
+// ═══════════════════════════════════════════════
+//  MOVE CONFIRM MODAL
+// ═══════════════════════════════════════════════
+let _moveConfirmData = null; // { actor, destHex, path }
+
+function openMoveConfirm(actor, destHex) {
+  const path = bfsPath(actor, destHex.col, destHex.row);
+  const hexCount = path.length;
+  const dexVal = actor.stats?.DEX || actor.stats?.DES || 10;
+  const mod = dndMod(dexVal);
+  const modStr = (mod >= 0 ? '+' : '') + mod;
+  _moveConfirmData = { actor, destHex, path, mod };
+  document.getElementById('mc-title').textContent = `Mover para ${hexLbl(destHex.col, destHex.row)}?`;
+  document.getElementById('mc-sub').textContent = `${hexCount} hex · Atletismo d20${modStr} vs CD8`;
+  document.getElementById('mc-roll').textContent = '';
+  document.getElementById('move-confirm').classList.add('show');
+}
+
+function closeMoveConfirm() {
+  document.getElementById('move-confirm').classList.remove('show');
+  _moveConfirmData = null;
+}
+
+async function executeMoveConfirm() {
+  if (!_moveConfirmData) return;
+  const { actor, destHex, path, mod } = _moveConfirmData;
+  closeMoveConfirm();
+
+  const d20 = Math.floor(Math.random() * 20) + 1;
+  const total = d20 + mod;
+  const cd = 8;
+  const modStr = (mod >= 0 ? '+' : '') + mod;
+
+  if (d20 === 1) {
+    addLog(`${actor.name} tropeça! (d20=1, falha crítica) — movimentação perdida.`, 'e');
+    actor.hasMoved = true;
+    actor.hasActed = true; // perde a ação também
+  } else if (total < cd) {
+    const partial = Math.max(1, Math.floor(path.length / 2));
+    addLog(`${actor.name} vacila (d20=${d20}${modStr}=${total} vs CD${cd}) — move apenas ${partial} hex.`, 'm');
+    const partPath = path.slice(0, partial);
+    const dest = partPath[partPath.length - 1];
+    if (dest) await moveUnitAnimated(actor, dest.col, dest.row);
+  } else {
+    const label = d20 === 20 ? ' (CRÍTICO! +1 hex bônus)' : '';
+    const bonusHex = d20 === 20 && path.length < actor.moveSpeed + 1;
+    addLog(`${actor.name} move (d20=${d20}${modStr}=${total})${label}.`, 'h');
+    if (bonusHex && path.length < actor.moveSpeed) {
+      await moveUnitAnimated(actor, destHex.col, destHex.row);
+    } else {
+      await moveUnitAnimated(actor, destHex.col, destHex.row);
+    }
+  }
+
+  _abMode = null;
+  activeRanges = new Set(['melee']);
+  if (actor.rangedWeapon) activeRanges.add('ranged');
+  updateActionBar(); render();
+}
+
+// ═══════════════════════════════════════════════
+//  ATTACK MODAL
+// ═══════════════════════════════════════════════
+let _atkActor = null;
+let _atkSelSkill = null;
+let _atkSelTarget = null;
+
+function openAttackModal(actor) {
+  _atkActor = actor;
+  _atkSelSkill = null;
+  _atkSelTarget = null;
+
+  // Build skill chips (class skills + basic attack)
+  const skList = SKILLS[actor.classe] || [];
+  const activeSkills = skList.filter(sk => sk.type !== 'passive');
+  const basicAtk = { nome:'Ataque Básico', icon:'⚔️', type:'melee', dmg: actor.rangedWeapon ? '1d6+2' : '1d6+2', range:1 };
+  const allSkills = activeSkills.length ? activeSkills : [basicAtk];
+
+  document.getElementById('am-skills').innerHTML = allSkills.map((sk, i) => {
+    const label = `${sk.icon||'⚔'} ${sk.nome||sk.name} <span style="color:#605040;font-size:9px">${sk.dmg||''}</span>`;
+    return `<button class="am-chip" data-sk="${i}" onclick="atkSelectSkill(this,${i})">${label}</button>`;
+  }).join('');
+
+  // Build target chips (nearby enemies)
+  const foes = enemies().filter(e => e.alive);
+  document.getElementById('am-targets').innerHTML = foes.map(e => {
+    const dist = unitDist(actor, e);
+    const inMelee = dist <= 1;
+    const inRange = actor.rangedWeapon && dist <= actor.rangedWeapon.range;
+    if (!inMelee && !inRange) return ''; // not reachable
+    const distLabel = inMelee ? '⚔corpo' : `${dist}⬡`;
+    return `<button class="am-chip tgt" data-eid="${e.id}" onclick="atkSelectTarget(this,'${e.id}')">${e.icon||'👾'} ${e.name} <span style="color:#605040;font-size:9px">❤${e.hp}/${e.maxHp} ${distLabel}</span></button>`;
+  }).join('');
+
+  if (!foes.some(e => { const d=unitDist(actor,e); return d<=1||(actor.rangedWeapon&&d<=actor.rangedWeapon.range); })) {
+    document.getElementById('am-targets').innerHTML = '<span style="color:#605040;font-size:11px;padding:4px">Nenhum inimigo no alcance</span>';
+  }
+
+  document.getElementById('am-preview').textContent = 'Selecione habilidade e alvo';
+  document.getElementById('am-roll').textContent = '';
+  document.getElementById('am-confirm').disabled = true;
+  document.getElementById('attack-modal').classList.add('show');
+}
+
+function atkSelectSkill(btn, idx) {
+  document.querySelectorAll('#am-skills .am-chip').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  const skList = SKILLS[_atkActor.classe] || [];
+  const activeSkills = skList.filter(sk => sk.type !== 'passive');
+  _atkSelSkill = activeSkills.length ? activeSkills[idx] : { nome:'Ataque Básico', icon:'⚔️', type:'melee', dmg:'1d6+2' };
+  updateAtkPreview();
+}
+
+function atkSelectTarget(btn, eid) {
+  document.querySelectorAll('#am-targets .am-chip').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  _atkSelTarget = units.find(u => u.id === eid);
+  updateAtkPreview();
+}
+
+function updateAtkPreview() {
+  const pre = document.getElementById('am-preview');
+  const btn = document.getElementById('am-confirm');
+  if (!_atkSelSkill || !_atkSelTarget) {
+    pre.textContent = 'Selecione habilidade e alvo';
+    btn.disabled = true;
+    return;
+  }
+  const atqBonus = (_atkActor.attrMod !== undefined ? _atkActor.attrMod + 2 : 3);
+  const modStr = (atqBonus >= 0 ? '+' : '') + atqBonus;
+  pre.textContent = `${_atkSelSkill.icon||'⚔'} ${_atkSelSkill.nome||_atkSelSkill.name} → ${_atkSelTarget.icon||'👾'} ${_atkSelTarget.name} · d20${modStr} vs CA${_atkSelTarget.ac}`;
+  btn.disabled = false;
+}
+
+function closeAttackModal() {
+  document.getElementById('attack-modal').classList.remove('show');
+  _atkActor = null; _atkSelSkill = null; _atkSelTarget = null;
+}
+
+function confirmAttackModal() {
+  if (!_atkActor || !_atkSelTarget) return;
+  const actor = _atkActor;
+  const target = _atkSelTarget;
+  const skill = _atkSelSkill;
+  closeAttackModal();
+  doAttackWithSkill(actor, target, skill);
+  checkEnd();
+  updateActionBar(); render();
+}
+
+function doAttackWithSkill(atk, def, skill) {
+  const dist = unitDist(atk, def);
+  const isMelee = dist <= 1;
+  const isRanged = atk.rangedWeapon && dist <= atk.rangedWeapon.range;
+  if (!isMelee && !isRanged) { addLog(`${atk.name} não alcança ${def.name}.`, 'm'); return; }
+
+  let bonus = (atk.attrMod !== undefined ? atk.attrMod + 2 : 3);
+  const flank = (atk.type==='hero'?heroes():enemies()).filter(a=>a.id!==atk.id&&unitDist(a,def)<=1).length >= 1;
+  if (flank) bonus += 2;
+  const back = isBackAtk(atk, def);
+  if (back) bonus += 4;
+  if (!isMelee) {
+    const cov = getCover(def.col, def.row);
+    if (cov === 'partial') bonus -= 2;
+    if (cov === 'full') { addLog(`${def.name} está em cobertura total.`, 'm'); return; }
+  }
+
+  const roll = d20r();
+  const total = roll + bonus;
+  const crit = roll === 20, fumb = roll === 1;
+  const modStr = (bonus >= 0 ? '+' : '') + bonus;
+
+  // Skill override for damage
+  let dmgN = isMelee
+    ? ({barbaro:'2d6+3',guerreiro:'1d8+2',mago:'1d4',arqueiro:'1d6+1',clerigo:'1d6+2',ladino:'1d8+3'}[atk.classe||''] || '1d6')
+    : (atk.rangedWeapon?.name==='Raio Arcano' ? '1d8+2' : '1d6+2');
+  if (skill?.dmg && skill.dmg !== '—') dmgN = skill.dmg;
+
+  if (fumb) {
+    addLog(`${atk.name} falha crítica! (d20=1) — ação perdida.`, 'e');
+    atk.hasActed = true; return;
+  }
+  if (crit || total >= def.ac) {
+    let dmg = rollDice(dmgN); if (crit) dmg *= 2;
+    def.hp = Math.max(0, def.hp - dmg);
+    let msg = `${atk.name}${crit?' ⭐CRÍTICO!':''} [d20=${roll}${modStr}=${total}] → ${def.name}${back?' (costas)':''}${flank?' (flanco)':''}: ${dmg} dano`;
+    if (def.hp <= 0) { def.alive = false; def.hp = 0; msg += ` — ${def.name} cai!`; }
+    addLog(msg, 'x');
+  } else {
+    addLog(`${atk.name} [d20=${roll}${modStr}=${total}] errou ${def.name} (CA${def.ac})`, 'm');
+  }
+  atk.hasActed = true;
 }
 
 // ═══════════════════════════════════════════════
