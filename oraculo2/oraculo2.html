@@ -1178,7 +1178,7 @@ function parseStatsTag(text) {
   }
 }
 
-function processNarrativeAndTags(text) {
+async function processNarrativeAndTags(text) {
   const lines = text.split('\n');
   const narrative=[], tags=[], falas=[];
 
@@ -1219,7 +1219,7 @@ function processNarrativeAndTags(text) {
       const u=findAnyUnitByText(mv[1].trim()), dest=parseHex(mv[2].trim());
       if (u&&dest&&dest.col>=0&&dest.col<COLS&&dest.row>=0&&dest.row<ROWS) {
         addLog(`→ ${u.name} move para ${mv[2].trim().toUpperCase()}`,'m');
-        moveUnit(u,dest.col,dest.row); render();
+        await moveUnitAnimated(u,dest.col,dest.row);
       }
       continue;
     }
@@ -1317,6 +1317,57 @@ function moveUnit(unit,tc,tr) {
   updateFacing(unit,tc,tr);
   unit.col=tc; unit.row=tr; unit.hasMoved=true;
   unit.occupiedHexes = occupiedHexes(tc,tr,unit.size||'1x1');
+}
+
+// BFS: retorna caminho de hexes do ponto atual até (tc,tr)
+function bfsPath(unit, tc, tr) {
+  if (unit.col===tc && unit.row===tr) return [];
+  const key = (c,r) => `${c},${r}`;
+  const startKey = key(unit.col, unit.row);
+  const endKey   = key(tc, tr);
+  const parent   = new Map([[startKey, null]]);
+  const queue    = [{ col:unit.col, row:unit.row }];
+  let guard = 0;
+  while (queue.length && guard++ < 600) {
+    const curr = queue.shift();
+    const ck = key(curr.col, curr.row);
+    if (ck === endKey) {
+      const path = [];
+      let k = endKey;
+      while (k !== startKey) {
+        const [c,r] = k.split(',').map(Number);
+        path.unshift({col:c, row:r});
+        k = parent.get(k);
+      }
+      return path;
+    }
+    for (const nb of hexNbrs(curr.col, curr.row)) {
+      const nk = key(nb.col, nb.row);
+      if (parent.has(nk)) continue;
+      if (isBlocked(nb.col, nb.row)) continue;
+      parent.set(nk, ck);
+      queue.push(nb);
+    }
+  }
+  return [{col:tc, row:tr}]; // fallback direto
+}
+
+// Animação de movimento: avança um hex por vez
+async function moveUnitAnimated(unit, tc, tr) {
+  const path = bfsPath(unit, tc, tr);
+  if (!path.length) { unit.hasMoved=true; return; }
+  // Correndo = usando deslocamento completo (ou mais)
+  const isRunning = path.length >= (unit.moveSpeed || 4);
+  const msPerHex  = isRunning ? 380 : 850;
+  for (const step of path) {
+    updateFacing(unit, step.col, step.row);
+    unit.col = step.col;
+    unit.row = step.row;
+    unit.occupiedHexes = occupiedHexes(step.col, step.row, unit.size||'1x1');
+    render();
+    await sleep(msPerHex);
+  }
+  unit.hasMoved = true;
 }
 
 // ═══════════════════════════════════════════════
@@ -1629,8 +1680,7 @@ async function runEnemies() {
         let best=reach[0];
         for (const h of reach) if (distFromPt(h.col,h.row,near)<distFromPt(best.col,best.row,near)) best=h;
         addLog(`${e.name}: ${hexLbl(e.col,e.row)} → ${hexLbl(best.col,best.row)}.`,'e');
-        moveUnit(e,best.col,best.row);
-        render(); await sleep(250);
+        await moveUnitAnimated(e,best.col,best.row);
         if (unitDist(e,near)<=1) { doAttack(e,near); checkEnd(); }
       }
     }
@@ -2275,9 +2325,9 @@ function parseAIResponse(text) {
     .replace(/\n{3,}/g,'\n\n').trim();
 
   if (testes.length || roles.length) {
-    iniciarTestes(testes, roles, ()=>{ processNarrativeAndTags(cleanText); });
+    iniciarTestes(testes, roles, async ()=>{ await processNarrativeAndTags(cleanText); });
   } else {
-    processNarrativeAndTags(cleanText);
+    await processNarrativeAndTags(cleanText);
   }
 }
 
@@ -2346,7 +2396,7 @@ function findAnyUnitByText(t) {
   return null;
 }
 
-function parseCommand(raw) {
+async function parseCommand(raw) {
   const lo=raw.toLowerCase();
 
   // Narrar / AI commands
@@ -2381,7 +2431,7 @@ function parseCommand(raw) {
         if (!best) { for (const h of reach){const d=distFromPt(h.col,h.row,nearTarget);if(d<bd){bd=d;best=h;}} }
         if (best) {
           addLog(`${actor.name}: ${hexLbl(actor.col,actor.row)} → ${hexLbl(best.col,best.row)} — perto de ${nearTarget.name}.`,'h');
-          moveUnit(actor,best.col,best.row); render();
+          await moveUnitAnimated(actor,best.col,best.row);
         } else { addLog(`${actor.name} não consegue se aproximar de ${nearTarget.name}.`,'s'); }
         return;
       }
@@ -2412,7 +2462,7 @@ function parseCommand(raw) {
     const h=reach.find(r=>r.col===destHex.col&&r.row===destHex.row);
     if (h) {
       addLog(`${actor.name} move para ${hexLbl(destHex.col,destHex.row)} (${h.steps} hex).`,'h');
-      moveUnit(actor,destHex.col,destHex.row); render();
+      await moveUnitAnimated(actor,destHex.col,destHex.row);
     } else {
       addLog(`${hexLbl(destHex.col,destHex.row)} fora do alcance de mov (${actor.moveSpeed} hex).`,'s');
     }
@@ -2444,7 +2494,7 @@ function parseCommand(raw) {
         if (!bestDest) { for (const h of reach){const d=distFromPt(h.col,h.row,target);if(d<bestD){bestD=d;bestDest=h;}} }
         if (bestDest) {
           addLog(`${actor.name}: ${hexLbl(actor.col,actor.row)} → ${hexLbl(bestDest.col,bestDest.row)}.`,'h');
-          moveUnit(actor,bestDest.col,bestDest.row); render();
+          await moveUnitAnimated(actor,bestDest.col,bestDest.row);
         }
       }
     }
@@ -2462,7 +2512,7 @@ function parseCommand(raw) {
     const reach=reachable(actor);
     let best=null, bd=Infinity;
     for (const h of reach){const d=distFromPt(h.col,h.row,target);if(d<bd){bd=d;best=h;}}
-    if (best) { addLog(`${actor.name}: ${hexLbl(actor.col,actor.row)} → ${hexLbl(best.col,best.row)}.`,'h'); moveUnit(actor,best.col,best.row); render(); }
+    if (best) { addLog(`${actor.name}: ${hexLbl(actor.col,actor.row)} → ${hexLbl(best.col,best.row)}.`,'h'); await moveUnitAnimated(actor,best.col,best.row); }
     return;
   }
 
