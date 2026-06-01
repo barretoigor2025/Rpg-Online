@@ -74,6 +74,63 @@ header{
 }
 #cmd-send:active{background:#2a2618}
 
+/* ── Declaration status bar ── */
+#decl-status{
+  flex-shrink:0;background:#0f0d09;border-bottom:1px solid rgba(200,160,48,.12);
+  padding:5px 12px;display:none;gap:8px;align-items:center;flex-wrap:wrap
+}
+#decl-status.visible{display:flex}
+.ds-label{font-size:10px;color:#8a7050;margin-right:4px}
+.ds-hero{display:flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:12px;border:1px solid rgba(200,160,48,.2)}
+.ds-hero.pending{color:#a09060;background:rgba(200,160,48,.06)}
+.ds-hero.sent{color:#70c070;background:rgba(80,180,80,.08);border-color:rgba(80,180,80,.25)}
+.ds-hero.current{color:#c8a030;background:rgba(200,160,48,.12);border-color:rgba(200,160,48,.4)}
+
+/* ── Declaration panel ── */
+#decl-panel{
+  flex-shrink:0;background:#12100c;border-top:1px solid rgba(200,160,48,.18);
+  padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom));
+  display:none;flex-direction:column;gap:8px
+}
+#decl-panel.visible{display:flex}
+#decl-hero-name{font-size:12px;color:#c8a030;font-weight:700;margin-bottom:2px}
+#decl-hint{font-size:10px;color:#5a4a30;margin-bottom:4px;font-style:italic}
+.decl-field{display:flex;flex-direction:column;gap:3px}
+.decl-field label{font-size:10px;color:#8a7050;text-transform:uppercase;letter-spacing:.5px}
+.decl-field textarea{
+  background:#1a1610;border:1px solid rgba(200,160,48,.2);border-radius:6px;
+  color:#e2d5b0;font-size:12px;padding:7px 10px;outline:none;font-family:inherit;
+  resize:none;height:42px;line-height:1.4
+}
+.decl-field textarea:focus{border-color:rgba(200,160,48,.45)}
+.decl-field textarea::placeholder{color:#443820}
+#decl-fields-optional{display:none;flex-direction:column;gap:6px}
+#decl-fields-optional.open{display:flex}
+#decl-toggle-opts{background:none;border:none;color:#6a5838;font-size:10px;cursor:pointer;text-align:left;padding:0}
+#decl-send{
+  background:rgba(200,160,48,.12);border:1px solid rgba(200,160,48,.4);color:#c8a030;
+  border-radius:7px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;width:100%
+}
+#decl-send:active{background:rgba(200,160,48,.25)}
+#decl-sent-view{display:none;flex-direction:column;gap:6px;padding:4px 0}
+#decl-sent-view.visible{display:flex}
+#decl-sent-text{font-size:11px;color:#8a9870;font-style:italic;line-height:1.5;padding:6px 10px;background:rgba(80,180,80,.05);border:1px solid rgba(80,180,80,.15);border-radius:6px}
+#decl-resolve-btn{
+  background:rgba(200,130,30,.15);border:1px solid rgba(200,130,30,.5);color:#d4900c;
+  border-radius:7px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;
+  display:none;animation:pulse-gold 1.5s ease-in-out infinite
+}
+@keyframes pulse-gold{0%,100%{box-shadow:0 0 0 0 rgba(200,130,30,.0)}50%{box-shadow:0 0 0 6px rgba(200,130,30,.25)}}
+
+/* ── Resolution overlay ── */
+#resolving-overlay{
+  position:fixed;inset:0;z-index:400;background:rgba(5,3,1,.88);
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px
+}
+#resolving-overlay.visible{display:flex}
+#resolving-msg{color:#c8a030;font-size:16px;font-weight:700;text-align:center;animation:pulse-gold 1.2s infinite}
+#resolving-sub{color:#8a7050;font-size:11px;text-align:center;max-width:280px;line-height:1.6}
+
 /* ── Range buttons ── */
 #u-ranges{margin-top:5px;display:none;gap:3px;flex-wrap:wrap}
 .rbtn{background:#1a1610;border:1px solid rgba(200,160,48,.25);color:#8a7050;border-radius:4px;padding:2px 7px;font-size:10px;cursor:pointer;white-space:nowrap}
@@ -167,10 +224,10 @@ header{
 <body>
 <div id="app">
   <header>
-    <span id="turn-label">Turno 1 — Heróis</span>
+    <span id="turn-label">Turno 1 — Cena</span>
     <button class="hdr-btn" id="btn-log-toggle" onclick="toggleLog()">▲ Log</button>
     <button class="hdr-btn" onclick="toggleDebug()">⊞ Coords</button>
-    <button class="hdr-btn" id="btn-end-phase" onclick="endHeroPhase()">Encerrar →</button>
+    <button class="hdr-btn" id="btn-declare" onclick="startDeclarationPhase()" style="display:none;background:rgba(200,130,30,.15);border-color:rgba(200,130,30,.4);color:#d4900c">⚔ Declarar</button>
     <button class="hdr-btn" onclick="openKeyModal()">🔑</button>
   </header>
 
@@ -190,6 +247,46 @@ header{
 
   <div id="log-panel"></div>
 
+  <!-- Declaration status: who has/hasn't declared -->
+  <div id="decl-status">
+    <span class="ds-label">Aguardando:</span>
+    <span id="ds-heroes"></span>
+  </div>
+
+  <!-- Declaration panel (visible during declaration phase) -->
+  <div id="decl-panel">
+    <div>
+      <div id="decl-hero-name">⚔ Declare sua intenção</div>
+      <div id="decl-hint">Você não verá as ações dos outros heróis até a resolução.</div>
+    </div>
+    <div id="decl-form">
+      <div class="decl-field">
+        <label>O que seu personagem tenta fazer?</label>
+        <textarea id="df-intencao" placeholder="Avançar contra o Barkthresher e impedir ele de chegar no Mago…" rows="2"></textarea>
+      </div>
+      <button id="decl-toggle-opts" onclick="toggleDeclOpts()">▸ Detalhes opcionais (alvo, evitar, plano B)</button>
+      <div id="decl-fields-optional">
+        <div class="decl-field">
+          <label>Alvo preferido</label>
+          <textarea id="df-alvo" placeholder="Barkthresher" rows="1"></textarea>
+        </div>
+        <div class="decl-field">
+          <label>Evitar / condição de segurança</label>
+          <textarea id="df-evitar" placeholder="Não entrar em área de Bola de Fogo do Mago…" rows="1"></textarea>
+        </div>
+        <div class="decl-field">
+          <label>Plano B (se não der certo)</label>
+          <textarea id="df-planob" placeholder="Se não tiver linha de tiro, atacar o Espantalho mais próximo…" rows="1"></textarea>
+        </div>
+      </div>
+      <button id="decl-send" onclick="submitDeclaration()">Enviar Intenção →</button>
+    </div>
+    <div id="decl-sent-view">
+      <div id="decl-sent-text"></div>
+      <button id="decl-resolve-btn" onclick="resolveDeclarations()">⚡ Resolver Turno — IA calcula tudo</button>
+    </div>
+  </div>
+
   <div id="input-row">
     <input id="cmd-input" placeholder='Ex: "Bárbaro ataca Espantalho" · "Mago avança F06" · "narrar"' type="text" autocomplete="off">
     <button id="cmd-send" onclick="submitCmd()">→</button>
@@ -197,6 +294,14 @@ header{
 </div>
 
 <div id="tip"></div>
+
+<!-- Resolution overlay -->
+<div id="resolving-overlay">
+  <div style="font-size:32px">⚔</div>
+  <div id="resolving-msg">IA resolvendo o turno…</div>
+  <div id="resolving-sub">Todas as intenções foram declaradas.<br>O Mestre analisa o campo, linha de visão, prioridades e consequências.</div>
+</div>
+
 <div id="teste-overlay" style="display:none"></div>
 
 <div id="action-popup">
@@ -609,16 +714,157 @@ function checkEnd() {
 // ═══════════════════════════════════════════════
 //  BATTLE STATE
 // ═══════════════════════════════════════════════
-let turn=1, phase='hero';
+// phases: 'scene' → 'declaration' → 'resolving' → 'scene'
+let turn=1, phase='scene';
 let hovHex=null, showGrid=false, debugGrid=false;
+
+// declarations[heroId] = {intencao, alvo, evitar, planob}  ou null = pendente
+let declarations = {};
+let _declHeroQueue = []; // fila de heróis para declarar (single-player)
+let _declCurrentIdx = 0;
 let selId=null, activeRanges=new Set();
 let _moveCache=[], _meleeCache=[], _rangedCache=[];
 const sleep = ms => new Promise(r=>setTimeout(r,ms));
 
 function updateHdr() {
-  const labels={hero:`Turno ${turn} — Heróis (Modo Tático)`, enemy:`Turno ${turn} — Inimigos`, victory:'🏆 Vitória!', defeat:'💀 Derrota'};
-  document.getElementById('turn-label').textContent = labels[phase]||'';
-  document.getElementById('btn-end-phase').style.display = phase==='hero' ? '' : 'none';
+  const el = document.getElementById('turn-label');
+  const declBtn = document.getElementById('btn-declare');
+  if (phase==='scene')       { el.textContent=`Turno ${turn} — Cena`; declBtn.style.display=''; }
+  else if (phase==='declaration') { el.textContent=`Turno ${turn} — Declaração`; declBtn.style.display='none'; }
+  else if (phase==='resolving')   { el.textContent=`Turno ${turn} — Resolvendo…`; declBtn.style.display='none'; }
+  else if (phase==='victory')     { el.textContent='🏆 Vitória!'; declBtn.style.display='none'; }
+  else if (phase==='defeat')      { el.textContent='💀 Derrota'; declBtn.style.display='none'; }
+
+  // Status bar
+  const declStatus = document.getElementById('decl-status');
+  const dsHeroes   = document.getElementById('ds-heroes');
+  if (phase==='declaration') {
+    declStatus.classList.add('visible');
+    dsHeroes.innerHTML = heroes().map(u=>{
+      const sent = declarations[u.id] !== null && declarations[u.id] !== undefined;
+      const isCurrent = _declHeroQueue[_declCurrentIdx]===u.id;
+      const cls = sent ? 'sent' : isCurrent ? 'current' : 'pending';
+      const icon = sent ? '✅' : isCurrent ? '✍' : '⏳';
+      return `<span class="ds-hero ${cls}">${icon} ${u.name}</span>`;
+    }).join('');
+  } else {
+    declStatus.classList.remove('visible');
+  }
+
+  // Panels
+  const declPanel  = document.getElementById('decl-panel');
+  const inputRow   = document.getElementById('input-row');
+  if (phase==='declaration') {
+    declPanel.classList.add('visible'); inputRow.style.display='none';
+  } else {
+    declPanel.classList.remove('visible'); inputRow.style.display='';
+  }
+}
+
+function initDeclarations() {
+  declarations = {};
+  heroes().forEach(u => { declarations[u.id] = null; });
+  _declHeroQueue = heroes().map(u=>u.id);
+  _declCurrentIdx = 0;
+}
+
+function startDeclarationPhase() {
+  if (phase!=='scene') return;
+  phase='declaration';
+  initDeclarations();
+  addLog(`— Turno ${turn}: cada herói declara sua intenção secretamente —`,'s');
+  const sc=SCENARIOS[currentScenario];
+  const heroList=heroes().map(u=>`${u.name} em ${hexLbl(u.col,u.row)} (${u.hp}/${u.maxHp} PV)`).join(', ');
+  const enemList=enemies().map(u=>`${u.name} em ${hexLbl(u.col,u.row)} (${u.hp}/${u.maxHp} PV)`).join(', ');
+  addLog(`📍 ${sc.name} · Heróis: ${heroList} · Inimigos: ${enemList}`,'s');
+  loadDeclForm(_declCurrentIdx);
+  updateHdr();
+}
+
+function loadDeclForm(idx) {
+  const heroId = _declHeroQueue[idx];
+  const u = units.find(u=>u.id===heroId);
+  if (!u) return;
+  document.getElementById('decl-hero-name').textContent = `${u.icon} ${u.name} — declare sua intenção`;
+  document.getElementById('decl-hint').textContent = 'Você não verá as ações dos outros heróis até a resolução do turno.';
+  ['df-intencao','df-alvo','df-evitar','df-planob'].forEach(id=>{
+    const el=document.getElementById(id); if(el)el.value='';
+  });
+  document.getElementById('decl-form').style.display='flex';
+  document.getElementById('decl-form').style.flexDirection='column';
+  document.getElementById('decl-form').style.gap='6px';
+  document.getElementById('decl-sent-view').classList.remove('visible');
+  document.getElementById('decl-fields-optional').classList.remove('open');
+  document.getElementById('decl-toggle-opts').textContent='▸ Detalhes opcionais (alvo, evitar, plano B)';
+  updateHdr();
+}
+
+function toggleDeclOpts() {
+  const el=document.getElementById('decl-fields-optional');
+  const btn=document.getElementById('decl-toggle-opts');
+  const open=el.classList.toggle('open');
+  btn.textContent=open?'▴ Ocultar detalhes':'▸ Detalhes opcionais (alvo, evitar, plano B)';
+}
+
+function submitDeclaration() {
+  const intencao = document.getElementById('df-intencao').value.trim();
+  if (!intencao) { alert('Descreva a intenção do seu personagem.'); return; }
+  const heroId = _declHeroQueue[_declCurrentIdx];
+  const alvo   = document.getElementById('df-alvo')?.value.trim()||'';
+  const evitar = document.getElementById('df-evitar')?.value.trim()||'';
+  const planob = document.getElementById('df-planob')?.value.trim()||'';
+  declarations[heroId] = { intencao, alvo, evitar, planob };
+
+  document.getElementById('decl-form').style.display='none';
+  const sv=document.getElementById('decl-sent-view');
+  sv.classList.add('visible');
+  const parts=[`"${intencao}"`];
+  if(alvo)   parts.push(`Alvo: ${alvo}`);
+  if(evitar) parts.push(`Evitar: ${evitar}`);
+  if(planob) parts.push(`Plano B: ${planob}`);
+  document.getElementById('decl-sent-text').textContent=`✅ Intenção enviada: ${parts.join(' · ')}`;
+
+  _declCurrentIdx++;
+  updateHdr();
+
+  if (_declCurrentIdx < _declHeroQueue.length) {
+    setTimeout(()=>{ loadDeclForm(_declCurrentIdx); }, 1200);
+  } else {
+    addLog('✅ Todos os heróis declararam suas intenções. Pronto para resolver!','s');
+    document.getElementById('decl-resolve-btn').style.display='block';
+  }
+}
+
+async function resolveDeclarations() {
+  if (phase!=='declaration') return;
+  phase='resolving'; updateHdr();
+
+  document.getElementById('resolving-overlay').classList.add('visible');
+  document.getElementById('decl-panel').classList.remove('visible');
+
+  await callAI('', true); // resolution mode: buildResolutionPrompt() used internally
+
+  document.getElementById('resolving-overlay').classList.remove('visible');
+
+  // Reveal declarations — dramatic "what did everyone plan?" moment
+  addLog('─── Intenções reveladas ───','s');
+  _declHeroQueue.forEach(heroId => {
+    const u = units.find(u=>u.id===heroId);
+    const d = declarations[heroId]||{};
+    let line = `${u.icon} ${u.name}: "${d.intencao||'(nenhuma)'}"`;
+    if (d.alvo)   line += ` · Alvo: ${d.alvo}`;
+    if (d.evitar) line += ` · Evitar: ${d.evitar}`;
+    if (d.planob) line += ` · Plano B: ${d.planob}`;
+    addLog(line,'h');
+  });
+
+  if (!logVisible) toggleLog();
+
+  phase='scene'; updateHdr();
+  turn++;
+  heroes().forEach(u=>{u.hasMoved=false;u.hasActed=false;});
+  enemies().forEach(u=>{u.hasMoved=false;u.hasActed=false;});
+  render();
 }
 
 function endHeroPhase() {
@@ -1154,37 +1400,77 @@ function buildSystemPrompt() {
   const sc=SCENARIOS[currentScenario];
   const heroList=heroes().map(u=>`${u.name} (${u.classe}) em ${hexLbl(u.col,u.row)}: ${u.hp}/${u.maxHp} PV, CA ${u.ac}`).join('; ');
   const enemList=enemies().map(u=>`${u.name} em ${hexLbl(u.col,u.row)}: ${u.hp}/${u.maxHp} PV, CA ${u.ac}`).join('; ');
-  return `Você é o Mestre do Dungeon do Oráculo RPG — um narrador dramático, conciso e imersivo de uma batalha tática em grade hexagonal.
-Cenário atual: ${sc.name}. ${sc.desc}
-Turno: ${turn}. Fase: ${phase==='hero'?'Heróis':'Inimigos'}.
+  return `Você é o Mestre do Dungeon do Oráculo RPG — narrador dramático e imersivo de batalha tática hexagonal.
+Cenário: ${sc.name}. ${sc.desc}
+Turno: ${turn}.
 Heróis: ${heroList||'nenhum'}.
 Inimigos: ${enemList||'nenhum'}.
-Grade: ${COLS} colunas (${CL[0]}–${CL[COLS-1]}) × ${ROWS} linhas (01–${String(ROWS).padStart(2,'0')}). Hexes flat-top, distância em hex.
+Grade: ${COLS} colunas (${CL[0]}–${CL[COLS-1]}) × ${ROWS} linhas. Hexes flat-top.
 
-REGRAS DE RESPOSTA:
-- Máximo 120 palavras de narrativa.
-- Pode usar tags de ação (uma por linha, no final):
-  MOVER:[NomeUnidade|ColRow]  — move unidade para hex (ex: MOVER:[Bárbaro|F06])
-  ATACAR:[Atacante|Alvo]      — resolve ataque
-  CENA:[scenario_id]          — troca cenário (ids: feira_assombrada, castelo_interior, taverna)
-  STAT:[nome|hp:X]            — atualiza HP
-- Não use markdown. Fale em português. Seja dramático e breve.`;
+Responda em português, máximo 100 palavras, sem markdown. Tags opcionais no final (uma por linha):
+MOVER:[NomeUnidade|ColRow]  ATACAR:[Atacante|Alvo]  CENA:[scenario_id]  STAT:[nome|hp:X]`;
 }
 
-async function callAI(userMsg) {
+function buildResolutionPrompt() {
+  const sc = SCENARIOS[currentScenario];
+  const heroLines = heroes().map(u =>
+    `  ${u.name} (${u.classe}): hex ${hexLbl(u.col,u.row)}, ${u.hp}/${u.maxHp} PV, CA ${u.ac}`
+  ).join('\n');
+  const enemLines = enemies().map(u =>
+    `  ${u.name}: hex ${hexLbl(u.col,u.row)}, ${u.hp}/${u.maxHp} PV, CA ${u.ac}`
+  ).join('\n');
+  const declLines = _declHeroQueue.map(heroId => {
+    const u = units.find(u=>u.id===heroId);
+    const d = declarations[heroId]||{};
+    let s = `[${u.name}] "${d.intencao||'(sem intenção)'}"`;
+    if (d.alvo)   s += ` | Alvo: ${d.alvo}`;
+    if (d.evitar) s += ` | Evitar: ${d.evitar}`;
+    if (d.planob) s += ` | Plano B: ${d.planob}`;
+    return s;
+  }).join('\n');
+
+  return `Você é o Mestre do Dungeon do Oráculo RPG. Resolva um turno completo de batalha como CENA SIMULTÂNEA.
+
+CENÁRIO: ${sc.name} — ${sc.desc}
+Turno: ${turn}. Grade: ${COLS}×${ROWS} hexes flat-top (colunas ${CL[0]}–${CL[COLS-1]}, linhas 01–${String(ROWS).padStart(2,'0')}).
+
+ESTADO DO CAMPO:
+Heróis:
+${heroLines||'  nenhum'}
+Inimigos:
+${enemLines||'  nenhum'}
+
+INTENÇÕES DECLARADAS (simultâneas — jogadores NÃO sabiam das intenções uns dos outros):
+${declLines}
+
+COMO RESOLVER:
+1. Leia TODAS as intenções em conjunto. Detecte conflitos, bloqueios de linha de visão, sobreposição de área, ações que se cancelam.
+2. Decida o que REALMENTE acontece — adapte intenções por força maior (ex: Bárbaro entrou na LoS do Mago, Bola de Fogo cancelada; inimigo já morreu antes do Arqueiro atirar).
+3. Inimigos também agem na mesma cena — mova e ataque com base em seus alvos mais próximos e comportamento.
+4. Narre em até 150 palavras, em português, de forma cinematográfica e dramática. Sem markdown.
+5. Após a narrativa, emita tags (uma por linha) para TODOS os movimentos e ataques — heróis e inimigos:
+   MOVER:[NomeUnidade|ColRow]   → mover para hex (ex: MOVER:[Bárbaro|F06])
+   ATACAR:[Atacante|Alvo]       → resolver ataque com rolagem
+   STAT:[nome|hp:X]             → ajuste direto de HP se necessário
+6. Primeiro emita todos os MOVERs (posições finais), depois os ATACARs.`;
+}
+
+async function callAI(userMsg, resolutionMode=false) {
   if (!apiKey) { addLog('⚠ Sem chave Groq. Clique em 🔑 para configurar.','s'); return; }
   if (_callingAI) return;
   _callingAI=true;
-  addLog('🔮 Narrador pensando…','ai');
+  if (!resolutionMode) addLog('🔮 Narrador pensando…','ai');
   try {
     const resp=await fetch(GROQ_URL, {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
       body:JSON.stringify({
-        model:GROQ_MODEL, temperature:0.85, max_tokens:400,
+        model:GROQ_MODEL,
+        temperature: resolutionMode ? 0.75 : 0.85,
+        max_tokens: resolutionMode ? 900 : 400,
         messages:[
-          {role:'system',content:buildSystemPrompt()},
-          {role:'user',content:userMsg}
+          {role:'system', content: resolutionMode ? buildResolutionPrompt() : buildSystemPrompt()},
+          {role:'user',   content: resolutionMode ? 'Resolva o turno agora. Narre e emita todas as tags de ação.' : userMsg}
         ]
       })
     });
@@ -1321,14 +1607,12 @@ function parseCommand(raw) {
 
   // Narrar / AI commands
   if (/^narrar|^ai:|^ia:|^mestre:|^master:/i.test(lo)||lo==='n') {
-    callAI(raw.replace(/^(narrar|ai:|ia:|mestre:|master:)\s*/i,'').trim()||buildSystemPrompt());
+    callAI(raw.replace(/^(narrar|ai:|ia:|mestre:|master:)\s*/i,'').trim()||'Descreva a cena atual.');
     return;
   }
 
-  // End turn
-  if (/fim\s*de\s*turno|encerrar|passar\s*turno|end\s*turn/i.test(lo)) { endHeroPhase(); return; }
-
-  if (phase==='enemy') { addLog('Aguarde — fase dos inimigos.','s'); return; }
+  // Start declaration phase
+  if (/fim\s*de\s*turno|encerrar|passar\s*turno|end\s*turn|declarar/i.test(lo)) { startDeclarationPhase(); return; }
 
   // Change scenario
   const scM=lo.match(/cenário\s+(\w+)|cena\s+(\w+)/);
@@ -1728,7 +2012,7 @@ if (mapImg.complete) render();
 updateHdr();
 addLog(`⚔ Oráculo 2 — ${SCENARIOS[currentScenario].name}`,'ai');
 addLog('Heróis: Bárbaro (E07) · Arqueiro (D08) · Mago (F08)','h');
-addLog('Comandos: "Bárbaro ataca Espantalho" · "Mago avança F06" · "narrar" · "🗺 Cenário"','s');
+addLog('Clique em ⚔ Declarar para iniciar um turno — cada herói declara sua intenção secretamente, depois a IA resolve tudo como cena simultânea.','s');
 // Auto-show log on start
 toggleLog();
 </script>
