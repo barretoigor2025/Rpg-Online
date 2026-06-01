@@ -7,6 +7,20 @@ Stack: HTML/CSS/JS puro · Firebase Realtime Database compat v9 · Groq API (`ll
 
 ---
 
+## Plataforma — MOBILE CELULAR É A PRIORIDADE ABSOLUTA
+
+Oráculo 2 (`oraculo2/oraculo2.html`) tem **celular como plataforma principal**. Tablet e desktop são secundários (responsivos, mas não prioritários).
+
+**Regras inegociáveis para todo código novo:**
+- Touch target mínimo: **44 × 44 px** para qualquer elemento interativo
+- Font size mínimo: **11px** para texto de leitura, **12px** para labels de botões
+- Nenhuma interação dependente de hover — hover é desktop only, sempre adicione fallback de toque
+- Sempre usar `env(safe-area-inset-bottom/top)` em elementos `position:fixed` que tocam as bordas da tela
+- Testar mentalmente em 360px de largura (Android médio) e 390px (iPhone 14)
+- Viewport meta deve sempre incluir `viewport-fit=cover` para suporte ao Dynamic Island / notch
+
+---
+
 ## Tags da IA Narrador
 
 A IA usa tags especiais nas respostas para acionar mecânicas do sistema. Nunca aparecem no texto final exibido ao jogador.
