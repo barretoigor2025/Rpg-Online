@@ -528,49 +528,81 @@ header{
     <div class="isc-titulo-camp" id="isc-camp-titulo">A Fera do Forte Negro</div>
     <p class="isc-tagline">Mapa tático hexagonal · Narrador IA · Turno por declaração oculta</p>
     <div class="isc-btns">
-      <button class="isc-btn-primary" onclick="introIrCriar()">⚔ Jogar</button>
-      <button class="isc-btn-secondary" id="isc-btn-retomar" onclick="introRetomar()" style="display:none">▶ Retomar Campanha</button>
+      <button class="isc-btn-primary" onclick="introIrSlots()">⚔ Jogar</button>
+    </div>
+  </div>
+
+  <!-- Slots de personagem -->
+  <div id="isc-slots" class="intro-screen isc-slots-screen">
+    <div class="isc-topbar" style="padding:14px 16px 0;flex-shrink:0">
+      <button class="isc-back" onclick="introIrLanding()">←</button>
+      <span class="isc-section-title">Seus Aventureiros</span>
+    </div>
+    <div class="isc-slots-grid" id="isc-slots-grid">
+      <!-- rendered by JS -->
     </div>
   </div>
 
   <!-- Character creation screen -->
   <div id="isc-create" class="intro-screen">
     <div class="isc-topbar">
-      <button class="isc-back" onclick="introIrLanding()">←</button>
+      <button class="isc-back" onclick="introIrSlots()">←</button>
       <span class="isc-section-title">Criar Aventureiro</span>
     </div>
-    <span class="isc-field-lbl">Nome</span>
-    <input class="isc-nome-input" id="isc-nome" type="text" placeholder="Nome do personagem" maxlength="24">
-    <span class="isc-field-lbl">Classe</span>
-    <div class="isc-class-grid" id="isc-class-grid">
-      <button class="isc-class-btn sel" data-class="guerreiro" onclick="introSelectClass('guerreiro')"><span class="isc-class-icon">⚔️</span><span class="isc-class-name">Guerreiro</span></button>
-      <button class="isc-class-btn" data-class="mago" onclick="introSelectClass('mago')"><span class="isc-class-icon">🔮</span><span class="isc-class-name">Mago</span></button>
-      <button class="isc-class-btn" data-class="ladino" onclick="introSelectClass('ladino')"><span class="isc-class-icon">🗡️</span><span class="isc-class-name">Ladino</span></button>
-      <button class="isc-class-btn" data-class="clerigo" onclick="introSelectClass('clerigo')"><span class="isc-class-icon">✨</span><span class="isc-class-name">Clérigo</span></button>
-      <button class="isc-class-btn" data-class="barbaro" onclick="introSelectClass('barbaro')"><span class="isc-class-icon">🪓</span><span class="isc-class-name">Bárbaro</span></button>
-      <button class="isc-class-btn" data-class="arqueiro" onclick="introSelectClass('arqueiro')"><span class="isc-class-icon">🏹</span><span class="isc-class-name">Arqueiro</span></button>
+    <div class="isc-create-body">
+      <span class="isc-field-lbl">Nome</span>
+      <input class="isc-nome-input" id="isc-nome" type="text" placeholder="Nome do personagem" maxlength="24">
+      <span class="isc-field-lbl">Classe</span>
+      <div class="isc-class-grid" id="isc-class-grid">
+        <button class="isc-class-btn sel" data-class="guerreiro" onclick="introSelectClass('guerreiro')"><span class="isc-class-icon">⚔️</span><span class="isc-class-name">Guerreiro</span></button>
+        <button class="isc-class-btn" data-class="mago" onclick="introSelectClass('mago')"><span class="isc-class-icon">🔮</span><span class="isc-class-name">Mago</span></button>
+        <button class="isc-class-btn" data-class="ladino" onclick="introSelectClass('ladino')"><span class="isc-class-icon">🗡️</span><span class="isc-class-name">Ladino</span></button>
+        <button class="isc-class-btn" data-class="clerigo" onclick="introSelectClass('clerigo')"><span class="isc-class-icon">✨</span><span class="isc-class-name">Clérigo</span></button>
+        <button class="isc-class-btn" data-class="barbaro" onclick="introSelectClass('barbaro')"><span class="isc-class-icon">🪓</span><span class="isc-class-name">Bárbaro</span></button>
+        <button class="isc-class-btn" data-class="arqueiro" onclick="introSelectClass('arqueiro')"><span class="isc-class-icon">🏹</span><span class="isc-class-name">Arqueiro</span></button>
+      </div>
+      <!-- Preview: sprite esq + stats dir -->
+      <div class="isc-preview-row">
+        <div class="isc-sprite-col">
+          <img id="isc-sprite" class="isc-sprite-large" src="../sprites/guerreiro_m.png" alt="">
+          <div class="isc-gender-row">
+            <button class="isc-gender-btn sel" id="isc-g-m" onclick="introSelectGenero('m')">♂</button>
+            <button class="isc-gender-btn" id="isc-g-f" onclick="introSelectGenero('f')">♀</button>
+          </div>
+          <div class="isc-class-feat" id="isc-class-feat"></div>
+        </div>
+        <div class="isc-stats-col">
+          <div class="isc-attrs-grid" id="isc-stats-prev">
+            <div class="isc-stat-box"><span class="isc-stat-lbl">FOR</span><span class="isc-stat-val" id="isp-STR">16</span><span class="isc-stat-mod" id="isp-STR-m">+3</span></div>
+            <div class="isc-stat-box"><span class="isc-stat-lbl">DES</span><span class="isc-stat-val" id="isp-DEX">14</span><span class="isc-stat-mod" id="isp-DEX-m">+2</span></div>
+            <div class="isc-stat-box"><span class="isc-stat-lbl">CON</span><span class="isc-stat-val" id="isp-CON">15</span><span class="isc-stat-mod" id="isp-CON-m">+2</span></div>
+            <div class="isc-stat-box"><span class="isc-stat-lbl">INT</span><span class="isc-stat-val" id="isp-INT">10</span><span class="isc-stat-mod" id="isp-INT-m">0</span></div>
+            <div class="isc-stat-box"><span class="isc-stat-lbl">SAB</span><span class="isc-stat-val" id="isp-WIS">10</span><span class="isc-stat-mod" id="isp-WIS-m">0</span></div>
+            <div class="isc-stat-box"><span class="isc-stat-lbl">CAR</span><span class="isc-stat-val" id="isp-CHA">10</span><span class="isc-stat-mod" id="isp-CHA-m">0</span></div>
+          </div>
+          <div class="isc-derived-row">
+            <span class="isc-derived-item">❤️ PV <strong id="isp-HP">14</strong></span>
+            <span class="isc-derived-item">🛡️ CA <strong id="isp-AC">17</strong></span>
+            <span class="isc-derived-item">⚡ <strong id="isp-Init">+2</strong></span>
+          </div>
+          <div class="isc-saves-row">
+            <span class="isc-save-item">Fort <strong id="isp-Fort">+2</strong></span>
+            <span class="isc-save-item">Ref <strong id="isp-Ref">0</strong></span>
+            <span class="isc-save-item">Von <strong id="isp-Will">0</strong></span>
+          </div>
+          <div class="isc-poderes-box" id="isc-class-poderes"><!-- filled by JS --></div>
+        </div>
+      </div>
+      <!-- Perícias -->
+      <span class="isc-field-lbl">Perícias <span class="isc-peric-hint">(escolha 2)</span></span>
+      <div class="isc-adv-grid" id="isc-peric-grid"></div>
+      <!-- Grimório (mago) -->
+      <div class="isc-spell-section" id="isc-spell-section">
+        <span class="isc-field-lbl">Grimório <span class="isc-peric-hint">(escolha 3 magias)</span></span>
+        <div class="isc-adv-grid" id="isc-spell-grid"></div>
+      </div>
+      <button class="isc-create-btn" onclick="introConfirmarPersonagem()">Criar e Jogar →</button>
     </div>
-    <span class="isc-field-lbl">Gênero</span>
-    <div class="isc-gender-row">
-      <button class="isc-gender-btn sel" id="isc-g-m" onclick="introSelectGenero('m')">♂ Masculino</button>
-      <button class="isc-gender-btn" id="isc-g-f" onclick="introSelectGenero('f')">♀ Feminino</button>
-    </div>
-    <img id="isc-sprite" class="isc-sprite-preview" src="../sprites/guerreiro_m.png" alt="">
-    <div class="isc-stats-preview" id="isc-stats-prev">
-      <div class="isc-stat-box"><span class="isc-stat-lbl">FOR</span><span class="isc-stat-val" id="isp-STR">16</span><span class="isc-stat-mod" id="isp-STR-m">+3</span></div>
-      <div class="isc-stat-box"><span class="isc-stat-lbl">DES</span><span class="isc-stat-val" id="isp-DEX">14</span><span class="isc-stat-mod" id="isp-DEX-m">+2</span></div>
-      <div class="isc-stat-box"><span class="isc-stat-lbl">CON</span><span class="isc-stat-val" id="isp-CON">15</span><span class="isc-stat-mod" id="isp-CON-m">+2</span></div>
-      <div class="isc-stat-box"><span class="isc-stat-lbl">INT</span><span class="isc-stat-val" id="isp-INT">10</span><span class="isc-stat-mod" id="isp-INT-m">0</span></div>
-      <div class="isc-stat-box"><span class="isc-stat-lbl">SAB</span><span class="isc-stat-val" id="isp-WIS">10</span><span class="isc-stat-mod" id="isp-WIS-m">0</span></div>
-      <div class="isc-stat-box"><span class="isc-stat-lbl">CAR</span><span class="isc-stat-val" id="isp-CHA">10</span><span class="isc-stat-mod" id="isp-CHA-m">0</span></div>
-    </div>
-    <span class="isc-field-lbl">Perícias <span class="isc-peric-hint">(escolha 2)</span></span>
-    <div class="isc-peric-grid" id="isc-peric-grid"></div>
-    <div class="isc-spell-section" id="isc-spell-section">
-      <span class="isc-field-lbl">Magias do Grimório <span class="isc-peric-hint">(escolha 3)</span></span>
-      <div class="isc-spell-grid" id="isc-spell-grid"></div>
-    </div>
-    <button class="isc-create-btn" onclick="introConfirmarPersonagem()">Criar e Jogar →</button>
   </div>
 
   <!-- Intro slides screen -->
@@ -863,53 +895,71 @@ function mkUnit(d) {
   return u;
 }
 
-const UDEFS = [
-  {id:'hero_arqueiro', name:'Arqueiro', type:'hero', classe:'arqueiro',
-   hex:'D08', maxHp:22, ac:14, moveSpeed:5, size:'1x1',
-   attrMod:3, attrName:'DES',
-   stats:{STR:10,DEX:16,CON:12,INT:12,WIS:14,CHA:10},
-   rangedWeapon:{name:'Arco Longo',range:11},
-   sprite:'../sprites/arqueiro_m.png', spriteCostas:'../sprites/arqueiro_m_costas.png', icon:'🏹'},
-  {id:'hero_barbaro', name:'Bárbaro', type:'hero', classe:'barbaro',
-   hex:'E07', maxHp:32, ac:13, moveSpeed:4, size:'1x1',
-   attrMod:4, attrName:'FOR',
-   stats:{STR:18,DEX:12,CON:16,INT:8,WIS:10,CHA:10},
-   rangedWeapon:null,
-   sprite:'../sprites/barbaro_m.png', spriteCostas:'../sprites/barbaro_m_costas.png', icon:'🪓'},
-  {id:'hero_mago', name:'Mago', type:'hero', classe:'mago',
-   hex:'F08', maxHp:16, ac:11, moveSpeed:3, size:'1x1',
-   attrMod:3, attrName:'INT',
-   stats:{STR:8,DEX:12,CON:10,INT:16,WIS:14,CHA:12},
-   rangedWeapon:{name:'Raio Arcano',range:9},
-   sprite:'../sprites/mago.png', spriteCostas:'../sprites/mago_m_costas.png', icon:'🔮'},
-  {id:'espa_01', name:'Espantalho I', type:'enemy',
-   hex:'E03', maxHp:14, ac:10, moveSpeed:3, size:'1x1',
-   attrMod:1, attrName:'FOR',
-   stats:{STR:12,DEX:8,CON:10,INT:2,WIS:6,CHA:4},
-   sprite:'../sprites/inimigo_espantalho_assombrado.png', icon:'🌾'},
-  {id:'espa_02', name:'Espantalho II', type:'enemy',
-   hex:'G03', maxHp:14, ac:10, moveSpeed:3, size:'1x1',
-   attrMod:1, attrName:'FOR',
-   stats:{STR:12,DEX:8,CON:10,INT:2,WIS:6,CHA:4},
-   sprite:'../sprites/inimigo_espantalho_assombrado.png', icon:'🌾'},
-  {id:'barkthresher', name:'Barkthresher', type:'enemy',
-   hex:'F05', maxHp:45, ac:14, moveSpeed:2, size:'2x2',
-   attrMod:3, attrName:'FOR',
-   stats:{STR:18,DEX:8,CON:16,INT:6,WIS:8,CHA:6},
-   sprite:'../sprites/inimigo_barkthresher.png', icon:'🌳'},
-  {id:'larva_gigante', name:'Larva Gigante', type:'enemy',
-   hex:'H02', maxHp:60, ac:10, moveSpeed:2, size:'3x2',
-   attrMod:2, attrName:'FOR',
-   stats:{STR:20,DEX:6,CON:18,INT:1,WIS:7,CHA:4},
-   sprite:'../sprites/inimigo_larva_gigante.png', icon:'🐛'},
-];
+// Mapa começa vazio — heróis adicionados via introAplicarPersonagem(),
+// inimigos/aliados adicionados pela IA via tag SPAWNAR durante a narração.
+let units = [];
 
-let units = UDEFS.map(mkUnit);
+// Posições de partida por classe
+const HERO_HEXES = {
+  guerreiro:'G08', barbaro:'F08', mago:'H08',
+  ladino:'G09', clerigo:'H09', arqueiro:'H07',
+};
+
+// Tipos de inimigos conhecidos (para SPAWNAR)
+const ENEMY_TYPES = {
+  espantalho_assombrado: {
+    maxHp:14, ac:11, moveSpeed:3, size:'1x1', attrMod:1, attrName:'FOR',
+    stats:{STR:12,DEX:10,CON:10,INT:2,WIS:6,CHA:4},
+    sprite:'../sprites/inimigo_espantalho_assombrado.png', icon:'🌾',
+  },
+  barkthresher: {
+    maxHp:45, ac:14, moveSpeed:2, size:'2x2', attrMod:4, attrName:'FOR',
+    stats:{STR:18,DEX:8,CON:16,INT:6,WIS:8,CHA:6},
+    sprite:'../sprites/inimigo_barkthresher.png', icon:'🌳',
+  },
+  larva_gigante: {
+    maxHp:60, ac:10, moveSpeed:2, size:'3x2', attrMod:5, attrName:'FOR',
+    stats:{STR:20,DEX:6,CON:18,INT:1,WIS:7,CHA:4},
+    sprite:'../sprites/inimigo_larva_gigante.png', icon:'🐛',
+  },
+  npc_guerreiro: {
+    maxHp:28, ac:16, moveSpeed:4, size:'1x1', attrMod:3, attrName:'FOR',
+    stats:{STR:16,DEX:12,CON:14,INT:10,WIS:10,CHA:12},
+    sprite:'../sprites/guerreiro_m.png', icon:'⚔️',
+  },
+};
+
+function spawnUnit(nome, tipoId, hex, hpOvr, caOvr, iconOvr) {
+  const tpl = ENEMY_TYPES[tipoId.toLowerCase().replace(/\s+/g,'_')] || ENEMY_TYPES.espantalho_assombrado;
+  const isAlly = tipoId.toLowerCase().includes('npc') || tipoId.toLowerCase().includes('ally');
+  const p = parseHex(hex);
+  if (p.col < 0 || p.col >= COLS || p.row < 0 || p.row >= ROWS) {
+    addLog(`⚠ Hex inválido: ${hex}`,'s'); return;
+  }
+  const id = 'dyn_' + nome.toLowerCase().replace(/[^a-z0-9]/g,'_') + '_' + (Date.now()%10000);
+  const hp = hpOvr || tpl.maxHp;
+  const u = mkUnit({
+    id, name: nome, type: isAlly ? 'hero' : 'enemy',
+    hex, maxHp: hp, ac: caOvr || tpl.ac,
+    moveSpeed: tpl.moveSpeed, size: tpl.size||'1x1',
+    attrMod: tpl.attrMod, attrName: tpl.attrName,
+    stats: tpl.stats,
+    rangedWeapon: null,
+    sprite: tpl.sprite,
+    spriteCostas: isAlly ? tpl.sprite.replace('.png','_costas.png') : null,
+    icon: iconOvr || tpl.icon,
+  });
+  units.push(u);
+  const img = new Image(); img.onload=()=>{u._img=img;render();}; img.src=u.sprite;
+  if (isAlly && u.spriteCostas) { const ic=new Image(); ic.onload=()=>{u._imgCostas=ic;render();}; ic.src=u.spriteCostas; }
+  addLog(`${isAlly?'🤝':'⚠'} ${nome} entra em cena em ${hex.toUpperCase()}!`, isAlly?'h':'e');
+  checkEnd(); render();
+}
 
 function initHeroFacings() {
+  const enems = units.filter(u=>u.type==='enemy'&&u.alive);
   units.filter(u=>u.type==='hero').forEach(hero => {
-    const enems = units.filter(u=>u.type==='enemy'&&u.alive);
-    if (!enems.length) return;
+    if (!enems.length) { hero.facing = 'N'; return; }
     const nearest = enems.reduce((a,b)=>unitDist(hero,a)<=unitDist(hero,b)?a:b);
     const dc=nearest.col-hero.col, dr=nearest.row-hero.row;
     if (dc===0&&dr<0) hero.facing='N';
@@ -1085,8 +1135,8 @@ function processNarrativeAndTags(text) {
   for (const ln of lines) {
     const t = ln.trim();
     if (!t) continue;
-    if (/^(MOVER|ATACAR|CENA|STAT):/i.test(t)) { tags.push(t); continue; }
-    if (/^STATS?:\s*\[/i.test(t))               { tags.push(t); continue; }
+    if (/^(MOVER|ATACAR|CENA|STAT|SPAWNAR):/i.test(t)) { tags.push(t); continue; }
+    if (/^STATS?:\s*\[/i.test(t))                      { tags.push(t); continue; }
     if (/^FALA:\s*\[/i.test(t))                 { falas.push(t); continue; }
     if (/^AVANÇAR\s*$/i.test(t)||/^FECHAR_ATO:/i.test(t)) continue;
     narrative.push(t);
@@ -1110,6 +1160,9 @@ function processNarrativeAndTags(text) {
 
   // Execute action tags
   for (const tag of tags) {
+    // SPAWNAR:[Nome|tipo_id|Hex|hp?|ca?|icon?]
+    const sp=tag.match(/^SPAWNAR:\[([^\|]+)\|([^\|]+)\|([^\|]+)(?:\|(\d+))?(?:\|(\d+))?(?:\|([^\]]+))?\]/i);
+    if (sp) { spawnUnit(sp[1].trim(),sp[2].trim(),sp[3].trim(),parseInt(sp[4]||0)||0,parseInt(sp[5]||0)||0,sp[6]?.trim()||''); initHeroFacings(); continue; }
     // MOVER:[Name|Hex]
     const mv=tag.match(/^MOVER:\[([^\|]+)\|([^\]]+)\]/i);
     if (mv) {
@@ -1992,6 +2045,10 @@ ${heroLines||'  nenhum'}
 ${temCombate?`INIMIGOS EM CENA:\n${enemLines}`:'EXPLORAÇÃO — sem inimigos em cena.'}
 
 MECÂNICAS:
+- SPAWNAR inimigo/aliado no mapa: SPAWNAR:[Nome|tipo_id|Hex|hp|CA|icon]
+  Tipos disponíveis: espantalho_assombrado (🌾 PV14 CA11), barkthresher (🌳 PV45 CA14), larva_gigante (🐛 PV60 CA10), npc_guerreiro (⚔️ PV28 CA16)
+  Ex: SPAWNAR:[Espantalho I|espantalho_assombrado|E04|14|11|🌾]
+  Ex: SPAWNAR:[Gregoras|npc_guerreiro|F09|28|16|⚔️]
 - Quando ação for arriscada/combate: use TESTAR PRIMEIRO (antes de narrar o resultado):
   TESTAR: [NomeExato|ação curta|Atributo|CD|Alvo?]
   Atributos: FOR DES CON INT SAB CAR FORT REF VON. CD: fácil=8 médio=12 difícil=15 heróico=22
@@ -2704,8 +2761,18 @@ let _introClass  = 'guerreiro';
 let _introGenero = 'm';
 let _selectedPericias = new Set();
 let _selectedPoderes  = new Set();
+let _introSlotIdx = 0;
 let _introSlides = [];
 let _introIdx    = 0;
+
+// ── Slots storage (localStorage + Firebase) ──
+function _loadSlots() {
+  try { return JSON.parse(localStorage.getItem('rpg_orc2_chars') || 'null') || new Array(4).fill(null); }
+  catch(e) { return new Array(4).fill(null); }
+}
+function _saveSlots(slots) {
+  localStorage.setItem('rpg_orc2_chars', JSON.stringify(slots));
+}
 
 function introShowScreen(id) {
   document.querySelectorAll('.intro-screen').forEach(s=>s.classList.remove('active'));
@@ -2715,20 +2782,68 @@ function introShowScreen(id) {
 
 function introIrLanding() { introShowScreen('isc-landing'); }
 
-function introIrCriar() {
-  introShowScreen('isc-create');
-  introUpdateCreate();
+function introIrSlots() {
+  introRenderSlots();
+  introShowScreen('isc-slots');
 }
 
-function introRetomar() {
-  // Load saved char from Firebase and go to slides
-  if (_db) {
-    _fbGet(`personagens/${_uid}`).then(snap => {
-      const char = snap?.val();
-      if (char) { introAplicarPersonagem(char); introIniciarSlides(); }
-      else introIrCriar();
-    }).catch(()=>introIrCriar());
-  } else introIrCriar();
+function introRenderSlots() {
+  const grid = document.getElementById('isc-slots-grid');
+  if (!grid) return;
+  const slots = _loadSlots();
+  grid.innerHTML = slots.map((ch, i) => {
+    if (!ch) return `<div class="isc-slot-card empty" onclick="introIrCriar(${i})">
+      <div class="isc-slot-empty-icon">+</div>
+      <div class="isc-slot-empty-lbl">Criar Aventureiro</div>
+    </div>`;
+    const cls = CLASSES[ch.classe] || {};
+    const cor = CLASS_COLORS_ORC2[ch.classe] || '#4a5a70';
+    const xp = ch.xp || 0;
+    const nivel = ch.nivel || 1;
+    return `<div class="isc-slot-card occupied" onclick="introSelecionarSlot(${i})"
+               style="background:linear-gradient(160deg,${cor}22 0%,rgba(14,12,8,.96) 60%)">
+      <button class="isc-slot-del" onclick="event.stopPropagation();introDeleteSlot(${i})">&#x2715;</button>
+      <img class="isc-slot-sprite" src="../sprites/${ch.classe}_${ch.sexo||'m'}.png" alt=""
+           onerror="this.style.opacity='.15'">
+      <div class="isc-slot-nome">${ch.nome}</div>
+      <div class="isc-slot-classe">${cls.icon||''} ${cls.nome||ch.classe}</div>
+      <div class="isc-slot-xp">Nível ${nivel} · ★ ${xp} XP</div>
+      <div class="isc-slot-bar" style="background:${cor}88"></div>
+    </div>`;
+  }).join('');
+}
+
+function introSelecionarSlot(i) {
+  const slots = _loadSlots();
+  const ch = slots[i];
+  if (!ch) { introIrCriar(i); return; }
+  _introSlotIdx = i;
+  introAplicarPersonagem(ch);
+  // Save to localStorage for session continuity
+  localStorage.setItem('rpg_char', JSON.stringify(ch));
+  introIniciarSlides();
+}
+
+function introDeleteSlot(i) {
+  if (!confirm('Excluir este personagem? Esta ação é permanente.')) return;
+  const slots = _loadSlots();
+  slots[i] = null;
+  _saveSlots(slots);
+  if (_db) _fbSet(`orc2chars/${_uid}/s${i}`, null).catch(()=>{});
+  introRenderSlots();
+}
+
+function introIrCriar(slotIdx) {
+  _introSlotIdx = slotIdx ?? 0;
+  _introClass  = 'guerreiro';
+  _introGenero = 'm';
+  _selectedPericias.clear();
+  _selectedPoderes.clear();
+  document.querySelectorAll('.isc-class-btn').forEach(b=>b.classList.toggle('sel',b.dataset.class==='guerreiro'));
+  const nomeEl = document.getElementById('isc-nome');
+  if (nomeEl) nomeEl.value = '';
+  introUpdateCreate();
+  introShowScreen('isc-create');
 }
 
 function introSelectClass(cls) {
@@ -2742,48 +2857,91 @@ function introSelectGenero(g) {
   _introGenero = g;
   document.getElementById('isc-g-m').classList.toggle('sel', g==='m');
   document.getElementById('isc-g-f').classList.toggle('sel', g==='f');
-  introUpdateCreate();
+  const sprite = document.getElementById('isc-sprite');
+  if (sprite) sprite.src = `../sprites/${_introClass}_${g}.png`;
 }
 
 function introUpdateCreate() {
   const cls = CLASSES[_introClass] || CLASSES.guerreiro;
+  const d = dndDerivados(cls);
+  const fmt = v => (v>=0?'+':'')+v;
+
   const sprite = document.getElementById('isc-sprite');
   if (sprite) sprite.src = `../sprites/${_introClass}_${_introGenero}.png`;
+
+  // 6 D&D attributes
   ['STR','DEX','CON','INT','WIS','CHA'].forEach(a=>{
     const v = cls[a]??10;
     const mod = dndMod(v);
     const vEl = document.getElementById(`isp-${a}`);
     const mEl = document.getElementById(`isp-${a}-m`);
     if (vEl) vEl.textContent = v;
-    if (mEl) mEl.textContent = (mod>=0?'+':'')+mod;
+    if (mEl) mEl.textContent = fmt(mod);
   });
-  // Péricias chips
+
+  // Derived stats
+  const hpEl = document.getElementById('isp-HP');
+  const acEl = document.getElementById('isp-AC');
+  const initEl = document.getElementById('isp-Init');
+  const fortEl = document.getElementById('isp-Fort');
+  const refEl = document.getElementById('isp-Ref');
+  const willEl = document.getElementById('isp-Will');
+  if (hpEl) hpEl.textContent = d.hp;
+  if (acEl) acEl.textContent = d.ac;
+  if (initEl) initEl.textContent = fmt(d.init);
+  if (fortEl) fortEl.textContent = fmt(d.fort);
+  if (refEl) refEl.textContent = fmt(d.ref);
+  if (willEl) willEl.textContent = fmt(d.will);
+
+  // Class feature label
+  const featEl = document.getElementById('isc-class-feat');
+  if (featEl) {
+    const hab = cls.habilidade || cls.poderes?.[0];
+    featEl.textContent = hab ? `${cls.icon} ${hab.nome} — ${hab.desc}` : '';
+  }
+
+  // Class poderes list (read-only)
+  const poderesBox = document.getElementById('isc-class-poderes');
+  if (poderesBox) {
+    const pool = cls.poderes_pool || cls.poderes || [];
+    if (pool.length) {
+      poderesBox.innerHTML = `<div class="isc-poderes-title">Poderes da Classe</div>` +
+        pool.map(p=>`<div class="isc-poder-row">
+          <span class="isc-poder-row-icon">${p.icon}</span>
+          <div><div class="isc-poder-row-nome">${p.nome}</div><div class="isc-poder-row-desc">${p.desc}</div></div>
+        </div>`).join('');
+      poderesBox.style.display = '';
+    } else {
+      poderesBox.style.display = 'none';
+    }
+  }
+
+  // Pericias chips (full card with desc)
   const pg = document.getElementById('isc-peric-grid');
   if (pg) {
-    pg.innerHTML = '';
-    Object.entries(PERICIAS).forEach(([id, p])=>{
-      const btn = document.createElement('button');
-      btn.className = 'isc-peric-chip' + (_selectedPericias.has(id)?' sel':'') + (_selectedPericias.size>=2&&!_selectedPericias.has(id)?' disabled':'');
-      btn.textContent = `${p.icon} ${p.nome}`;
-      btn.title = p.desc;
-      btn.onclick = ()=>introTogglePeric(id);
-      pg.appendChild(btn);
-    });
+    pg.innerHTML = Object.entries(PERICIAS).map(([id, p]) => {
+      const sel = _selectedPericias.has(id);
+      const disabled = !sel && _selectedPericias.size >= 2;
+      return `<button class="isc-adv-chip${sel?' sel':''}${disabled?' disabled':''}" onclick="introTogglePeric('${id}')">
+        <div class="isc-adv-top">${p.icon} <strong>${p.nome}</strong> <span class="isc-chip-attr">${p.attr}</span></div>
+        <div class="isc-adv-desc">${p.desc}</div>
+      </button>`;
+    }).join('');
   }
-  // Spell section (Mago only)
+
+  // Spell section (mago only)
   const spellSec = document.getElementById('isc-spell-section');
   if (spellSec) {
     spellSec.classList.toggle('visible', _introClass==='mago');
     const sg = document.getElementById('isc-spell-grid');
     if (sg) {
-      sg.innerHTML = '';
-      (CLASSES.mago.poderes_pool||[]).forEach(spell=>{
-        const btn = document.createElement('button');
-        btn.className = 'isc-spell-chip' + (_selectedPoderes.has(spell.id)?' sel':'');
-        btn.innerHTML = `<span class="spell-icon">${spell.icon}</span><div><div class="spell-name">${spell.nome}</div><div class="spell-desc">${spell.desc}</div></div>`;
-        btn.onclick = ()=>introToggleSpell(spell.id);
-        sg.appendChild(btn);
-      });
+      sg.innerHTML = (CLASSES.mago.poderes_pool||[]).map(spell => {
+        const sel = _selectedPoderes.has(spell.id);
+        return `<button class="isc-poder-chip${sel?' sel':''}" onclick="introToggleSpell('${spell.id}')">
+          <span class="isc-poder-chip-icon">${spell.icon}</span>
+          <div><div class="isc-poder-chip-top">${spell.nome}</div><div class="isc-poder-chip-desc">${spell.desc}</div></div>
+        </button>`;
+      }).join('');
     }
   }
 }
@@ -2799,11 +2957,7 @@ function introTogglePeric(id) {
     Array.from(pg.children).forEach((btn, i) => {
       const pid = Object.keys(PERICIAS)[i];
       btn.classList.toggle('sel', _selectedPericias.has(pid));
-      if (!_selectedPericias.has(pid) && _selectedPericias.size >= 2) {
-        btn.classList.add('disabled');
-      } else {
-        btn.classList.remove('disabled');
-      }
+      btn.classList.toggle('disabled', !_selectedPericias.has(pid) && _selectedPericias.size >= 2);
     });
   }
 }
@@ -2827,27 +2981,25 @@ function introConfirmarPersonagem() {
   const nome = (document.getElementById('isc-nome')?.value||'').trim() || 'Aventureiro';
   const cls = CLASSES[_introClass]||CLASSES.guerreiro;
   const d = dndDerivados(cls);
-  // Auto-fill péricias if fewer than 2 chosen
-  if (_selectedPericias.size < 2) {
-    const defs = {guerreiro:['atletismo','percepcao'],mago:['arcana','percepcao'],ladino:['furtividade','acrobacia'],clerigo:['medicina','persuasao'],barbaro:['atletismo','sobrevivencia'],arqueiro:['percepcao','sobrevivencia']};
-    (defs[_introClass]||['atletismo','percepcao']).forEach(p=>{ if(_selectedPericias.size<2) _selectedPericias.add(p); });
-  }
-  // Auto-fill spells for mago
-  if (_introClass==='mago' && _selectedPoderes.size < 3) {
-    ['missil','escudo','detectar'].forEach(s=>{ if(_selectedPoderes.size<3) _selectedPoderes.add(s); });
-  }
+  const defs = {guerreiro:['atletismo','percepcao'],mago:['arcana','percepcao'],ladino:['furtividade','acrobacia'],clerigo:['medicina','persuasao'],barbaro:['atletismo','sobrevivencia'],arqueiro:['percepcao','sobrevivencia']};
+  if (_selectedPericias.size < 2) (defs[_introClass]||['atletismo','percepcao']).forEach(p=>{ if(_selectedPericias.size<2) _selectedPericias.add(p); });
+  if (_introClass==='mago' && _selectedPoderes.size < 3) ['missil','escudo','detectar'].forEach(s=>{ if(_selectedPoderes.size<3) _selectedPoderes.add(s); });
   const char = {
     nome, classe:_introClass, sexo:_introGenero,
     stats:{STR:cls.STR,DEX:cls.DEX,CON:cls.CON,INT:cls.INT,WIS:cls.WIS,CHA:cls.CHA},
     hp:d.hp, maxHp:d.hp, ac:d.ac,
     fort:d.fort, ref:d.ref, will:d.will,
     mana:d.mana, maxMana:d.maxMana, stamina:d.stamina, maxStamina:d.maxStamina,
-    init:d.init,
-    icon:cls.icon, uid:_uid, ts:Date.now(),
+    init:d.init, icon:cls.icon, xp:0, nivel:1,
+    uid:_uid, ts:Date.now(),
     pericias:[..._selectedPericias],
     poderes_escolhidos:[..._selectedPoderes],
   };
-  if (_db) _fbSet(`personagens/${_uid}`, char).catch(()=>{});
+  // Save to slot
+  const slots = _loadSlots();
+  slots[_introSlotIdx] = char;
+  _saveSlots(slots);
+  if (_db) _fbSet(`orc2chars/${_uid}/s${_introSlotIdx}`, char).catch(()=>{});
   localStorage.setItem('rpg_char', JSON.stringify(char));
   localStorage.setItem('rpg_uid',  _uid);
   introAplicarPersonagem(char);
@@ -2855,7 +3007,6 @@ function introConfirmarPersonagem() {
 }
 
 function introAplicarPersonagem(char) {
-  // Find the hero unit matching this class; fallback to first available hero
   let heroIdx = units.findIndex(u=>u.type==='hero'&&u.id==='hero_'+char.classe);
   if (heroIdx < 0) heroIdx = units.findIndex(u=>u.type==='hero');
   if (heroIdx >= 0) {
@@ -2878,9 +3029,9 @@ function introIniciarSlides() {
   introShowScreen('isc-slides');
   _introSlides = [
     { icon:'🏙️', titulo:'O Mercado de Mhoried',
-      texto:'O grande mercado de outono fervilha de vida. Barracas coloridas, o cheiro de mel quente e especiarias. A jovem Duquesa Catherine Laskaris passeia sob guarda. Sob a Arbor Aeterna — a árvore ancestral venerada há milênios — crianças brincam entre os feirantes e músicos.' },
+      texto:'O grande mercado de outono fervilha de vida. Barracas coloridas, o cheiro de mel quente e especiarias. A jovem Duquesa Catherine Laskaris passeia sob guarda discreta. Sob a Arbor Aeterna — a árvore ancestral venerada há milênios — crianças brincam entre feirantes e músicos.' },
     { icon:'🌑', titulo:'Uma Presença nas Sombras',
-      texto:'As lanças de luz outonal caem entre as folhas douradas. Ao longe, nas bordas das Blackwoods, algo se move entre as árvores. As risadas e a música da feira cobrem qualquer som estranho. Mas há algo no ar — uma tensão que os animais sentem primeiro.' },
+      texto:'As lanças de luz outonal caem entre as folhas douradas. Nas bordas das Blackwoods, algo se move entre as árvores. As risadas e a música cobrem qualquer som estranho — mas você nota. Os animais também notam. Há uma tensão no ar que o vento não explica.' },
     { icon:'⚔️', titulo:'A Hora dos Heróis',
       texto:'Nem toda batalha é escolhida. Às vezes o destino simplesmente bate à porta — ou derruba ela. Você veio a Mhoried por motivos próprios. Mas a noite que começa agora vai mudar tudo.' },
   ];
@@ -2918,12 +3069,23 @@ function introComecarJogo() {
   if (apiKey) {
     const char = JSON.parse(localStorage.getItem('rpg_char')||'{}');
     const nomeHeroi = char.nome || 'o aventureiro';
-    const classeHeroi = char.classe || 'aventureiro';
+    const clsNome = (CLASSES[char.classe]||{}).nome || char.classe || 'aventureiro';
     setTimeout(()=>{
-      callAI(`O personagem do jogador chama-se ${nomeHeroi}, um(a) ${classeHeroi}. Narre a cena de abertura da campanha: o mercado de outono de Mhoried durante a Festa de São Phanourius, a Arbor Aeterna ao fundo, a Duquesa Catherine Laskaris passeando com sua escolta. Tom atmosférico, calmo, com presságio de perigo nas sombras das Blackwoods ao fundo. NÃO inicie combate ainda. Máximo 80 palavras.`);
+      callAI(
+`Início da campanha "A Fera do Forte Negro".
+O herói é ${nomeHeroi}, um(a) ${clsNome}, na Festa de São Phanourius no mercado de Mhoried.
+
+Narre em 2 partes:
+1. Cena de abertura (40 palavras): o mercado festivo animado, a Arbor Aeterna ao fundo, a Duquesa Catherine Laskaris passeando com escolta — tudo parece perfeito.
+2. O ataque (40 palavras): uma criança grita, espantalhos assombrados irrompem das barracas, pânico. Use SPAWNAR para colocar 3 espantalhos no mapa (hexes E04, G04, H05). Termine com o herói de mãos na arma, aguardando a decisão do jogador.
+
+SPAWNAR:[Espantalho I|espantalho_assombrado|E04|14|11|🌾]
+SPAWNAR:[Espantalho II|espantalho_assombrado|G04|14|11|🌾]
+SPAWNAR:[Espantalho III|espantalho_assombrado|H05|14|11|🌾]`
+      );
     }, 800);
   } else {
-    addLog('📖 O mercado de outono de Mhoried fervilha de vida. Sob a Arbor Aeterna, a Duquesa Catherine passeia entre as barracas...','ai');
+    addLog('📖 A Festa de São Phanourius enche Mhoried de música. De repente uma criança grita — espantalhos assombrados irrompem das barracas!','ai');
   }
 }
 
