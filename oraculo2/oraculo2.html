@@ -88,30 +88,53 @@ header{
 
 /* ── Declaration panel ── */
 #decl-panel{
-  flex-shrink:0;background:#12100c;border-top:1px solid rgba(200,160,48,.18);
+  flex-shrink:0;background:#0e0c09;border-top:1px solid rgba(200,160,48,.22);
   padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom));
   display:none;flex-direction:column;gap:8px
 }
 #decl-panel.visible{display:flex}
-#decl-hero-name{font-size:12px;color:#c8a030;font-weight:700;margin-bottom:2px}
-#decl-hint{font-size:10px;color:#5a4a30;margin-bottom:4px;font-style:italic}
-.decl-field{display:flex;flex-direction:column;gap:3px}
-.decl-field label{font-size:10px;color:#8a7050;text-transform:uppercase;letter-spacing:.5px}
-.decl-field textarea{
-  background:#1a1610;border:1px solid rgba(200,160,48,.2);border-radius:6px;
-  color:#e2d5b0;font-size:12px;padding:7px 10px;outline:none;font-family:inherit;
-  resize:none;height:42px;line-height:1.4
+.decl-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+#decl-hero-name{font-size:13px;color:#c8a030;font-weight:700}
+#decl-hint{font-size:10px;color:#5a4a30;font-style:italic;margin-top:1px}
+.decl-sec{display:flex;flex-direction:column;gap:5px}
+.decl-sec-title{font-size:9px;color:#6a5838;text-transform:uppercase;letter-spacing:1.2px;display:flex;align-items:center;gap:6px}
+.decl-speed-badge{background:rgba(80,130,220,.2);border:1px solid rgba(80,130,220,.3);color:#80aadd;border-radius:4px;padding:1px 5px;font-size:9px;letter-spacing:0;text-transform:none;font-weight:600}
+.decl-sk-chips{display:flex;flex-wrap:wrap;gap:4px}
+.decl-sk-chip{
+  background:#1a1610;border:1px solid rgba(200,160,48,.18);border-radius:5px;
+  color:#9a8860;font-size:10px;padding:5px 8px;cursor:pointer;
+  transition:all .15s;-webkit-tap-highlight-color:transparent;
+  display:flex;align-items:center;gap:3px;flex-direction:column;align-items:flex-start;
+  min-width:80px;flex:1;max-width:calc(50% - 2px)
 }
-.decl-field textarea:focus{border-color:rgba(200,160,48,.45)}
-.decl-field textarea::placeholder{color:#443820}
-#decl-fields-optional{display:none;flex-direction:column;gap:6px}
-#decl-fields-optional.open{display:flex}
-#decl-toggle-opts{background:none;border:none;color:#6a5838;font-size:10px;cursor:pointer;text-align:left;padding:0}
+.decl-sk-chip.sel{border-color:rgba(200,160,48,.65);background:rgba(200,160,48,.12);color:#c8a030}
+.decl-sk-passive{opacity:.5;cursor:default;pointer-events:none}
+.decl-sk-name{font-size:10px;font-weight:600;color:#c8b880}
+.decl-sk-chip.sel .decl-sk-name{color:#c8a030}
+.decl-sk-sub{font-size:8px;color:#6a5838;margin-top:1px}
+.decl-sk-chip.sel .decl-sk-sub{color:#8a7040}
+.decl-en-chips{display:flex;flex-wrap:wrap;gap:4px}
+.decl-en-chip{
+  background:#180c0a;border:1px solid rgba(180,60,40,.2);border-radius:5px;
+  color:#c09080;font-size:10px;padding:5px 8px;cursor:pointer;
+  transition:all .15s;-webkit-tap-highlight-color:transparent;
+  display:flex;align-items:center;gap:4px;flex:1;max-width:calc(50% - 2px)
+}
+.decl-en-chip.sel{border-color:rgba(220,80,50,.5);background:rgba(180,50,30,.15);color:#f0a080;font-weight:600}
+.decl-en-hp{font-size:8px;color:#907060;margin-left:2px}
+.decl-en-dist{font-size:8px;color:#608060;background:rgba(80,120,80,.15);border-radius:3px;padding:1px 4px;margin-left:auto}
+.decl-text-input{
+  background:#161208;border:1px solid rgba(200,160,48,.15);border-radius:5px;
+  color:#d0c090;font-size:11px;padding:6px 10px;outline:none;font-family:inherit;
+  resize:none;width:100%;line-height:1.4
+}
+.decl-text-input:focus{border-color:rgba(200,160,48,.4)}
+.decl-text-input::placeholder{color:#3a3020}
 #decl-send{
   background:rgba(200,160,48,.12);border:1px solid rgba(200,160,48,.4);color:#c8a030;
   border-radius:7px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;width:100%
 }
-#decl-send:active{background:rgba(200,160,48,.25)}
+#decl-send:active{background:rgba(200,160,48,.28)}
 #decl-sent-view{display:none;flex-direction:column;gap:6px;padding:4px 0}
 #decl-sent-view.visible{display:flex}
 #decl-sent-text{font-size:11px;color:#8a9870;font-style:italic;line-height:1.5;padding:6px 10px;background:rgba(80,180,80,.05);border:1px solid rgba(80,180,80,.15);border-radius:6px}
@@ -121,6 +144,17 @@ header{
   display:none;animation:pulse-gold 1.5s ease-in-out infinite
 }
 @keyframes pulse-gold{0%,100%{box-shadow:0 0 0 0 rgba(200,130,30,.0)}50%{box-shadow:0 0 0 6px rgba(200,130,30,.25)}}
+
+/* ── Combat start banner ── */
+#combat-banner{
+  position:fixed;inset:0;z-index:350;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;
+  background:rgba(6,2,1,.7);pointer-events:none;opacity:0;transition:opacity .3s
+}
+#combat-banner.show{opacity:1;animation:combat-flash .5s ease forwards}
+@keyframes combat-flash{0%{opacity:0;transform:scale(1.15)}60%{opacity:1;transform:scale(1)}100%{opacity:1;transform:scale(1)}}
+.cbt-title{font-size:52px;font-weight:900;color:#d42020;letter-spacing:6px;text-transform:uppercase;text-shadow:0 0 30px rgba(200,30,20,.9),0 0 60px rgba(200,30,20,.4)}
+.cbt-sub{font-size:12px;color:#c09070;letter-spacing:3px;text-transform:uppercase}
 
 /* ── Resolution overlay ── */
 #resolving-overlay{
@@ -476,36 +510,42 @@ header{
 
   <!-- Declaration panel (visible during declaration phase) -->
   <div id="decl-panel">
-    <div>
-      <div id="decl-hero-name">⚔ Declare sua intenção</div>
-      <div id="decl-hint">Você não verá as ações dos outros heróis até a resolução.</div>
+    <div class="decl-header">
+      <div>
+        <div id="decl-hero-name">⚔ Declare seu turno</div>
+        <div id="decl-hint">Escolha ação e alvo — a IA resolve o turno</div>
+      </div>
     </div>
-    <div id="decl-form">
-      <div class="decl-field">
-        <label>O que seu personagem tenta fazer?</label>
-        <textarea id="df-intencao" placeholder="Avançar contra o Barkthresher e impedir ele de chegar no Mago…" rows="2"></textarea>
+    <div id="decl-form" style="display:flex;flex-direction:column;gap:8px">
+      <!-- Movimento -->
+      <div class="decl-sec">
+        <div class="decl-sec-title">🦵 Movimento <span id="decl-speed-badge" class="decl-speed-badge">? hex</span></div>
+        <input class="decl-text-input" id="df-mover" type="text" placeholder="Para onde mover? (hex ou 'avançar no espantalho') — opcional" style="height:30px">
       </div>
-      <button id="decl-toggle-opts" onclick="toggleDeclOpts()">▸ Detalhes opcionais (alvo, evitar, plano B)</button>
-      <div id="decl-fields-optional">
-        <div class="decl-field">
-          <label>Alvo preferido</label>
-          <textarea id="df-alvo" placeholder="Barkthresher" rows="1"></textarea>
-        </div>
-        <div class="decl-field">
-          <label>Evitar / condição de segurança</label>
-          <textarea id="df-evitar" placeholder="Não entrar em área de Bola de Fogo do Mago…" rows="1"></textarea>
-        </div>
-        <div class="decl-field">
-          <label>Plano B (se não der certo)</label>
-          <textarea id="df-planob" placeholder="Se não tiver linha de tiro, atacar o Espantalho mais próximo…" rows="1"></textarea>
-        </div>
+      <!-- Ação: chips de skill -->
+      <div class="decl-sec">
+        <div class="decl-sec-title">⚡ Ação</div>
+        <div class="decl-sk-chips" id="decl-sk-chips"></div>
       </div>
-      <button id="decl-send" onclick="submitDeclaration()">Enviar Intenção →</button>
+      <!-- Alvo: chips de inimigos -->
+      <div class="decl-sec" id="decl-target-sec" style="display:none">
+        <div class="decl-sec-title">🎯 Alvo</div>
+        <div class="decl-en-chips" id="decl-en-chips"></div>
+      </div>
+      <!-- Contexto extra -->
+      <textarea class="decl-text-input" id="df-extra" placeholder="Plano B ou contexto adicional (opcional)..." style="height:34px"></textarea>
+      <button id="decl-send" onclick="submitDeclaration()">Enviar →</button>
     </div>
     <div id="decl-sent-view">
       <div id="decl-sent-text"></div>
       <button id="decl-resolve-btn" onclick="resolveDeclarations()">⚡ Resolver Turno — IA calcula tudo</button>
     </div>
+  </div>
+
+  <!-- Combat start banner -->
+  <div id="combat-banner">
+    <div class="cbt-title">COMBATE!</div>
+    <div class="cbt-sub">Declare sua intenção</div>
   </div>
 
   <div id="input-row">
@@ -954,7 +994,16 @@ function spawnUnit(nome, tipoId, hex, hpOvr, caOvr, iconOvr) {
   const img = new Image(); img.onload=()=>{u._img=img;render();}; img.src=u.sprite;
   if (isAlly && u.spriteCostas) { const ic=new Image(); ic.onload=()=>{u._imgCostas=ic;render();}; ic.src=u.spriteCostas; }
   addLog(`${isAlly?'🤝':'⚠'} ${nome} entra em cena em ${hex.toUpperCase()}!`, isAlly?'h':'e');
+  // Primeiro inimigo: mostra banner de combate
+  if (!isAlly && enemies().length === 1) showCombatBanner();
   checkEnd(); render();
+}
+
+function showCombatBanner() {
+  const b = document.getElementById('combat-banner');
+  if (!b) return;
+  b.classList.add('show');
+  setTimeout(()=>{ b.classList.remove('show'); }, 2200);
 }
 
 function initHeroFacings() {
@@ -1337,10 +1386,12 @@ function checkEnd() {
 let turn=1, phase='scene';
 let hovHex=null, showGrid=false, debugGrid=false;
 
-// declarations[heroId] = {intencao, alvo, evitar, planob}  ou null = pendente
+// declarations[heroId] = {intencao, alvo, acao, mover}  ou null = pendente
 let declarations = {};
 let _declHeroQueue = []; // fila de heróis para declarar (single-player)
 let _declCurrentIdx = 0;
+let _declSelSkill  = null; // skill selecionada no painel
+let _declSelTarget = null; // unidade-alvo selecionada no painel
 let selId=null, activeRanges=new Set();
 let _moveCache=[], _meleeCache=[], _rangedCache=[];
 const sleep = ms => new Promise(r=>setTimeout(r,ms));
@@ -1404,44 +1455,109 @@ function loadDeclForm(idx) {
   const heroId = _declHeroQueue[idx];
   const u = units.find(u=>u.id===heroId);
   if (!u) return;
-  document.getElementById('decl-hero-name').textContent = `${u.icon} ${u.name} — declare sua intenção`;
-  document.getElementById('decl-hint').textContent = 'Você não verá as ações dos outros heróis até a resolução do turno.';
-  ['df-intencao','df-alvo','df-evitar','df-planob'].forEach(id=>{
-    const el=document.getElementById(id); if(el)el.value='';
-  });
-  document.getElementById('decl-form').style.display='flex';
-  document.getElementById('decl-form').style.flexDirection='column';
-  document.getElementById('decl-form').style.gap='6px';
+
+  _declSelSkill  = null;
+  _declSelTarget = null;
+
+  document.getElementById('decl-hero-name').textContent = `${u.icon} ${u.name} — Turno ${turn}`;
+  document.getElementById('decl-hint').textContent = `Deslocamento: ${u.moveSpeed||4} hexes · 1 movimento + 1 ação`;
+
+  const badge = document.getElementById('decl-speed-badge');
+  if (badge) badge.textContent = `${u.moveSpeed||4} hex`;
+
+  // Skill chips
+  const skList = SKILLS[u.classe] || [];
+  const sc = document.getElementById('decl-sk-chips');
+  if (sc) {
+    sc.innerHTML = skList.map((sk, i) => {
+      const passive = sk.type === 'passive';
+      return `<button class="decl-sk-chip${passive?' decl-sk-passive':''}" data-idx="${i}" onclick="${passive?'':` declSelectSkill(this,${i},'${u.id}')`}">
+        <span class="decl-sk-name">${sk.icon} ${sk.name}</span>
+        <span class="decl-sk-sub">${sk.dmg}${sk.range?` · ${sk.range}⬡`:''}</span>
+      </button>`;
+    }).join('');
+  }
+
+  // Enemy chips
+  const foes = enemies().filter(e=>e.alive);
+  const ec = document.getElementById('decl-en-chips');
+  const ts = document.getElementById('decl-target-sec');
+  if (ec && ts) {
+    if (foes.length) {
+      ec.innerHTML = foes.map(e => {
+        const dist = unitDist(u, e);
+        return `<button class="decl-en-chip" data-id="${e.id}" onclick="declSelectTarget(this,'${e.id}')">
+          ${e.icon||'👾'} ${e.name}
+          <span class="decl-en-hp">${e.hp}/${e.maxHp}PV</span>
+          <span class="decl-en-dist">${dist}⬡</span>
+        </button>`;
+      }).join('');
+      ts.style.display = '';
+    } else {
+      ts.style.display = 'none';
+    }
+  }
+
+  const moverEl = document.getElementById('df-mover');
+  const extraEl = document.getElementById('df-extra');
+  if (moverEl) moverEl.value = '';
+  if (extraEl) extraEl.value = '';
+
+  document.getElementById('decl-form').style.display = 'flex';
   document.getElementById('decl-sent-view').classList.remove('visible');
-  document.getElementById('decl-fields-optional').classList.remove('open');
-  document.getElementById('decl-toggle-opts').textContent='▸ Detalhes opcionais (alvo, evitar, plano B)';
+  document.getElementById('decl-panel').classList.add('visible');
   updateHdr();
 }
 
-function toggleDeclOpts() {
-  const el=document.getElementById('decl-fields-optional');
-  const btn=document.getElementById('decl-toggle-opts');
-  const open=el.classList.toggle('open');
-  btn.textContent=open?'▴ Ocultar detalhes':'▸ Detalhes opcionais (alvo, evitar, plano B)';
+function declSelectSkill(btn, skIdx, heroId) {
+  const u = units.find(u=>u.id===heroId);
+  if (!u) return;
+  const sk = (SKILLS[u.classe]||[])[skIdx];
+  if (!sk || sk.type==='passive') return;
+  _declSelSkill = sk;
+  document.querySelectorAll('.decl-sk-chip').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  // Mostrar alvos se skill precisa de alvo
+  const needsTarget = sk.type!=='self';
+  const ts = document.getElementById('decl-target-sec');
+  if (ts) ts.style.display = needsTarget && enemies().length ? '' : 'none';
+}
+
+function declSelectTarget(btn, enemyId) {
+  const e = units.find(u=>u.id===enemyId);
+  if (!e) return;
+  _declSelTarget = e;
+  document.querySelectorAll('.decl-en-chip').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
 }
 
 function submitDeclaration() {
-  const intencao = document.getElementById('df-intencao').value.trim();
-  if (!intencao) { alert('Descreva a intenção do seu personagem.'); return; }
   const heroId = _declHeroQueue[_declCurrentIdx];
-  const alvo   = document.getElementById('df-alvo')?.value.trim()||'';
-  const evitar = document.getElementById('df-evitar')?.value.trim()||'';
-  const planob = document.getElementById('df-planob')?.value.trim()||'';
-  declarations[heroId] = { intencao, alvo, evitar, planob };
+  const u = units.find(u=>u.id===heroId);
+  if (!u) return;
 
-  document.getElementById('decl-form').style.display='none';
-  const sv=document.getElementById('decl-sent-view');
-  sv.classList.add('visible');
-  const parts=[`"${intencao}"`];
-  if(alvo)   parts.push(`Alvo: ${alvo}`);
-  if(evitar) parts.push(`Evitar: ${evitar}`);
-  if(planob) parts.push(`Plano B: ${planob}`);
-  document.getElementById('decl-sent-text').textContent=`✅ Intenção enviada: ${parts.join(' · ')}`;
+  const mover = (document.getElementById('df-mover')?.value||'').trim();
+  const extra = (document.getElementById('df-extra')?.value||'').trim();
+
+  const acao  = _declSelSkill ? _declSelSkill.name : 'Ataque básico';
+  const alvo  = _declSelTarget ? _declSelTarget.name : '';
+
+  let intencao = '';
+  if (mover) intencao += `Mover para ${mover}. `;
+  intencao += `Usar ${acao}`;
+  if (alvo) intencao += ` em ${alvo}`;
+  if (extra) intencao += `. ${extra}`;
+
+  declarations[heroId] = { intencao, alvo, acao, mover };
+
+  document.getElementById('decl-form').style.display = 'none';
+  document.getElementById('decl-sent-view').classList.add('visible');
+
+  const icon = _declSelSkill?.icon || '⚔';
+  let summary = `${icon} ${acao}`;
+  if (alvo) summary += ` → ${alvo}`;
+  if (mover) summary += ` · mv: ${mover}`;
+  document.getElementById('decl-sent-text').textContent = `✅ ${summary}`;
 
   _declCurrentIdx++;
   updateHdr();
@@ -1450,7 +1566,7 @@ function submitDeclaration() {
     setTimeout(()=>{ loadDeclForm(_declCurrentIdx); }, 1200);
   } else {
     addLog('✅ Todos os heróis declararam suas intenções. Pronto para resolver!','s');
-    document.getElementById('decl-resolve-btn').style.display='block';
+    document.getElementById('decl-resolve-btn').style.display = 'block';
   }
 }
 
@@ -1465,15 +1581,14 @@ async function resolveDeclarations() {
 
   document.getElementById('resolving-overlay').classList.remove('visible');
 
-  // Reveal declarations — dramatic "what did everyone plan?" moment
+  // Reveal declarations
   addLog('─── Intenções reveladas ───','s');
   _declHeroQueue.forEach(heroId => {
     const u = units.find(u=>u.id===heroId);
     const d = declarations[heroId]||{};
-    let line = `${u.icon} ${u.name}: "${d.intencao||'(nenhuma)'}"`;
-    if (d.alvo)   line += ` · Alvo: ${d.alvo}`;
-    if (d.evitar) line += ` · Evitar: ${d.evitar}`;
-    if (d.planob) line += ` · Plano B: ${d.planob}`;
+    let line = `${u.icon} ${u.name}: ${d.acao||'Ataque básico'}`;
+    if (d.alvo)  line += ` → ${d.alvo}`;
+    if (d.mover) line += ` | mv: ${d.mover}`;
     addLog(line,'h');
   });
 
@@ -2086,10 +2201,10 @@ function buildResolutionPrompt() {
   const declLines = _declHeroQueue.map(heroId => {
     const u = units.find(u=>u.id===heroId);
     const d = declarations[heroId]||{};
-    let s = `[${u.name}] "${d.intencao||'(sem intenção)'}"`;
-    if (d.alvo)   s += ` | Alvo: ${d.alvo}`;
-    if (d.evitar) s += ` | Evitar: ${d.evitar}`;
-    if (d.planob) s += ` | Plano B: ${d.planob}`;
+    let s = `[${u.name}] Ação: "${d.acao||'Ataque básico'}"`;
+    if (d.alvo)  s += ` · Alvo: ${d.alvo}`;
+    if (d.mover) s += ` · Mover: ${d.mover}`;
+    s += ` | Intenção: "${d.intencao||'(sem intenção)'}"`;
     return s;
   }).join('\n');
 
@@ -2659,7 +2774,7 @@ const CLASSES = {
   guerreiro: {
     nome:'Guerreiro', icon:'⚔️',
     STR:16,DEX:14,CON:15,INT:10,WIS:10,CHA:10,
-    dado_vida:10, ca_armor:5, fort_base:2, ref_base:0, will_base:0,
+    dado_vida:10, ca_armor:5, fort_base:2, ref_base:0, will_base:0, moveSpeed:5,
     descricao:'Combatente versátil.',
     poderes:[
       {nome:'Ataque Extra',icon:'⚔️',desc:'Uma vez por combate, faz dois ataques em um único turno.'},
@@ -2671,7 +2786,7 @@ const CLASSES = {
   mago: {
     nome:'Mago', icon:'🔮',
     STR:8,DEX:12,CON:10,INT:17,WIS:13,CHA:12,
-    dado_vida:4, ca_armor:0, fort_base:0, ref_base:0, will_base:2,
+    dado_vida:4, ca_armor:0, fort_base:0, ref_base:0, will_base:2, moveSpeed:3,
     descricao:'Arquimago em formação.',
     poderes_pool:[
       {id:'missil',nome:'Míssil Mágico',icon:'✨',desc:'1d4+1 de dano arcano infalível.'},
@@ -2688,7 +2803,7 @@ const CLASSES = {
   ladino: {
     nome:'Ladino', icon:'🗡️',
     STR:10,DEX:17,CON:11,INT:13,WIS:10,CHA:13,
-    dado_vida:6, ca_armor:2, fort_base:0, ref_base:2, will_base:0,
+    dado_vida:6, ca_armor:2, fort_base:0, ref_base:2, will_base:0, moveSpeed:6,
     descricao:'Especialista furtivo.',
     poderes:[
       {nome:'Ataque Furtivo',icon:'🗡️',desc:'Dano duplo ao atacar de surpresa.'},
@@ -2700,7 +2815,7 @@ const CLASSES = {
   clerigo: {
     nome:'Clérigo', icon:'✨',
     STR:12,DEX:10,CON:12,INT:12,WIS:16,CHA:13,
-    dado_vida:8, ca_armor:5, fort_base:0, ref_base:0, will_base:2,
+    dado_vida:8, ca_armor:5, fort_base:0, ref_base:0, will_base:2, moveSpeed:4,
     descricao:'Sacerdote guerreiro.',
     poderes:[
       {nome:'Curar Ferimentos',icon:'❤️‍🩹',desc:'Restaura 1d6+SAB PV. 3 usos/dia.'},
@@ -2712,7 +2827,7 @@ const CLASSES = {
   barbaro: {
     nome:'Bárbaro', icon:'🪓',
     STR:18,DEX:12,CON:16,INT:8,WIS:9,CHA:8,
-    dado_vida:12, ca_armor:3, fort_base:2, ref_base:2, will_base:0,
+    dado_vida:12, ca_armor:3, fort_base:2, ref_base:2, will_base:0, moveSpeed:6,
     descricao:'Força bruta da natureza.',
     poderes:[
       {nome:'Fúria',icon:'🔥',desc:'FOR +4 e resistência a dano por 3 rodadas.'},
@@ -2724,7 +2839,7 @@ const CLASSES = {
   arqueiro: {
     nome:'Arqueiro', icon:'🏹',
     STR:12,DEX:16,CON:13,INT:11,WIS:13,CHA:10,
-    dado_vida:8, ca_armor:4, fort_base:0, ref_base:2, will_base:0,
+    dado_vida:8, ca_armor:4, fort_base:0, ref_base:2, will_base:0, moveSpeed:5,
     descricao:'Rastreador preciso.',
     poderes:[
       {nome:'Tiro Certeiro',icon:'🎯',desc:'Ignora cobertura parcial.'},
@@ -3033,7 +3148,14 @@ function introAplicarPersonagem(char) {
     hex,
     maxHp: char.maxHp || char.hp || cls.dado_vida,
     ac: char.ac || (10 + dexMod2 + (cls.ca_armor||0)),
-    moveSpeed: cls.dado_vida >= 10 ? 4 : 3,
+    moveSpeed: (() => {
+      let spd = cls.moveSpeed || (cls.dado_vida >= 10 ? 4 : 3);
+      // Bárbaro: Movimento Acelerado é poder passivo sempre ativo (+1 hex)
+      if (char.classe === 'barbaro') spd += 1;
+      // Perícia atletismo: saltos/escalada melhores → +1 hex de deslocamento
+      if ((char.pericias||[]).includes('atletismo')) spd += 1;
+      return spd;
+    })(),
     size: '1x1',
     attrMod: bestMod,
     attrName: char.classe==='mago' ? 'INT' : char.classe==='arqueiro' ? 'DES' : 'FOR',
