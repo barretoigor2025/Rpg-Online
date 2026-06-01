@@ -316,6 +316,30 @@ header{
 }
 .isc-create-btn:active{background:rgba(200,160,48,.28)}
 
+/* ── Péricias + Spell picker ── */
+.isc-peric-hint{font-size:9px;color:#6a5838;text-transform:none;letter-spacing:0;margin-left:4px}
+.isc-peric-grid{display:flex;flex-wrap:wrap;gap:5px;width:100%}
+.isc-peric-chip{
+  background:#12100c;border:1px solid rgba(200,160,48,.15);border-radius:12px;
+  padding:4px 10px;font-size:10px;color:#8a7050;cursor:pointer;
+  transition:all .15s;-webkit-tap-highlight-color:transparent
+}
+.isc-peric-chip.sel{border-color:rgba(200,160,48,.6);background:rgba(200,160,48,.1);color:#c8a030}
+.isc-peric-chip.disabled{opacity:.32;cursor:default;pointer-events:none}
+.isc-spell-section{display:none;flex-direction:column;gap:6px;width:100%}
+.isc-spell-section.visible{display:flex}
+.isc-spell-grid{display:flex;flex-direction:column;gap:4px;width:100%}
+.isc-spell-chip{
+  background:#12100c;border:1px solid rgba(200,160,48,.15);border-radius:6px;
+  padding:6px 10px;font-size:10px;color:#8a7050;cursor:pointer;
+  transition:all .15s;text-align:left;-webkit-tap-highlight-color:transparent;
+  display:flex;align-items:flex-start;gap:6px;width:100%
+}
+.isc-spell-chip.sel{border-color:rgba(200,160,48,.6);background:rgba(200,160,48,.1);color:#c8a030}
+.spell-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+.spell-name{font-weight:600;font-size:10px}
+.spell-desc{font-size:9px;color:#5a4a30;margin-top:1px;line-height:1.4}
+
 /* ── Slides ── */
 #isc-slides{gap:0;padding:0;justify-content:stretch}
 .slide-card{
@@ -465,6 +489,12 @@ header{
       <div class="isc-stat-box"><span class="isc-stat-lbl">INT</span><span class="isc-stat-val" id="isp-INT">10</span><span class="isc-stat-mod" id="isp-INT-m">0</span></div>
       <div class="isc-stat-box"><span class="isc-stat-lbl">SAB</span><span class="isc-stat-val" id="isp-WIS">10</span><span class="isc-stat-mod" id="isp-WIS-m">0</span></div>
       <div class="isc-stat-box"><span class="isc-stat-lbl">CAR</span><span class="isc-stat-val" id="isp-CHA">10</span><span class="isc-stat-mod" id="isp-CHA-m">0</span></div>
+    </div>
+    <span class="isc-field-lbl">Perícias <span class="isc-peric-hint">(escolha 2)</span></span>
+    <div class="isc-peric-grid" id="isc-peric-grid"></div>
+    <div class="isc-spell-section" id="isc-spell-section">
+      <span class="isc-field-lbl">Magias do Grimório <span class="isc-peric-hint">(escolha 3)</span></span>
+      <div class="isc-spell-grid" id="isc-spell-grid"></div>
     </div>
     <button class="isc-create-btn" onclick="introConfirmarPersonagem()">Criar e Jogar →</button>
   </div>
@@ -845,10 +875,13 @@ function getAttrMod(unit, attr) {
 function getInimigo(nome) {
   if (!nome) return null;
   const lo = nome.toLowerCase();
-  // First check _iniData (loaded from JSON)
-  const fromJson = _iniData.find(i => lo.includes((i.nome||'').toLowerCase()) || (i.nome||'').toLowerCase().includes(lo));
+  // _iniData is the full JSON object; enemies are in essenciais[] and encontros[]
+  const pool = [
+    ...(_iniData?.essenciais || []),
+    ...(Array.isArray(_iniData?.encontros) ? _iniData.encontros : Object.values(_iniData?.encontros||{})).flat(),
+  ];
+  const fromJson = pool.find(i => lo.includes((i.nome||'').toLowerCase()) || (i.nome||'').toLowerCase().includes(lo));
   if (fromJson) return fromJson;
-  // Fallback: unit in scene
   return units.find(u => lo.includes(u.name.toLowerCase()) || u.name.toLowerCase().includes(lo)) || null;
 }
 
@@ -2481,17 +2514,122 @@ toggleLog();
 // ═══════════════════════════════════════════════
 //  INTRO FLOW
 // ═══════════════════════════════════════════════
-const INTRO_CLASS_STATS = {
-  guerreiro: {STR:16,DEX:14,CON:15,INT:10,WIS:10,CHA:10, hp:18,ac:17,icon:'⚔️'},
-  mago:      {STR:8, DEX:14,CON:10,INT:17,WIS:14,CHA:12, hp:12,ac:11,icon:'🔮'},
-  ladino:    {STR:12,DEX:17,CON:13,INT:12,WIS:12,CHA:14, hp:14,ac:15,icon:'🗡️'},
-  clerigo:   {STR:14,DEX:10,CON:14,INT:12,WIS:16,CHA:13, hp:16,ac:16,icon:'✨'},
-  barbaro:   {STR:18,DEX:12,CON:16,INT:8, WIS:10,CHA:10, hp:22,ac:13,icon:'🪓'},
-  arqueiro:  {STR:10,DEX:17,CON:12,INT:12,WIS:14,CHA:10, hp:14,ac:14,icon:'🏹'},
+// ── Classes, Perícias, D&D helpers (mirror of main.js) ──────────
+const CLASSES = {
+  guerreiro: {
+    nome:'Guerreiro', icon:'⚔️',
+    STR:16,DEX:14,CON:15,INT:10,WIS:10,CHA:10,
+    dado_vida:10, ca_armor:5, fort_base:2, ref_base:0, will_base:0,
+    descricao:'Combatente versátil.',
+    poderes:[
+      {nome:'Ataque Extra',icon:'⚔️',desc:'Uma vez por combate, faz dois ataques em um único turno.'},
+      {nome:'Golpe Poderoso',icon:'💥',desc:'-2 no ataque, +4 no dano.'},
+      {nome:'Postura de Defesa',icon:'🛡️',desc:'+2 CA durante 1 rodada.'},
+      {nome:'Segundo Fôlego',icon:'❤️',desc:'1× por dia: recupera 1d6+CON PV.'},
+    ]
+  },
+  mago: {
+    nome:'Mago', icon:'🔮',
+    STR:8,DEX:12,CON:10,INT:17,WIS:13,CHA:12,
+    dado_vida:4, ca_armor:0, fort_base:0, ref_base:0, will_base:2,
+    descricao:'Arquimago em formação.',
+    poderes_pool:[
+      {id:'missil',nome:'Míssil Mágico',icon:'✨',desc:'1d4+1 de dano arcano infalível.'},
+      {id:'sono',nome:'Sono',icon:'💤',desc:'Adormece até 2 inimigos com menos de 10 PV por 3 rodadas.'},
+      {id:'bola_fogo',nome:'Bola de Fogo',icon:'🔥',desc:'2d6 de dano de fogo em área de 5m.'},
+      {id:'raio_gelo',nome:'Raio de Gelo',icon:'🧊',desc:'1d6 de dano e alvo fica lento por 1 rodada.'},
+      {id:'escudo',nome:'Escudo Arcano',icon:'🛡️',desc:'+4 CA por 2 rodadas.'},
+      {id:'detectar',nome:'Detectar Magia',icon:'🔍',desc:'Revela auras mágicas em 20m.'},
+      {id:'identificar',nome:'Identificar',icon:'📖',desc:'Descobre propriedades de itens mágicos.'},
+      {id:'confusao',nome:'Confusão',icon:'🌪️',desc:'Alvo perde 1 ação por 2 rodadas (VON CD13).'},
+    ],
+    poderes_qtd:3, poderes:[],
+  },
+  ladino: {
+    nome:'Ladino', icon:'🗡️',
+    STR:10,DEX:17,CON:11,INT:13,WIS:10,CHA:13,
+    dado_vida:6, ca_armor:2, fort_base:0, ref_base:2, will_base:0,
+    descricao:'Especialista furtivo.',
+    poderes:[
+      {nome:'Ataque Furtivo',icon:'🗡️',desc:'Dano duplo ao atacar de surpresa.'},
+      {nome:'Gatuno',icon:'🖐️',desc:'Furta objetos de alvos distraídos.'},
+      {nome:'Arrombar',icon:'🔓',desc:'Abre fechaduras e desativa armadilhas.'},
+      {nome:'Desaparecer',icon:'🌑',desc:'1× por combate: some nas sombras.'},
+    ]
+  },
+  clerigo: {
+    nome:'Clérigo', icon:'✨',
+    STR:12,DEX:10,CON:12,INT:12,WIS:16,CHA:13,
+    dado_vida:8, ca_armor:5, fort_base:0, ref_base:0, will_base:2,
+    descricao:'Sacerdote guerreiro.',
+    poderes:[
+      {nome:'Curar Ferimentos',icon:'❤️‍🩹',desc:'Restaura 1d6+SAB PV. 3 usos/dia.'},
+      {nome:'Canalizar Divindade',icon:'✨',desc:'Cura aliado ou repele mortos-vivos.'},
+      {nome:'Bênção',icon:'🙏',desc:'+1 em ataques para aliados em 10m.'},
+      {nome:'Luz Sagrada',icon:'☀️',desc:'Ilumina 10m. Cega mortos-vivos.'},
+    ]
+  },
+  barbaro: {
+    nome:'Bárbaro', icon:'🪓',
+    STR:18,DEX:12,CON:16,INT:8,WIS:9,CHA:8,
+    dado_vida:12, ca_armor:3, fort_base:2, ref_base:2, will_base:0,
+    descricao:'Força bruta da natureza.',
+    poderes:[
+      {nome:'Fúria',icon:'🔥',desc:'FOR +4 e resistência a dano por 3 rodadas.'},
+      {nome:'Pele Grossa',icon:'🪨',desc:'Passivo: -1 dano físico recebido.'},
+      {nome:'Movimento Acelerado',icon:'💨',desc:'Passivo: +3m de deslocamento.'},
+      {nome:'Instinto Primal',icon:'👁️',desc:'Passivo: nunca é surpreendido.'},
+    ]
+  },
+  arqueiro: {
+    nome:'Arqueiro', icon:'🏹',
+    STR:12,DEX:16,CON:13,INT:11,WIS:13,CHA:10,
+    dado_vida:8, ca_armor:4, fort_base:0, ref_base:2, will_base:0,
+    descricao:'Rastreador preciso.',
+    poderes:[
+      {nome:'Tiro Certeiro',icon:'🎯',desc:'Ignora cobertura parcial.'},
+      {nome:'Flecha de Penetração',icon:'➡️',desc:'+2 de dano contra armaduras pesadas.'},
+      {nome:'Tiro Duplo',icon:'🏹',desc:'Dois ataques em uma ação. -2 no segundo.'},
+      {nome:'Rastrear',icon:'🌿',desc:'+2 em Percepção ao ar livre.'},
+    ]
+  }
 };
+
+const PERICIAS = {
+  atletismo:    {nome:'Atletismo',   attr:'FOR',icon:'💪',desc:'+2 escalada, natação, saltos'},
+  furtividade:  {nome:'Furtividade', attr:'DES',icon:'🌑',desc:'+2 mover-se sem ser detectado'},
+  acrobacia:    {nome:'Acrobacia',   attr:'DES',icon:'🤸',desc:'+2 equilíbrio e manobras'},
+  arcana:       {nome:'Arcana',      attr:'INT',icon:'📚',desc:'+2 identificar magia e criaturas'},
+  medicina:     {nome:'Medicina',    attr:'SAB',icon:'⚕️',desc:'+2 estabilizar feridos'},
+  percepcao:    {nome:'Percepção',   attr:'SAB',icon:'👁️',desc:'+2 notar detalhes e emboscadas'},
+  persuasao:    {nome:'Persuasão',   attr:'CAR',icon:'💬',desc:'+2 convencer NPCs'},
+  sobrevivencia:{nome:'Sobrevivência',attr:'SAB',icon:'🌿',desc:'+2 rastrear e orientar-se'},
+};
+
+function dndMod(val) { return Math.floor((val-10)/2); }
+
+function dndDerivados(cls) {
+  const conMod=dndMod(cls.CON), dexMod=dndMod(cls.DEX), wisMod=dndMod(cls.WIS);
+  const strMod=dndMod(cls.STR), intMod=dndMod(cls.INT);
+  const hasMana = cls.will_base >= 2;
+  const maxMana    = hasMana  ? Math.max(3, Math.max(intMod, wisMod)+2) : 0;
+  const maxStamina = !hasMana ? Math.max(3, Math.max(strMod, dexMod)+2) : 0;
+  return {
+    hp: Math.max(1, cls.dado_vida + conMod),
+    ac: 10 + dexMod + cls.ca_armor,
+    init: dexMod,
+    fort: conMod + cls.fort_base,
+    ref:  dexMod + cls.ref_base,
+    will: wisMod + cls.will_base,
+    mana: maxMana, maxMana,
+    stamina: maxStamina, maxStamina,
+  };
+}
 
 let _introClass  = 'guerreiro';
 let _introGenero = 'm';
+let _selectedPericias = new Set();
+let _selectedPoderes  = new Set();
 let _introSlides = [];
 let _introIdx    = 0;
 
@@ -2521,6 +2659,7 @@ function introRetomar() {
 
 function introSelectClass(cls) {
   _introClass = cls;
+  _selectedPoderes.clear();
   document.querySelectorAll('.isc-class-btn').forEach(b=>b.classList.toggle('sel',b.dataset.class===cls));
   introUpdateCreate();
 }
@@ -2533,29 +2672,107 @@ function introSelectGenero(g) {
 }
 
 function introUpdateCreate() {
-  const s = INTRO_CLASS_STATS[_introClass]||INTRO_CLASS_STATS.guerreiro;
+  const cls = CLASSES[_introClass] || CLASSES.guerreiro;
   const sprite = document.getElementById('isc-sprite');
   if (sprite) sprite.src = `../sprites/${_introClass}_${_introGenero}.png`;
-  const attrs = ['STR','DEX','CON','INT','WIS','CHA'];
-  attrs.forEach(a=>{
-    const v = s[a]??10;
-    const mod = Math.floor((v-10)/2);
+  ['STR','DEX','CON','INT','WIS','CHA'].forEach(a=>{
+    const v = cls[a]??10;
+    const mod = dndMod(v);
     const vEl = document.getElementById(`isp-${a}`);
     const mEl = document.getElementById(`isp-${a}-m`);
     if (vEl) vEl.textContent = v;
     if (mEl) mEl.textContent = (mod>=0?'+':'')+mod;
   });
+  // Péricias chips
+  const pg = document.getElementById('isc-peric-grid');
+  if (pg) {
+    pg.innerHTML = '';
+    Object.entries(PERICIAS).forEach(([id, p])=>{
+      const btn = document.createElement('button');
+      btn.className = 'isc-peric-chip' + (_selectedPericias.has(id)?' sel':'') + (_selectedPericias.size>=2&&!_selectedPericias.has(id)?' disabled':'');
+      btn.textContent = `${p.icon} ${p.nome}`;
+      btn.title = p.desc;
+      btn.onclick = ()=>introTogglePeric(id);
+      pg.appendChild(btn);
+    });
+  }
+  // Spell section (Mago only)
+  const spellSec = document.getElementById('isc-spell-section');
+  if (spellSec) {
+    spellSec.classList.toggle('visible', _introClass==='mago');
+    const sg = document.getElementById('isc-spell-grid');
+    if (sg) {
+      sg.innerHTML = '';
+      (CLASSES.mago.poderes_pool||[]).forEach(spell=>{
+        const btn = document.createElement('button');
+        btn.className = 'isc-spell-chip' + (_selectedPoderes.has(spell.id)?' sel':'');
+        btn.innerHTML = `<span class="spell-icon">${spell.icon}</span><div><div class="spell-name">${spell.nome}</div><div class="spell-desc">${spell.desc}</div></div>`;
+        btn.onclick = ()=>introToggleSpell(spell.id);
+        sg.appendChild(btn);
+      });
+    }
+  }
+}
+
+function introTogglePeric(id) {
+  if (_selectedPericias.has(id)) {
+    _selectedPericias.delete(id);
+  } else if (_selectedPericias.size < 2) {
+    _selectedPericias.add(id);
+  }
+  const pg = document.getElementById('isc-peric-grid');
+  if (pg) {
+    Array.from(pg.children).forEach((btn, i) => {
+      const pid = Object.keys(PERICIAS)[i];
+      btn.classList.toggle('sel', _selectedPericias.has(pid));
+      if (!_selectedPericias.has(pid) && _selectedPericias.size >= 2) {
+        btn.classList.add('disabled');
+      } else {
+        btn.classList.remove('disabled');
+      }
+    });
+  }
+}
+
+function introToggleSpell(id) {
+  if (_selectedPoderes.has(id)) {
+    _selectedPoderes.delete(id);
+  } else if (_selectedPoderes.size < 3) {
+    _selectedPoderes.add(id);
+  }
+  const sg = document.getElementById('isc-spell-grid');
+  if (sg) {
+    const pool = CLASSES.mago.poderes_pool||[];
+    Array.from(sg.children).forEach((btn, i) => {
+      if (pool[i]) btn.classList.toggle('sel', _selectedPoderes.has(pool[i].id));
+    });
+  }
 }
 
 function introConfirmarPersonagem() {
   const nome = (document.getElementById('isc-nome')?.value||'').trim() || 'Aventureiro';
-  const s = INTRO_CLASS_STATS[_introClass]||INTRO_CLASS_STATS.guerreiro;
+  const cls = CLASSES[_introClass]||CLASSES.guerreiro;
+  const d = dndDerivados(cls);
+  // Auto-fill péricias if fewer than 2 chosen
+  if (_selectedPericias.size < 2) {
+    const defs = {guerreiro:['atletismo','percepcao'],mago:['arcana','percepcao'],ladino:['furtividade','acrobacia'],clerigo:['medicina','persuasao'],barbaro:['atletismo','sobrevivencia'],arqueiro:['percepcao','sobrevivencia']};
+    (defs[_introClass]||['atletismo','percepcao']).forEach(p=>{ if(_selectedPericias.size<2) _selectedPericias.add(p); });
+  }
+  // Auto-fill spells for mago
+  if (_introClass==='mago' && _selectedPoderes.size < 3) {
+    ['missil','escudo','detectar'].forEach(s=>{ if(_selectedPoderes.size<3) _selectedPoderes.add(s); });
+  }
   const char = {
     nome, classe:_introClass, sexo:_introGenero,
-    stats:{STR:s.STR,DEX:s.DEX,CON:s.CON,INT:s.INT,WIS:s.WIS,CHA:s.CHA},
-    hp:s.hp, maxHp:s.hp, ac:s.ac, icon:s.icon, uid:_uid, ts:Date.now()
+    stats:{STR:cls.STR,DEX:cls.DEX,CON:cls.CON,INT:cls.INT,WIS:cls.WIS,CHA:cls.CHA},
+    hp:d.hp, maxHp:d.hp, ac:d.ac,
+    fort:d.fort, ref:d.ref, will:d.will,
+    mana:d.mana, maxMana:d.maxMana, stamina:d.stamina, maxStamina:d.maxStamina,
+    init:d.init,
+    icon:cls.icon, uid:_uid, ts:Date.now(),
+    pericias:[..._selectedPericias],
+    poderes_escolhidos:[..._selectedPoderes],
   };
-  // Save to Firebase
   if (_db) _fbSet(`personagens/${_uid}`, char).catch(()=>{});
   localStorage.setItem('rpg_char', JSON.stringify(char));
   localStorage.setItem('rpg_uid',  _uid);
@@ -2564,11 +2781,13 @@ function introConfirmarPersonagem() {
 }
 
 function introAplicarPersonagem(char) {
-  // Replace hero on the tactical map with the player's character
-  const heroIdx = units.findIndex(u=>u.type==='hero'&&u.id==='hero_'+char.classe);
+  // Find the hero unit matching this class; fallback to first available hero
+  let heroIdx = units.findIndex(u=>u.type==='hero'&&u.id==='hero_'+char.classe);
+  if (heroIdx < 0) heroIdx = units.findIndex(u=>u.type==='hero');
   if (heroIdx >= 0) {
     const u = units[heroIdx];
     u.name   = char.nome;
+    u.classe = char.classe;
     u.stats  = char.stats;
     u.hp     = char.hp ?? char.maxHp ?? u.maxHp;
     u.maxHp  = char.maxHp ?? u.maxHp;
@@ -2583,16 +2802,13 @@ function introAplicarPersonagem(char) {
 
 function introIniciarSlides() {
   introShowScreen('isc-slides');
-  const char_nome = (document.getElementById('isc-nome')?.value||'').trim() || 'Aventureiro';
-  const campTitulo = _campanha?.titulo || 'A Fera do Forte Negro';
-  const parte1 = _campanha?.estrutura?.parte1;
   _introSlides = [
-    { icon:'🏰', titulo:'O Reino de Mhoried',
-      texto:'O reino de Mhoried celebra a colheita de outono. Sob a Arbor Aeterna — a árvore ancestral que fertiliza as terras há milênios — o mercado fervilha com avelãs, tapeçarias e prata lavrada. A jovem Duquesa Catherine Laskaris passeia entre as barracas.' },
-    { icon:'⚔️', titulo: parte1?.nome || 'A Festa de São Phanourius',
-      texto: parte1?.resumo || 'Os aventureiros chegam ao mercado festivo de Mhoried. Uma tarde perfeita... até a primeira criança gritar.' },
-    { icon:'🌑', titulo:'A Escuridão se Aproxima',
-      texto:'Espantalhos animados irrompem das barracas — construtos mágicos movidos por uma vontade maligna. Atrás deles, nas sombras das Blackwoods, algo muito maior aguarda. A batalha começa agora.' },
+    { icon:'🏙️', titulo:'O Mercado de Mhoried',
+      texto:'O grande mercado de outono fervilha de vida. Barracas coloridas, o cheiro de mel quente e especiarias. A jovem Duquesa Catherine Laskaris passeia sob guarda. Sob a Arbor Aeterna — a árvore ancestral venerada há milênios — crianças brincam entre os feirantes e músicos.' },
+    { icon:'🌑', titulo:'Uma Presença nas Sombras',
+      texto:'As lanças de luz outonal caem entre as folhas douradas. Ao longe, nas bordas das Blackwoods, algo se move entre as árvores. As risadas e a música da feira cobrem qualquer som estranho. Mas há algo no ar — uma tensão que os animais sentem primeiro.' },
+    { icon:'⚔️', titulo:'A Hora dos Heróis',
+      texto:'Nem toda batalha é escolhida. Às vezes o destino simplesmente bate à porta — ou derruba ela. Você veio a Mhoried por motivos próprios. Mas a noite que começa agora vai mudar tudo.' },
   ];
   _introIdx = 0;
   introMostrarSlide(0);
@@ -2625,12 +2841,15 @@ function introComecarJogo() {
   const ov = document.getElementById('intro-overlay');
   ov.classList.add('fadeout');
   setTimeout(()=>{ ov.style.display='none'; }, 650);
-  // Trigger initial AI narration
   if (apiKey) {
+    const char = JSON.parse(localStorage.getItem('rpg_char')||'{}');
+    const nomeHeroi = char.nome || 'o aventureiro';
+    const classeHeroi = char.classe || 'aventureiro';
     setTimeout(()=>{
-      addLog('⚔ Espantalhos emergem das sombras — a batalha começa!','ai');
-      callAI('Descreva dramaticamente o início do combate: espantalhos irrompendo no festival, a cena de pânico, e convoque os heróis à ação. Máximo 60 palavras.');
+      callAI(`O personagem do jogador chama-se ${nomeHeroi}, um(a) ${classeHeroi}. Narre a cena de abertura da campanha: o mercado de outono de Mhoried durante a Festa de São Phanourius, a Arbor Aeterna ao fundo, a Duquesa Catherine Laskaris passeando com sua escolta. Tom atmosférico, calmo, com presságio de perigo nas sombras das Blackwoods ao fundo. NÃO inicie combate ainda. Máximo 80 palavras.`);
     }, 800);
+  } else {
+    addLog('📖 O mercado de outono de Mhoried fervilha de vida. Sob a Arbor Aeterna, a Duquesa Catherine passeia entre as barracas...','ai');
   }
 }
 
