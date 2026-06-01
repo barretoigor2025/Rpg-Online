@@ -2478,6 +2478,213 @@ addLog('Clique em ⚔ Declarar para iniciar um turno — cada herói declara sua
 // Auto-show log on start
 toggleLog();
 
+// ═══════════════════════════════════════════════
+//  INTRO FLOW
+// ═══════════════════════════════════════════════
+const INTRO_CLASS_STATS = {
+  guerreiro: {STR:16,DEX:14,CON:15,INT:10,WIS:10,CHA:10, hp:18,ac:17,icon:'⚔️'},
+  mago:      {STR:8, DEX:14,CON:10,INT:17,WIS:14,CHA:12, hp:12,ac:11,icon:'🔮'},
+  ladino:    {STR:12,DEX:17,CON:13,INT:12,WIS:12,CHA:14, hp:14,ac:15,icon:'🗡️'},
+  clerigo:   {STR:14,DEX:10,CON:14,INT:12,WIS:16,CHA:13, hp:16,ac:16,icon:'✨'},
+  barbaro:   {STR:18,DEX:12,CON:16,INT:8, WIS:10,CHA:10, hp:22,ac:13,icon:'🪓'},
+  arqueiro:  {STR:10,DEX:17,CON:12,INT:12,WIS:14,CHA:10, hp:14,ac:14,icon:'🏹'},
+};
+
+let _introClass  = 'guerreiro';
+let _introGenero = 'm';
+let _introSlides = [];
+let _introIdx    = 0;
+
+function introShowScreen(id) {
+  document.querySelectorAll('.intro-screen').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+function introIrLanding() { introShowScreen('isc-landing'); }
+
+function introIrCriar() {
+  introShowScreen('isc-create');
+  introUpdateCreate();
+}
+
+function introRetomar() {
+  // Load saved char from Firebase and go to slides
+  if (_db) {
+    _fbGet(`personagens/${_uid}`).then(snap => {
+      const char = snap?.val();
+      if (char) { introAplicarPersonagem(char); introIniciarSlides(); }
+      else introIrCriar();
+    }).catch(()=>introIrCriar());
+  } else introIrCriar();
+}
+
+function introSelectClass(cls) {
+  _introClass = cls;
+  document.querySelectorAll('.isc-class-btn').forEach(b=>b.classList.toggle('sel',b.dataset.class===cls));
+  introUpdateCreate();
+}
+
+function introSelectGenero(g) {
+  _introGenero = g;
+  document.getElementById('isc-g-m').classList.toggle('sel', g==='m');
+  document.getElementById('isc-g-f').classList.toggle('sel', g==='f');
+  introUpdateCreate();
+}
+
+function introUpdateCreate() {
+  const s = INTRO_CLASS_STATS[_introClass]||INTRO_CLASS_STATS.guerreiro;
+  const sprite = document.getElementById('isc-sprite');
+  if (sprite) sprite.src = `../sprites/${_introClass}_${_introGenero}.png`;
+  const attrs = ['STR','DEX','CON','INT','WIS','CHA'];
+  attrs.forEach(a=>{
+    const v = s[a]??10;
+    const mod = Math.floor((v-10)/2);
+    const vEl = document.getElementById(`isp-${a}`);
+    const mEl = document.getElementById(`isp-${a}-m`);
+    if (vEl) vEl.textContent = v;
+    if (mEl) mEl.textContent = (mod>=0?'+':'')+mod;
+  });
+}
+
+function introConfirmarPersonagem() {
+  const nome = (document.getElementById('isc-nome')?.value||'').trim() || 'Aventureiro';
+  const s = INTRO_CLASS_STATS[_introClass]||INTRO_CLASS_STATS.guerreiro;
+  const char = {
+    nome, classe:_introClass, sexo:_introGenero,
+    stats:{STR:s.STR,DEX:s.DEX,CON:s.CON,INT:s.INT,WIS:s.WIS,CHA:s.CHA},
+    hp:s.hp, maxHp:s.hp, ac:s.ac, icon:s.icon, uid:_uid, ts:Date.now()
+  };
+  // Save to Firebase
+  if (_db) _fbSet(`personagens/${_uid}`, char).catch(()=>{});
+  localStorage.setItem('rpg_char', JSON.stringify(char));
+  localStorage.setItem('rpg_uid',  _uid);
+  introAplicarPersonagem(char);
+  introIniciarSlides();
+}
+
+function introAplicarPersonagem(char) {
+  // Replace hero on the tactical map with the player's character
+  const heroIdx = units.findIndex(u=>u.type==='hero'&&u.id==='hero_'+char.classe);
+  if (heroIdx >= 0) {
+    const u = units[heroIdx];
+    u.name   = char.nome;
+    u.stats  = char.stats;
+    u.hp     = char.hp ?? char.maxHp ?? u.maxHp;
+    u.maxHp  = char.maxHp ?? u.maxHp;
+    u.ac     = char.ac ?? u.ac;
+    u.sprite = `../sprites/${char.classe}_${char.sexo||'m'}.png`;
+    u.spriteCostas = `../sprites/${char.classe}_${char.sexo||'m'}_costas.png`;
+    const img = new Image(); img.onload=()=>{u._img=img;render();}; img.src=u.sprite;
+    const imgC = new Image(); imgC.onload=()=>{u._imgCostas=imgC;render();}; imgC.src=u.spriteCostas;
+  }
+  render();
+}
+
+function introIniciarSlides() {
+  introShowScreen('isc-slides');
+  const char_nome = (document.getElementById('isc-nome')?.value||'').trim() || 'Aventureiro';
+  const campTitulo = _campanha?.titulo || 'A Fera do Forte Negro';
+  const parte1 = _campanha?.estrutura?.parte1;
+  _introSlides = [
+    { icon:'🏰', titulo:'O Reino de Mhoried',
+      texto:'O reino de Mhoried celebra a colheita de outono. Sob a Arbor Aeterna — a árvore ancestral que fertiliza as terras há milênios — o mercado fervilha com avelãs, tapeçarias e prata lavrada. A jovem Duquesa Catherine Laskaris passeia entre as barracas.' },
+    { icon:'⚔️', titulo: parte1?.nome || 'A Festa de São Phanourius',
+      texto: parte1?.resumo || 'Os aventureiros chegam ao mercado festivo de Mhoried. Uma tarde perfeita... até a primeira criança gritar.' },
+    { icon:'🌑', titulo:'A Escuridão se Aproxima',
+      texto:'Espantalhos animados irrompem das barracas — construtos mágicos movidos por uma vontade maligna. Atrás deles, nas sombras das Blackwoods, algo muito maior aguarda. A batalha começa agora.' },
+  ];
+  _introIdx = 0;
+  introMostrarSlide(0);
+}
+
+function introMostrarSlide(idx) {
+  const slide = _introSlides[idx];
+  if (!slide) return;
+  const total = _introSlides.length;
+  document.getElementById('sl-progress').textContent = `${idx+1} / ${total}`;
+  document.getElementById('sl-icon').textContent    = slide.icon;
+  document.getElementById('sl-titulo').textContent  = slide.titulo;
+  document.getElementById('sl-texto').textContent   = slide.texto;
+  const prev = document.getElementById('sl-prev');
+  const next = document.getElementById('sl-next');
+  prev.style.display = idx>0?'':'none';
+  const isLast = idx===total-1;
+  next.textContent = isLast ? '⚔ Começar Aventura!' : 'Próximo ▶';
+  next.onclick = isLast ? introComecarJogo : introAvancarSlide;
+}
+
+function introAvancarSlide() {
+  if (_introIdx < _introSlides.length-1) { _introIdx++; introMostrarSlide(_introIdx); }
+}
+function introVoltarSlide() {
+  if (_introIdx > 0) { _introIdx--; introMostrarSlide(_introIdx); }
+}
+
+function introComecarJogo() {
+  const ov = document.getElementById('intro-overlay');
+  ov.classList.add('fadeout');
+  setTimeout(()=>{ ov.style.display='none'; }, 650);
+  // Trigger initial AI narration
+  if (apiKey) {
+    setTimeout(()=>{
+      addLog('⚔ Espantalhos emergem das sombras — a batalha começa!','ai');
+      callAI('Descreva dramaticamente o início do combate: espantalhos irrompendo no festival, a cena de pânico, e convoque os heróis à ação. Máximo 60 palavras.');
+    }, 800);
+  }
+}
+
+// ── Particles on landing ─────────────────────────
+function introInitParticles() {
+  const cv = document.getElementById('isc-canvas');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  let W, H, pts=[];
+  const resize = ()=>{ W=cv.width=window.innerWidth; H=cv.height=window.innerHeight; };
+  resize(); window.addEventListener('resize',resize);
+  const mk = ()=>{
+    const b=210+Math.floor(Math.random()*30), g=170+Math.floor(Math.random()*25), r=100+Math.floor(Math.random()*30);
+    const maxLife=300+Math.floor(Math.random()*400);
+    return{x:Math.random()*W,y:Math.random()*H,sz:1+Math.random()*1.4,
+      vx:(Math.random()-.5)*.18,vy:(Math.random()-.5)*.15,
+      ph:Math.random()*6.28,phV:.008+Math.random()*.012,
+      a:0,ma:.22+Math.random()*.28,life:Math.floor(Math.random()*maxLife),max:maxLife,r,g,b};
+  };
+  for(let i=0;i<18;i++) pts.push(mk());
+  const draw=()=>{
+    ctx.clearRect(0,0,W,H);
+    pts.forEach((p,i)=>{
+      p.life++; p.ph+=p.phV; p.x+=p.vx+Math.sin(p.ph)*.22; p.y+=p.vy+Math.cos(p.ph*.7)*.15;
+      if(p.x<-10)p.x=W+10; if(p.x>W+10)p.x=-10; if(p.y<-10)p.y=H+10; if(p.y>H+10)p.y=-10;
+      const prog=p.life/p.max, pulse=.75+.25*Math.sin(p.ph*2);
+      p.a=prog<.15?prog/.15*p.ma*pulse:prog>.8?(1-prog)/.2*p.ma*pulse:p.ma*pulse;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.sz,0,6.28);
+      ctx.fillStyle=`rgba(${p.r},${p.g},${p.b},${p.a})`; ctx.fill();
+      const gr=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.sz*6);
+      gr.addColorStop(0,`rgba(${p.r},${p.g},${p.b},${p.a*.28})`); gr.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.sz*6,0,6.28); ctx.fillStyle=gr; ctx.fill();
+      if(p.life>=p.max) pts[i]=mk();
+    });
+    requestAnimationFrame(draw);
+  };
+  draw();
+}
+introInitParticles();
+
+// Check for saved character → show "Retomar" button
+setTimeout(()=>{
+  const saved = localStorage.getItem('rpg_char');
+  if (saved) {
+    const btn = document.getElementById('isc-btn-retomar');
+    if (btn) btn.style.display='';
+  }
+  // Update campaign title if loaded
+  if (_campanha) {
+    const el = document.getElementById('isc-camp-titulo');
+    if (el) el.textContent = _campanha.titulo||'A Fera do Forte Negro';
+  }
+}, 1500);
+
 // Load campaign data at startup
 carregarCampanha();
 
