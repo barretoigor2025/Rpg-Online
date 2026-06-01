@@ -169,12 +169,24 @@ header{
 @keyframes pulse-turn{0%,100%{box-shadow:0 0 0 0 rgba(220,160,40,.3)}50%{box-shadow:0 0 0 4px rgba(220,160,40,.1)}}
 
 /* ── Action modals (move confirm + attack select) ── */
-.action-modal{display:none;position:fixed;inset:0;z-index:490;align-items:center;justify-content:center;background:rgba(0,0,0,.65)}
+.action-modal{display:none;position:fixed;inset:0;z-index:490;align-items:flex-start;justify-content:flex-start;background:rgba(0,0,0,.5)}
 .action-modal.show{display:flex}
+/* Modal de ataque: canto superior esquerdo, abaixo do header */
+#attack-modal{
+  padding-top:max(56px,calc(44px + env(safe-area-inset-top)));
+  padding-left:max(8px,env(safe-area-inset-left));
+  padding-bottom:0;
+  align-items:flex-start;
+  justify-content:flex-start
+}
+#attack-modal .am-card{
+  width:min(calc(100vw - 16px),360px);
+  max-height:calc(100dvh - max(56px,calc(44px + env(safe-area-inset-top))) - max(190px,calc(180px + env(safe-area-inset-bottom))))
+}
 /* Modal de confirmação de movimento: overlay leve para o mapa e o hex destacado ficarem visíveis */
 #move-confirm{background:rgba(0,0,0,.22);align-items:flex-end;padding-bottom:max(12px,env(safe-area-inset-bottom))}
 #move-confirm .am-card{border:2px solid rgba(100,180,255,.6);box-shadow:0 0 24px rgba(60,140,255,.25)}
-.am-card{width:calc(100% - 32px);max-width:460px;background:#0e0c09;border:1px solid rgba(200,160,48,.35);border-radius:14px;padding:20px 18px;max-height:85vh;overflow-y:auto}
+.am-card{width:calc(100% - 32px);max-width:460px;background:#0e0c09;border:1px solid rgba(200,160,48,.35);border-radius:14px;padding:16px 14px;max-height:85vh;overflow-y:auto}
 .am-title{font-size:17px;font-weight:800;color:#c8a030;margin-bottom:4px}
 .am-sub{font-size:12px;color:#706050;margin-bottom:12px}
 .am-roll{font-size:14px;color:#c8a030;min-height:24px;margin:10px 0;text-align:center;font-weight:700;background:rgba(200,160,48,.06);border-radius:8px;padding:6px}
