@@ -4030,27 +4030,33 @@ function introComecarJogo() {
   const ov = document.getElementById('intro-overlay');
   ov.classList.add('fadeout');
   setTimeout(()=>{ ov.style.display='none'; }, 650);
-  if (apiKey) {
-    const char = JSON.parse(localStorage.getItem('rpg_char')||'{}');
-    const nomeHeroi = char.nome || 'o aventureiro';
-    const clsNome = (CLASSES[char.classe]||{}).nome || char.classe || 'aventureiro';
-    setTimeout(()=>{
+
+  // Sempre spawnar os inimigos da cena inicial — independente de API key
+  setTimeout(()=>{
+    spawnUnit('Espantalho I',  'espantalho_assombrado', 'E04', 14, 11, '🌾');
+    spawnUnit('Espantalho II', 'espantalho_assombrado', 'G04', 14, 11, '🌾');
+    spawnUnit('Espantalho III','espantalho_assombrado', 'H05', 14, 11, '🌾');
+    initHeroFacings();
+    render();
+
+    if (apiKey) {
+      const char = JSON.parse(localStorage.getItem('rpg_char')||'{}');
+      const nomeHeroi = char.nome || 'o aventureiro';
+      const clsNome = (CLASSES[char.classe]||{}).nome || char.classe || 'aventureiro';
       callAI(
 `Início da campanha "A Fera do Forte Negro".
 O herói é ${nomeHeroi}, um(a) ${clsNome}, na Festa de São Phanourius no mercado de Mhoried.
 
-Narre em 2 partes:
-1. Cena de abertura (40 palavras): o mercado festivo animado, a Arbor Aeterna ao fundo, a Duquesa Catherine Laskaris passeando com escolta — tudo parece perfeito.
-2. O ataque (40 palavras): uma criança grita, espantalhos assombrados irrompem das barracas, pânico. Use SPAWNAR para colocar 3 espantalhos no mapa (hexes E04, G04, H05). Termine com o herói de mãos na arma, aguardando a decisão do jogador.
-
-SPAWNAR:[Espantalho I|espantalho_assombrado|E04|14|11|🌾]
-SPAWNAR:[Espantalho II|espantalho_assombrado|G04|14|11|🌾]
-SPAWNAR:[Espantalho III|espantalho_assombrado|H05|14|11|🌾]`
+Narre em 2 partes (80 palavras total):
+1. Cena de abertura: o mercado festivo animado, a Arbor Aeterna ao fundo, a Duquesa Catherine Laskaris passeando com escolta — tudo parece perfeito.
+2. O ataque: uma criança grita, espantalhos assombrados irrompem das barracas, pânico. Três espantalhos já estão no mapa. Termine com o herói de mãos na arma, aguardando a decisão do jogador.`
       );
-    }, 800);
-  } else {
-    addLog('📖 A Festa de São Phanourius enche Mhoried de música. De repente uma criança grita — espantalhos assombrados irrompem das barracas!','ai');
-  }
+    } else {
+      addLog('📖 A Festa de São Phanourius enche Mhoried de música e risos. A Duquesa Catherine passeia sob a Arbor Aeterna, escoltada por guardas discretos.','ai');
+      addLog('De repente uma criança grita — espantalhos assombrados irrompem das barracas com palha e sombra! O pânico toma conta do mercado. Sua mão vai instintivamente à arma.','ai');
+      addLog('⚔ Clique em Declarar para declarar suas ações!','s');
+    }
+  }, 800);
 }
 
 // ── Particles on landing ─────────────────────────
