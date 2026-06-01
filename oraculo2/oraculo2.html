@@ -2246,36 +2246,41 @@ async function executeMoveConfirm() {
   const { actor, destHex, path, mod } = _moveConfirmData;
   closeMoveConfirm();
 
-  const d20 = Math.floor(Math.random() * 20) + 1;
+  const d20 = d20r();
   const total = d20 + mod;
   const cd = 8;
   const modStr = (mod >= 0 ? '+' : '') + mod;
+  const critico = d20 === 20, catastrofe = d20 === 1;
+  const sucesso = critico ? true : catastrofe ? false : total >= cd;
 
-  if (d20 === 1) {
-    addLog(`${actor.name} tropeça! (d20=1, falha crítica) — movimentação perdida.`, 'e');
-    actor.hasMoved = true;
-    actor.hasActed = true; // perde a ação também
-  } else if (total < cd) {
-    const partial = Math.max(1, Math.floor(path.length / 2));
-    addLog(`${actor.name} vacila (d20=${d20}${modStr}=${total} vs CD${cd}) — move apenas ${partial} hex.`, 'm');
-    const partPath = path.slice(0, partial);
-    const dest = partPath[partPath.length - 1];
-    if (dest) await moveUnitAnimated(actor, dest.col, dest.row);
-  } else {
-    const label = d20 === 20 ? ' (CRÍTICO! +1 hex bônus)' : '';
-    const bonusHex = d20 === 20 && path.length < actor.moveSpeed + 1;
-    addLog(`${actor.name} move (d20=${d20}${modStr}=${total})${label}.`, 'h');
-    if (bonusHex && path.length < actor.moveSpeed) {
-      await moveUnitAnimated(actor, destHex.col, destHex.row);
+  const playlist = [{
+    tipo: 'testar',
+    nomeJog: actor.name,
+    label: '🦵 Deslocamento',
+    alvo: '',
+    d20, mod, modStr, total,
+    dc: cd, sucesso, critico, catastrofe
+  }];
+
+  DiceOverlay.mostrar(playlist, async () => {
+    if (catastrofe) {
+      addLog(`${actor.name} tropeça! (d20=1, falha crítica) — perde a ação também.`, 'e');
+      actor.hasMoved = true;
+      actor.hasActed = true;
+    } else if (!sucesso) {
+      const partial = Math.max(1, Math.floor(path.length / 2));
+      addLog(`${actor.name} vacila (d20=${d20}${modStr}=${total} vs CD${cd}) — move apenas ${partial} hex.`, 'm');
+      const dest = path.slice(0, partial).at(-1);
+      if (dest) await moveUnitAnimated(actor, dest.col, dest.row);
     } else {
+      if (critico) addLog(`${actor.name} avança com ímpeto! (CRÍTICO — +1 hex bônus possível)`, 'x');
       await moveUnitAnimated(actor, destHex.col, destHex.row);
     }
-  }
-
-  _abMode = null;
-  activeRanges = new Set(['melee']);
-  if (actor.rangedWeapon) activeRanges.add('ranged');
-  updateActionBar(); render();
+    _abMode = null;
+    activeRanges = new Set(['melee']);
+    if (actor.rangedWeapon) activeRanges.add('ranged');
+    updateActionBar(); render();
+  });
 }
 
 // ═══════════════════════════════════════════════
@@ -2436,11 +2441,11 @@ function confirmAttackModal() {
   closeAttackModal();
   if (isSelf) {
     doSelfSkill(actor, skill);
+    updateActionBar(); render();
   } else {
     doAttackWithSkill(actor, target, skill);
-    checkEnd();
+    // checkEnd/updateActionBar/render chamados dentro do callback do DiceOverlay
   }
-  updateActionBar(); render();
 }
 
 function doSelfSkill(actor, skill) {
@@ -2500,6 +2505,7 @@ function doAttackWithSkill(atk, def, skill) {
   const total = roll + bonus;
   const crit = roll === 20, fumb = roll === 1;
   const modStr = (bonus >= 0 ? '+' : '') + bonus;
+  const sucesso = crit ? true : fumb ? false : total >= def.ac;
 
   // Skill override for damage
   let dmgN = isMelee
@@ -2507,20 +2513,41 @@ function doAttackWithSkill(atk, def, skill) {
     : (atk.rangedWeapon?.name==='Raio Arcano' ? '1d8+2' : '1d6+2');
   if (skill?.dmg && skill.dmg !== '—') dmgN = skill.dmg;
 
-  if (fumb) {
-    addLog(`${atk.name} falha crítica! (d20=1) — ação perdida.`, 'e');
-    atk.hasActed = true; return;
-  }
-  if (crit || total >= def.ac) {
-    let dmg = rollDice(dmgN); if (crit) dmg *= 2;
-    def.hp = Math.max(0, def.hp - dmg);
-    let msg = `${atk.name}${crit?' ⭐CRÍTICO!':''} [d20=${roll}${modStr}=${total}] → ${def.name}${back?' (costas)':''}${flank?' (flanco)':''}: ${dmg} dano`;
-    if (def.hp <= 0) { def.alive = false; def.hp = 0; msg += ` — ${def.name} cai!`; }
-    addLog(msg, 'x');
-  } else {
-    addLog(`${atk.name} [d20=${roll}${modStr}=${total}] errou ${def.name} (CA${def.ac})`, 'm');
-  }
-  atk.hasActed = true;
+  const dmgRolled = sucesso ? rollDice(dmgN) : 0;
+  const dmgFinal  = (crit && sucesso) ? dmgRolled * 2 : dmgRolled;
+
+  const skLabel = `${skill?.icon||'⚔'} ${skill?.nome||skill?.name||'Ataque'}`;
+  const playlist = [
+    {
+      tipo: 'testar',
+      nomeJog: atk.name, label: skLabel, alvo: def.name,
+      d20: roll, mod: bonus, modStr, total,
+      dc: def.ac, sucesso, critico: crit, catastrofe: fumb
+    },
+    ...(sucesso ? [{
+      tipo: 'rolar',
+      nomeJog: atk.name, label: `${crit?'⭐ CRÍTICO — ':''} Dano`, alvo: def.name,
+      notacao: dmgN, resultado: dmgFinal,
+      dados: parseInt((dmgN.match(/d(\d+)/)||[,20])[1]),
+      condicionalDe: 0
+    }] : [])
+  ];
+
+  DiceOverlay.mostrar(playlist, () => {
+    atk.hasActed = true;
+    if (fumb) {
+      addLog(`${atk.name} falha crítica! (d20=1) — ação perdida.`, 'e');
+    } else if (sucesso) {
+      def.hp = Math.max(0, def.hp - dmgFinal);
+      let msg = `${atk.name}${crit?' ⭐CRÍTICO!':''} → ${def.name}${back?' (costas)':''}${flank?' (flanco)':''}: ${dmgFinal} dano`;
+      if (def.hp <= 0) { def.alive = false; def.hp = 0; msg += ` — ${def.name} cai!`; }
+      addLog(msg, 'x');
+    } else {
+      addLog(`${atk.name} errou ${def.name} (d20=${roll}${modStr}=${total} vs CA${def.ac})`, 'm');
+    }
+    checkEnd(); updateActionBar(); render();
+  });
+  return; // resultado aplicado no callback do overlay
 }
 
 // ═══════════════════════════════════════════════
