@@ -58,7 +58,7 @@ header{
 
 /* ── Input bar ── */
 #input-row{
-  flex-shrink:0;display:flex;gap:6px;padding:8px 12px;
+  display:flex;gap:6px;padding:8px 12px;
   background:#12100c;border-top:1px solid rgba(200,160,48,.15);
   padding-bottom:max(8px,env(safe-area-inset-bottom))
 }
@@ -74,9 +74,16 @@ header{
 }
 #cmd-send:active{background:#2a2618}
 
+/* ── Bottom HUD (fixed, does not push map) ── */
+#bottom-hud{
+  position:fixed;bottom:0;left:0;right:0;z-index:200;
+  display:flex;flex-direction:column;
+  box-shadow:0 -2px 16px rgba(0,0,0,.6)
+}
+
 /* ── Action Bar ── */
 #action-bar{
-  flex-shrink:0;background:#09070500;border-top:1px solid rgba(200,160,48,.15);
+  background:#09070500;border-top:1px solid rgba(200,160,48,.15);
   display:none;flex-direction:column
 }
 #action-bar.visible{display:flex}
@@ -147,6 +154,25 @@ header{
   color:#c06050!important;font-size:10px;letter-spacing:1px
 }
 @keyframes pulse-turn{0%,100%{box-shadow:0 0 0 0 rgba(220,160,40,.3)}50%{box-shadow:0 0 0 4px rgba(220,160,40,.1)}}
+
+/* ── Action modals (move confirm + attack select) ── */
+.action-modal{display:none;position:fixed;inset:0;z-index:490;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.55)}
+.action-modal.show{display:flex}
+.am-card{width:100%;max-width:500px;background:#0e0c09;border:1px solid rgba(200,160,48,.3);border-radius:16px 16px 0 0;padding:16px 16px max(16px,env(safe-area-inset-bottom))}
+.am-title{font-size:16px;font-weight:800;color:#c8a030;margin-bottom:3px}
+.am-sub{font-size:11px;color:#706050;margin-bottom:10px}
+.am-roll{font-size:13px;color:#c8a030;min-height:22px;margin:8px 0;text-align:center;font-weight:700}
+.am-sec-title{font-size:9px;color:#6a5838;text-transform:uppercase;letter-spacing:1.2px;margin:10px 0 5px}
+.am-chips{display:flex;flex-wrap:wrap;gap:5px}
+.am-chip{background:#1a1610;border:1px solid rgba(200,160,48,.18);border-radius:6px;padding:6px 10px;font-size:11px;color:#8a7860;cursor:pointer;transition:all .15s}
+.am-chip:active{filter:brightness(1.3)}
+.am-chip.sel{border-color:rgba(200,160,48,.7)!important;background:rgba(200,160,48,.1)!important;color:#c8a030!important}
+.am-chip.tgt.sel{border-color:rgba(200,60,50,.7)!important;background:rgba(160,30,25,.15)!important;color:#e08080!important}
+.am-preview{font-size:11px;color:#706050;text-align:center;padding:7px;background:rgba(200,160,48,.04);border-radius:7px;margin:8px 0}
+.am-btns{display:flex;gap:8px;margin-top:12px}
+.am-yes{flex:1;background:rgba(200,130,20,.15);border:1px solid rgba(200,130,20,.45);border-radius:8px;color:#c89030;font-size:13px;font-weight:700;padding:12px;cursor:pointer}
+.am-yes:disabled{opacity:.3;pointer-events:none}
+.am-no{background:rgba(100,40,30,.12);border:1px solid rgba(120,50,40,.3);border-radius:8px;color:#7a5848;font-size:13px;padding:12px 18px;cursor:pointer}
 
 /* ── Declaration status bar ── */
 #decl-status{
@@ -622,6 +648,9 @@ header{
     <div class="cbt-sub">Declare sua intenção</div>
   </div>
 
+  <!-- Bottom HUD: fixed overlay, never pushes map up -->
+  <div id="bottom-hud">
+
   <!-- Action bar: visible when hero selected -->
   <div id="action-bar">
     <div class="ab-status">
@@ -672,6 +701,38 @@ header{
   <div id="input-row">
     <input id="cmd-input" placeholder='Ex: "Bárbaro ataca Espantalho" · "Mago avança F06" · "narrar"' type="text" autocomplete="off">
     <button id="cmd-send" onclick="submitCmd()">→</button>
+  </div>
+
+  </div><!-- end #bottom-hud -->
+</div>
+
+<!-- Move confirm modal -->
+<div id="move-confirm" class="action-modal">
+  <div class="am-card">
+    <div class="am-title" id="mc-title">Mover para H08?</div>
+    <div class="am-sub" id="mc-sub">5 hex · DEX d20+1 vs CD8</div>
+    <div class="am-roll" id="mc-roll"></div>
+    <div class="am-btns">
+      <button class="am-yes" onclick="executeMoveConfirm()">🎲 Rolar e Mover</button>
+      <button class="am-no" onclick="closeMoveConfirm()">✕ Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Attack modal -->
+<div id="attack-modal" class="action-modal">
+  <div class="am-card">
+    <div class="am-title">⚔ Escolha o Ataque</div>
+    <div class="am-sec-title">Habilidade</div>
+    <div class="am-chips" id="am-skills"></div>
+    <div class="am-sec-title">Alvo</div>
+    <div class="am-chips" id="am-targets"></div>
+    <div class="am-preview" id="am-preview">Selecione habilidade e alvo</div>
+    <div class="am-roll" id="am-roll"></div>
+    <div class="am-btns">
+      <button class="am-yes" id="am-confirm" onclick="confirmAttackModal()" disabled>⚔ Atacar!</button>
+      <button class="am-no" onclick="closeAttackModal()">✕ Cancelar</button>
+    </div>
   </div>
 </div>
 
@@ -2006,8 +2067,10 @@ function actionBarMode(mode) {
     activeRanges = new Set(['move']);
   } else if (mode === 'attack') {
     if (u.hasActed) { addLog(`${u.name} já agiu este turno.`,'s'); _abMode=null; updateActionBar(); return; }
-    activeRanges = new Set(['melee']);
-    if (u.rangedWeapon) activeRanges.add('ranged');
+    // Open attack modal directly — no canvas click mode
+    _abMode = null;
+    openAttackModal(u);
+    return;
   } else if (mode === 'skill') {
     _abMode = null;
     activeRanges = new Set();
@@ -2288,28 +2351,12 @@ canvas.addEventListener('click', async e=>{
   const h=pxToHex(px,py);
   const u=getUnitAt(h.col,h.row);
 
-  // MOVER mode: clicar em hex alcançável move o herói
+  // MOVER mode: clica em hex alcançável → abre confirmação
   if (_abMode==='move' && selId) {
     const actor=getUnit(selId);
     if (actor&&!actor.hasMoved) {
       const dest=_moveCache.find(r=>r.col===h.col&&r.row===h.row);
-      if (dest) {
-        addLog(`${actor.name} → ${hexLbl(h.col,h.row)}`,'h');
-        _abMode=null; activeRanges=new Set(['melee']); if(actor.rangedWeapon) activeRanges.add('ranged');
-        await moveUnitAnimated(actor,h.col,h.row);
-        updateActionBar(); render(); return;
-      }
-    }
-  }
-
-  // ATACAR mode: clicar em inimigo ataca
-  if (_abMode==='attack' && selId) {
-    const actor=getUnit(selId);
-    const target=u&&u.alive&&u.type==='enemy'?u:null;
-    if (actor&&target&&!actor.hasActed) {
-      _abMode=null;
-      doAttack(actor,target); checkEnd(); abShowTarget(null);
-      updateActionBar(); render(); return;
+      if (dest) { openMoveConfirm(actor,h); return; }
     }
   }
 
