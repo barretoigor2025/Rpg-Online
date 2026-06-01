@@ -156,23 +156,45 @@ header{
 @keyframes pulse-turn{0%,100%{box-shadow:0 0 0 0 rgba(220,160,40,.3)}50%{box-shadow:0 0 0 4px rgba(220,160,40,.1)}}
 
 /* ── Action modals (move confirm + attack select) ── */
-.action-modal{display:none;position:fixed;inset:0;z-index:490;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.55)}
+.action-modal{display:none;position:fixed;inset:0;z-index:490;align-items:center;justify-content:center;background:rgba(0,0,0,.65)}
 .action-modal.show{display:flex}
-.am-card{width:100%;max-width:500px;background:#0e0c09;border:1px solid rgba(200,160,48,.3);border-radius:16px 16px 0 0;padding:16px 16px max(16px,env(safe-area-inset-bottom))}
-.am-title{font-size:16px;font-weight:800;color:#c8a030;margin-bottom:3px}
-.am-sub{font-size:11px;color:#706050;margin-bottom:10px}
-.am-roll{font-size:13px;color:#c8a030;min-height:22px;margin:8px 0;text-align:center;font-weight:700}
-.am-sec-title{font-size:9px;color:#6a5838;text-transform:uppercase;letter-spacing:1.2px;margin:10px 0 5px}
-.am-chips{display:flex;flex-wrap:wrap;gap:5px}
-.am-chip{background:#1a1610;border:1px solid rgba(200,160,48,.18);border-radius:6px;padding:6px 10px;font-size:11px;color:#8a7860;cursor:pointer;transition:all .15s}
-.am-chip:active{filter:brightness(1.3)}
-.am-chip.sel{border-color:rgba(200,160,48,.7)!important;background:rgba(200,160,48,.1)!important;color:#c8a030!important}
-.am-chip.tgt.sel{border-color:rgba(200,60,50,.7)!important;background:rgba(160,30,25,.15)!important;color:#e08080!important}
-.am-preview{font-size:11px;color:#706050;text-align:center;padding:7px;background:rgba(200,160,48,.04);border-radius:7px;margin:8px 0}
-.am-btns{display:flex;gap:8px;margin-top:12px}
-.am-yes{flex:1;background:rgba(200,130,20,.15);border:1px solid rgba(200,130,20,.45);border-radius:8px;color:#c89030;font-size:13px;font-weight:700;padding:12px;cursor:pointer}
+.am-card{width:calc(100% - 32px);max-width:460px;background:#0e0c09;border:1px solid rgba(200,160,48,.35);border-radius:14px;padding:20px 18px;max-height:85vh;overflow-y:auto}
+.am-title{font-size:17px;font-weight:800;color:#c8a030;margin-bottom:4px}
+.am-sub{font-size:12px;color:#706050;margin-bottom:12px}
+.am-roll{font-size:14px;color:#c8a030;min-height:24px;margin:10px 0;text-align:center;font-weight:700;background:rgba(200,160,48,.06);border-radius:8px;padding:6px}
+.am-sec-title{font-size:9px;color:#6a5838;text-transform:uppercase;letter-spacing:1.2px;margin:14px 0 7px;display:flex;align-items:center;gap:6px}
+.am-sec-title::after{content:'';flex:1;height:1px;background:rgba(200,160,48,.1)}
+
+/* Skill cards — 2-column grid */
+.am-sk-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.am-sk-card{background:#141209;border:1px solid rgba(200,160,48,.18);border-radius:10px;padding:10px 10px 8px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:3px;text-align:left}
+.am-sk-card:active{filter:brightness(1.3)}
+.am-sk-card.sel{border-color:rgba(200,160,48,.75)!important;background:rgba(200,160,48,.1)!important}
+.am-sk-icon{font-size:22px;line-height:1}
+.am-sk-name{font-size:12px;font-weight:700;color:#c8a030}
+.am-sk-dmg{font-size:10px;color:#706050}
+
+/* Target cards — full width */
+.am-tgt-list{display:flex;flex-direction:column;gap:6px}
+.am-tgt-card{background:#12100a;border:1px solid rgba(200,80,60,.18);border-radius:10px;padding:9px 12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:10px}
+.am-tgt-card:active{filter:brightness(1.3)}
+.am-tgt-card.sel{border-color:rgba(200,60,50,.75)!important;background:rgba(160,30,25,.18)!important}
+.am-tgt-icon{font-size:24px;line-height:1;flex-shrink:0}
+.am-tgt-info{flex:1;min-width:0}
+.am-tgt-name{font-size:13px;font-weight:700;color:#e08090}
+.am-tgt-hprow{display:flex;align-items:center;gap:6px;margin-top:3px}
+.am-tgt-hpbar{flex:1;height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
+.am-tgt-hpfill{height:100%;border-radius:3px;background:linear-gradient(90deg,#c03020,#e06040);transition:width .2s}
+.am-tgt-hptxt{font-size:10px;color:#906060;white-space:nowrap}
+.am-tgt-badges{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0}
+.am-tgt-dist{font-size:10px;background:rgba(80,100,200,.2);border:1px solid rgba(80,100,200,.3);border-radius:4px;padding:2px 6px;color:#8090c0}
+.am-tgt-ac{font-size:10px;background:rgba(200,160,48,.1);border:1px solid rgba(200,160,48,.2);border-radius:4px;padding:2px 6px;color:#a08040}
+
+.am-preview{font-size:11px;color:#706050;text-align:center;padding:8px;background:rgba(200,160,48,.04);border-radius:8px;margin:10px 0;border:1px solid rgba(200,160,48,.08)}
+.am-btns{display:flex;gap:8px;margin-top:14px}
+.am-yes{flex:1;background:rgba(200,130,20,.15);border:1px solid rgba(200,130,20,.45);border-radius:9px;color:#c89030;font-size:13px;font-weight:700;padding:13px;cursor:pointer}
 .am-yes:disabled{opacity:.3;pointer-events:none}
-.am-no{background:rgba(100,40,30,.12);border:1px solid rgba(120,50,40,.3);border-radius:8px;color:#7a5848;font-size:13px;padding:12px 18px;cursor:pointer}
+.am-no{background:rgba(100,40,30,.12);border:1px solid rgba(120,50,40,.3);border-radius:9px;color:#7a5848;font-size:13px;padding:13px 18px;cursor:pointer}
 
 /* ── Declaration status bar ── */
 #decl-status{
@@ -600,8 +622,6 @@ header{
     <button id="scene-btn" onclick="openSceneModal()">🗺 Cenário</button>
   </div>
 
-  <div id="log-panel"></div>
-
   <!-- Declaration status: who has/hasn't declared -->
   <div id="decl-status">
     <span class="ds-label">Aguardando:</span>
@@ -650,6 +670,8 @@ header{
 
   <!-- Bottom HUD: fixed overlay, never pushes map up -->
   <div id="bottom-hud">
+
+  <div id="log-panel"></div>
 
   <!-- Action bar: visible when hero selected -->
   <div id="action-bar">
@@ -724,9 +746,9 @@ header{
   <div class="am-card">
     <div class="am-title">⚔ Escolha o Ataque</div>
     <div class="am-sec-title">Habilidade</div>
-    <div class="am-chips" id="am-skills"></div>
+    <div class="am-sk-grid" id="am-skills"></div>
     <div class="am-sec-title">Alvo</div>
-    <div class="am-chips" id="am-targets"></div>
+    <div class="am-tgt-list" id="am-targets"></div>
     <div class="am-preview" id="am-preview">Selecione habilidade e alvo</div>
     <div class="am-roll" id="am-roll"></div>
     <div class="am-btns">
@@ -2123,11 +2145,13 @@ function openMoveConfirm(actor, destHex) {
   document.getElementById('mc-sub').textContent = `${hexCount} hex · Atletismo d20${modStr} vs CD8`;
   document.getElementById('mc-roll').textContent = '';
   document.getElementById('move-confirm').classList.add('show');
+  render(); // draw destination hex highlight
 }
 
 function closeMoveConfirm() {
   document.getElementById('move-confirm').classList.remove('show');
   _moveConfirmData = null;
+  render(); // remove destination hex highlight
 }
 
 async function executeMoveConfirm() {
@@ -2179,30 +2203,51 @@ function openAttackModal(actor) {
   _atkSelSkill = null;
   _atkSelTarget = null;
 
-  // Build skill chips (class skills + basic attack)
+  // Build skill cards (2-column grid)
   const skList = SKILLS[actor.classe] || [];
   const activeSkills = skList.filter(sk => sk.type !== 'passive');
-  const basicAtk = { nome:'Ataque Básico', icon:'⚔️', type:'melee', dmg: actor.rangedWeapon ? '1d6+2' : '1d6+2', range:1 };
+  const basicAtk = { nome:'Ataque Básico', icon:'⚔️', type:'melee', dmg:'1d6+2', range:1 };
   const allSkills = activeSkills.length ? activeSkills : [basicAtk];
 
   document.getElementById('am-skills').innerHTML = allSkills.map((sk, i) => {
-    const label = `${sk.icon||'⚔'} ${sk.nome||sk.name} <span style="color:#605040;font-size:9px">${sk.dmg||''}</span>`;
-    return `<button class="am-chip" data-sk="${i}" onclick="atkSelectSkill(this,${i})">${label}</button>`;
+    const typeLabel = sk.type === 'ranged' ? '🏹 Distância' : sk.type === 'magic' ? '✨ Magia' : '⚔ Corpo a corpo';
+    return `<button class="am-sk-card" data-sk="${i}" onclick="atkSelectSkill(this,${i})">
+      <div class="am-sk-icon">${sk.icon||'⚔️'}</div>
+      <div class="am-sk-name">${sk.nome||sk.name||'Ataque'}</div>
+      <div class="am-sk-dmg">${sk.dmg||'—'} · ${typeLabel}</div>
+    </button>`;
   }).join('');
 
-  // Build target chips (nearby enemies)
+  // Build target cards (full-width with HP bar)
   const foes = enemies().filter(e => e.alive);
-  document.getElementById('am-targets').innerHTML = foes.map(e => {
-    const dist = unitDist(actor, e);
-    const inMelee = dist <= 1;
-    const inRange = actor.rangedWeapon && dist <= actor.rangedWeapon.range;
-    if (!inMelee && !inRange) return ''; // not reachable
-    const distLabel = inMelee ? '⚔corpo' : `${dist}⬡`;
-    return `<button class="am-chip tgt" data-eid="${e.id}" onclick="atkSelectTarget(this,'${e.id}')">${e.icon||'👾'} ${e.name} <span style="color:#605040;font-size:9px">❤${e.hp}/${e.maxHp} ${distLabel}</span></button>`;
-  }).join('');
+  const reachable = foes.filter(e => {
+    const d = unitDist(actor, e);
+    return d <= 1 || (actor.rangedWeapon && d <= actor.rangedWeapon.range);
+  });
 
-  if (!foes.some(e => { const d=unitDist(actor,e); return d<=1||(actor.rangedWeapon&&d<=actor.rangedWeapon.range); })) {
-    document.getElementById('am-targets').innerHTML = '<span style="color:#605040;font-size:11px;padding:4px">Nenhum inimigo no alcance</span>';
+  if (!reachable.length) {
+    document.getElementById('am-targets').innerHTML = '<div style="color:#605040;font-size:12px;padding:8px 4px">Nenhum inimigo no alcance</div>';
+  } else {
+    document.getElementById('am-targets').innerHTML = reachable.map(e => {
+      const dist = unitDist(actor, e);
+      const inMelee = dist <= 1;
+      const distLabel = inMelee ? '⚔ Corpo' : `${dist} ⬡ Distância`;
+      const hpPct = Math.max(0, Math.round((e.hp / e.maxHp) * 100));
+      return `<button class="am-tgt-card" data-eid="${e.id}" onclick="atkSelectTarget(this,'${e.id}')">
+        <div class="am-tgt-icon">${e.icon||'👾'}</div>
+        <div class="am-tgt-info">
+          <div class="am-tgt-name">${e.name}</div>
+          <div class="am-tgt-hprow">
+            <div class="am-tgt-hpbar"><div class="am-tgt-hpfill" style="width:${hpPct}%"></div></div>
+            <div class="am-tgt-hptxt">❤ ${e.hp}/${e.maxHp}</div>
+          </div>
+        </div>
+        <div class="am-tgt-badges">
+          <div class="am-tgt-dist">${distLabel}</div>
+          <div class="am-tgt-ac">🛡 CA ${e.ac||10}</div>
+        </div>
+      </button>`;
+    }).join('');
   }
 
   document.getElementById('am-preview').textContent = 'Selecione habilidade e alvo';
@@ -2212,7 +2257,7 @@ function openAttackModal(actor) {
 }
 
 function atkSelectSkill(btn, idx) {
-  document.querySelectorAll('#am-skills .am-chip').forEach(b => b.classList.remove('sel'));
+  document.querySelectorAll('#am-skills .am-sk-card').forEach(b => b.classList.remove('sel'));
   btn.classList.add('sel');
   const skList = SKILLS[_atkActor.classe] || [];
   const activeSkills = skList.filter(sk => sk.type !== 'passive');
@@ -2221,7 +2266,7 @@ function atkSelectSkill(btn, idx) {
 }
 
 function atkSelectTarget(btn, eid) {
-  document.querySelectorAll('#am-targets .am-chip').forEach(b => b.classList.remove('sel'));
+  document.querySelectorAll('#am-targets .am-tgt-card').forEach(b => b.classList.remove('sel'));
   btn.classList.add('sel');
   _atkSelTarget = units.find(u => u.id === eid);
   updateAtkPreview();
@@ -2409,6 +2454,18 @@ function render() {
       drawPerimeter(_rangedCache,'rgba(255,145,30,1)','rgba(220,110,20,.08)',2,8);
     const sel=getUnit(selId);
     if (sel) { ctx.strokeStyle='rgba(255,255,255,.8)'; ctx.lineWidth=2.5; for (const oh of sel.occupiedHexes){drawHex(oh.col,oh.row);ctx.stroke();} }
+  }
+
+  // Pending move destination highlight
+  if (_moveConfirmData) {
+    const { destHex } = _moveConfirmData;
+    drawHex(destHex.col, destHex.row);
+    ctx.fillStyle = 'rgba(70,160,255,.30)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(120,200,255,1)'; ctx.lineWidth = 3.5; ctx.stroke();
+    // Pulsing dot at center
+    const {x, y} = hexCtr(destHex.col, destHex.row);
+    ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(140,210,255,.9)'; ctx.fill();
   }
 
   // Units
