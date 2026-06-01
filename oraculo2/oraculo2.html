@@ -2645,6 +2645,12 @@ toggleLog();
 // ═══════════════════════════════════════════════
 //  INTRO FLOW
 // ═══════════════════════════════════════════════
+// Colors per class
+const CLASS_COLORS_ORC2 = {
+  guerreiro:"#8a4a20", mago:"#3a2a6a", ladino:"#0f2448",
+  clerigo:"#4a3a10", barbaro:"#6a1a1a", arqueiro:"#2a4a2a",
+};
+
 // ── Classes, Perícias, D&D helpers (mirror of main.js) ──────────
 const CLASSES = {
   guerreiro: {
@@ -3126,14 +3132,8 @@ function introInitParticles() {
 }
 introInitParticles();
 
-// Check for saved character → show "Retomar" button
+// Update campaign title once loaded
 setTimeout(()=>{
-  const saved = localStorage.getItem('rpg_char');
-  if (saved) {
-    const btn = document.getElementById('isc-btn-retomar');
-    if (btn) btn.style.display='';
-  }
-  // Update campaign title if loaded
   if (_campanha) {
     const el = document.getElementById('isc-camp-titulo');
     if (el) el.textContent = _campanha.titulo||'A Fera do Forte Negro';
