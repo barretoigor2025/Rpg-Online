@@ -3089,30 +3089,53 @@ async function callAI(userMsg, resolutionMode=false) {
   if (_callingAI) return;
   _callingAI=true;
   if (!resolutionMode) addLog('🔮 Narrador pensando…','ai');
-  try {
-    const resp=await fetch(GROQ_URL, {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-      body:JSON.stringify({
-        model:GROQ_MODEL,
-        temperature: resolutionMode ? 0.75 : 0.85,
-        max_tokens: resolutionMode ? 900 : 400,
-        messages:[
-          {role:'system', content: resolutionMode ? buildResolutionPrompt() : buildSystemPrompt()},
-          {role:'user',   content: resolutionMode ? 'Resolva o turno agora. Narre e emita todas as tags de ação.' : userMsg}
-        ]
-      })
-    });
-    if (!resp.ok) {
-      const err=await resp.text();
-      addLog(`⚠ Erro IA: ${resp.status} — ${err.slice(0,120)}`,'e');
+
+  const MAX_RETRIES = 3;
+  const RETRY_DELAYS = [8000, 16000, 32000]; // backoff: 8s, 16s, 32s
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const resp=await fetch(GROQ_URL, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+        body:JSON.stringify({
+          model:GROQ_MODEL,
+          temperature: resolutionMode ? 0.75 : 0.85,
+          max_tokens: resolutionMode ? 900 : 400,
+          messages:[
+            {role:'system', content: resolutionMode ? buildResolutionPrompt() : buildSystemPrompt()},
+            {role:'user',   content: resolutionMode ? 'Resolva o turno agora. Narre e emita todas as tags de ação.' : userMsg}
+          ]
+        })
+      });
+
+      if (resp.status === 429 && attempt < MAX_RETRIES) {
+        const delay = RETRY_DELAYS[attempt];
+        const secs = delay / 1000;
+        addLog(`⏳ Rate limit Groq — tentando novamente em ${secs}s… (${attempt+1}/${MAX_RETRIES})`, 's');
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+
+      if (!resp.ok) {
+        const err=await resp.text();
+        addLog(`⚠ Erro IA: ${resp.status} — ${err.slice(0,120)}`,'e');
+        _callingAI=false; return;
+      }
+      const data=await resp.json();
+      const text=(data.choices?.[0]?.message?.content||'').trim();
+      parseAIResponse(text);
       _callingAI=false; return;
+
+    } catch(e) {
+      if (attempt < MAX_RETRIES) {
+        const delay = RETRY_DELAYS[attempt];
+        addLog(`⏳ Falha de rede — tentando em ${delay/1000}s…`, 's');
+        await new Promise(r => setTimeout(r, delay));
+      } else {
+        addLog(`⚠ Erro IA: ${e.message}`,'e');
+      }
     }
-    const data=await resp.json();
-    const text=(data.choices?.[0]?.message?.content||'').trim();
-    parseAIResponse(text);
-  } catch(e) {
-    addLog(`⚠ Erro IA: ${e.message}`,'e');
   }
   _callingAI=false;
 }
