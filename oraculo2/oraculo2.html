@@ -74,6 +74,63 @@ header{
 }
 #cmd-send:active{background:#2a2618}
 
+/* ── Declaration status bar ── */
+#decl-status{
+  flex-shrink:0;background:#0f0d09;border-bottom:1px solid rgba(200,160,48,.12);
+  padding:5px 12px;display:none;gap:8px;align-items:center;flex-wrap:wrap
+}
+#decl-status.visible{display:flex}
+.ds-label{font-size:10px;color:#8a7050;margin-right:4px}
+.ds-hero{display:flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:12px;border:1px solid rgba(200,160,48,.2)}
+.ds-hero.pending{color:#a09060;background:rgba(200,160,48,.06)}
+.ds-hero.sent{color:#70c070;background:rgba(80,180,80,.08);border-color:rgba(80,180,80,.25)}
+.ds-hero.current{color:#c8a030;background:rgba(200,160,48,.12);border-color:rgba(200,160,48,.4)}
+
+/* ── Declaration panel ── */
+#decl-panel{
+  flex-shrink:0;background:#12100c;border-top:1px solid rgba(200,160,48,.18);
+  padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom));
+  display:none;flex-direction:column;gap:8px
+}
+#decl-panel.visible{display:flex}
+#decl-hero-name{font-size:12px;color:#c8a030;font-weight:700;margin-bottom:2px}
+#decl-hint{font-size:10px;color:#5a4a30;margin-bottom:4px;font-style:italic}
+.decl-field{display:flex;flex-direction:column;gap:3px}
+.decl-field label{font-size:10px;color:#8a7050;text-transform:uppercase;letter-spacing:.5px}
+.decl-field textarea{
+  background:#1a1610;border:1px solid rgba(200,160,48,.2);border-radius:6px;
+  color:#e2d5b0;font-size:12px;padding:7px 10px;outline:none;font-family:inherit;
+  resize:none;height:42px;line-height:1.4
+}
+.decl-field textarea:focus{border-color:rgba(200,160,48,.45)}
+.decl-field textarea::placeholder{color:#443820}
+#decl-fields-optional{display:none;flex-direction:column;gap:6px}
+#decl-fields-optional.open{display:flex}
+#decl-toggle-opts{background:none;border:none;color:#6a5838;font-size:10px;cursor:pointer;text-align:left;padding:0}
+#decl-send{
+  background:rgba(200,160,48,.12);border:1px solid rgba(200,160,48,.4);color:#c8a030;
+  border-radius:7px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;width:100%
+}
+#decl-send:active{background:rgba(200,160,48,.25)}
+#decl-sent-view{display:none;flex-direction:column;gap:6px;padding:4px 0}
+#decl-sent-view.visible{display:flex}
+#decl-sent-text{font-size:11px;color:#8a9870;font-style:italic;line-height:1.5;padding:6px 10px;background:rgba(80,180,80,.05);border:1px solid rgba(80,180,80,.15);border-radius:6px}
+#decl-resolve-btn{
+  background:rgba(200,130,30,.15);border:1px solid rgba(200,130,30,.5);color:#d4900c;
+  border-radius:7px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;
+  display:none;animation:pulse-gold 1.5s ease-in-out infinite
+}
+@keyframes pulse-gold{0%,100%{box-shadow:0 0 0 0 rgba(200,130,30,.0)}50%{box-shadow:0 0 0 6px rgba(200,130,30,.25)}}
+
+/* ── Resolution overlay ── */
+#resolving-overlay{
+  position:fixed;inset:0;z-index:400;background:rgba(5,3,1,.88);
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px
+}
+#resolving-overlay.visible{display:flex}
+#resolving-msg{color:#c8a030;font-size:16px;font-weight:700;text-align:center;animation:pulse-gold 1.2s infinite}
+#resolving-sub{color:#8a7050;font-size:11px;text-align:center;max-width:280px;line-height:1.6}
+
 /* ── Range buttons ── */
 #u-ranges{margin-top:5px;display:none;gap:3px;flex-wrap:wrap}
 .rbtn{background:#1a1610;border:1px solid rgba(200,160,48,.25);color:#8a7050;border-radius:4px;padding:2px 7px;font-size:10px;cursor:pointer;white-space:nowrap}
@@ -163,14 +220,16 @@ header{
 .espelhado{transform:scaleX(-1)}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
 <body>
 <div id="app">
   <header>
-    <span id="turn-label">Turno 1 — Heróis</span>
+    <span id="turn-label">Turno 1 — Cena</span>
     <button class="hdr-btn" id="btn-log-toggle" onclick="toggleLog()">▲ Log</button>
     <button class="hdr-btn" onclick="toggleDebug()">⊞ Coords</button>
-    <button class="hdr-btn" id="btn-end-phase" onclick="endHeroPhase()">Encerrar →</button>
+    <button class="hdr-btn" id="btn-declare" onclick="startDeclarationPhase()" style="display:none;background:rgba(200,130,30,.15);border-color:rgba(200,130,30,.4);color:#d4900c">⚔ Declarar</button>
     <button class="hdr-btn" onclick="openKeyModal()">🔑</button>
   </header>
 
@@ -190,6 +249,46 @@ header{
 
   <div id="log-panel"></div>
 
+  <!-- Declaration status: who has/hasn't declared -->
+  <div id="decl-status">
+    <span class="ds-label">Aguardando:</span>
+    <span id="ds-heroes"></span>
+  </div>
+
+  <!-- Declaration panel (visible during declaration phase) -->
+  <div id="decl-panel">
+    <div>
+      <div id="decl-hero-name">⚔ Declare sua intenção</div>
+      <div id="decl-hint">Você não verá as ações dos outros heróis até a resolução.</div>
+    </div>
+    <div id="decl-form">
+      <div class="decl-field">
+        <label>O que seu personagem tenta fazer?</label>
+        <textarea id="df-intencao" placeholder="Avançar contra o Barkthresher e impedir ele de chegar no Mago…" rows="2"></textarea>
+      </div>
+      <button id="decl-toggle-opts" onclick="toggleDeclOpts()">▸ Detalhes opcionais (alvo, evitar, plano B)</button>
+      <div id="decl-fields-optional">
+        <div class="decl-field">
+          <label>Alvo preferido</label>
+          <textarea id="df-alvo" placeholder="Barkthresher" rows="1"></textarea>
+        </div>
+        <div class="decl-field">
+          <label>Evitar / condição de segurança</label>
+          <textarea id="df-evitar" placeholder="Não entrar em área de Bola de Fogo do Mago…" rows="1"></textarea>
+        </div>
+        <div class="decl-field">
+          <label>Plano B (se não der certo)</label>
+          <textarea id="df-planob" placeholder="Se não tiver linha de tiro, atacar o Espantalho mais próximo…" rows="1"></textarea>
+        </div>
+      </div>
+      <button id="decl-send" onclick="submitDeclaration()">Enviar Intenção →</button>
+    </div>
+    <div id="decl-sent-view">
+      <div id="decl-sent-text"></div>
+      <button id="decl-resolve-btn" onclick="resolveDeclarations()">⚡ Resolver Turno — IA calcula tudo</button>
+    </div>
+  </div>
+
   <div id="input-row">
     <input id="cmd-input" placeholder='Ex: "Bárbaro ataca Espantalho" · "Mago avança F06" · "narrar"' type="text" autocomplete="off">
     <button id="cmd-send" onclick="submitCmd()">→</button>
@@ -197,6 +296,14 @@ header{
 </div>
 
 <div id="tip"></div>
+
+<!-- Resolution overlay -->
+<div id="resolving-overlay">
+  <div style="font-size:32px">⚔</div>
+  <div id="resolving-msg">IA resolvendo o turno…</div>
+  <div id="resolving-sub">Todas as intenções foram declaradas.<br>O Mestre analisa o campo, linha de visão, prioridades e consequências.</div>
+</div>
+
 <div id="teste-overlay" style="display:none"></div>
 
 <div id="action-popup">
@@ -229,6 +336,62 @@ header{
 
 <script>
 'use strict';
+
+// ── Firebase ──────────────────────────────────────
+try {
+  firebase.initializeApp({
+    apiKey:'AIzaSyAsn9ZFJP6QWFesfls9anBAJbAqcDMfnqg',
+    authDomain:'rpg-online-ad73f.firebaseapp.com',
+    databaseURL:'https://rpg-online-ad73f-default-rtdb.firebaseio.com',
+    projectId:'rpg-online-ad73f',
+    storageBucket:'rpg-online-ad73f.firebasestorage.app',
+    messagingSenderId:'1031450807961',
+    appId:'1:1031450807961:web:369342194731ad0ae37208'
+  });
+} catch(e) {}
+let _db = null;
+try { _db = firebase.database(); } catch(e) {}
+const _fbRef  = (path) => _db ? _db.ref(path) : null;
+const _fbGet  = (path) => _fbRef(path)?.get();
+const _fbSet  = (path, val) => _fbRef(path)?.set(val);
+const _fbPush = (path, val) => _fbRef(path)?.push(val);
+const _fbUpdate = (path, val) => _fbRef(path)?.update(val);
+
+// ── Session ──────────────────────────────────────
+const _uid = localStorage.getItem('rpg_uid') || (() => {
+  const id = 'orc2_' + Math.random().toString(36).slice(2,10);
+  localStorage.setItem('rpg_uid', id);
+  return id;
+})();
+const _salaId = localStorage.getItem('rpg_sala') || 'oraculo2_demo';
+
+// ── Campaign Data ─────────────────────────────────
+let _campanha = null;
+let _iniData  = []; // inimigos.json array
+
+async function carregarCampanha() {
+  try {
+    const [rC, rI] = await Promise.all([
+      fetch('../campanhas/beast-of-black-keep/campanha.json'),
+      fetch('../campanhas/beast-of-black-keep/inimigos.json'),
+    ]);
+    if (rC.ok) { _campanha = await rC.json(); }
+    if (rI.ok) { _iniData  = await rI.json(); }
+    const titulo = _campanha?.titulo || 'Beast of Black Keep';
+    addLog(`📖 ${titulo}`,'ai');
+    addLog(`${_campanha?.estado_inicial?.localizacao||''} — ${_campanha?.estado_inicial?.momento||''}`,'s');
+  } catch(e) { addLog('⚠ Campanha em modo demo (sem dados da campanha)','s'); }
+}
+
+function buildCampaignContext() {
+  if (!_campanha) return '';
+  const npcs = Object.values(_campanha.npcs||{}).slice(0,8).map(n =>
+    `• ${n.nome} [${n.papel||''}]: ${(n.personalidade||'').slice(0,80)}`
+  ).join('\n');
+  const regras = (_campanha.regras_narracao||[]).slice(0,8).map(r=>'• '+r).join('\n');
+  const parte = _campanha.estrutura?.parte1;
+  return `\n═══ CAMPANHA: "${_campanha.titulo}" ═══\n${_campanha.prompt_sistema||''}\n\nREGRAS DO NARRADOR:\n${regras}\n\nNPCS PRINCIPAIS:\n${npcs}\n\nATO ATUAL — "${parte?.nome||''}": ${parte?.resumo||''}\n`;
+}
 
 // ═══════════════════════════════════════════════
 //  SCENARIOS
@@ -411,31 +574,41 @@ function mkUnit(d) {
 const UDEFS = [
   {id:'hero_arqueiro', name:'Arqueiro', type:'hero', classe:'arqueiro',
    hex:'D08', maxHp:22, ac:14, moveSpeed:5, size:'1x1',
-   attrMod:3, attrName:'DES', rangedWeapon:{name:'Arco Longo',range:11},
+   attrMod:3, attrName:'DES',
+   stats:{STR:10,DEX:16,CON:12,INT:12,WIS:14,CHA:10},
+   rangedWeapon:{name:'Arco Longo',range:11},
    sprite:'../sprites/arqueiro_m.png', spriteCostas:'../sprites/arqueiro_m_costas.png', icon:'🏹'},
   {id:'hero_barbaro', name:'Bárbaro', type:'hero', classe:'barbaro',
    hex:'E07', maxHp:32, ac:13, moveSpeed:4, size:'1x1',
-   attrMod:4, attrName:'FOR', rangedWeapon:null,
+   attrMod:4, attrName:'FOR',
+   stats:{STR:18,DEX:12,CON:16,INT:8,WIS:10,CHA:10},
+   rangedWeapon:null,
    sprite:'../sprites/barbaro_m.png', spriteCostas:'../sprites/barbaro_m_costas.png', icon:'🪓'},
   {id:'hero_mago', name:'Mago', type:'hero', classe:'mago',
    hex:'F08', maxHp:16, ac:11, moveSpeed:3, size:'1x1',
-   attrMod:3, attrName:'INT', rangedWeapon:{name:'Raio Arcano',range:9},
+   attrMod:3, attrName:'INT',
+   stats:{STR:8,DEX:12,CON:10,INT:16,WIS:14,CHA:12},
+   rangedWeapon:{name:'Raio Arcano',range:9},
    sprite:'../sprites/mago.png', spriteCostas:'../sprites/mago_m_costas.png', icon:'🔮'},
   {id:'espa_01', name:'Espantalho I', type:'enemy',
    hex:'E03', maxHp:14, ac:10, moveSpeed:3, size:'1x1',
    attrMod:1, attrName:'FOR',
+   stats:{STR:12,DEX:8,CON:10,INT:2,WIS:6,CHA:4},
    sprite:'../sprites/inimigo_espantalho_assombrado.png', icon:'🌾'},
   {id:'espa_02', name:'Espantalho II', type:'enemy',
    hex:'G03', maxHp:14, ac:10, moveSpeed:3, size:'1x1',
    attrMod:1, attrName:'FOR',
+   stats:{STR:12,DEX:8,CON:10,INT:2,WIS:6,CHA:4},
    sprite:'../sprites/inimigo_espantalho_assombrado.png', icon:'🌾'},
   {id:'barkthresher', name:'Barkthresher', type:'enemy',
    hex:'F05', maxHp:45, ac:14, moveSpeed:2, size:'2x2',
    attrMod:3, attrName:'FOR',
+   stats:{STR:18,DEX:8,CON:16,INT:6,WIS:8,CHA:6},
    sprite:'../sprites/inimigo_barkthresher.png', icon:'🌳'},
   {id:'larva_gigante', name:'Larva Gigante', type:'enemy',
    hex:'H02', maxHp:60, ac:10, moveSpeed:2, size:'3x2',
    attrMod:2, attrName:'FOR',
+   stats:{STR:20,DEX:6,CON:18,INT:1,WIS:7,CHA:4},
    sprite:'../sprites/inimigo_larva_gigante.png', icon:'🐛'},
 ];
 
@@ -472,6 +645,206 @@ function preloadSprites() {
   });
 }
 preloadSprites();
+
+// ── Attribute helpers ─────────────────────────────
+function getAttrMod(unit, attr) {
+  const s = unit?.stats||{};
+  const map = {FOR:'STR',STR:'STR',DES:'DEX',DEX:'DEX',CON:'CON',INT:'INT',SAB:'WIS',WIS:'WIS',CAR:'CHA',CHA:'CHA',FORT:'CON',REF:'DEX',VON:'WIS'};
+  const val = s[map[attr.toUpperCase()]||attr.toUpperCase()] ?? 10;
+  return Math.floor((val-10)/2);
+}
+
+function getInimigo(nome) {
+  if (!nome) return null;
+  const lo = nome.toLowerCase();
+  // First check _iniData (loaded from JSON)
+  const fromJson = _iniData.find(i => lo.includes((i.nome||'').toLowerCase()) || (i.nome||'').toLowerCase().includes(lo));
+  if (fromJson) return fromJson;
+  // Fallback: unit in scene
+  return units.find(u => lo.includes(u.name.toLowerCase()) || u.name.toLowerCase().includes(lo)) || null;
+}
+
+function getIniMod(nome, attr) {
+  const ini = getInimigo(nome);
+  if (ini?.stats_dnd) {
+    const map = {FOR:'FOR',STR:'FOR',DES:'DES',DEX:'DES',CON:'CON',INT:'INT',SAB:'SAB',WIS:'SAB',CAR:'CAR',CHA:'CAR',FORT:'CON',REF:'DES',VON:'SAB'};
+    const val = ini.stats_dnd[map[attr.toUpperCase()]||'FOR'] ?? 10;
+    return Math.floor((val-10)/2);
+  }
+  const u = units.find(u=>u.name===nome||u.id===nome);
+  return u?.attrMod||0;
+}
+
+// ── Dice rolling ──────────────────────────────────
+function rollDado(notacao) {
+  const m = notacao.replace(/\s/g,'').match(/^(\d*)d(\d+)([+-]\d+)?/i);
+  if (!m) return 1;
+  const n=parseInt(m[1])||1, s=parseInt(m[2]), b=parseInt(m[3]||0);
+  let t=b; for (let i=0;i<n;i++) t+=Math.floor(Math.random()*s)+1;
+  return Math.max(1,t);
+}
+
+function extrairTestes(txt) {
+  const r=[], re=/^\s*TESTAR:\s*\[([^\|]+)\|([^\|]+)\|([^\|]+)\|(\d+)(?:\|([^\]]+))?\]/gim;
+  let m;
+  while ((m=re.exec(txt))!==null)
+    r.push({nomeJog:m[1].trim(),acao:m[2].trim(),attr:m[3].trim().toUpperCase(),dc:parseInt(m[4]),alvo:m[5]?.trim()||''});
+  return r;
+}
+
+function extrairRoles(txt) {
+  const r=[], re=/^\s*ROLAR:\s*\[([^\|]+)\|([^\|]+)\|([^\|]+)(?:\|([^\]]+))?\]/gim;
+  let m;
+  while ((m=re.exec(txt))!==null)
+    r.push({nomeJog:m[1].trim(),acao:m[2].trim(),notacao:m[3].trim(),alvo:m[4]?.trim()||''});
+  return r;
+}
+
+function extrairFalas(txt) {
+  const r=[], re=/^\s*FALA:\s*\[([^\|]+)\|"([^"]+)"\]/gim;
+  let m;
+  while ((m=re.exec(txt))!==null) r.push({nome:m[1].trim(),texto:m[2].trim()});
+  return r;
+}
+
+function iniciarTestes(testes, roles, afterCb) {
+  if (!testes.length && !roles.length) { afterCb([]); return; }
+
+  const testeRes = testes.map((t,ti) => {
+    const hero = units.find(u=>u.name===t.nomeJog||u.id===t.nomeJog);
+    const isHero = hero?.type==='hero';
+    const mod = isHero ? getAttrMod(hero, t.attr) : getIniMod(t.nomeJog, t.attr);
+    const d20 = Math.floor(Math.random()*20)+1;
+    const total = d20+mod;
+    const critico=d20===20, catastrofe=d20===1;
+    const sucesso = critico?true:catastrofe?false:total>=t.dc;
+    const modStr = mod>=0?`+${mod}`:`${mod}`;
+    return {tipo:'testar',idx:ti,...t,mod,d20,total,sucesso,critico,catastrofe,modStr,label:t.acao};
+  });
+
+  const rolarRes = roles.map(r => {
+    const m2=r.notacao.replace(/\s/g,'').match(/^(\d*)d(\d+)/i);
+    const lados=m2?parseInt(m2[2]):20;
+    const resultado=rollDado(r.notacao);
+    const pi=testeRes.slice().reverse().findIndex(t=>t.nomeJog===r.nomeJog&&t.alvo);
+    const condicionalDe=pi>=0?(testeRes.length-1-pi):undefined;
+    return {tipo:'rolar',...r,resultado,dados:lados,condicionalDe};
+  });
+
+  const playlist=[]; const usados=new Set();
+  testeRes.forEach((t,ti)=>{
+    playlist.push(t);
+    rolarRes.forEach((r,ri)=>{if(!usados.has(ri)&&r.condicionalDe===ti){playlist.push(r);usados.add(ri);}});
+  });
+  rolarRes.forEach((r,ri)=>{if(!usados.has(ri))playlist.push(r);});
+
+  DiceOverlay.mostrar(playlist, () => {
+    // Apply damage automatically
+    testeRes.forEach((t,ti)=>{
+      if (t.sucesso && t.alvo) {
+        const danos=rolarRes.filter(r=>r.condicionalDe===ti);
+        let dmg=danos.reduce((s,r)=>s+r.resultado,0);
+        if (t.critico) dmg*=2;
+        if (dmg>0) {
+          const target=findAnyUnitByText(t.alvo);
+          if (target) { target.hp=Math.max(0,target.hp-dmg); if(target.hp<=0){target.alive=false;checkEnd();} render(); }
+        }
+      }
+    });
+    afterCb(testeRes);
+  });
+}
+
+function parseStatsTag(text) {
+  const re=/\[(INIMIGO|HP|MATAR|JOGADOR|XP|LESAO|TITULO|POSSE|EQUIPAR|ITEM_BAG|AUSENTE|PRESENTE|REPUTACAO):([^\]]+)\]/gi;
+  let m;
+  while ((m=re.exec(text))!==null) {
+    const cmd=m[1].toUpperCase(), p=m[2].split(':').map(s=>s.trim());
+    if (cmd==='MATAR') {
+      const u=findAnyUnitByText(p[0]);
+      if (u) { u.hp=0; u.alive=false; addLog(`💀 ${u.name} foi derrotado!`,'e'); checkEnd(); render(); }
+    } else if (cmd==='HP') {
+      const u=findAnyUnitByText(p[0]);
+      if (u&&p[1]) { u.hp=Math.max(0,Math.min(u.maxHp,parseInt(p[1]))); if(u.hp<=0){u.alive=false;checkEnd();} render(); }
+    } else if (cmd==='INIMIGO') {
+      // INIMIGO:nome:hp:hpMax:icon — update hp
+      const u=findAnyUnitByText(p[0]);
+      if (u&&p[1]) { u.hp=Math.max(0,parseInt(p[1])); if(u.hp<=0){u.alive=false;checkEnd();} render(); }
+    } else if (cmd==='JOGADOR') {
+      const u=findAnyUnitByText(p[0]);
+      if (u&&p[1]) { u.hp=Math.max(0,Math.min(u.maxHp,parseInt(p[1]))); if(u.hp<=0){u.alive=false;checkEnd();} render(); }
+    } else if (cmd==='XP') {
+      addLog(`⭐ ${p[0]} ganhou ${p[1]||0} XP`,'x');
+    } else if (cmd==='LESAO') {
+      addLog(`🩸 LESÃO — ${p[0]}: ${p.slice(1).join(':')}`,'e');
+    } else if (cmd==='TITULO') {
+      addLog(`🏅 ${p[0]} recebeu o título: ${p.slice(1).join(':')}`,'x');
+    }
+  }
+}
+
+function processNarrativeAndTags(text) {
+  const lines = text.split('\n');
+  const narrative=[], tags=[], falas=[];
+
+  for (const ln of lines) {
+    const t = ln.trim();
+    if (!t) continue;
+    if (/^(MOVER|ATACAR|CENA|STAT):/i.test(t)) { tags.push(t); continue; }
+    if (/^STATS?:\s*\[/i.test(t))               { tags.push(t); continue; }
+    if (/^FALA:\s*\[/i.test(t))                 { falas.push(t); continue; }
+    if (/^AVANÇAR\s*$/i.test(t)||/^FECHAR_ATO:/i.test(t)) continue;
+    narrative.push(t);
+  }
+
+  if (narrative.length) {
+    addLog('📖 '+narrative.join(' '),'ai');
+    if (!logVisible) toggleLog();
+  }
+
+  // Save to Firebase historia
+  if (_db && narrative.length) {
+    _fbPush(`salas/${_salaId}/historia`, {role:'assistant', content:narrative.join('\n'), ts:Date.now()}).catch(()=>{});
+  }
+
+  // FALA bubbles
+  falas.forEach(f=>{
+    const m=f.match(/^FALA:\s*\[([^\|]+)\|"([^"]+)"\]/i);
+    if (m) addLog(`💬 ${m[1].trim()}: "${m[2].trim()}"`,'n');
+  });
+
+  // Execute action tags
+  for (const tag of tags) {
+    // MOVER:[Name|Hex]
+    const mv=tag.match(/^MOVER:\[([^\|]+)\|([^\]]+)\]/i);
+    if (mv) {
+      const u=findAnyUnitByText(mv[1].trim()), dest=parseHex(mv[2].trim());
+      if (u&&dest&&dest.col>=0&&dest.col<COLS&&dest.row>=0&&dest.row<ROWS) {
+        addLog(`→ ${u.name} move para ${mv[2].trim().toUpperCase()}`,'m');
+        moveUnit(u,dest.col,dest.row); render();
+      }
+      continue;
+    }
+    // ATACAR:[Att|Def]
+    const atk=tag.match(/^ATACAR:\[([^\|]+)\|([^\]]+)\]/i);
+    if (atk) {
+      const a=findAnyUnitByText(atk[1].trim()), d=findAnyUnitByText(atk[2].trim());
+      if (a&&d&&a.alive&&d.alive) { doAttack(a,d); checkEnd(); render(); }
+      continue;
+    }
+    // STATS / STAT tags
+    if (/^STATS?:/i.test(tag)) { parseStatsTag(tag); continue; }
+    // CENA
+    const ce=tag.match(/^CENA:\[?([^\]\|]+)\]?/i);
+    if (ce&&SCENARIOS[ce[1].trim()]) { loadScenario(ce[1].trim()); continue; }
+    // Legacy STAT:[name|hp:X]
+    const st=tag.match(/^STAT:\[([^\|]+)\|hp:(\d+)\]/i);
+    if (st) {
+      const u=findAnyUnitByText(st[1].trim());
+      if (u) { u.hp=Math.max(0,Math.min(u.maxHp,parseInt(st[2]))); if(u.hp<=0){u.alive=false;checkEnd();} render(); }
+    }
+  }
+}
 
 // ═══════════════════════════════════════════════
 //  HELPERS
@@ -609,16 +982,157 @@ function checkEnd() {
 // ═══════════════════════════════════════════════
 //  BATTLE STATE
 // ═══════════════════════════════════════════════
-let turn=1, phase='hero';
+// phases: 'scene' → 'declaration' → 'resolving' → 'scene'
+let turn=1, phase='scene';
 let hovHex=null, showGrid=false, debugGrid=false;
+
+// declarations[heroId] = {intencao, alvo, evitar, planob}  ou null = pendente
+let declarations = {};
+let _declHeroQueue = []; // fila de heróis para declarar (single-player)
+let _declCurrentIdx = 0;
 let selId=null, activeRanges=new Set();
 let _moveCache=[], _meleeCache=[], _rangedCache=[];
 const sleep = ms => new Promise(r=>setTimeout(r,ms));
 
 function updateHdr() {
-  const labels={hero:`Turno ${turn} — Heróis (Modo Tático)`, enemy:`Turno ${turn} — Inimigos`, victory:'🏆 Vitória!', defeat:'💀 Derrota'};
-  document.getElementById('turn-label').textContent = labels[phase]||'';
-  document.getElementById('btn-end-phase').style.display = phase==='hero' ? '' : 'none';
+  const el = document.getElementById('turn-label');
+  const declBtn = document.getElementById('btn-declare');
+  if (phase==='scene')       { el.textContent=`Turno ${turn} — Cena`; declBtn.style.display=''; }
+  else if (phase==='declaration') { el.textContent=`Turno ${turn} — Declaração`; declBtn.style.display='none'; }
+  else if (phase==='resolving')   { el.textContent=`Turno ${turn} — Resolvendo…`; declBtn.style.display='none'; }
+  else if (phase==='victory')     { el.textContent='🏆 Vitória!'; declBtn.style.display='none'; }
+  else if (phase==='defeat')      { el.textContent='💀 Derrota'; declBtn.style.display='none'; }
+
+  // Status bar
+  const declStatus = document.getElementById('decl-status');
+  const dsHeroes   = document.getElementById('ds-heroes');
+  if (phase==='declaration') {
+    declStatus.classList.add('visible');
+    dsHeroes.innerHTML = heroes().map(u=>{
+      const sent = declarations[u.id] !== null && declarations[u.id] !== undefined;
+      const isCurrent = _declHeroQueue[_declCurrentIdx]===u.id;
+      const cls = sent ? 'sent' : isCurrent ? 'current' : 'pending';
+      const icon = sent ? '✅' : isCurrent ? '✍' : '⏳';
+      return `<span class="ds-hero ${cls}">${icon} ${u.name}</span>`;
+    }).join('');
+  } else {
+    declStatus.classList.remove('visible');
+  }
+
+  // Panels
+  const declPanel  = document.getElementById('decl-panel');
+  const inputRow   = document.getElementById('input-row');
+  if (phase==='declaration') {
+    declPanel.classList.add('visible'); inputRow.style.display='none';
+  } else {
+    declPanel.classList.remove('visible'); inputRow.style.display='';
+  }
+}
+
+function initDeclarations() {
+  declarations = {};
+  heroes().forEach(u => { declarations[u.id] = null; });
+  _declHeroQueue = heroes().map(u=>u.id);
+  _declCurrentIdx = 0;
+}
+
+function startDeclarationPhase() {
+  if (phase!=='scene') return;
+  phase='declaration';
+  initDeclarations();
+  addLog(`— Turno ${turn}: cada herói declara sua intenção secretamente —`,'s');
+  const sc=SCENARIOS[currentScenario];
+  const heroList=heroes().map(u=>`${u.name} em ${hexLbl(u.col,u.row)} (${u.hp}/${u.maxHp} PV)`).join(', ');
+  const enemList=enemies().map(u=>`${u.name} em ${hexLbl(u.col,u.row)} (${u.hp}/${u.maxHp} PV)`).join(', ');
+  addLog(`📍 ${sc.name} · Heróis: ${heroList} · Inimigos: ${enemList}`,'s');
+  loadDeclForm(_declCurrentIdx);
+  updateHdr();
+}
+
+function loadDeclForm(idx) {
+  const heroId = _declHeroQueue[idx];
+  const u = units.find(u=>u.id===heroId);
+  if (!u) return;
+  document.getElementById('decl-hero-name').textContent = `${u.icon} ${u.name} — declare sua intenção`;
+  document.getElementById('decl-hint').textContent = 'Você não verá as ações dos outros heróis até a resolução do turno.';
+  ['df-intencao','df-alvo','df-evitar','df-planob'].forEach(id=>{
+    const el=document.getElementById(id); if(el)el.value='';
+  });
+  document.getElementById('decl-form').style.display='flex';
+  document.getElementById('decl-form').style.flexDirection='column';
+  document.getElementById('decl-form').style.gap='6px';
+  document.getElementById('decl-sent-view').classList.remove('visible');
+  document.getElementById('decl-fields-optional').classList.remove('open');
+  document.getElementById('decl-toggle-opts').textContent='▸ Detalhes opcionais (alvo, evitar, plano B)';
+  updateHdr();
+}
+
+function toggleDeclOpts() {
+  const el=document.getElementById('decl-fields-optional');
+  const btn=document.getElementById('decl-toggle-opts');
+  const open=el.classList.toggle('open');
+  btn.textContent=open?'▴ Ocultar detalhes':'▸ Detalhes opcionais (alvo, evitar, plano B)';
+}
+
+function submitDeclaration() {
+  const intencao = document.getElementById('df-intencao').value.trim();
+  if (!intencao) { alert('Descreva a intenção do seu personagem.'); return; }
+  const heroId = _declHeroQueue[_declCurrentIdx];
+  const alvo   = document.getElementById('df-alvo')?.value.trim()||'';
+  const evitar = document.getElementById('df-evitar')?.value.trim()||'';
+  const planob = document.getElementById('df-planob')?.value.trim()||'';
+  declarations[heroId] = { intencao, alvo, evitar, planob };
+
+  document.getElementById('decl-form').style.display='none';
+  const sv=document.getElementById('decl-sent-view');
+  sv.classList.add('visible');
+  const parts=[`"${intencao}"`];
+  if(alvo)   parts.push(`Alvo: ${alvo}`);
+  if(evitar) parts.push(`Evitar: ${evitar}`);
+  if(planob) parts.push(`Plano B: ${planob}`);
+  document.getElementById('decl-sent-text').textContent=`✅ Intenção enviada: ${parts.join(' · ')}`;
+
+  _declCurrentIdx++;
+  updateHdr();
+
+  if (_declCurrentIdx < _declHeroQueue.length) {
+    setTimeout(()=>{ loadDeclForm(_declCurrentIdx); }, 1200);
+  } else {
+    addLog('✅ Todos os heróis declararam suas intenções. Pronto para resolver!','s');
+    document.getElementById('decl-resolve-btn').style.display='block';
+  }
+}
+
+async function resolveDeclarations() {
+  if (phase!=='declaration') return;
+  phase='resolving'; updateHdr();
+
+  document.getElementById('resolving-overlay').classList.add('visible');
+  document.getElementById('decl-panel').classList.remove('visible');
+
+  await callAI('', true); // resolution mode: buildResolutionPrompt() used internally
+
+  document.getElementById('resolving-overlay').classList.remove('visible');
+
+  // Reveal declarations — dramatic "what did everyone plan?" moment
+  addLog('─── Intenções reveladas ───','s');
+  _declHeroQueue.forEach(heroId => {
+    const u = units.find(u=>u.id===heroId);
+    const d = declarations[heroId]||{};
+    let line = `${u.icon} ${u.name}: "${d.intencao||'(nenhuma)'}"`;
+    if (d.alvo)   line += ` · Alvo: ${d.alvo}`;
+    if (d.evitar) line += ` · Evitar: ${d.evitar}`;
+    if (d.planob) line += ` · Plano B: ${d.planob}`;
+    addLog(line,'h');
+  });
+
+  if (!logVisible) toggleLog();
+
+  phase='scene'; updateHdr();
+  turn++;
+  heroes().forEach(u=>{u.hasMoved=false;u.hasActed=false;});
+  enemies().forEach(u=>{u.hasMoved=false;u.hasActed=false;});
+  render();
 }
 
 function endHeroPhase() {
@@ -1151,40 +1665,118 @@ const GROQ_MODEL = 'llama-3.3-70b-versatile';
 let _callingAI   = false;
 
 function buildSystemPrompt() {
-  const sc=SCENARIOS[currentScenario];
-  const heroList=heroes().map(u=>`${u.name} (${u.classe}) em ${hexLbl(u.col,u.row)}: ${u.hp}/${u.maxHp} PV, CA ${u.ac}`).join('; ');
-  const enemList=enemies().map(u=>`${u.name} em ${hexLbl(u.col,u.row)}: ${u.hp}/${u.maxHp} PV, CA ${u.ac}`).join('; ');
-  return `Você é o Mestre do Dungeon do Oráculo RPG — um narrador dramático, conciso e imersivo de uma batalha tática em grade hexagonal.
-Cenário atual: ${sc.name}. ${sc.desc}
-Turno: ${turn}. Fase: ${phase==='hero'?'Heróis':'Inimigos'}.
-Heróis: ${heroList||'nenhum'}.
-Inimigos: ${enemList||'nenhum'}.
-Grade: ${COLS} colunas (${CL[0]}–${CL[COLS-1]}) × ${ROWS} linhas (01–${String(ROWS).padStart(2,'0')}). Hexes flat-top, distância em hex.
+  const sc = SCENARIOS[currentScenario];
+  const campCtx = buildCampaignContext();
 
-REGRAS DE RESPOSTA:
-- Máximo 120 palavras de narrativa.
-- Pode usar tags de ação (uma por linha, no final):
-  MOVER:[NomeUnidade|ColRow]  — move unidade para hex (ex: MOVER:[Bárbaro|F06])
-  ATACAR:[Atacante|Alvo]      — resolve ataque
-  CENA:[scenario_id]          — troca cenário (ids: feira_assombrada, castelo_interior, taverna)
-  STAT:[nome|hp:X]            — atualiza HP
-- Não use markdown. Fale em português. Seja dramático e breve.`;
+  const heroLines = heroes().map(u => {
+    const s = u.stats||{};
+    return `${u.icon} ${u.name} (${u.classe}) — hex:${hexLbl(u.col,u.row)}, PV:${u.hp}/${u.maxHp}, CA:${u.ac} | FOR:${s.STR||10} DES:${s.DEX||10} CON:${s.CON||10} INT:${s.INT||10} SAB:${s.WIS||10} CAR:${s.CHA||10}`;
+  }).join('\n');
+
+  const enemLines = enemies().map(u => {
+    const ini = getInimigo(u.name);
+    let line = `${u.icon} ${u.name} — hex:${hexLbl(u.col,u.row)}, PV:${u.hp}/${u.maxHp}, CA:${u.ac}`;
+    if (ini?.comportamento) line += ` | ${ini.comportamento.toUpperCase()}`;
+    if (ini?.pode_dialogar) line += ` | PODE NEGOCIAR`;
+    if (ini?.fraqueza_social) line += ` | fraqueza: ${ini.fraqueza_social}`;
+    if (ini?.ataques_principais?.length) line += `\n  → Ataques: ${ini.ataques_principais.join(' / ')}`;
+    if (ini?.poderes_especiais?.length) line += `\n  → Poderes: ${ini.poderes_especiais.join('; ')}`;
+    return line;
+  }).join('\n');
+
+  const temCombate = enemies().length > 0;
+
+  return `Você é o Narrador. Escreva em português do Brasil com drama, impacto e tom de folclore sombrio. Seja DIRETO — cada palavra conta.
+${campCtx}
+CENÁRIO TÁTICO: ${sc.name} — ${sc.desc}
+Turno: ${turn}. Mapa hex ${COLS}×${ROWS} (colunas ${CL[0]}–${CL[COLS-1]}, linhas 01–${String(ROWS).padStart(2,'0')}).
+
+HERÓIS NO MAPA:
+${heroLines||'  nenhum'}
+
+${temCombate?`INIMIGOS EM CENA:\n${enemLines}`:'EXPLORAÇÃO — sem inimigos em cena.'}
+
+MECÂNICAS:
+- Quando ação for arriscada/combate: use TESTAR PRIMEIRO (antes de narrar o resultado):
+  TESTAR: [NomeExato|ação curta|Atributo|CD|Alvo?]
+  Atributos: FOR DES CON INT SAB CAR FORT REF VON. CD: fácil=8 médio=12 difícil=15 heróico=22
+- Para dano após TESTAR com alvo: ROLAR: [NomeExato|dano|1d6+2|Alvo]
+- Diálogo NPC: FALA: [NomeNPC|"frase completa"]
+- Mover no mapa: MOVER:[Unidade|Hex]  ex: MOVER:[Bárbaro|F06]
+- Stats/dano: STATS: [HP:nome:novoHp] [MATAR:nome] [JOGADOR:nome:novoHp] [XP:nome:pts] [LESAO:nome:desc]
+- Avançar cena: AVANÇAR (sozinho na última linha, quando não há decisão pendente)
+${temCombate?'- NUNCA descreva impacto antes dos dados. Primeiro TESTAR/ROLAR, depois narração do resultado.\n- Inimigos REAGEM imediatamente após ação dos heróis — use comportamento e motivação de cada criatura.':''}
+- Nunca mencione dados, modificadores ou CDs no texto.
+- Sem markdown. Fale português dramático e direto.`;
 }
 
-async function callAI(userMsg) {
+function buildResolutionPrompt() {
+  // Build the same rich context as buildSystemPrompt, then add declarations
+  const sc = SCENARIOS[currentScenario];
+  const campCtx = buildCampaignContext();
+
+  const heroLines = heroes().map(u => {
+    const s = u.stats||{};
+    return `${u.icon} ${u.name} (${u.classe}) — hex:${hexLbl(u.col,u.row)}, PV:${u.hp}/${u.maxHp}, CA:${u.ac} | FOR:${s.STR||10} DES:${s.DEX||10} CON:${s.CON||10} INT:${s.INT||10} SAB:${s.WIS||10} CAR:${s.CHA||10}`;
+  }).join('\n');
+
+  const enemLines = enemies().map(u => {
+    const ini = getInimigo(u.name);
+    let line = `${u.icon} ${u.name} — hex:${hexLbl(u.col,u.row)}, PV:${u.hp}/${u.maxHp}, CA:${u.ac}`;
+    if (ini?.comportamento) line += ` | ${ini.comportamento.toUpperCase()}`;
+    if (ini?.ataques_principais?.length) line += ` | Ataques: ${ini.ataques_principais.join(' / ')}`;
+    return line;
+  }).join('\n');
+
+  const declLines = _declHeroQueue.map(heroId => {
+    const u = units.find(u=>u.id===heroId);
+    const d = declarations[heroId]||{};
+    let s = `[${u.name}] "${d.intencao||'(sem intenção)'}"`;
+    if (d.alvo)   s += ` | Alvo: ${d.alvo}`;
+    if (d.evitar) s += ` | Evitar: ${d.evitar}`;
+    if (d.planob) s += ` | Plano B: ${d.planob}`;
+    return s;
+  }).join('\n');
+
+  return `Você é o Narrador. Escreva em português do Brasil com drama e tom de folclore sombrio.
+${campCtx}
+CENÁRIO TÁTICO: ${sc.name} — ${sc.desc}
+Turno: ${turn}. Mapa hex ${COLS}×${ROWS} (colunas ${CL[0]}–${CL[COLS-1]}).
+
+HERÓIS:
+${heroLines||'  nenhum'}
+INIMIGOS:
+${enemLines||'  nenhum'}
+
+═══ MODO RESOLUÇÃO SIMULTÂNEA ═══
+Intenções declaradas pelos jogadores (simultâneas — eles NÃO sabiam das intenções uns dos outros):
+${declLines}
+
+COMO RESOLVER:
+1. Leia TODAS as intenções juntas. Detecte conflitos, LoS bloqueada, área de efeito, ações que se cancelam.
+2. Adapte quando necessário — se Bárbaro entrou na LoS do Mago, Bola de Fogo pode ser cancelada.
+3. Inimigos agem na mesma cena — reagem conforme comportamento e ameaça.
+4. Narre o que REALMENTE aconteceu em até 150 palavras, cinematograficamente. Sem markdown.
+5. Use TESTAR/ROLAR para todos os ataques (obrigatório em combate).
+6. Emita MOVERs primeiro (posições finais), depois ATACARs, depois STATS.`;
+}
+
+async function callAI(userMsg, resolutionMode=false) {
   if (!apiKey) { addLog('⚠ Sem chave Groq. Clique em 🔑 para configurar.','s'); return; }
   if (_callingAI) return;
   _callingAI=true;
-  addLog('🔮 Narrador pensando…','ai');
+  if (!resolutionMode) addLog('🔮 Narrador pensando…','ai');
   try {
     const resp=await fetch(GROQ_URL, {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
       body:JSON.stringify({
-        model:GROQ_MODEL, temperature:0.85, max_tokens:400,
+        model:GROQ_MODEL,
+        temperature: resolutionMode ? 0.75 : 0.85,
+        max_tokens: resolutionMode ? 900 : 400,
         messages:[
-          {role:'system',content:buildSystemPrompt()},
-          {role:'user',content:userMsg}
+          {role:'system', content: resolutionMode ? buildResolutionPrompt() : buildSystemPrompt()},
+          {role:'user',   content: resolutionMode ? 'Resolva o turno agora. Narre e emita todas as tags de ação.' : userMsg}
         ]
       })
     });
@@ -1203,51 +1795,19 @@ async function callAI(userMsg) {
 }
 
 function parseAIResponse(text) {
-  // Split into narrative and tags
-  const lines=text.split('\n');
-  const narrative=[], tags=[];
-  for (const ln of lines) {
-    const t=ln.trim();
-    if (/^(MOVER|ATACAR|CENA|STAT):/i.test(t)) tags.push(t);
-    else if (t) narrative.push(t);
-  }
-  if (narrative.length) {
-    addLog('📖 '+narrative.join(' '),'ai');
-    if (!logVisible) toggleLog();
-  }
-  // Execute tags
-  for (const tag of tags) {
-    const m=tag.match(/^(\w+):\[(.+)\]$/);
-    if (!m) continue;
-    const [,cmd,params]=m;
-    const parts=params.split('|');
-    if (cmd.toUpperCase()==='MOVER') {
-      const uName=parts[0].trim(), hex=parts[1]?.trim();
-      if (uName&&hex) {
-        const u=findAnyUnitByText(uName);
-        const dest=parseHex(hex);
-        if (u&&dest&&dest.col>=0&&dest.col<COLS&&dest.row>=0&&dest.row<ROWS) {
-          addLog(`→ ${u.name} move para ${hex.toUpperCase()}`,'m');
-          moveUnit(u,dest.col,dest.row); render();
-        }
-      }
-    } else if (cmd.toUpperCase()==='ATACAR') {
-      const atkName=parts[0].trim(), defName=parts[1]?.trim();
-      if (atkName&&defName) {
-        const atk=findAnyUnitByText(atkName), def=findAnyUnitByText(defName);
-        if (atk&&def&&atk.alive&&def.alive) { doAttack(atk,def); checkEnd(); render(); }
-      }
-    } else if (cmd.toUpperCase()==='CENA') {
-      const scId=parts[0].trim();
-      if (SCENARIOS[scId]) loadScenario(scId);
-    } else if (cmd.toUpperCase()==='STAT') {
-      const name=parts[0].trim();
-      const hpM=(parts[1]||'').match(/hp:(\d+)/i);
-      if (hpM) {
-        const u=findAnyUnitByText(name);
-        if (u) { u.hp=Math.max(0,Math.min(u.maxHp,parseInt(hpM[1]))); if (u.hp<=0){u.alive=false;checkEnd();} render(); }
-      }
-    }
+  const testes = extrairTestes(text);
+  const roles  = extrairRoles(text);
+
+  // Strip TESTAR/ROLAR lines so they don't appear in narrative
+  const cleanText = text
+    .replace(/^\s*TESTAR:\s*\[.*\]\s*$/gim,'')
+    .replace(/^\s*ROLAR:\s*\[.*\]\s*$/gim,'')
+    .replace(/\n{3,}/g,'\n\n').trim();
+
+  if (testes.length || roles.length) {
+    iniciarTestes(testes, roles, ()=>{ processNarrativeAndTags(cleanText); });
+  } else {
+    processNarrativeAndTags(cleanText);
   }
 }
 
@@ -1321,14 +1881,12 @@ function parseCommand(raw) {
 
   // Narrar / AI commands
   if (/^narrar|^ai:|^ia:|^mestre:|^master:/i.test(lo)||lo==='n') {
-    callAI(raw.replace(/^(narrar|ai:|ia:|mestre:|master:)\s*/i,'').trim()||buildSystemPrompt());
+    callAI(raw.replace(/^(narrar|ai:|ia:|mestre:|master:)\s*/i,'').trim()||'Descreva a cena atual.');
     return;
   }
 
-  // End turn
-  if (/fim\s*de\s*turno|encerrar|passar\s*turno|end\s*turn/i.test(lo)) { endHeroPhase(); return; }
-
-  if (phase==='enemy') { addLog('Aguarde — fase dos inimigos.','s'); return; }
+  // Start declaration phase
+  if (/fim\s*de\s*turno|encerrar|passar\s*turno|end\s*turn|declarar/i.test(lo)) { startDeclarationPhase(); return; }
 
   // Change scenario
   const scM=lo.match(/cenário\s+(\w+)|cena\s+(\w+)/);
@@ -1728,9 +2286,21 @@ if (mapImg.complete) render();
 updateHdr();
 addLog(`⚔ Oráculo 2 — ${SCENARIOS[currentScenario].name}`,'ai');
 addLog('Heróis: Bárbaro (E07) · Arqueiro (D08) · Mago (F08)','h');
-addLog('Comandos: "Bárbaro ataca Espantalho" · "Mago avança F06" · "narrar" · "🗺 Cenário"','s');
+addLog('Clique em ⚔ Declarar para iniciar um turno — cada herói declara sua intenção secretamente, depois a IA resolve tudo como cena simultânea.','s');
 // Auto-show log on start
 toggleLog();
+
+// Load campaign data at startup
+carregarCampanha();
+
+// Save initial session state to Firebase (non-blocking)
+setTimeout(()=>{
+  if (_db) {
+    _fbSet(`salas/${_salaId}/config`, {
+      campanha:'beast-of-black-keep', cenario:currentScenario, turno:turn, ts:Date.now()
+    }).catch(()=>{});
+  }
+}, 2000);
 </script>
 </body>
 </html>
