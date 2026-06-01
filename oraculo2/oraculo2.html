@@ -97,6 +97,10 @@ header{
 .ab-hp-fill{height:100%;border-radius:3px;transition:width .3s,background .3s}
 .ab-hp-txt{font-size:9px;color:#907060;flex-shrink:0}
 .ab-mov-txt{font-size:9px;color:#6090c0}
+.ab-stats-row{display:flex;gap:6px;font-size:9px;color:#7a6850;margin-top:1px}
+.ab-stats-row span{display:flex;align-items:center;gap:2px}
+.ab-atq-val{color:#c07040;font-weight:700}
+.ab-def-val{color:#5090b0;font-weight:700}
 .ab-target{
   display:none;flex-shrink:0;align-items:center;gap:5px;
   padding:4px 7px;background:rgba(160,30,20,.1);
@@ -106,8 +110,10 @@ header{
 .ab-tgt-sprite{width:28px;height:36px;object-fit:contain;object-position:top center;image-rendering:auto}
 .ab-tgt-name{font-size:9px;font-weight:600;color:#e09080;white-space:nowrap}
 .ab-tgt-hp{font-size:8px;color:#907060;margin-top:1px}
+.ab-tgt-hpbar{width:100%;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;margin-top:2px}
+.ab-tgt-hpfill{height:100%;border-radius:2px;transition:width .3s}
 .ab-btns{
-  display:flex;gap:3px;padding:4px 8px;
+  display:flex;flex-wrap:wrap;gap:3px;padding:4px 8px;
   padding-bottom:max(6px,env(safe-area-inset-bottom));
   background:#0a0806
 }
@@ -125,7 +131,22 @@ header{
 .ab-atk-on{border-color:rgba(200,50,40,.65)!important;background:rgba(170,30,25,.15)!important;color:#e08888!important}
 .ab-act-on{border-color:rgba(200,160,48,.65)!important;background:rgba(200,160,48,.1)!important;color:#c8a030!important}
 .ab-dis{opacity:.28;pointer-events:none}
-.ab-cancel{flex:0 0 44px;border-color:rgba(120,60,45,.3);color:#7a5848}
+.ab-cancel{flex-basis:calc(50% - 2px);flex-grow:1;border-color:rgba(120,60,45,.3);color:#7a5848}
+.ab-endturn{
+  flex-basis:calc(50% - 2px);flex-grow:1;
+  border-color:rgba(200,140,40,.3)!important;color:#c09040;
+  background:#131008!important
+}
+.ab-endturn.ready{
+  border-color:rgba(220,160,40,.7)!important;background:rgba(200,130,20,.15)!important;
+  color:#d4a030!important;animation:pulse-turn 1.5s ease infinite
+}
+.ab-enemy-turn{
+  flex-basis:100%;text-align:center;padding:6px;
+  border-color:rgba(180,50,40,.4)!important;background:rgba(140,20,15,.12)!important;
+  color:#c06050!important;font-size:10px;letter-spacing:1px
+}
+@keyframes pulse-turn{0%,100%{box-shadow:0 0 0 0 rgba(220,160,40,.3)}50%{box-shadow:0 0 0 4px rgba(220,160,40,.1)}}
 
 /* ── Declaration status bar ── */
 #decl-status{
@@ -611,17 +632,22 @@ header{
           <div class="ab-hp-bar"><div class="ab-hp-fill" id="ab-hp-fill" style="width:100%"></div></div>
           <span class="ab-hp-txt" id="ab-hp-txt">—/—</span>
         </div>
-        <div class="ab-mov-txt" id="ab-mov-txt">🦵 —</div>
+        <div class="ab-stats-row">
+          <span>⚔ <span class="ab-atq-val" id="ab-atq">+0</span></span>
+          <span>🛡 <span class="ab-def-val" id="ab-def">10</span></span>
+          <span class="ab-mov-txt" id="ab-mov-txt">🦵 0/0</span>
+        </div>
       </div>
       <div class="ab-target" id="ab-target">
         <img class="ab-tgt-sprite" id="ab-tgt-sprite" src="" alt="">
-        <div>
+        <div style="min-width:0;flex:1">
           <div class="ab-tgt-name" id="ab-tgt-name"></div>
           <div class="ab-tgt-hp" id="ab-tgt-hp"></div>
+          <div class="ab-tgt-hpbar"><div class="ab-tgt-hpfill" id="ab-tgt-hpfill" style="width:100%"></div></div>
         </div>
       </div>
     </div>
-    <div class="ab-btns">
+    <div class="ab-btns" id="ab-btns">
       <button class="ab-btn" id="ab-move" onclick="actionBarMode('move')">
         <span class="ab-btn-icon">🦶</span>Mover
       </button>
@@ -636,6 +662,9 @@ header{
       </button>
       <button class="ab-btn ab-cancel" onclick="clearSelection()">
         <span class="ab-btn-icon">✕</span>Sair
+      </button>
+      <button class="ab-btn ab-endturn" id="ab-endturn" onclick="endHeroTurn()">
+        <span class="ab-btn-icon">⏭</span>Fim de Turno
       </button>
     </div>
   </div>
@@ -1486,7 +1515,7 @@ function doAttack(atk,def) {
   const isMelee=dist<=1;
   const isRanged=atk.rangedWeapon&&dist<=atk.rangedWeapon.range;
   if (!isMelee&&!isRanged) { addLog(`${atk.name} não alcança ${def.name} (${dist} hex).`,'m'); return; }
-  let bonus=3;
+  let bonus = (atk.attrMod !== undefined ? atk.attrMod + 2 : 3); // attrMod + proficiency
   const flank=(atk.type==='hero'?heroes():enemies()).filter(a=>a.id!==atk.id&&unitDist(a,def)<=1).length>=1;
   if (flank) bonus+=2;
   const back=isBackAtk(atk,def);
@@ -1543,6 +1572,8 @@ function updateHdr() {
   const el = document.getElementById('turn-label');
   const declBtn = document.getElementById('btn-declare');
   if (phase==='scene')       { el.textContent=`Turno ${turn} — Cena`; declBtn.style.display=''; }
+  else if (phase==='hero')        { el.textContent=`Turno ${turn} — Heróis`; declBtn.style.display='none'; }
+  else if (phase==='enemy')       { el.textContent=`Turno ${turn} — Inimigos…`; declBtn.style.display='none'; }
   else if (phase==='declaration') { el.textContent=`Turno ${turn} — Declaração`; declBtn.style.display='none'; }
   else if (phase==='resolving')   { el.textContent=`Turno ${turn} — Resolvendo…`; declBtn.style.display='none'; }
   else if (phase==='victory')     { el.textContent='🏆 Vitória!'; declBtn.style.display='none'; }
@@ -1744,6 +1775,19 @@ async function resolveDeclarations() {
   render();
 }
 
+function endHeroTurn() {
+  if (phase === 'enemy') return;
+  if (!enemies().length) {
+    // No enemies: just reset turns
+    clearSelection();
+    heroes().forEach(u=>{u.hasMoved=false; u.hasActed=false;});
+    turn++; updateHdr(); render();
+    addLog(`— Turno ${turn} —`,'s');
+    return;
+  }
+  endHeroPhase();
+}
+
 function endHeroPhase() {
   clearSelection();
   heroes().forEach(u=>{u.hasMoved=true; u.hasActed=true;});
@@ -1779,11 +1823,12 @@ async function runEnemies() {
     render();
   }
   await sleep(400);
+  if (phase === 'defeat' || phase === 'victory') return;
   enemies().forEach(u=>{u.hasMoved=false; u.hasActed=false;});
   heroes().forEach(u=>{u.hasMoved=false; u.hasActed=false;});
-  turn++; phase='hero'; updateHdr();
+  turn++; phase='scene'; updateHdr();
   addLog(`— Turno ${turn} — Heróis agem —`,'s');
-  render();
+  updateActionBar(); render();
 }
 
 // ═══════════════════════════════════════════════
@@ -1895,17 +1940,33 @@ function updateActionBar() {
   fill.style.background = pct>60?'linear-gradient(90deg,#1a7030,#28b050)':pct>30?'linear-gradient(90deg,#7a5010,#c08020)':'linear-gradient(90deg,#b02020,#e04040)';
   document.getElementById('ab-hp-txt').textContent = `${u.hp}/${u.maxHp}`;
 
+  // ATQ / DEF / MOV stats
+  const atqBonus = (u.attrMod !== undefined ? u.attrMod + 2 : 3);
+  const atqEl = document.getElementById('ab-atq');
+  if (atqEl) atqEl.textContent = (atqBonus>=0?'+':'')+atqBonus;
+  const defEl = document.getElementById('ab-def');
+  if (defEl) defEl.textContent = u.ac||10;
+
   const movLeft = u.hasMoved?0:(u.moveSpeed||4);
   const movEl = document.getElementById('ab-mov-txt');
-  movEl.textContent = `🦵 ${movLeft} / ${u.moveSpeed||4} hex`;
+  movEl.textContent = `🦵 ${movLeft}/${u.moveSpeed||4}`;
   movEl.style.color = movLeft>0?'#6090c0':'#504030';
 
+  const isEnemyPhase = phase === 'enemy';
   const mvBtn = document.getElementById('ab-move');
   const akBtn = document.getElementById('ab-atk');
   const skBtn = document.getElementById('ab-skill');
-  if (mvBtn){ mvBtn.classList.toggle('ab-move-on',_abMode==='move'); mvBtn.classList.toggle('ab-dis',!!u.hasMoved); }
-  if (akBtn){ akBtn.classList.toggle('ab-atk-on',_abMode==='attack'); akBtn.classList.toggle('ab-dis',!!u.hasActed); }
-  if (skBtn){ skBtn.classList.toggle('ab-act-on',_abMode==='skill'); skBtn.classList.toggle('ab-dis',!!u.hasActed); }
+  if (mvBtn){ mvBtn.classList.toggle('ab-move-on',_abMode==='move'); mvBtn.classList.toggle('ab-dis',!!u.hasMoved||isEnemyPhase); }
+  if (akBtn){ akBtn.classList.toggle('ab-atk-on',_abMode==='attack'); akBtn.classList.toggle('ab-dis',!!u.hasActed||isEnemyPhase); }
+  if (skBtn){ skBtn.classList.toggle('ab-act-on',_abMode==='skill'); skBtn.classList.toggle('ab-dis',!!u.hasActed||isEnemyPhase); }
+
+  // Fim de Turno: pulsa quando herói já agiu; desabilitado na fase inimiga
+  const etBtn = document.getElementById('ab-endturn');
+  if (etBtn) {
+    const herosDone = heroes().every(h=>h.hasMoved||h.hasActed);
+    etBtn.classList.toggle('ready', herosDone && !isEnemyPhase);
+    etBtn.classList.toggle('ab-dis', isEnemyPhase);
+  }
 }
 
 function abShowTarget(e) {
@@ -1914,9 +1975,15 @@ function abShowTarget(e) {
   if (!e) { el.classList.remove('show'); return; }
   el.classList.add('show');
   document.getElementById('ab-tgt-name').textContent = `${e.icon||'👾'} ${e.name}`;
-  document.getElementById('ab-tgt-hp').textContent   = `❤️ ${e.hp}/${e.maxHp}PV · CA${e.ac}`;
+  document.getElementById('ab-tgt-hp').textContent   = `❤️ ${e.hp}/${e.maxHp} · 🛡${e.ac}`;
   const sp = document.getElementById('ab-tgt-sprite');
   if (sp) sp.src = e.sprite||'';
+  const pct = Math.max(0,Math.round(e.hp/e.maxHp*100));
+  const hpf = document.getElementById('ab-tgt-hpfill');
+  if (hpf) {
+    hpf.style.width = pct+'%';
+    hpf.style.background = pct>60?'#28a050':pct>30?'#c08020':'#e04040';
+  }
 }
 
 function actionBarMode(mode) {
