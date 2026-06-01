@@ -1324,6 +1324,8 @@ function doAttack(atk,def) {
 }
 
 function checkEnd() {
+  // Só avalia fim de batalha quando há combate real em curso
+  if (phase === 'scene') return;
   if (!enemies().length) { addLog('🏆 VITÓRIA — todos os inimigos derrotados!','x'); phase='victory'; updateHdr(); }
   if (!heroes().length)  { addLog('💀 DERROTA — todos os heróis caíram.','e'); phase='defeat'; updateHdr(); }
 }
@@ -3014,21 +3016,38 @@ function introConfirmarPersonagem() {
 }
 
 function introAplicarPersonagem(char) {
-  let heroIdx = units.findIndex(u=>u.type==='hero'&&u.id==='hero_'+char.classe);
-  if (heroIdx < 0) heroIdx = units.findIndex(u=>u.type==='hero');
-  if (heroIdx >= 0) {
-    const u = units[heroIdx];
-    u.name   = char.nome;
-    u.classe = char.classe;
-    u.stats  = char.stats;
-    u.hp     = char.hp ?? char.maxHp ?? u.maxHp;
-    u.maxHp  = char.maxHp ?? u.maxHp;
-    u.ac     = char.ac ?? u.ac;
-    u.sprite = `../sprites/${char.classe}_${char.sexo||'m'}.png`;
-    u.spriteCostas = `../sprites/${char.classe}_${char.sexo||'m'}_costas.png`;
-    const img = new Image(); img.onload=()=>{u._img=img;render();}; img.src=u.sprite;
-    const imgC = new Image(); imgC.onload=()=>{u._imgCostas=imgC;render();}; imgC.src=u.spriteCostas;
-  }
+  // Remove qualquer herói anterior do jogador (não NPCs)
+  units = units.filter(u => u.type !== 'hero' || u._isNPC);
+  const cls = CLASSES[char.classe] || CLASSES.guerreiro;
+  const hex = HERO_HEXES[char.classe] || 'G08';
+  const hasRanged = ['mago','arqueiro'].includes(char.classe);
+  const strMod = dndMod(char.stats?.STR || cls.STR);
+  const dexMod2 = dndMod(char.stats?.DEX || cls.DEX);
+  const intMod = dndMod(char.stats?.INT || cls.INT);
+  const bestMod = char.classe==='mago' ? intMod : char.classe==='arqueiro' ? dexMod2 : Math.max(strMod, dexMod2);
+  const hero = mkUnit({
+    id: 'player_hero',
+    name: char.nome,
+    type: 'hero',
+    classe: char.classe,
+    hex,
+    maxHp: char.maxHp || char.hp || cls.dado_vida,
+    ac: char.ac || (10 + dexMod2 + (cls.ca_armor||0)),
+    moveSpeed: cls.dado_vida >= 10 ? 4 : 3,
+    size: '1x1',
+    attrMod: bestMod,
+    attrName: char.classe==='mago' ? 'INT' : char.classe==='arqueiro' ? 'DES' : 'FOR',
+    stats: char.stats || {STR:cls.STR,DEX:cls.DEX,CON:cls.CON,INT:cls.INT,WIS:cls.WIS,CHA:cls.CHA},
+    rangedWeapon: hasRanged ? {name: char.classe==='mago'?'Raio Arcano':'Arco Longo', range: char.classe==='mago'?9:11} : null,
+    sprite: `../sprites/${char.classe}_${char.sexo||'m'}.png`,
+    spriteCostas: `../sprites/${char.classe}_${char.sexo||'m'}_costas.png`,
+    icon: cls.icon,
+    pericias: char.pericias || [],
+    poderes_escolhidos: char.poderes_escolhidos || [],
+  });
+  units.push(hero);
+  const img = new Image(); img.onload=()=>{hero._img=img;render();}; img.src=hero.sprite;
+  const imgC = new Image(); imgC.onload=()=>{hero._imgCostas=imgC;render();}; imgC.src=hero.spriteCostas;
   render();
 }
 
