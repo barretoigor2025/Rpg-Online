@@ -220,6 +220,8 @@ header{
 .espelhado{transform:scaleX(-1)}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
 <body>
 <div id="app">
@@ -334,6 +336,62 @@ header{
 
 <script>
 'use strict';
+
+// ── Firebase ──────────────────────────────────────
+try {
+  firebase.initializeApp({
+    apiKey:'AIzaSyAsn9ZFJP6QWFesfls9anBAJbAqcDMfnqg',
+    authDomain:'rpg-online-ad73f.firebaseapp.com',
+    databaseURL:'https://rpg-online-ad73f-default-rtdb.firebaseio.com',
+    projectId:'rpg-online-ad73f',
+    storageBucket:'rpg-online-ad73f.firebasestorage.app',
+    messagingSenderId:'1031450807961',
+    appId:'1:1031450807961:web:369342194731ad0ae37208'
+  });
+} catch(e) {}
+let _db = null;
+try { _db = firebase.database(); } catch(e) {}
+const _fbRef  = (path) => _db ? _db.ref(path) : null;
+const _fbGet  = (path) => _fbRef(path)?.get();
+const _fbSet  = (path, val) => _fbRef(path)?.set(val);
+const _fbPush = (path, val) => _fbRef(path)?.push(val);
+const _fbUpdate = (path, val) => _fbRef(path)?.update(val);
+
+// ── Session ──────────────────────────────────────
+const _uid = localStorage.getItem('rpg_uid') || (() => {
+  const id = 'orc2_' + Math.random().toString(36).slice(2,10);
+  localStorage.setItem('rpg_uid', id);
+  return id;
+})();
+const _salaId = localStorage.getItem('rpg_sala') || 'oraculo2_demo';
+
+// ── Campaign Data ─────────────────────────────────
+let _campanha = null;
+let _iniData  = []; // inimigos.json array
+
+async function carregarCampanha() {
+  try {
+    const [rC, rI] = await Promise.all([
+      fetch('../campanhas/beast-of-black-keep/campanha.json'),
+      fetch('../campanhas/beast-of-black-keep/inimigos.json'),
+    ]);
+    if (rC.ok) { _campanha = await rC.json(); }
+    if (rI.ok) { _iniData  = await rI.json(); }
+    const titulo = _campanha?.titulo || 'Beast of Black Keep';
+    addLog(`📖 ${titulo}`,'ai');
+    addLog(`${_campanha?.estado_inicial?.localizacao||''} — ${_campanha?.estado_inicial?.momento||''}`,'s');
+  } catch(e) { addLog('⚠ Campanha em modo demo (sem dados da campanha)','s'); }
+}
+
+function buildCampaignContext() {
+  if (!_campanha) return '';
+  const npcs = Object.values(_campanha.npcs||{}).slice(0,8).map(n =>
+    `• ${n.nome} [${n.papel||''}]: ${(n.personalidade||'').slice(0,80)}`
+  ).join('\n');
+  const regras = (_campanha.regras_narracao||[]).slice(0,8).map(r=>'• '+r).join('\n');
+  const parte = _campanha.estrutura?.parte1;
+  return `\n═══ CAMPANHA: "${_campanha.titulo}" ═══\n${_campanha.prompt_sistema||''}\n\nREGRAS DO NARRADOR:\n${regras}\n\nNPCS PRINCIPAIS:\n${npcs}\n\nATO ATUAL — "${parte?.nome||''}": ${parte?.resumo||''}\n`;
+}
 
 // ═══════════════════════════════════════════════
 //  SCENARIOS
@@ -516,31 +574,41 @@ function mkUnit(d) {
 const UDEFS = [
   {id:'hero_arqueiro', name:'Arqueiro', type:'hero', classe:'arqueiro',
    hex:'D08', maxHp:22, ac:14, moveSpeed:5, size:'1x1',
-   attrMod:3, attrName:'DES', rangedWeapon:{name:'Arco Longo',range:11},
+   attrMod:3, attrName:'DES',
+   stats:{STR:10,DEX:16,CON:12,INT:12,WIS:14,CHA:10},
+   rangedWeapon:{name:'Arco Longo',range:11},
    sprite:'../sprites/arqueiro_m.png', spriteCostas:'../sprites/arqueiro_m_costas.png', icon:'🏹'},
   {id:'hero_barbaro', name:'Bárbaro', type:'hero', classe:'barbaro',
    hex:'E07', maxHp:32, ac:13, moveSpeed:4, size:'1x1',
-   attrMod:4, attrName:'FOR', rangedWeapon:null,
+   attrMod:4, attrName:'FOR',
+   stats:{STR:18,DEX:12,CON:16,INT:8,WIS:10,CHA:10},
+   rangedWeapon:null,
    sprite:'../sprites/barbaro_m.png', spriteCostas:'../sprites/barbaro_m_costas.png', icon:'🪓'},
   {id:'hero_mago', name:'Mago', type:'hero', classe:'mago',
    hex:'F08', maxHp:16, ac:11, moveSpeed:3, size:'1x1',
-   attrMod:3, attrName:'INT', rangedWeapon:{name:'Raio Arcano',range:9},
+   attrMod:3, attrName:'INT',
+   stats:{STR:8,DEX:12,CON:10,INT:16,WIS:14,CHA:12},
+   rangedWeapon:{name:'Raio Arcano',range:9},
    sprite:'../sprites/mago.png', spriteCostas:'../sprites/mago_m_costas.png', icon:'🔮'},
   {id:'espa_01', name:'Espantalho I', type:'enemy',
    hex:'E03', maxHp:14, ac:10, moveSpeed:3, size:'1x1',
    attrMod:1, attrName:'FOR',
+   stats:{STR:12,DEX:8,CON:10,INT:2,WIS:6,CHA:4},
    sprite:'../sprites/inimigo_espantalho_assombrado.png', icon:'🌾'},
   {id:'espa_02', name:'Espantalho II', type:'enemy',
    hex:'G03', maxHp:14, ac:10, moveSpeed:3, size:'1x1',
    attrMod:1, attrName:'FOR',
+   stats:{STR:12,DEX:8,CON:10,INT:2,WIS:6,CHA:4},
    sprite:'../sprites/inimigo_espantalho_assombrado.png', icon:'🌾'},
   {id:'barkthresher', name:'Barkthresher', type:'enemy',
    hex:'F05', maxHp:45, ac:14, moveSpeed:2, size:'2x2',
    attrMod:3, attrName:'FOR',
+   stats:{STR:18,DEX:8,CON:16,INT:6,WIS:8,CHA:6},
    sprite:'../sprites/inimigo_barkthresher.png', icon:'🌳'},
   {id:'larva_gigante', name:'Larva Gigante', type:'enemy',
    hex:'H02', maxHp:60, ac:10, moveSpeed:2, size:'3x2',
    attrMod:2, attrName:'FOR',
+   stats:{STR:20,DEX:6,CON:18,INT:1,WIS:7,CHA:4},
    sprite:'../sprites/inimigo_larva_gigante.png', icon:'🐛'},
 ];
 
