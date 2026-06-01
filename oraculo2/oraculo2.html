@@ -1630,8 +1630,33 @@ function doAttack(atk,def) {
 function checkEnd() {
   // Só avalia fim de batalha quando há combate real em curso
   if (phase === 'scene') return;
-  if (!enemies().length) { addLog('🏆 VITÓRIA — todos os inimigos derrotados!','x'); phase='victory'; updateHdr(); }
+  if (!enemies().length) {
+    addLog('🏆 VITÓRIA — todos os inimigos derrotados!','x');
+    phase='victory'; updateHdr();
+    // Após 2,5s retorna à narrativa e chama a IA para continuar a história
+    setTimeout(returnToNarrative, 2500);
+  }
   if (!heroes().length)  { addLog('💀 DERROTA — todos os heróis caíram.','e'); phase='defeat'; updateHdr(); }
+}
+
+async function returnToNarrative() {
+  phase = 'scene';
+  turn++;
+  clearSelection();
+  heroes().forEach(u => { u.hasMoved = false; u.hasActed = false; });
+  updateHdr();
+  render();
+  addLog('— Batalha encerrada. Retornando à história… —','ai');
+  if (!logVisible) toggleLog();
+  await callAI(
+    'O combate terminou com a vitória dos heróis. ' +
+    'Continue a narrativa da campanha: descreva o aftermath da batalha ' +
+    '(o que restou no campo, o que os heróis sentem/percebem, o que mudou no ambiente), ' +
+    'depois retome imediatamente o fio narrativo — o próximo gancho, NPC relevante ou ' +
+    'consequência que avança a história. ' +
+    'Não use TESTAR, ROLAR ou tags de combate. ' +
+    'Se for o momento de avançar para a próxima fase da campanha, use AVANÇAR.'
+  );
 }
 
 // ═══════════════════════════════════════════════
