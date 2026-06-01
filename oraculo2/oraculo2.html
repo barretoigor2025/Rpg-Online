@@ -4031,11 +4031,21 @@ function introComecarJogo() {
   ov.classList.add('fadeout');
   setTimeout(()=>{ ov.style.display='none'; }, 650);
 
-  // Sempre spawnar os inimigos da cena inicial — independente de API key
+  // Spawn inimigos iniciais com quantidade escalada pelo número de heróis
   setTimeout(()=>{
-    spawnUnit('Espantalho I',  'espantalho_assombrado', 'E04', 14, 11, '🌾');
-    spawnUnit('Espantalho II', 'espantalho_assombrado', 'G04', 14, 11, '🌾');
-    spawnUnit('Espantalho III','espantalho_assombrado', 'H05', 14, 11, '🌾');
+    const heroCount = heroes().length || 1;
+    // Pool de hexes no flanco norte da feira (longe dos heróis em row 7-9)
+    const POOL = ['E04','G04','H05','C04','F03','I04','J03','D05','K04'];
+    // Regra de início: 1 jogador → 1 ou 2; 2 → 2 ou 3; 3 → 3 ou 4; 4+ → 3–5
+    let n;
+    if      (heroCount <= 1) n = Math.random() < 0.45 ? 1 : 2;
+    else if (heroCount === 2) n = Math.random() < 0.5  ? 2 : 3;
+    else if (heroCount === 3) n = Math.random() < 0.5  ? 3 : 4;
+    else                      n = 3 + Math.floor(Math.random() * 3);
+
+    const nomes = ['I','II','III','IV','V'];
+    const hexes = [...POOL].sort(()=>Math.random()-.5).slice(0, n);
+    hexes.forEach((hex, i) => spawnUnit(`Espantalho ${nomes[i]}`, 'espantalho_assombrado', hex, 14, 11, '🌾'));
     initHeroFacings();
     render();
 
@@ -4046,14 +4056,15 @@ function introComecarJogo() {
       callAI(
 `Início da campanha "A Fera do Forte Negro".
 O herói é ${nomeHeroi}, um(a) ${clsNome}, na Festa de São Phanourius no mercado de Mhoried.
+Há ${n} espantalho${n>1?'s':''} assombrado${n>1?'s':''} no mapa (${n===1?'apenas um, desprendido das sombras':n<=2?'surgindo das barracas':'invadindo de vários ângulos'}).
 
 Narre em 2 partes (80 palavras total):
 1. Cena de abertura: o mercado festivo animado, a Arbor Aeterna ao fundo, a Duquesa Catherine Laskaris passeando com escolta — tudo parece perfeito.
-2. O ataque: uma criança grita, espantalhos assombrados irrompem das barracas, pânico. Três espantalhos já estão no mapa. Termine com o herói de mãos na arma, aguardando a decisão do jogador.`
+2. O ataque: uma criança grita, espantalhos assombrados irrompem${n===1?' — um ser de palha e sombra avança':' das barracas, pânico'}. Os espantalhos já estão no mapa. Termine com o herói de mãos na arma, aguardando decisão.`
       );
     } else {
       addLog('📖 A Festa de São Phanourius enche Mhoried de música e risos. A Duquesa Catherine passeia sob a Arbor Aeterna, escoltada por guardas discretos.','ai');
-      addLog('De repente uma criança grita — espantalhos assombrados irrompem das barracas com palha e sombra! O pânico toma conta do mercado. Sua mão vai instintivamente à arma.','ai');
+      addLog(`De repente uma criança grita — ${n===1?'um espantalho assombrado avança das sombras':n<=2?'espantalhos assombrados irrompem das barracas':'espantalhos assombrados invadem de todos os lados'}! O pânico toma conta do mercado. Sua mão vai instintivamente à arma.`,'ai');
       addLog('⚔ Clique em Declarar para declarar suas ações!','s');
     }
   }, 800);
