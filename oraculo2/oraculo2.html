@@ -218,6 +218,126 @@ header{
 .dado-hist-vered{font-weight:700;white-space:nowrap;font-size:9px;letter-spacing:.5px}
 .dado-hist-vered.s{color:#7adc7a}.dado-hist-vered.f{color:#e06060}.dado-hist-vered.c{color:#ffd700}.dado-hist-vered.ct{color:#ff4444}.dado-hist-vered.d{color:#ffa040}
 .espelhado{transform:scaleX(-1)}
+
+/* ══ INTRO OVERLAY ══ */
+#intro-overlay{
+  position:fixed;inset:0;z-index:600;
+  background:#08060400;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:opacity .6s ease
+}
+#intro-overlay.fadeout{opacity:0;pointer-events:none}
+
+.intro-screen{
+  position:absolute;inset:0;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px 20px;
+  background:linear-gradient(160deg,#0d0b07 0%,#10100a 60%,#0a0806 100%)
+}
+.intro-screen.active{display:flex}
+
+/* ── Landing ── */
+#isc-landing{gap:18px;text-align:center}
+#isc-landing canvas{position:absolute;inset:0;pointer-events:none;opacity:.7}
+.isc-logo-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;z-index:1}
+.isc-oraculo{
+  font-size:clamp(38px,12vw,72px);font-weight:900;letter-spacing:6px;
+  color:#c8a030;text-shadow:0 0 40px rgba(200,160,48,.35),0 2px 0 rgba(0,0,0,.8);
+  font-family:'Segoe UI',system-ui,sans-serif
+}
+.isc-rpg{font-size:clamp(10px,3vw,16px);letter-spacing:10px;color:#8a7040;text-transform:uppercase;margin-top:-6px}
+.isc-titulo-camp{
+  font-size:clamp(13px,3.5vw,18px);color:#d4b070;font-style:italic;
+  border:1px solid rgba(200,160,48,.2);border-radius:6px;padding:6px 18px;
+  background:rgba(200,160,48,.05);position:relative;z-index:1
+}
+.isc-tagline{font-size:12px;color:#6a5a38;max-width:300px;line-height:1.6;position:relative;z-index:1}
+.isc-btns{display:flex;flex-direction:column;gap:10px;width:100%;max-width:260px;position:relative;z-index:1}
+.isc-btn-primary{
+  background:rgba(200,160,48,.15);border:1px solid rgba(200,160,48,.5);color:#c8a030;
+  border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;
+  transition:background .2s;-webkit-tap-highlight-color:transparent
+}
+.isc-btn-primary:hover{background:rgba(200,160,48,.28)}
+.isc-btn-secondary{
+  background:none;border:1px solid rgba(200,160,48,.18);color:#7a6a40;
+  border-radius:8px;padding:10px;font-size:13px;cursor:pointer;
+  transition:background .2s;-webkit-tap-highlight-color:transparent
+}
+.isc-btn-secondary:hover{background:rgba(200,160,48,.08)}
+
+/* ── Char creation ── */
+#isc-create{gap:12px;max-width:400px;width:100%;overflow-y:auto;padding-bottom:20px}
+.isc-topbar{display:flex;align-items:center;gap:8px;width:100%;margin-bottom:4px}
+.isc-back{background:none;border:none;color:#7a6a40;font-size:20px;cursor:pointer;padding:4px 8px;flex-shrink:0}
+.isc-section-title{font-size:14px;color:#c8a030;font-weight:700;flex:1}
+.isc-field-lbl{font-size:10px;color:#8a7050;text-transform:uppercase;letter-spacing:.8px;align-self:flex-start}
+.isc-nome-input{
+  width:100%;background:#1a1610;border:1px solid rgba(200,160,48,.25);border-radius:6px;
+  color:#e2d5b0;font-size:14px;padding:10px 12px;outline:none;font-family:inherit
+}
+.isc-nome-input:focus{border-color:rgba(200,160,48,.5)}
+.isc-class-grid{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;width:100%
+}
+.isc-class-btn{
+  background:#12100c;border:1px solid rgba(200,160,48,.15);border-radius:7px;
+  padding:10px 4px;cursor:pointer;transition:all .18s;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  -webkit-tap-highlight-color:transparent
+}
+.isc-class-btn:hover{border-color:rgba(200,160,48,.4);background:#1a1810}
+.isc-class-btn.sel{border-color:rgba(200,160,48,.7);background:rgba(200,160,48,.1)}
+.isc-class-icon{font-size:22px}
+.isc-class-name{font-size:9px;color:#9a8860;text-align:center;letter-spacing:.3px}
+.isc-gender-row{display:flex;gap:8px;width:100%}
+.isc-gender-btn{
+  flex:1;padding:8px;background:#12100c;border:1px solid rgba(200,160,48,.15);
+  border-radius:6px;color:#8a7050;cursor:pointer;font-size:13px;
+  transition:all .18s;-webkit-tap-highlight-color:transparent
+}
+.isc-gender-btn.sel{border-color:rgba(200,160,48,.5);background:rgba(200,160,48,.08);color:#c8a030}
+.isc-sprite-preview{
+  width:80px;height:110px;object-fit:cover;object-position:top center;
+  border-radius:8px;border:1px solid rgba(200,160,48,.2);background:#0a0806
+}
+.isc-stats-preview{
+  width:100%;background:#0e0c08;border:1px solid rgba(200,160,48,.15);border-radius:6px;
+  padding:8px 10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px
+}
+.isc-stat-box{display:flex;flex-direction:column;align-items:center;gap:1px}
+.isc-stat-lbl{font-size:8px;color:#7a6a40;letter-spacing:.5px}
+.isc-stat-val{font-size:14px;font-weight:700;color:#c8a030}
+.isc-stat-mod{font-size:9px;color:#8a7a50}
+.isc-create-btn{
+  width:100%;padding:12px;background:rgba(200,160,48,.15);border:1px solid rgba(200,160,48,.5);
+  border-radius:8px;color:#c8a030;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px;
+  -webkit-tap-highlight-color:transparent
+}
+.isc-create-btn:active{background:rgba(200,160,48,.28)}
+
+/* ── Slides ── */
+#isc-slides{gap:0;padding:0;justify-content:stretch}
+.slide-card{
+  display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;
+  flex:1;padding:28px 24px;text-align:center;max-width:420px;margin:auto
+}
+.slide-icon{font-size:52px;filter:drop-shadow(0 0 20px rgba(200,160,48,.3))}
+.slide-progress{font-size:10px;color:#5a4a28;letter-spacing:2px}
+.slide-titulo{font-size:20px;font-weight:700;color:#c8a030;line-height:1.3}
+.slide-texto{font-size:13px;color:#b0a080;line-height:1.7;max-width:340px}
+.slide-nav{display:flex;gap:10px;width:100%;max-width:340px;margin-top:8px}
+.slide-btn-prev{
+  background:none;border:1px solid rgba(200,160,48,.2);color:#7a6a40;
+  border-radius:7px;padding:10px 16px;cursor:pointer;font-size:13px;
+  flex-shrink:0;-webkit-tap-highlight-color:transparent
+}
+.slide-btn-next{
+  flex:1;background:rgba(200,160,48,.12);border:1px solid rgba(200,160,48,.4);
+  color:#c8a030;border-radius:7px;padding:10px;font-size:13px;font-weight:700;
+  cursor:pointer;-webkit-tap-highlight-color:transparent
+}
+.slide-btn-next:hover{background:rgba(200,160,48,.22)}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -296,6 +416,74 @@ header{
 </div>
 
 <div id="tip"></div>
+
+<!-- ══ INTRO OVERLAY ══ -->
+<div id="intro-overlay">
+
+  <!-- Landing screen -->
+  <div id="isc-landing" class="intro-screen active">
+    <canvas id="isc-canvas"></canvas>
+    <div class="isc-logo-wrap">
+      <div class="isc-oraculo">ORÁCULO</div>
+      <div class="isc-rpg">RPG · Tático</div>
+    </div>
+    <div class="isc-titulo-camp" id="isc-camp-titulo">A Fera do Forte Negro</div>
+    <p class="isc-tagline">Mapa tático hexagonal · Narrador IA · Turno por declaração oculta</p>
+    <div class="isc-btns">
+      <button class="isc-btn-primary" onclick="introIrCriar()">⚔ Jogar</button>
+      <button class="isc-btn-secondary" id="isc-btn-retomar" onclick="introRetomar()" style="display:none">▶ Retomar Campanha</button>
+    </div>
+  </div>
+
+  <!-- Character creation screen -->
+  <div id="isc-create" class="intro-screen">
+    <div class="isc-topbar">
+      <button class="isc-back" onclick="introIrLanding()">←</button>
+      <span class="isc-section-title">Criar Aventureiro</span>
+    </div>
+    <span class="isc-field-lbl">Nome</span>
+    <input class="isc-nome-input" id="isc-nome" type="text" placeholder="Nome do personagem" maxlength="24">
+    <span class="isc-field-lbl">Classe</span>
+    <div class="isc-class-grid" id="isc-class-grid">
+      <button class="isc-class-btn sel" data-class="guerreiro" onclick="introSelectClass('guerreiro')"><span class="isc-class-icon">⚔️</span><span class="isc-class-name">Guerreiro</span></button>
+      <button class="isc-class-btn" data-class="mago" onclick="introSelectClass('mago')"><span class="isc-class-icon">🔮</span><span class="isc-class-name">Mago</span></button>
+      <button class="isc-class-btn" data-class="ladino" onclick="introSelectClass('ladino')"><span class="isc-class-icon">🗡️</span><span class="isc-class-name">Ladino</span></button>
+      <button class="isc-class-btn" data-class="clerigo" onclick="introSelectClass('clerigo')"><span class="isc-class-icon">✨</span><span class="isc-class-name">Clérigo</span></button>
+      <button class="isc-class-btn" data-class="barbaro" onclick="introSelectClass('barbaro')"><span class="isc-class-icon">🪓</span><span class="isc-class-name">Bárbaro</span></button>
+      <button class="isc-class-btn" data-class="arqueiro" onclick="introSelectClass('arqueiro')"><span class="isc-class-icon">🏹</span><span class="isc-class-name">Arqueiro</span></button>
+    </div>
+    <span class="isc-field-lbl">Gênero</span>
+    <div class="isc-gender-row">
+      <button class="isc-gender-btn sel" id="isc-g-m" onclick="introSelectGenero('m')">♂ Masculino</button>
+      <button class="isc-gender-btn" id="isc-g-f" onclick="introSelectGenero('f')">♀ Feminino</button>
+    </div>
+    <img id="isc-sprite" class="isc-sprite-preview" src="../sprites/guerreiro_m.png" alt="">
+    <div class="isc-stats-preview" id="isc-stats-prev">
+      <div class="isc-stat-box"><span class="isc-stat-lbl">FOR</span><span class="isc-stat-val" id="isp-STR">16</span><span class="isc-stat-mod" id="isp-STR-m">+3</span></div>
+      <div class="isc-stat-box"><span class="isc-stat-lbl">DES</span><span class="isc-stat-val" id="isp-DEX">14</span><span class="isc-stat-mod" id="isp-DEX-m">+2</span></div>
+      <div class="isc-stat-box"><span class="isc-stat-lbl">CON</span><span class="isc-stat-val" id="isp-CON">15</span><span class="isc-stat-mod" id="isp-CON-m">+2</span></div>
+      <div class="isc-stat-box"><span class="isc-stat-lbl">INT</span><span class="isc-stat-val" id="isp-INT">10</span><span class="isc-stat-mod" id="isp-INT-m">0</span></div>
+      <div class="isc-stat-box"><span class="isc-stat-lbl">SAB</span><span class="isc-stat-val" id="isp-WIS">10</span><span class="isc-stat-mod" id="isp-WIS-m">0</span></div>
+      <div class="isc-stat-box"><span class="isc-stat-lbl">CAR</span><span class="isc-stat-val" id="isp-CHA">10</span><span class="isc-stat-mod" id="isp-CHA-m">0</span></div>
+    </div>
+    <button class="isc-create-btn" onclick="introConfirmarPersonagem()">Criar e Jogar →</button>
+  </div>
+
+  <!-- Intro slides screen -->
+  <div id="isc-slides" class="intro-screen">
+    <div class="slide-card">
+      <div class="slide-progress" id="sl-progress">1 / 3</div>
+      <div class="slide-icon" id="sl-icon">🏰</div>
+      <div class="slide-titulo" id="sl-titulo">O Reino de Mhoried</div>
+      <div class="slide-texto" id="sl-texto">Texto do slide</div>
+      <div class="slide-nav">
+        <button class="slide-btn-prev" id="sl-prev" onclick="introVoltarSlide()">◀</button>
+        <button class="slide-btn-next" id="sl-next" onclick="introAvancarSlide()">Próximo ▶</button>
+      </div>
+    </div>
+  </div>
+
+</div>
 
 <!-- Resolution overlay -->
 <div id="resolving-overlay">
