@@ -74,6 +74,59 @@ header{
 }
 #cmd-send:active{background:#2a2618}
 
+/* ── Action Bar ── */
+#action-bar{
+  flex-shrink:0;background:#09070500;border-top:1px solid rgba(200,160,48,.15);
+  display:none;flex-direction:column
+}
+#action-bar.visible{display:flex}
+.ab-status{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 10px 4px;background:#0c0a07
+}
+.ab-portrait{
+  width:42px;height:54px;object-fit:contain;object-position:top center;
+  border-radius:6px;border:1px solid rgba(200,160,48,.22);
+  background:#070503;image-rendering:auto;flex-shrink:0;
+  filter:drop-shadow(0 2px 8px rgba(0,0,0,.9))
+}
+.ab-info{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
+.ab-uname{font-size:12px;font-weight:700;color:#c8a030;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ab-hp-row{display:flex;align-items:center;gap:5px}
+.ab-hp-bar{flex:1;height:5px;background:rgba(200,160,48,.1);border-radius:3px;overflow:hidden}
+.ab-hp-fill{height:100%;border-radius:3px;transition:width .3s,background .3s}
+.ab-hp-txt{font-size:9px;color:#907060;flex-shrink:0}
+.ab-mov-txt{font-size:9px;color:#6090c0}
+.ab-target{
+  display:none;flex-shrink:0;align-items:center;gap:5px;
+  padding:4px 7px;background:rgba(160,30,20,.1);
+  border:1px solid rgba(180,50,35,.25);border-radius:6px
+}
+.ab-target.show{display:flex}
+.ab-tgt-sprite{width:28px;height:36px;object-fit:contain;object-position:top center;image-rendering:auto}
+.ab-tgt-name{font-size:9px;font-weight:600;color:#e09080;white-space:nowrap}
+.ab-tgt-hp{font-size:8px;color:#907060;margin-top:1px}
+.ab-btns{
+  display:flex;gap:3px;padding:4px 8px;
+  padding-bottom:max(6px,env(safe-area-inset-bottom));
+  background:#0a0806
+}
+.ab-btn{
+  flex:1;background:#13110e;border:1px solid rgba(200,160,48,.15);
+  border-radius:7px;color:#8a7860;font-size:9px;font-weight:700;
+  padding:8px 3px;cursor:pointer;text-align:center;
+  transition:all .15s;-webkit-tap-highlight-color:transparent;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  letter-spacing:.5px;text-transform:uppercase
+}
+.ab-btn-icon{font-size:17px;line-height:1}
+.ab-btn:active{filter:brightness(1.3)}
+.ab-move-on{border-color:rgba(60,130,230,.65)!important;background:rgba(30,90,200,.15)!important;color:#80aadd!important}
+.ab-atk-on{border-color:rgba(200,50,40,.65)!important;background:rgba(170,30,25,.15)!important;color:#e08888!important}
+.ab-act-on{border-color:rgba(200,160,48,.65)!important;background:rgba(200,160,48,.1)!important;color:#c8a030!important}
+.ab-dis{opacity:.28;pointer-events:none}
+.ab-cancel{flex:0 0 44px;border-color:rgba(120,60,45,.3);color:#7a5848}
+
 /* ── Declaration status bar ── */
 #decl-status{
   flex-shrink:0;background:#0f0d09;border-bottom:1px solid rgba(200,160,48,.12);
@@ -546,6 +599,45 @@ header{
   <div id="combat-banner">
     <div class="cbt-title">COMBATE!</div>
     <div class="cbt-sub">Declare sua intenção</div>
+  </div>
+
+  <!-- Action bar: visible when hero selected -->
+  <div id="action-bar">
+    <div class="ab-status">
+      <img class="ab-portrait" id="ab-portrait" src="" alt="">
+      <div class="ab-info">
+        <div class="ab-uname" id="ab-uname">—</div>
+        <div class="ab-hp-row">
+          <div class="ab-hp-bar"><div class="ab-hp-fill" id="ab-hp-fill" style="width:100%"></div></div>
+          <span class="ab-hp-txt" id="ab-hp-txt">—/—</span>
+        </div>
+        <div class="ab-mov-txt" id="ab-mov-txt">🦵 —</div>
+      </div>
+      <div class="ab-target" id="ab-target">
+        <img class="ab-tgt-sprite" id="ab-tgt-sprite" src="" alt="">
+        <div>
+          <div class="ab-tgt-name" id="ab-tgt-name"></div>
+          <div class="ab-tgt-hp" id="ab-tgt-hp"></div>
+        </div>
+      </div>
+    </div>
+    <div class="ab-btns">
+      <button class="ab-btn" id="ab-move" onclick="actionBarMode('move')">
+        <span class="ab-btn-icon">🦶</span>Mover
+      </button>
+      <button class="ab-btn" id="ab-atk" onclick="actionBarMode('attack')">
+        <span class="ab-btn-icon">⚔️</span>Atacar
+      </button>
+      <button class="ab-btn" id="ab-skill" onclick="actionBarMode('skill')">
+        <span class="ab-btn-icon">✨</span>Skill
+      </button>
+      <button class="ab-btn" id="ab-talk" onclick="actionBarMode('talk')">
+        <span class="ab-btn-icon">💬</span>Falar
+      </button>
+      <button class="ab-btn ab-cancel" onclick="clearSelection()">
+        <span class="ab-btn-icon">✕</span>Sair
+      </button>
+    </div>
   </div>
 
   <div id="input-row">
@@ -1767,17 +1859,99 @@ function selectUnit(id) {
     }
     _rangedCache=ra;
   } else _rangedCache=[];
+  _abMode = null;
   activeRanges=new Set(['move','melee']);
   if (u.rangedWeapon) activeRanges.add('ranged');
-  if (u.type==='hero') openActionPopup(u);
-  else document.getElementById('action-popup').style.display='none';
+  document.getElementById('action-popup').style.display='none';
+  updateActionBar();
   render();
 }
 
 function clearSelection() {
   selId=null; activeRanges=new Set(); _moveCache=[]; _meleeCache=[]; _rangedCache=[];
+  _abMode=null;
   document.getElementById('action-popup').style.display='none';
+  updateActionBar();
   render();
+}
+
+// ── Action bar ──────────────────────────────────
+let _abMode = null; // 'move'|'attack'|'skill'|'talk'|null
+
+function updateActionBar() {
+  const u = selId ? units.find(u=>u.id===selId&&u.type==='hero'&&u.alive) : null;
+  const bar = document.getElementById('action-bar');
+  if (!bar) return;
+  if (!u) { bar.classList.remove('visible'); return; }
+  bar.classList.add('visible');
+
+  const p = document.getElementById('ab-portrait');
+  if (p) p.src = u.sprite||'';
+  document.getElementById('ab-uname').textContent = `${u.icon||''} ${u.name}`;
+
+  const pct = Math.max(0,Math.round(u.hp/u.maxHp*100));
+  const fill = document.getElementById('ab-hp-fill');
+  fill.style.width = pct+'%';
+  fill.style.background = pct>60?'linear-gradient(90deg,#1a7030,#28b050)':pct>30?'linear-gradient(90deg,#7a5010,#c08020)':'linear-gradient(90deg,#b02020,#e04040)';
+  document.getElementById('ab-hp-txt').textContent = `${u.hp}/${u.maxHp}`;
+
+  const movLeft = u.hasMoved?0:(u.moveSpeed||4);
+  const movEl = document.getElementById('ab-mov-txt');
+  movEl.textContent = `🦵 ${movLeft} / ${u.moveSpeed||4} hex`;
+  movEl.style.color = movLeft>0?'#6090c0':'#504030';
+
+  const mvBtn = document.getElementById('ab-move');
+  const akBtn = document.getElementById('ab-atk');
+  const skBtn = document.getElementById('ab-skill');
+  if (mvBtn){ mvBtn.classList.toggle('ab-move-on',_abMode==='move'); mvBtn.classList.toggle('ab-dis',!!u.hasMoved); }
+  if (akBtn){ akBtn.classList.toggle('ab-atk-on',_abMode==='attack'); akBtn.classList.toggle('ab-dis',!!u.hasActed); }
+  if (skBtn){ skBtn.classList.toggle('ab-act-on',_abMode==='skill'); skBtn.classList.toggle('ab-dis',!!u.hasActed); }
+}
+
+function abShowTarget(e) {
+  const el = document.getElementById('ab-target');
+  if (!el) return;
+  if (!e) { el.classList.remove('show'); return; }
+  el.classList.add('show');
+  document.getElementById('ab-tgt-name').textContent = `${e.icon||'👾'} ${e.name}`;
+  document.getElementById('ab-tgt-hp').textContent   = `❤️ ${e.hp}/${e.maxHp}PV · CA${e.ac}`;
+  const sp = document.getElementById('ab-tgt-sprite');
+  if (sp) sp.src = e.sprite||'';
+}
+
+function actionBarMode(mode) {
+  const u = selId ? units.find(u=>u.id===selId&&u.type==='hero') : null;
+  if (!u) return;
+
+  // Toggle off
+  if (_abMode === mode) {
+    _abMode = null;
+    activeRanges = new Set(['move','melee']);
+    if (u.rangedWeapon) activeRanges.add('ranged');
+    updateActionBar(); render(); return;
+  }
+
+  _abMode = mode;
+  document.getElementById('action-popup').style.display='none';
+
+  if (mode === 'move') {
+    if (u.hasMoved) { addLog(`${u.name} já se moveu este turno.`,'s'); _abMode=null; updateActionBar(); return; }
+    activeRanges = new Set(['move']);
+  } else if (mode === 'attack') {
+    if (u.hasActed) { addLog(`${u.name} já agiu este turno.`,'s'); _abMode=null; updateActionBar(); return; }
+    activeRanges = new Set(['melee']);
+    if (u.rangedWeapon) activeRanges.add('ranged');
+  } else if (mode === 'skill') {
+    _abMode = null;
+    activeRanges = new Set();
+    openActionPopup(u);
+  } else if (mode === 'talk') {
+    _abMode = null;
+    const inp = document.getElementById('cmd-input');
+    if (inp) { inp.focus(); inp.placeholder = `Fala de ${u.name}...`; }
+  }
+
+  updateActionBar(); render();
 }
 
 function toggleRange(type) {
@@ -2039,15 +2213,42 @@ mapArea.addEventListener('touchend', e=>{
 },{passive:true});
 
 // Click to select
-canvas.addEventListener('click', e=>{
+canvas.addEventListener('click', async e=>{
   if (_justPinched) return;
   const rect=canvas.getBoundingClientRect();
   const px=(e.clientX-rect.left)*MAP_W/rect.width;
   const py=(e.clientY-rect.top)*MAP_H/rect.height;
   const h=pxToHex(px,py);
   const u=getUnitAt(h.col,h.row);
+
+  // MOVER mode: clicar em hex alcançável move o herói
+  if (_abMode==='move' && selId) {
+    const actor=getUnit(selId);
+    if (actor&&!actor.hasMoved) {
+      const dest=_moveCache.find(r=>r.col===h.col&&r.row===h.row);
+      if (dest) {
+        addLog(`${actor.name} → ${hexLbl(h.col,h.row)}`,'h');
+        _abMode=null; activeRanges=new Set(['melee']); if(actor.rangedWeapon) activeRanges.add('ranged');
+        await moveUnitAnimated(actor,h.col,h.row);
+        updateActionBar(); render(); return;
+      }
+    }
+  }
+
+  // ATACAR mode: clicar em inimigo ataca
+  if (_abMode==='attack' && selId) {
+    const actor=getUnit(selId);
+    const target=u&&u.alive&&u.type==='enemy'?u:null;
+    if (actor&&target&&!actor.hasActed) {
+      _abMode=null;
+      doAttack(actor,target); checkEnd(); abShowTarget(null);
+      updateActionBar(); render(); return;
+    }
+  }
+
+  // Comportamento padrão: selecionar/deselecionar
   if (u&&u.alive) { selId===u.id ? clearSelection() : selectUnit(u.id); }
-  else clearSelection();
+  else if (!_abMode) clearSelection();
 });
 
 // Hover tooltip
@@ -2065,6 +2266,9 @@ canvas.addEventListener('mousemove', e=>{
     const cov=getCover(h.col,h.row);
     if (cov!=='none') html+=`<br>Cobertura:${cov==='partial'?'parcial':'total'}`;
     tip.innerHTML=html; tip.style.display='block';
+    // Target preview no action bar quando em modo ATACAR
+    if (_abMode==='attack'&&u&&u.type==='enemy'&&u.alive) abShowTarget(u);
+    else abShowTarget(null);
     render();
   }
   tip.style.left=(e.clientX+14)+'px'; tip.style.top=(e.clientY-8)+'px';
@@ -2072,6 +2276,7 @@ canvas.addEventListener('mousemove', e=>{
 canvas.addEventListener('mouseleave', ()=>{
   hovHex=null;
   document.getElementById('tip').style.display='none';
+  abShowTarget(null);
   render();
 });
 
