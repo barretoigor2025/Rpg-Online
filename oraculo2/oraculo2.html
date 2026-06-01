@@ -282,7 +282,7 @@ header{
 .isc-slot-card.occupied:active{background:rgba(200,160,48,.07)}
 .isc-slot-empty-icon{font-size:26px;color:rgba(200,160,48,.18);line-height:1}
 .isc-slot-empty-lbl{font-size:9px;color:#5a4a28;letter-spacing:1px;text-transform:uppercase;margin-top:6px;text-align:center}
-.isc-slot-sprite{width:54px;height:70px;object-fit:contain;object-position:top center;image-rendering:pixelated;filter:drop-shadow(0 2px 6px rgba(0,0,0,.9))}
+.isc-slot-sprite{width:60px;height:80px;object-fit:contain;object-position:top center;image-rendering:auto;filter:drop-shadow(0 2px 8px rgba(0,0,0,.9))}
 .isc-slot-nome{font-size:11px;font-weight:700;color:#d4c090;text-align:center;word-break:break-word;line-height:1.2}
 .isc-slot-classe{font-size:9px;color:#8aaedd;letter-spacing:.4px;text-align:center}
 .isc-slot-xp{font-size:9px;color:#6a5a40;text-align:center}
@@ -331,32 +331,33 @@ header{
 
 /* ── Preview row: sprite esq + stats dir ── */
 .isc-preview-row{display:flex;gap:10px;width:100%;align-items:flex-start}
-.isc-sprite-col{display:flex;flex-direction:column;align-items:center;gap:7px;flex-shrink:0}
+.isc-sprite-col{flex:0 0 54%;display:flex;flex-direction:column;align-items:center;gap:8px}
 .isc-sprite-large{
-  width:90px;height:122px;object-fit:cover;object-position:top center;
-  border-radius:8px;border:1px solid rgba(200,160,48,.2);background:#0a0806;
-  image-rendering:pixelated
+  width:100%;height:auto;min-height:200px;
+  object-fit:contain;object-position:top center;
+  border-radius:10px;border:1px solid rgba(200,160,48,.2);background:#0a0806;
+  image-rendering:auto;filter:drop-shadow(0 4px 16px rgba(0,0,0,.8))
 }
-.isc-gender-row{display:flex;gap:6px}
+.isc-gender-row{display:flex;gap:6px;width:100%}
 .isc-gender-btn{
-  flex:1;padding:6px 10px;background:#12100c;border:1px solid rgba(200,160,48,.15);
-  border-radius:6px;color:#8a7050;cursor:pointer;font-size:13px;
-  transition:all .18s;-webkit-tap-highlight-color:transparent;white-space:nowrap
+  flex:1;padding:7px 4px;background:#12100c;border:1px solid rgba(200,160,48,.15);
+  border-radius:6px;color:#8a7050;cursor:pointer;font-size:12px;
+  transition:all .18s;-webkit-tap-highlight-color:transparent;text-align:center
 }
 .isc-gender-btn.sel{border-color:rgba(200,160,48,.5);background:rgba(200,160,48,.08);color:#c8a030}
 .isc-stats-col{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}
 .isc-attrs-grid{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:3px;
-  background:#0e0c08;border:1px solid rgba(200,160,48,.15);border-radius:6px;padding:7px 8px
+  display:grid;grid-template-columns:repeat(3,1fr);gap:4px;
+  background:#0e0c08;border:1px solid rgba(200,160,48,.15);border-radius:6px;padding:8px 6px
 }
 .isc-stat-box{display:flex;flex-direction:column;align-items:center;gap:1px}
-.isc-stat-lbl{font-size:7px;color:#7a6a40;letter-spacing:.5px}
-.isc-stat-val{font-size:13px;font-weight:700;color:#c8a030}
-.isc-stat-mod{font-size:9px;color:#8a7a50}
-.isc-derived-row{display:flex;gap:8px;flex-wrap:wrap}
+.isc-stat-lbl{font-size:8px;color:#7a6a40;letter-spacing:.5px}
+.isc-stat-val{font-size:16px;font-weight:700;color:#c8a030;line-height:1}
+.isc-stat-mod{font-size:10px;color:#8a7a50}
+.isc-derived-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
 .isc-derived-item{font-size:11px;color:#d4c090}
 .isc-derived-item strong{color:#c8a030;font-weight:700}
-.isc-saves-row{display:flex;gap:8px;flex-wrap:wrap}
+.isc-saves-row{display:flex;gap:6px;flex-wrap:wrap}
 .isc-save-item{font-size:10px;color:#8a9870}
 .isc-save-item strong{color:#a0b880;font-weight:700}
 .isc-class-feat{
@@ -566,8 +567,8 @@ header{
         <div class="isc-sprite-col">
           <img id="isc-sprite" class="isc-sprite-large" src="../sprites/guerreiro_m.png" alt="">
           <div class="isc-gender-row">
-            <button class="isc-gender-btn sel" id="isc-g-m" onclick="introSelectGenero('m')">♂</button>
-            <button class="isc-gender-btn" id="isc-g-f" onclick="introSelectGenero('f')">♀</button>
+            <button class="isc-gender-btn sel" id="isc-g-m" onclick="introSelectGenero('m')">♂ Masc</button>
+            <button class="isc-gender-btn" id="isc-g-f" onclick="introSelectGenero('f')">♀ Fem</button>
           </div>
           <div class="isc-class-feat" id="isc-class-feat"></div>
         </div>
