@@ -266,79 +266,153 @@ header{
 }
 .isc-btn-secondary:hover{background:rgba(200,160,48,.08)}
 
+/* ── Slots de personagem ── */
+.isc-slots-screen{gap:12px}
+.isc-slots-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:420px}
+.isc-slot-card{
+  background:#12100c;border:1px solid rgba(200,160,48,.18);border-radius:10px;
+  min-height:150px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;cursor:pointer;position:relative;overflow:hidden;
+  padding:12px 8px 10px;transition:border-color .15s,background .15s;
+  -webkit-tap-highlight-color:transparent
+}
+.isc-slot-card.empty{border-style:dashed;border-color:rgba(200,160,48,.12)}
+.isc-slot-card.empty:active{border-color:rgba(200,160,48,.5);background:#1a1810}
+.isc-slot-card.occupied{justify-content:flex-start;gap:4px}
+.isc-slot-card.occupied:active{background:rgba(200,160,48,.07)}
+.isc-slot-empty-icon{font-size:26px;color:rgba(200,160,48,.18);line-height:1}
+.isc-slot-empty-lbl{font-size:9px;color:#5a4a28;letter-spacing:1px;text-transform:uppercase;margin-top:6px;text-align:center}
+.isc-slot-sprite{width:54px;height:70px;object-fit:contain;object-position:top center;image-rendering:pixelated;filter:drop-shadow(0 2px 6px rgba(0,0,0,.9))}
+.isc-slot-nome{font-size:11px;font-weight:700;color:#d4c090;text-align:center;word-break:break-word;line-height:1.2}
+.isc-slot-classe{font-size:9px;color:#8aaedd;letter-spacing:.4px;text-align:center}
+.isc-slot-xp{font-size:9px;color:#6a5a40;text-align:center}
+.isc-slot-retomar{
+  width:100%;margin-top:4px;padding:4px 2px;background:rgba(40,140,70,.15);
+  border:1px solid rgba(60,180,100,.3);color:#7edd98;border-radius:5px;
+  font-size:8px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;
+  -webkit-tap-highlight-color:transparent
+}
+.isc-slot-del{
+  position:absolute;top:5px;right:5px;width:20px;height:20px;
+  background:rgba(100,20,20,.5);border:1px solid rgba(255,80,80,.25);
+  color:rgba(255,100,100,.6);cursor:pointer;border-radius:3px;font-size:11px;
+  display:flex;align-items:center;justify-content:center;z-index:2
+}
+.isc-slot-del:active{background:rgba(180,30,30,.7);color:#fff}
+.isc-slot-bar{position:absolute;bottom:0;left:0;right:0;height:2px;border-radius:0 0 10px 10px}
+
 /* ── Char creation ── */
-#isc-create{gap:12px;max-width:400px;width:100%;overflow-y:auto;padding-bottom:20px}
-.isc-topbar{display:flex;align-items:center;gap:8px;width:100%;margin-bottom:4px}
+#isc-create{justify-content:flex-start;align-items:stretch;padding:0;overflow-y:auto}
+.isc-topbar{display:flex;align-items:center;gap:8px;width:100%;flex-shrink:0;padding:14px 16px 0}
 .isc-back{background:none;border:none;color:#7a6a40;font-size:20px;cursor:pointer;padding:4px 8px;flex-shrink:0}
 .isc-section-title{font-size:14px;color:#c8a030;font-weight:700;flex:1}
-.isc-field-lbl{font-size:10px;color:#8a7050;text-transform:uppercase;letter-spacing:.8px;align-self:flex-start}
+.isc-create-body{
+  display:flex;flex-direction:column;gap:12px;align-items:flex-start;
+  padding:12px 16px 28px;width:100%;max-width:460px;margin:0 auto
+}
+.isc-field-lbl{font-size:10px;color:#8a7050;text-transform:uppercase;letter-spacing:.8px}
+.isc-peric-hint{font-size:9px;color:#6a5838;text-transform:none;letter-spacing:0;margin-left:4px}
 .isc-nome-input{
   width:100%;background:#1a1610;border:1px solid rgba(200,160,48,.25);border-radius:6px;
   color:#e2d5b0;font-size:14px;padding:10px 12px;outline:none;font-family:inherit
 }
 .isc-nome-input:focus{border-color:rgba(200,160,48,.5)}
-.isc-class-grid{
-  display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;width:100%
-}
+.isc-class-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;width:100%}
 .isc-class-btn{
   background:#12100c;border:1px solid rgba(200,160,48,.15);border-radius:7px;
   padding:10px 4px;cursor:pointer;transition:all .18s;
   display:flex;flex-direction:column;align-items:center;gap:4px;
   -webkit-tap-highlight-color:transparent
 }
-.isc-class-btn:hover{border-color:rgba(200,160,48,.4);background:#1a1810}
+.isc-class-btn:active{border-color:rgba(200,160,48,.4);background:#1a1810}
 .isc-class-btn.sel{border-color:rgba(200,160,48,.7);background:rgba(200,160,48,.1)}
 .isc-class-icon{font-size:22px}
 .isc-class-name{font-size:9px;color:#9a8860;text-align:center;letter-spacing:.3px}
-.isc-gender-row{display:flex;gap:8px;width:100%}
+
+/* ── Preview row: sprite esq + stats dir ── */
+.isc-preview-row{display:flex;gap:10px;width:100%;align-items:flex-start}
+.isc-sprite-col{display:flex;flex-direction:column;align-items:center;gap:7px;flex-shrink:0}
+.isc-sprite-large{
+  width:90px;height:122px;object-fit:cover;object-position:top center;
+  border-radius:8px;border:1px solid rgba(200,160,48,.2);background:#0a0806;
+  image-rendering:pixelated
+}
+.isc-gender-row{display:flex;gap:6px}
 .isc-gender-btn{
-  flex:1;padding:8px;background:#12100c;border:1px solid rgba(200,160,48,.15);
+  flex:1;padding:6px 10px;background:#12100c;border:1px solid rgba(200,160,48,.15);
   border-radius:6px;color:#8a7050;cursor:pointer;font-size:13px;
-  transition:all .18s;-webkit-tap-highlight-color:transparent
+  transition:all .18s;-webkit-tap-highlight-color:transparent;white-space:nowrap
 }
 .isc-gender-btn.sel{border-color:rgba(200,160,48,.5);background:rgba(200,160,48,.08);color:#c8a030}
-.isc-sprite-preview{
-  width:80px;height:110px;object-fit:cover;object-position:top center;
-  border-radius:8px;border:1px solid rgba(200,160,48,.2);background:#0a0806
-}
-.isc-stats-preview{
-  width:100%;background:#0e0c08;border:1px solid rgba(200,160,48,.15);border-radius:6px;
-  padding:8px 10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px
+.isc-stats-col{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}
+.isc-attrs-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:3px;
+  background:#0e0c08;border:1px solid rgba(200,160,48,.15);border-radius:6px;padding:7px 8px
 }
 .isc-stat-box{display:flex;flex-direction:column;align-items:center;gap:1px}
-.isc-stat-lbl{font-size:8px;color:#7a6a40;letter-spacing:.5px}
-.isc-stat-val{font-size:14px;font-weight:700;color:#c8a030}
+.isc-stat-lbl{font-size:7px;color:#7a6a40;letter-spacing:.5px}
+.isc-stat-val{font-size:13px;font-weight:700;color:#c8a030}
 .isc-stat-mod{font-size:9px;color:#8a7a50}
+.isc-derived-row{display:flex;gap:8px;flex-wrap:wrap}
+.isc-derived-item{font-size:11px;color:#d4c090}
+.isc-derived-item strong{color:#c8a030;font-weight:700}
+.isc-saves-row{display:flex;gap:8px;flex-wrap:wrap}
+.isc-save-item{font-size:10px;color:#8a9870}
+.isc-save-item strong{color:#a0b880;font-weight:700}
+.isc-class-feat{
+  font-size:9px;color:#a09050;line-height:1.4;margin-top:2px;
+  border-left:2px solid rgba(200,160,48,.3);padding-left:6px;font-style:italic
+}
+
+/* ── Poderes da classe (read-only list) ── */
+.isc-poderes-box{
+  width:100%;background:#0e0c08;border:1px solid rgba(200,160,48,.1);border-radius:6px;padding:8px 10px
+}
+.isc-poderes-title{font-size:8px;color:#7a6a40;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+.isc-poder-row{display:flex;gap:6px;align-items:flex-start;padding:3px 0;border-bottom:1px solid rgba(200,160,48,.05)}
+.isc-poder-row:last-child{border-bottom:none}
+.isc-poder-row-icon{font-size:13px;flex-shrink:0;margin-top:1px}
+.isc-poder-row-nome{font-size:10px;font-weight:600;color:#c8a030}
+.isc-poder-row-desc{font-size:9px;color:#6a5a38;line-height:1.4;margin-top:1px}
+
+/* ── Péricias chips (card style com descrição) ── */
+.isc-adv-grid{display:flex;flex-direction:column;gap:4px;width:100%}
+.isc-adv-chip{
+  background:#12100c;border:1px solid rgba(200,160,48,.12);border-radius:6px;
+  padding:7px 10px;cursor:pointer;transition:all .15s;text-align:left;
+  -webkit-tap-highlight-color:transparent;width:100%
+}
+.isc-adv-chip.sel{border-color:rgba(200,160,48,.6);background:rgba(200,160,48,.1)}
+.isc-adv-chip.disabled{opacity:.28;cursor:default;pointer-events:none}
+.isc-adv-top{display:flex;align-items:center;gap:5px;font-size:11px;color:#9a8860}
+.isc-adv-top strong{color:#d4c090;font-weight:600}
+.isc-adv-chip.sel .isc-adv-top strong{color:#c8a030}
+.isc-chip-attr{font-size:8px;color:#6a5838;background:rgba(200,160,48,.07);border-radius:3px;padding:1px 4px;margin-left:auto;flex-shrink:0}
+.isc-adv-chip.sel .isc-chip-attr{color:#9a8040;background:rgba(200,160,48,.18)}
+.isc-adv-desc{font-size:9px;color:#5a4a30;margin-top:3px;line-height:1.45}
+.isc-adv-chip.sel .isc-adv-desc{color:#7a6a40}
+
+/* ── Grimório (spell chips, card style) ── */
+.isc-spell-section{display:none;flex-direction:column;gap:6px;width:100%}
+.isc-spell-section.visible{display:flex}
+.isc-poder-chip{
+  background:#12100c;border:1px solid rgba(200,160,48,.12);border-radius:6px;
+  padding:8px 10px;cursor:pointer;transition:all .15s;text-align:left;
+  -webkit-tap-highlight-color:transparent;width:100%;display:flex;gap:8px;align-items:flex-start
+}
+.isc-poder-chip.sel{border-color:rgba(200,160,48,.6);background:rgba(200,160,48,.1)}
+.isc-poder-chip-icon{font-size:18px;flex-shrink:0;margin-top:2px}
+.isc-poder-chip-top{font-size:11px;font-weight:600;color:#d4c090}
+.isc-poder-chip.sel .isc-poder-chip-top{color:#c8a030}
+.isc-poder-chip-desc{font-size:9px;color:#5a4a30;margin-top:2px;line-height:1.4}
+.isc-poder-chip.sel .isc-poder-chip-desc{color:#7a6a40}
+
 .isc-create-btn{
   width:100%;padding:12px;background:rgba(200,160,48,.15);border:1px solid rgba(200,160,48,.5);
   border-radius:8px;color:#c8a030;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px;
   -webkit-tap-highlight-color:transparent
 }
 .isc-create-btn:active{background:rgba(200,160,48,.28)}
-
-/* ── Péricias + Spell picker ── */
-.isc-peric-hint{font-size:9px;color:#6a5838;text-transform:none;letter-spacing:0;margin-left:4px}
-.isc-peric-grid{display:flex;flex-wrap:wrap;gap:5px;width:100%}
-.isc-peric-chip{
-  background:#12100c;border:1px solid rgba(200,160,48,.15);border-radius:12px;
-  padding:4px 10px;font-size:10px;color:#8a7050;cursor:pointer;
-  transition:all .15s;-webkit-tap-highlight-color:transparent
-}
-.isc-peric-chip.sel{border-color:rgba(200,160,48,.6);background:rgba(200,160,48,.1);color:#c8a030}
-.isc-peric-chip.disabled{opacity:.32;cursor:default;pointer-events:none}
-.isc-spell-section{display:none;flex-direction:column;gap:6px;width:100%}
-.isc-spell-section.visible{display:flex}
-.isc-spell-grid{display:flex;flex-direction:column;gap:4px;width:100%}
-.isc-spell-chip{
-  background:#12100c;border:1px solid rgba(200,160,48,.15);border-radius:6px;
-  padding:6px 10px;font-size:10px;color:#8a7050;cursor:pointer;
-  transition:all .15s;text-align:left;-webkit-tap-highlight-color:transparent;
-  display:flex;align-items:flex-start;gap:6px;width:100%
-}
-.isc-spell-chip.sel{border-color:rgba(200,160,48,.6);background:rgba(200,160,48,.1);color:#c8a030}
-.spell-icon{font-size:14px;flex-shrink:0;margin-top:1px}
-.spell-name{font-weight:600;font-size:10px}
-.spell-desc{font-size:9px;color:#5a4a30;margin-top:1px;line-height:1.4}
 
 /* ── Slides ── */
 #isc-slides{gap:0;padding:0;justify-content:stretch}
