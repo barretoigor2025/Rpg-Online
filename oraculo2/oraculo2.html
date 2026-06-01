@@ -764,11 +764,13 @@ header{
 <!-- Attack modal -->
 <div id="attack-modal" class="action-modal">
   <div class="am-card">
-    <div class="am-title">⚔ Escolha o Ataque</div>
+    <div class="am-title" id="am-title">⚔ Escolha o Ataque</div>
     <div class="am-sec-title">Habilidade</div>
     <div class="am-sk-grid" id="am-skills"></div>
-    <div class="am-sec-title">Alvo</div>
-    <div class="am-tgt-list" id="am-targets"></div>
+    <div id="am-target-section">
+      <div class="am-sec-title">Alvo</div>
+      <div class="am-tgt-list" id="am-targets"></div>
+    </div>
     <div class="am-preview" id="am-preview">Selecione habilidade e alvo</div>
     <div class="am-roll" id="am-roll"></div>
     <div class="am-btns">
@@ -2187,7 +2189,7 @@ function actionBarMode(mode) {
   } else if (mode === 'skill') {
     _abMode = null;
     activeRanges = new Set();
-    openActionPopup(u);
+    openAttackModal(u); // reusa o modal centralizado com suporte a skills pessoais
   } else if (mode === 'talk') {
     _abMode = null;
     const inp = document.getElementById('cmd-input');
@@ -2334,9 +2336,12 @@ function openAttackModal(actor) {
     }).join('');
   }
 
-  document.getElementById('am-preview').textContent = 'Selecione habilidade e alvo';
+  document.getElementById('am-preview').textContent = 'Selecione uma habilidade';
   document.getElementById('am-roll').textContent = '';
   document.getElementById('am-confirm').disabled = true;
+  document.getElementById('am-confirm').textContent = '⚔ Atacar!';
+  document.getElementById('am-title').textContent = '⚔ Escolha o Ataque';
+  document.getElementById('am-target-section').style.display = '';
   document.getElementById('attack-modal').classList.add('show');
 }
 
@@ -2346,6 +2351,24 @@ function atkSelectSkill(btn, idx) {
   const skList = SKILLS[_atkActor.classe] || [];
   const activeSkills = skList.filter(sk => sk.type !== 'passive');
   _atkSelSkill = activeSkills.length ? activeSkills[idx] : { nome:'Ataque Básico', icon:'⚔️', type:'melee', dmg:'1d6+2' };
+
+  const isSelf = _atkSelSkill.type === 'self';
+  const targetSection = document.getElementById('am-target-section');
+  const titleEl = document.getElementById('am-title');
+  const confirmBtn = document.getElementById('am-confirm');
+
+  if (isSelf) {
+    targetSection.style.display = 'none';
+    titleEl.textContent = '✨ Usar Habilidade';
+    _atkSelTarget = _atkActor;
+    confirmBtn.textContent = '✨ Usar!';
+  } else {
+    targetSection.style.display = '';
+    titleEl.textContent = '⚔ Escolha o Ataque';
+    if (_atkSelTarget === _atkActor) { _atkSelTarget = null; }
+    confirmBtn.textContent = '⚔ Atacar!';
+    document.querySelectorAll('#am-targets .am-tgt-card').forEach(b => b.classList.remove('sel'));
+  }
   updateAtkPreview();
 }
 
@@ -2359,36 +2382,81 @@ function atkSelectTarget(btn, eid) {
 function updateAtkPreview() {
   const pre = document.getElementById('am-preview');
   const btn = document.getElementById('am-confirm');
-  if (!_atkSelSkill || !_atkSelTarget) {
+  if (!_atkSelSkill) {
+    pre.textContent = 'Selecione uma habilidade';
+    btn.disabled = true;
+    return;
+  }
+  const isSelf = _atkSelSkill.type === 'self';
+  if (!isSelf && !_atkSelTarget) {
     pre.textContent = 'Selecione habilidade e alvo';
     btn.disabled = true;
     return;
   }
-  const atqBonus = (_atkActor.attrMod !== undefined ? _atkActor.attrMod + 2 : 3);
-  const modStr = (atqBonus >= 0 ? '+' : '') + atqBonus;
   const cost = _atkSelSkill.sp ?? 0;
   const canAfford = (_atkActor.sp ?? 99) >= cost;
   const isMana = _atkActor.spType === 'mana';
   const spLabel = cost > 0 ? ` · ${isMana?'🔵':'💪'} ${cost} ${isMana?'mana':'estamina'}` : '';
-  pre.textContent = `${_atkSelSkill.icon||'⚔'} ${_atkSelSkill.nome||_atkSelSkill.name} → ${_atkSelTarget.icon||'👾'} ${_atkSelTarget.name} · d20${modStr} vs CA${_atkSelTarget.ac}${spLabel}`;
+  if (isSelf) {
+    pre.textContent = `${_atkSelSkill.icon||'✨'} ${_atkSelSkill.nome||_atkSelSkill.name} — ${_atkSelSkill.dmg||'efeito próprio'}${spLabel}`;
+  } else {
+    const atqBonus = (_atkActor.attrMod !== undefined ? _atkActor.attrMod + 2 : 3);
+    const modStr = (atqBonus >= 0 ? '+' : '') + atqBonus;
+    pre.textContent = `${_atkSelSkill.icon||'⚔'} ${_atkSelSkill.nome||_atkSelSkill.name} → ${_atkSelTarget.icon||'👾'} ${_atkSelTarget.name} · d20${modStr} vs CA${_atkSelTarget.ac}${spLabel}`;
+  }
   btn.disabled = !canAfford;
   btn.title = canAfford ? '' : `SP insuficiente (precisa ${cost}, tem ${_atkActor.sp??0})`;
 }
 
 function closeAttackModal() {
   document.getElementById('attack-modal').classList.remove('show');
+  document.getElementById('am-target-section').style.display = '';
   _atkActor = null; _atkSelSkill = null; _atkSelTarget = null;
 }
 
 function confirmAttackModal() {
-  if (!_atkActor || !_atkSelTarget) return;
+  if (!_atkActor || !_atkSelSkill) return;
   const actor = _atkActor;
-  const target = _atkSelTarget;
   const skill = _atkSelSkill;
+  const isSelf = skill.type === 'self';
+  if (!isSelf && !_atkSelTarget) return;
+  const target = _atkSelTarget;
   closeAttackModal();
-  doAttackWithSkill(actor, target, skill);
-  checkEnd();
+  if (isSelf) {
+    doSelfSkill(actor, skill);
+  } else {
+    doAttackWithSkill(actor, target, skill);
+    checkEnd();
+  }
   updateActionBar(); render();
+}
+
+function doSelfSkill(actor, skill) {
+  const spCost = skill.sp ?? 0;
+  if (spCost > 0) {
+    if ((actor.sp ?? 99) < spCost) {
+      addLog(`${actor.name} não tem ${actor.spType==='mana'?'mana':'estamina'} suficiente! (precisa ${spCost}, tem ${actor.sp??0})`, 'e');
+      return;
+    }
+    actor.sp = Math.max(0, (actor.sp ?? 0) - spCost);
+    addLog(`${actor.name} gasta ${spCost} ${actor.spType==='mana'?'mana':'estamina'} (restam ${actor.sp}).`, 'm');
+  }
+  const skName = skill.nome || skill.name || 'Habilidade';
+  const effect = skill.dmg || 'efeito aplicado';
+
+  // Apply common self-skill effects
+  if (skName === 'Segundo Fôlego' || skName === 'Curar Ferimentos') {
+    const healed = rollNotacao(skill.dmg || '1d8+3').total;
+    actor.hp = Math.min(actor.maxHp, actor.hp + healed);
+    addLog(`${actor.name} usa ${skill.icon} ${skName} — recupera ${healed} PV (${actor.hp}/${actor.maxHp}).`, 'n');
+  } else if (skName === 'Fúria') {
+    actor._furiaTurns = 2;
+    actor.hp = Math.min(actor.maxHp, actor.hp + 4);
+    addLog(`${actor.name} entra em ${skill.icon} Fúria! +2 dano, +4 PV temporários por 2 turnos.`, 'x');
+  } else {
+    addLog(`${actor.name} usa ${skill.icon} ${skName} — ${effect}.`, 'n');
+  }
+  actor.hasActed = true;
 }
 
 function doAttackWithSkill(atk, def, skill) {
