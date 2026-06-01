@@ -646,6 +646,206 @@ function preloadSprites() {
 }
 preloadSprites();
 
+// ── Attribute helpers ─────────────────────────────
+function getAttrMod(unit, attr) {
+  const s = unit?.stats||{};
+  const map = {FOR:'STR',STR:'STR',DES:'DEX',DEX:'DEX',CON:'CON',INT:'INT',SAB:'WIS',WIS:'WIS',CAR:'CHA',CHA:'CHA',FORT:'CON',REF:'DEX',VON:'WIS'};
+  const val = s[map[attr.toUpperCase()]||attr.toUpperCase()] ?? 10;
+  return Math.floor((val-10)/2);
+}
+
+function getInimigo(nome) {
+  if (!nome) return null;
+  const lo = nome.toLowerCase();
+  // First check _iniData (loaded from JSON)
+  const fromJson = _iniData.find(i => lo.includes((i.nome||'').toLowerCase()) || (i.nome||'').toLowerCase().includes(lo));
+  if (fromJson) return fromJson;
+  // Fallback: unit in scene
+  return units.find(u => lo.includes(u.name.toLowerCase()) || u.name.toLowerCase().includes(lo)) || null;
+}
+
+function getIniMod(nome, attr) {
+  const ini = getInimigo(nome);
+  if (ini?.stats_dnd) {
+    const map = {FOR:'FOR',STR:'FOR',DES:'DES',DEX:'DES',CON:'CON',INT:'INT',SAB:'SAB',WIS:'SAB',CAR:'CAR',CHA:'CAR',FORT:'CON',REF:'DES',VON:'SAB'};
+    const val = ini.stats_dnd[map[attr.toUpperCase()]||'FOR'] ?? 10;
+    return Math.floor((val-10)/2);
+  }
+  const u = units.find(u=>u.name===nome||u.id===nome);
+  return u?.attrMod||0;
+}
+
+// ── Dice rolling ──────────────────────────────────
+function rollDado(notacao) {
+  const m = notacao.replace(/\s/g,'').match(/^(\d*)d(\d+)([+-]\d+)?/i);
+  if (!m) return 1;
+  const n=parseInt(m[1])||1, s=parseInt(m[2]), b=parseInt(m[3]||0);
+  let t=b; for (let i=0;i<n;i++) t+=Math.floor(Math.random()*s)+1;
+  return Math.max(1,t);
+}
+
+function extrairTestes(txt) {
+  const r=[], re=/^\s*TESTAR:\s*\[([^\|]+)\|([^\|]+)\|([^\|]+)\|(\d+)(?:\|([^\]]+))?\]/gim;
+  let m;
+  while ((m=re.exec(txt))!==null)
+    r.push({nomeJog:m[1].trim(),acao:m[2].trim(),attr:m[3].trim().toUpperCase(),dc:parseInt(m[4]),alvo:m[5]?.trim()||''});
+  return r;
+}
+
+function extrairRoles(txt) {
+  const r=[], re=/^\s*ROLAR:\s*\[([^\|]+)\|([^\|]+)\|([^\|]+)(?:\|([^\]]+))?\]/gim;
+  let m;
+  while ((m=re.exec(txt))!==null)
+    r.push({nomeJog:m[1].trim(),acao:m[2].trim(),notacao:m[3].trim(),alvo:m[4]?.trim()||''});
+  return r;
+}
+
+function extrairFalas(txt) {
+  const r=[], re=/^\s*FALA:\s*\[([^\|]+)\|"([^"]+)"\]/gim;
+  let m;
+  while ((m=re.exec(txt))!==null) r.push({nome:m[1].trim(),texto:m[2].trim()});
+  return r;
+}
+
+function iniciarTestes(testes, roles, afterCb) {
+  if (!testes.length && !roles.length) { afterCb([]); return; }
+
+  const testeRes = testes.map((t,ti) => {
+    const hero = units.find(u=>u.name===t.nomeJog||u.id===t.nomeJog);
+    const isHero = hero?.type==='hero';
+    const mod = isHero ? getAttrMod(hero, t.attr) : getIniMod(t.nomeJog, t.attr);
+    const d20 = Math.floor(Math.random()*20)+1;
+    const total = d20+mod;
+    const critico=d20===20, catastrofe=d20===1;
+    const sucesso = critico?true:catastrofe?false:total>=t.dc;
+    const modStr = mod>=0?`+${mod}`:`${mod}`;
+    return {tipo:'testar',idx:ti,...t,mod,d20,total,sucesso,critico,catastrofe,modStr,label:t.acao};
+  });
+
+  const rolarRes = roles.map(r => {
+    const m2=r.notacao.replace(/\s/g,'').match(/^(\d*)d(\d+)/i);
+    const lados=m2?parseInt(m2[2]):20;
+    const resultado=rollDado(r.notacao);
+    const pi=testeRes.slice().reverse().findIndex(t=>t.nomeJog===r.nomeJog&&t.alvo);
+    const condicionalDe=pi>=0?(testeRes.length-1-pi):undefined;
+    return {tipo:'rolar',...r,resultado,dados:lados,condicionalDe};
+  });
+
+  const playlist=[]; const usados=new Set();
+  testeRes.forEach((t,ti)=>{
+    playlist.push(t);
+    rolarRes.forEach((r,ri)=>{if(!usados.has(ri)&&r.condicionalDe===ti){playlist.push(r);usados.add(ri);}});
+  });
+  rolarRes.forEach((r,ri)=>{if(!usados.has(ri))playlist.push(r);});
+
+  DiceOverlay.mostrar(playlist, () => {
+    // Apply damage automatically
+    testeRes.forEach((t,ti)=>{
+      if (t.sucesso && t.alvo) {
+        const danos=rolarRes.filter(r=>r.condicionalDe===ti);
+        let dmg=danos.reduce((s,r)=>s+r.resultado,0);
+        if (t.critico) dmg*=2;
+        if (dmg>0) {
+          const target=findAnyUnitByText(t.alvo);
+          if (target) { target.hp=Math.max(0,target.hp-dmg); if(target.hp<=0){target.alive=false;checkEnd();} render(); }
+        }
+      }
+    });
+    afterCb(testeRes);
+  });
+}
+
+function parseStatsTag(text) {
+  const re=/\[(INIMIGO|HP|MATAR|JOGADOR|XP|LESAO|TITULO|POSSE|EQUIPAR|ITEM_BAG|AUSENTE|PRESENTE|REPUTACAO):([^\]]+)\]/gi;
+  let m;
+  while ((m=re.exec(text))!==null) {
+    const cmd=m[1].toUpperCase(), p=m[2].split(':').map(s=>s.trim());
+    if (cmd==='MATAR') {
+      const u=findAnyUnitByText(p[0]);
+      if (u) { u.hp=0; u.alive=false; addLog(`💀 ${u.name} foi derrotado!`,'e'); checkEnd(); render(); }
+    } else if (cmd==='HP') {
+      const u=findAnyUnitByText(p[0]);
+      if (u&&p[1]) { u.hp=Math.max(0,Math.min(u.maxHp,parseInt(p[1]))); if(u.hp<=0){u.alive=false;checkEnd();} render(); }
+    } else if (cmd==='INIMIGO') {
+      // INIMIGO:nome:hp:hpMax:icon — update hp
+      const u=findAnyUnitByText(p[0]);
+      if (u&&p[1]) { u.hp=Math.max(0,parseInt(p[1])); if(u.hp<=0){u.alive=false;checkEnd();} render(); }
+    } else if (cmd==='JOGADOR') {
+      const u=findAnyUnitByText(p[0]);
+      if (u&&p[1]) { u.hp=Math.max(0,Math.min(u.maxHp,parseInt(p[1]))); if(u.hp<=0){u.alive=false;checkEnd();} render(); }
+    } else if (cmd==='XP') {
+      addLog(`⭐ ${p[0]} ganhou ${p[1]||0} XP`,'x');
+    } else if (cmd==='LESAO') {
+      addLog(`🩸 LESÃO — ${p[0]}: ${p.slice(1).join(':')}`,'e');
+    } else if (cmd==='TITULO') {
+      addLog(`🏅 ${p[0]} recebeu o título: ${p.slice(1).join(':')}`,'x');
+    }
+  }
+}
+
+function processNarrativeAndTags(text) {
+  const lines = text.split('\n');
+  const narrative=[], tags=[], falas=[];
+
+  for (const ln of lines) {
+    const t = ln.trim();
+    if (!t) continue;
+    if (/^(MOVER|ATACAR|CENA|STAT):/i.test(t)) { tags.push(t); continue; }
+    if (/^STATS?:\s*\[/i.test(t))               { tags.push(t); continue; }
+    if (/^FALA:\s*\[/i.test(t))                 { falas.push(t); continue; }
+    if (/^AVANÇAR\s*$/i.test(t)||/^FECHAR_ATO:/i.test(t)) continue;
+    narrative.push(t);
+  }
+
+  if (narrative.length) {
+    addLog('📖 '+narrative.join(' '),'ai');
+    if (!logVisible) toggleLog();
+  }
+
+  // Save to Firebase historia
+  if (_db && narrative.length) {
+    _fbPush(`salas/${_salaId}/historia`, {role:'assistant', content:narrative.join('\n'), ts:Date.now()}).catch(()=>{});
+  }
+
+  // FALA bubbles
+  falas.forEach(f=>{
+    const m=f.match(/^FALA:\s*\[([^\|]+)\|"([^"]+)"\]/i);
+    if (m) addLog(`💬 ${m[1].trim()}: "${m[2].trim()}"`,'n');
+  });
+
+  // Execute action tags
+  for (const tag of tags) {
+    // MOVER:[Name|Hex]
+    const mv=tag.match(/^MOVER:\[([^\|]+)\|([^\]]+)\]/i);
+    if (mv) {
+      const u=findAnyUnitByText(mv[1].trim()), dest=parseHex(mv[2].trim());
+      if (u&&dest&&dest.col>=0&&dest.col<COLS&&dest.row>=0&&dest.row<ROWS) {
+        addLog(`→ ${u.name} move para ${mv[2].trim().toUpperCase()}`,'m');
+        moveUnit(u,dest.col,dest.row); render();
+      }
+      continue;
+    }
+    // ATACAR:[Att|Def]
+    const atk=tag.match(/^ATACAR:\[([^\|]+)\|([^\]]+)\]/i);
+    if (atk) {
+      const a=findAnyUnitByText(atk[1].trim()), d=findAnyUnitByText(atk[2].trim());
+      if (a&&d&&a.alive&&d.alive) { doAttack(a,d); checkEnd(); render(); }
+      continue;
+    }
+    // STATS / STAT tags
+    if (/^STATS?:/i.test(tag)) { parseStatsTag(tag); continue; }
+    // CENA
+    const ce=tag.match(/^CENA:\[?([^\]\|]+)\]?/i);
+    if (ce&&SCENARIOS[ce[1].trim()]) { loadScenario(ce[1].trim()); continue; }
+    // Legacy STAT:[name|hp:X]
+    const st=tag.match(/^STAT:\[([^\|]+)\|hp:(\d+)\]/i);
+    if (st) {
+      const u=findAnyUnitByText(st[1].trim());
+      if (u) { u.hp=Math.max(0,Math.min(u.maxHp,parseInt(st[2]))); if(u.hp<=0){u.alive=false;checkEnd();} render(); }
+    }
+  }
+}
+
 // ═══════════════════════════════════════════════
 //  HELPERS
 // ═══════════════════════════════════════════════
@@ -1465,28 +1665,69 @@ const GROQ_MODEL = 'llama-3.3-70b-versatile';
 let _callingAI   = false;
 
 function buildSystemPrompt() {
-  const sc=SCENARIOS[currentScenario];
-  const heroList=heroes().map(u=>`${u.name} (${u.classe}) em ${hexLbl(u.col,u.row)}: ${u.hp}/${u.maxHp} PV, CA ${u.ac}`).join('; ');
-  const enemList=enemies().map(u=>`${u.name} em ${hexLbl(u.col,u.row)}: ${u.hp}/${u.maxHp} PV, CA ${u.ac}`).join('; ');
-  return `Você é o Mestre do Dungeon do Oráculo RPG — narrador dramático e imersivo de batalha tática hexagonal.
-Cenário: ${sc.name}. ${sc.desc}
-Turno: ${turn}.
-Heróis: ${heroList||'nenhum'}.
-Inimigos: ${enemList||'nenhum'}.
-Grade: ${COLS} colunas (${CL[0]}–${CL[COLS-1]}) × ${ROWS} linhas. Hexes flat-top.
+  const sc = SCENARIOS[currentScenario];
+  const campCtx = buildCampaignContext();
 
-Responda em português, máximo 100 palavras, sem markdown. Tags opcionais no final (uma por linha):
-MOVER:[NomeUnidade|ColRow]  ATACAR:[Atacante|Alvo]  CENA:[scenario_id]  STAT:[nome|hp:X]`;
+  const heroLines = heroes().map(u => {
+    const s = u.stats||{};
+    return `${u.icon} ${u.name} (${u.classe}) — hex:${hexLbl(u.col,u.row)}, PV:${u.hp}/${u.maxHp}, CA:${u.ac} | FOR:${s.STR||10} DES:${s.DEX||10} CON:${s.CON||10} INT:${s.INT||10} SAB:${s.WIS||10} CAR:${s.CHA||10}`;
+  }).join('\n');
+
+  const enemLines = enemies().map(u => {
+    const ini = getInimigo(u.name);
+    let line = `${u.icon} ${u.name} — hex:${hexLbl(u.col,u.row)}, PV:${u.hp}/${u.maxHp}, CA:${u.ac}`;
+    if (ini?.comportamento) line += ` | ${ini.comportamento.toUpperCase()}`;
+    if (ini?.pode_dialogar) line += ` | PODE NEGOCIAR`;
+    if (ini?.fraqueza_social) line += ` | fraqueza: ${ini.fraqueza_social}`;
+    if (ini?.ataques_principais?.length) line += `\n  → Ataques: ${ini.ataques_principais.join(' / ')}`;
+    if (ini?.poderes_especiais?.length) line += `\n  → Poderes: ${ini.poderes_especiais.join('; ')}`;
+    return line;
+  }).join('\n');
+
+  const temCombate = enemies().length > 0;
+
+  return `Você é o Narrador. Escreva em português do Brasil com drama, impacto e tom de folclore sombrio. Seja DIRETO — cada palavra conta.
+${campCtx}
+CENÁRIO TÁTICO: ${sc.name} — ${sc.desc}
+Turno: ${turn}. Mapa hex ${COLS}×${ROWS} (colunas ${CL[0]}–${CL[COLS-1]}, linhas 01–${String(ROWS).padStart(2,'0')}).
+
+HERÓIS NO MAPA:
+${heroLines||'  nenhum'}
+
+${temCombate?`INIMIGOS EM CENA:\n${enemLines}`:'EXPLORAÇÃO — sem inimigos em cena.'}
+
+MECÂNICAS:
+- Quando ação for arriscada/combate: use TESTAR PRIMEIRO (antes de narrar o resultado):
+  TESTAR: [NomeExato|ação curta|Atributo|CD|Alvo?]
+  Atributos: FOR DES CON INT SAB CAR FORT REF VON. CD: fácil=8 médio=12 difícil=15 heróico=22
+- Para dano após TESTAR com alvo: ROLAR: [NomeExato|dano|1d6+2|Alvo]
+- Diálogo NPC: FALA: [NomeNPC|"frase completa"]
+- Mover no mapa: MOVER:[Unidade|Hex]  ex: MOVER:[Bárbaro|F06]
+- Stats/dano: STATS: [HP:nome:novoHp] [MATAR:nome] [JOGADOR:nome:novoHp] [XP:nome:pts] [LESAO:nome:desc]
+- Avançar cena: AVANÇAR (sozinho na última linha, quando não há decisão pendente)
+${temCombate?'- NUNCA descreva impacto antes dos dados. Primeiro TESTAR/ROLAR, depois narração do resultado.\n- Inimigos REAGEM imediatamente após ação dos heróis — use comportamento e motivação de cada criatura.':''}
+- Nunca mencione dados, modificadores ou CDs no texto.
+- Sem markdown. Fale português dramático e direto.`;
 }
 
 function buildResolutionPrompt() {
+  // Build the same rich context as buildSystemPrompt, then add declarations
   const sc = SCENARIOS[currentScenario];
-  const heroLines = heroes().map(u =>
-    `  ${u.name} (${u.classe}): hex ${hexLbl(u.col,u.row)}, ${u.hp}/${u.maxHp} PV, CA ${u.ac}`
-  ).join('\n');
-  const enemLines = enemies().map(u =>
-    `  ${u.name}: hex ${hexLbl(u.col,u.row)}, ${u.hp}/${u.maxHp} PV, CA ${u.ac}`
-  ).join('\n');
+  const campCtx = buildCampaignContext();
+
+  const heroLines = heroes().map(u => {
+    const s = u.stats||{};
+    return `${u.icon} ${u.name} (${u.classe}) — hex:${hexLbl(u.col,u.row)}, PV:${u.hp}/${u.maxHp}, CA:${u.ac} | FOR:${s.STR||10} DES:${s.DEX||10} CON:${s.CON||10} INT:${s.INT||10} SAB:${s.WIS||10} CAR:${s.CHA||10}`;
+  }).join('\n');
+
+  const enemLines = enemies().map(u => {
+    const ini = getInimigo(u.name);
+    let line = `${u.icon} ${u.name} — hex:${hexLbl(u.col,u.row)}, PV:${u.hp}/${u.maxHp}, CA:${u.ac}`;
+    if (ini?.comportamento) line += ` | ${ini.comportamento.toUpperCase()}`;
+    if (ini?.ataques_principais?.length) line += ` | Ataques: ${ini.ataques_principais.join(' / ')}`;
+    return line;
+  }).join('\n');
+
   const declLines = _declHeroQueue.map(heroId => {
     const u = units.find(u=>u.id===heroId);
     const d = declarations[heroId]||{};
@@ -1497,30 +1738,27 @@ function buildResolutionPrompt() {
     return s;
   }).join('\n');
 
-  return `Você é o Mestre do Dungeon do Oráculo RPG. Resolva um turno completo de batalha como CENA SIMULTÂNEA.
+  return `Você é o Narrador. Escreva em português do Brasil com drama e tom de folclore sombrio.
+${campCtx}
+CENÁRIO TÁTICO: ${sc.name} — ${sc.desc}
+Turno: ${turn}. Mapa hex ${COLS}×${ROWS} (colunas ${CL[0]}–${CL[COLS-1]}).
 
-CENÁRIO: ${sc.name} — ${sc.desc}
-Turno: ${turn}. Grade: ${COLS}×${ROWS} hexes flat-top (colunas ${CL[0]}–${CL[COLS-1]}, linhas 01–${String(ROWS).padStart(2,'0')}).
-
-ESTADO DO CAMPO:
-Heróis:
+HERÓIS:
 ${heroLines||'  nenhum'}
-Inimigos:
+INIMIGOS:
 ${enemLines||'  nenhum'}
 
-INTENÇÕES DECLARADAS (simultâneas — jogadores NÃO sabiam das intenções uns dos outros):
+═══ MODO RESOLUÇÃO SIMULTÂNEA ═══
+Intenções declaradas pelos jogadores (simultâneas — eles NÃO sabiam das intenções uns dos outros):
 ${declLines}
 
 COMO RESOLVER:
-1. Leia TODAS as intenções em conjunto. Detecte conflitos, bloqueios de linha de visão, sobreposição de área, ações que se cancelam.
-2. Decida o que REALMENTE acontece — adapte intenções por força maior (ex: Bárbaro entrou na LoS do Mago, Bola de Fogo cancelada; inimigo já morreu antes do Arqueiro atirar).
-3. Inimigos também agem na mesma cena — mova e ataque com base em seus alvos mais próximos e comportamento.
-4. Narre em até 150 palavras, em português, de forma cinematográfica e dramática. Sem markdown.
-5. Após a narrativa, emita tags (uma por linha) para TODOS os movimentos e ataques — heróis e inimigos:
-   MOVER:[NomeUnidade|ColRow]   → mover para hex (ex: MOVER:[Bárbaro|F06])
-   ATACAR:[Atacante|Alvo]       → resolver ataque com rolagem
-   STAT:[nome|hp:X]             → ajuste direto de HP se necessário
-6. Primeiro emita todos os MOVERs (posições finais), depois os ATACARs.`;
+1. Leia TODAS as intenções juntas. Detecte conflitos, LoS bloqueada, área de efeito, ações que se cancelam.
+2. Adapte quando necessário — se Bárbaro entrou na LoS do Mago, Bola de Fogo pode ser cancelada.
+3. Inimigos agem na mesma cena — reagem conforme comportamento e ameaça.
+4. Narre o que REALMENTE aconteceu em até 150 palavras, cinematograficamente. Sem markdown.
+5. Use TESTAR/ROLAR para todos os ataques (obrigatório em combate).
+6. Emita MOVERs primeiro (posições finais), depois ATACARs, depois STATS.`;
 }
 
 async function callAI(userMsg, resolutionMode=false) {
@@ -1557,51 +1795,19 @@ async function callAI(userMsg, resolutionMode=false) {
 }
 
 function parseAIResponse(text) {
-  // Split into narrative and tags
-  const lines=text.split('\n');
-  const narrative=[], tags=[];
-  for (const ln of lines) {
-    const t=ln.trim();
-    if (/^(MOVER|ATACAR|CENA|STAT):/i.test(t)) tags.push(t);
-    else if (t) narrative.push(t);
-  }
-  if (narrative.length) {
-    addLog('📖 '+narrative.join(' '),'ai');
-    if (!logVisible) toggleLog();
-  }
-  // Execute tags
-  for (const tag of tags) {
-    const m=tag.match(/^(\w+):\[(.+)\]$/);
-    if (!m) continue;
-    const [,cmd,params]=m;
-    const parts=params.split('|');
-    if (cmd.toUpperCase()==='MOVER') {
-      const uName=parts[0].trim(), hex=parts[1]?.trim();
-      if (uName&&hex) {
-        const u=findAnyUnitByText(uName);
-        const dest=parseHex(hex);
-        if (u&&dest&&dest.col>=0&&dest.col<COLS&&dest.row>=0&&dest.row<ROWS) {
-          addLog(`→ ${u.name} move para ${hex.toUpperCase()}`,'m');
-          moveUnit(u,dest.col,dest.row); render();
-        }
-      }
-    } else if (cmd.toUpperCase()==='ATACAR') {
-      const atkName=parts[0].trim(), defName=parts[1]?.trim();
-      if (atkName&&defName) {
-        const atk=findAnyUnitByText(atkName), def=findAnyUnitByText(defName);
-        if (atk&&def&&atk.alive&&def.alive) { doAttack(atk,def); checkEnd(); render(); }
-      }
-    } else if (cmd.toUpperCase()==='CENA') {
-      const scId=parts[0].trim();
-      if (SCENARIOS[scId]) loadScenario(scId);
-    } else if (cmd.toUpperCase()==='STAT') {
-      const name=parts[0].trim();
-      const hpM=(parts[1]||'').match(/hp:(\d+)/i);
-      if (hpM) {
-        const u=findAnyUnitByText(name);
-        if (u) { u.hp=Math.max(0,Math.min(u.maxHp,parseInt(hpM[1]))); if (u.hp<=0){u.alive=false;checkEnd();} render(); }
-      }
-    }
+  const testes = extrairTestes(text);
+  const roles  = extrairRoles(text);
+
+  // Strip TESTAR/ROLAR lines so they don't appear in narrative
+  const cleanText = text
+    .replace(/^\s*TESTAR:\s*\[.*\]\s*$/gim,'')
+    .replace(/^\s*ROLAR:\s*\[.*\]\s*$/gim,'')
+    .replace(/\n{3,}/g,'\n\n').trim();
+
+  if (testes.length || roles.length) {
+    iniciarTestes(testes, roles, ()=>{ processNarrativeAndTags(cleanText); });
+  } else {
+    processNarrativeAndTags(cleanText);
   }
 }
 
@@ -2083,6 +2289,18 @@ addLog('Heróis: Bárbaro (E07) · Arqueiro (D08) · Mago (F08)','h');
 addLog('Clique em ⚔ Declarar para iniciar um turno — cada herói declara sua intenção secretamente, depois a IA resolve tudo como cena simultânea.','s');
 // Auto-show log on start
 toggleLog();
+
+// Load campaign data at startup
+carregarCampanha();
+
+// Save initial session state to Firebase (non-blocking)
+setTimeout(()=>{
+  if (_db) {
+    _fbSet(`salas/${_salaId}/config`, {
+      campanha:'beast-of-black-keep', cenario:currentScenario, turno:turn, ts:Date.now()
+    }).catch(()=>{});
+  }
+}, 2000);
 </script>
 </body>
 </html>
