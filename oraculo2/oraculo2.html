@@ -1,0 +1,1736 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Oráculo 2</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#0e0c08;color:#e2d5b0;font-family:'Segoe UI',system-ui,sans-serif;user-select:none;-webkit-user-select:none}
+#app{display:flex;flex-direction:column;height:100dvh}
+
+/* ── Header ── */
+header{
+  background:#12100c;border-bottom:1px solid rgba(200,160,48,.2);
+  padding:6px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;height:44px;
+  padding-top:max(6px,env(safe-area-inset-top))
+}
+#turn-label{flex:1;font-size:12px;color:#c8a030;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-btn{
+  background:#1c1a14;border:1px solid rgba(200,160,48,.25);color:#c8b070;
+  border-radius:6px;padding:4px 9px;font-size:11px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;white-space:nowrap;flex-shrink:0
+}
+.hdr-btn:active{background:#2a2618}
+#btn-end-phase{background:#1a2010;border-color:rgba(80,160,80,.25);color:#70b070}
+#btn-log-toggle{font-size:12px;min-width:28px}
+
+/* ── Map ── */
+#map-area{flex:1;overflow:hidden;position:relative;background:#0a0806;min-height:0;touch-action:none}
+#map-vp{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
+#map-img{display:block;pointer-events:none}
+#battle-canvas{position:absolute;top:0;left:0;touch-action:none}
+
+/* ── Grid toggle ── */
+#grid-toggle{
+  position:absolute;top:10px;right:10px;z-index:50;
+  background:none;border:none;cursor:pointer;padding:0;
+  -webkit-tap-highlight-color:transparent;outline:none;
+  opacity:.75;transition:opacity .15s
+}
+#grid-toggle:hover{opacity:1}
+#grid-toggle.active #hex-bg{fill:rgba(130,100,35,.6);stroke:rgba(210,175,80,.9)}
+#grid-toggle.active #hex-icon{fill:rgba(230,195,100,.95)}
+
+/* Scenario selector */
+#scene-btn{position:absolute;top:10px;left:10px;z-index:50;background:rgba(10,8,4,.82);border:1px solid rgba(200,160,48,.3);color:#c8a030;border-radius:6px;padding:4px 9px;font-size:11px;cursor:pointer}
+
+/* ── Log narrativo ── */
+#log-panel{
+  flex-shrink:0;background:#0e0c08;border-top:1px solid rgba(200,160,48,.15);
+  max-height:180px;overflow-y:auto;padding:6px 12px;font-size:11px;line-height:1.6;color:#d4c090;
+  display:none
+}
+#log-panel::-webkit-scrollbar{width:3px}
+#log-panel::-webkit-scrollbar-thumb{background:rgba(200,160,48,.3)}
+.le{padding:1px 0;border-bottom:1px solid rgba(200,160,48,.04)}
+.le.h{color:#7ab0d0}.le.e{color:#c07070}.le.s{color:#706850}.le.x{color:#d4900c}.le.m{color:#906050}.le.n{color:#a0c090}.le.ai{color:#c8a030;font-style:italic}
+
+/* ── Input bar ── */
+#input-row{
+  flex-shrink:0;display:flex;gap:6px;padding:8px 12px;
+  background:#12100c;border-top:1px solid rgba(200,160,48,.15);
+  padding-bottom:max(8px,env(safe-area-inset-bottom))
+}
+#cmd-input{
+  flex:1;background:#1a1610;border:1px solid rgba(200,160,48,.2);border-radius:6px;
+  color:#e2d5b0;font-size:12px;padding:8px 10px;outline:none;font-family:inherit
+}
+#cmd-input::placeholder{color:#5a4a30}
+#cmd-input:focus{border-color:rgba(200,160,48,.45)}
+#cmd-send{
+  background:#1c1a14;border:1px solid rgba(200,160,48,.3);color:#c8a030;
+  border-radius:6px;padding:8px 14px;font-size:14px;cursor:pointer;flex-shrink:0
+}
+#cmd-send:active{background:#2a2618}
+
+/* ── Range buttons ── */
+#u-ranges{margin-top:5px;display:none;gap:3px;flex-wrap:wrap}
+.rbtn{background:#1a1610;border:1px solid rgba(200,160,48,.25);color:#8a7050;border-radius:4px;padding:2px 7px;font-size:10px;cursor:pointer;white-space:nowrap}
+.rbtn.on-move{background:rgba(40,100,220,.35);border-color:#4488ee;color:#90c0ff}
+.rbtn.on-melee{background:rgba(200,40,40,.35);border-color:#cc4444;color:#ffaaaa}
+.rbtn.on-ranged{background:rgba(200,120,20,.35);border-color:#cc8830;color:#ffcc80}
+
+/* ── Action popup ── */
+#action-popup{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:80px;
+  background:rgba(10,8,5,.97);border:1px solid rgba(200,160,48,.5);
+  border-radius:8px;padding:10px 13px;min-width:240px;max-width:330px;
+  z-index:150;font-size:10.5px;line-height:1.55;color:#d8c898;
+  box-shadow:0 4px 24px rgba(0,0,0,.85);display:none
+}
+#ap-header{font-size:12px;font-weight:600;color:#c8a030;border-bottom:1px solid rgba(200,160,48,.2);padding-bottom:5px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+#ap-close{background:none;border:none;color:#907050;cursor:pointer;font-size:15px;padding:0 2px;line-height:1}
+.ap-skill{padding:3px 0;border-bottom:1px solid rgba(200,160,48,.07)}
+.ap-skill:last-child{border-bottom:none}
+.ap-sname{color:#e0cc90;font-weight:600}
+.ap-dmg{color:#c07050;font-size:10px;margin-left:4px}
+.ap-range{color:#6090c0;font-size:10px;margin-left:4px}
+.ap-uses{color:#909050;font-size:10px;margin-left:4px}
+.ap-targets{color:#50c060;font-size:10px;display:block}
+.ap-out{color:#706050;font-size:10px;display:block}
+.ap-passive{color:#808060;font-size:10px;display:block}
+.ap-clickable{cursor:pointer;border-bottom:1px solid rgba(200,160,48,.15)!important;transition:background .15s}
+.ap-clickable:hover{background:rgba(200,160,48,.07)}
+
+/* ── Tooltip ── */
+#tip{position:fixed;background:rgba(10,8,4,.94);border:1px solid rgba(200,160,48,.3);border-radius:5px;padding:5px 9px;font-size:10px;color:#e2d5b0;pointer-events:none;z-index:200;display:none;max-width:150px;line-height:1.5}
+
+/* ── Scenario modal ── */
+#scene-modal{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;display:none}
+#scene-modal.open{display:flex}
+.scene-card{background:#1a1610;border:1px solid rgba(200,160,48,.4);border-radius:10px;padding:18px;min-width:280px;max-width:360px}
+.scene-card h2{color:#c8a030;font-size:14px;margin-bottom:14px;text-align:center}
+.scene-item{padding:10px 12px;border:1px solid rgba(200,160,48,.2);border-radius:6px;margin-bottom:8px;cursor:pointer;transition:background .15s}
+.scene-item:hover{background:rgba(200,160,48,.08)}
+.scene-item.active{border-color:rgba(200,160,48,.6);background:rgba(200,160,48,.1)}
+.scene-item h3{font-size:12px;color:#e0cc90;margin-bottom:2px}
+.scene-item p{font-size:10px;color:#7a6a50}
+.scene-cancel{display:block;width:100%;padding:8px;margin-top:6px;background:none;border:1px solid rgba(200,160,48,.2);border-radius:6px;color:#7a6a50;cursor:pointer;font-size:11px}
+
+/* ── API key modal ── */
+#key-modal{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center}
+#key-modal.hidden{display:none}
+.key-card{background:#1a1610;border:1px solid rgba(200,160,48,.4);border-radius:10px;padding:22px;min-width:300px;max-width:380px}
+.key-card h2{color:#c8a030;font-size:14px;margin-bottom:8px;text-align:center}
+.key-card p{font-size:11px;color:#8a7a60;margin-bottom:14px;line-height:1.5;text-align:center}
+.key-card input{width:100%;background:#0e0c08;border:1px solid rgba(200,160,48,.3);border-radius:6px;color:#e2d5b0;font-size:12px;padding:9px 10px;outline:none;font-family:monospace;margin-bottom:10px}
+.key-card input:focus{border-color:rgba(200,160,48,.5)}
+.key-card button{width:100%;padding:9px;background:#1c1a14;border:1px solid rgba(200,160,48,.4);border-radius:6px;color:#c8a030;cursor:pointer;font-size:12px;font-weight:600}
+.key-skip{background:none!important;border-color:rgba(200,160,48,.15)!important;color:#5a4a30!important;margin-top:6px}
+
+/* ══ DICE OVERLAY ══ */
+#teste-overlay{position:fixed;inset:0;z-index:300;background:rgba(3,5,10,.93);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center}
+.dado-card-jogo{background:rgba(8,10,20,.96);border:1px solid rgba(191,26,12,.3);border-radius:18px;width:min(340px,90vw);max-height:88vh;display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 18px 16px;box-shadow:0 8px 48px rgba(0,0,0,.8);overflow:hidden}
+.dado-titulo-acao{font-size:10px;color:rgba(200,160,80,.65);letter-spacing:2px;text-transform:uppercase;text-align:center;min-height:14px}
+.dado-label-atual{font-size:9px;color:rgba(200,160,80,.38);letter-spacing:2.5px;text-transform:uppercase;text-align:center;min-height:12px}
+#dado-canvas-jogo{border-radius:8px;display:block}
+.dado-canvas-wrap{position:relative;flex-shrink:0}
+.dado-resultado-atual{display:flex;flex-direction:column;align-items:center;gap:3px;min-height:40px;justify-content:center;opacity:0;transform:scale(.65);transition:opacity .35s ease,transform .35s cubic-bezier(.15,.9,.25,1.2)}
+.dado-resultado-atual.visivel{opacity:1;transform:scale(1)}
+.dado-num-jogo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:62px;font-weight:900;color:#fff;line-height:1;letter-spacing:-3px;pointer-events:none;z-index:10;opacity:0;transform:scale(.75);transition:opacity .28s,transform .32s cubic-bezier(.15,.9,.25,1.2)}
+.dado-num-jogo.visivel{opacity:1;transform:scale(1)}
+.dado-detalhe-jogo{font-size:11px;color:rgba(255,255,255,.38);font-style:italic;min-height:15px}
+.dado-veredicto-jogo{font-size:13px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;padding:2px 14px;border-radius:4px;min-height:22px;opacity:0;transform:scale(.7);transition:opacity .28s ease .05s,transform .28s cubic-bezier(.15,.9,.25,1.2) .05s}
+.dado-veredicto-jogo.visivel{opacity:1;transform:scale(1)}
+.dado-veredicto-jogo.sucesso{color:#7adc7a;background:rgba(80,180,80,.1);border:1px solid rgba(100,200,100,.25)}
+.dado-veredicto-jogo.falha{color:#e06060;background:rgba(180,50,50,.1);border:1px solid rgba(200,80,80,.25)}
+.dado-veredicto-jogo.critico{color:#ffd700;background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.4);text-shadow:0 0 12px rgba(255,215,0,.7)}
+.dado-veredicto-jogo.catastrofe{color:#ff4444;background:rgba(200,20,20,.15);border:1px solid rgba(200,30,30,.5);text-shadow:0 0 12px rgba(255,50,50,.8)}
+.dado-versus-row{display:flex;align-items:center;justify-content:center;gap:8px;width:100%}
+.dado-portrait-vs{flex-shrink:0;width:72px;display:flex;flex-direction:column;align-items:center;border-radius:8px;border:1px solid rgba(255,255,255,.12);overflow:hidden;background:rgba(255,255,255,.04);transition:background .3s,border-color .3s}
+.dado-portrait-vs img{width:100%;height:100px;object-fit:cover;object-position:top center;display:block}
+.dado-portrait-vs span{font-size:26px;margin:10px 0 4px}
+.dado-portrait-nome{font-size:7px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;text-align:center;padding:3px 2px;background:rgba(0,0,0,.45);width:100%}
+.dado-historico{width:100%;display:flex;flex-direction:column;gap:3px;max-height:150px;overflow-y:auto;margin-top:2px}
+.dado-hist-linha{display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:4px;background:rgba(255,255,255,.03);font-size:10px;animation:dado-hist-in .22s ease both}
+@keyframes dado-hist-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.dado-hist-icone{flex-shrink:0;font-size:12px}
+.dado-hist-label{flex:1;color:rgba(220,210,190,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dado-hist-roll{color:rgba(200,180,140,.7);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dado-hist-vered{font-weight:700;white-space:nowrap;font-size:9px;letter-spacing:.5px}
+.dado-hist-vered.s{color:#7adc7a}.dado-hist-vered.f{color:#e06060}.dado-hist-vered.c{color:#ffd700}.dado-hist-vered.ct{color:#ff4444}.dado-hist-vered.d{color:#ffa040}
+.espelhado{transform:scaleX(-1)}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+</head>
+<body>
+<div id="app">
+  <header>
+    <span id="turn-label">Turno 1 — Heróis</span>
+    <button class="hdr-btn" id="btn-log-toggle" onclick="toggleLog()">▲ Log</button>
+    <button class="hdr-btn" onclick="toggleDebug()">⊞ Coords</button>
+    <button class="hdr-btn" id="btn-end-phase" onclick="endHeroPhase()">Encerrar →</button>
+    <button class="hdr-btn" onclick="openKeyModal()">🔑</button>
+  </header>
+
+  <div id="map-area">
+    <div id="map-vp">
+      <img id="map-img" src="../maps/feira-limpa.png" draggable="false">
+      <canvas id="battle-canvas"></canvas>
+    </div>
+    <button id="grid-toggle" onclick="toggleGrid()" title="Grade hexagonal">
+      <svg width="38" height="44" viewBox="0 0 42 48">
+        <polygon id="hex-bg" points="21,2 40,13 40,35 21,46 2,35 2,13" fill="rgba(10,8,4,.82)" stroke="rgba(200,160,48,.45)" stroke-width="1.5"/>
+        <text id="hex-icon" x="21" y="30" text-anchor="middle" font-size="16" fill="rgba(200,160,48,.7)" font-family="sans-serif">⬡</text>
+      </svg>
+    </button>
+    <button id="scene-btn" onclick="openSceneModal()">🗺 Cenário</button>
+  </div>
+
+  <div id="log-panel"></div>
+
+  <div id="input-row">
+    <input id="cmd-input" placeholder='Ex: "Bárbaro ataca Espantalho" · "Mago avança F06" · "narrar"' type="text" autocomplete="off">
+    <button id="cmd-send" onclick="submitCmd()">→</button>
+  </div>
+</div>
+
+<div id="tip"></div>
+<div id="teste-overlay" style="display:none"></div>
+
+<div id="action-popup">
+  <div id="ap-header">
+    <span id="ap-title"></span>
+    <button id="ap-close" onclick="clearSelection()">✕</button>
+  </div>
+  <div id="ap-list"></div>
+</div>
+
+<!-- Scenario modal -->
+<div id="scene-modal">
+  <div class="scene-card">
+    <h2>Escolher Cenário</h2>
+    <div id="scene-list"></div>
+    <button class="scene-cancel" onclick="closeSceneModal()">Cancelar</button>
+  </div>
+</div>
+
+<!-- API Key modal -->
+<div id="key-modal" class="hidden">
+  <div class="key-card">
+    <h2>🔑 Chave Groq API</h2>
+    <p>Insira sua chave para ativar o Narrador IA.<br>Ela fica salva apenas no seu navegador.</p>
+    <input type="password" id="key-input" placeholder="gsk_...">
+    <button onclick="saveKey()">Salvar e continuar</button>
+    <button class="key-skip" onclick="closeKeyModal()">Jogar sem IA</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════
+//  SCENARIOS
+// ═══════════════════════════════════════════════
+const SCENARIOS = {
+  'feira_assombrada': {
+    name: 'Feira Assombrada',
+    desc: 'Uma feira medieval tomada por espíritos e criaturas das sombras.',
+    map: '../maps/feira-limpa.png',
+    gridW: 1086, gridH: 1448,
+    GX0: 108, GY0: 100, CS: 72, RS: 83, HR: 48, VR: 48, OOFF: 42,
+    COLS: 13, ROWS: 13
+  },
+  'castelo_interior': {
+    name: 'Interior do Castelo',
+    desc: 'Câmaras escuras de pedra, corredores traiçoeiros e salões amaldiçoados.',
+    map: '../maps/castelo_interior.png',
+    gridW: 1200, gridH: 1600,
+    GX0: 80, GY0: 80, CS: 80, RS: 92, HR: 53, VR: 53, OOFF: 46,
+    COLS: 13, ROWS: 16
+  },
+  'taverna': {
+    name: 'Taverna do Corvo Negro',
+    desc: 'Uma taberna suspeita onde todo encontro pode virar briga.',
+    map: '../maps/taverna.png',
+    gridW: 900, gridH: 1200,
+    GX0: 60, GY0: 60, CS: 72, RS: 83, HR: 48, VR: 48, OOFF: 42,
+    COLS: 11, ROWS: 12
+  }
+};
+
+let currentScenario = 'feira_assombrada';
+let SC = SCENARIOS[currentScenario];
+
+// Grid params (mutable, updated by loadScenario)
+let MAP_W = SC.gridW, MAP_H = SC.gridH;
+let COLS = SC.COLS, ROWS = SC.ROWS;
+let GX0 = SC.GX0, GY0 = SC.GY0, CS = SC.CS, RS = SC.RS;
+let HR = SC.HR, VR = SC.VR, OOFF = SC.OOFF;
+const CL = 'ABCDEFGHIJKLMNOP';
+
+// ═══════════════════════════════════════════════
+//  HEX MATH
+// ═══════════════════════════════════════════════
+const hexLbl  = (c,r) => CL[c] + String(r+1).padStart(2,'0');
+const parseHex = s => ({ col: CL.indexOf(s[0].toUpperCase()), row: parseInt(s.slice(1))-1 });
+const hexCtr  = (c,r) => ({ x: GX0 + c*CS, y: GY0 + r*RS + (c%2 ? OOFF : 0) });
+
+function pxToHex(px, py) {
+  let bc=0, br=0, bd=Infinity;
+  const sc = Math.max(0, Math.floor((px-GX0)/CS)-1);
+  const ec = Math.min(COLS-1, sc+3);
+  for (let c=sc; c<=ec; c++) {
+    const re = Math.round((py-GY0-(c%2?OOFF:0))/RS);
+    for (let r=Math.max(0,re-1); r<=Math.min(ROWS-1,re+1); r++) {
+      const ct=hexCtr(c,r), d=(px-ct.x)**2+(py-ct.y)**2;
+      if (d<bd) { bd=d; bc=c; br=r; }
+    }
+  }
+  return { col:bc, row:br };
+}
+
+function toCube(c,r) { const q=c, rv=r-(c+(c&1))/2; return {q, r:rv, s:-q-rv}; }
+function hexDist(c1,r1,c2,r2) {
+  const a=toCube(c1,r1), b=toCube(c2,r2);
+  return Math.max(Math.abs(a.q-b.q), Math.abs(a.r-b.r), Math.abs(a.s-b.s));
+}
+function hexNbrs(c,r) {
+  const d = c%2===0 ? [[1,-1],[1,0],[0,1],[-1,0],[-1,-1],[0,-1]] : [[1,0],[1,1],[0,1],[-1,1],[-1,0],[0,-1]];
+  return d.map(([dc,dr]) => ({col:c+dc, row:r+dr})).filter(h=>h.col>=0&&h.col<COLS&&h.row>=0&&h.row<ROWS);
+}
+function hexNbrs6(c,r) {
+  const d = c%2===0 ? [[1,-1],[1,0],[0,1],[-1,0],[-1,-1],[0,-1]] : [[1,0],[1,1],[0,1],[-1,1],[-1,0],[0,-1]];
+  return d.map(([dc,dr]) => { const nc=c+dc, nr=r+dr; return (nc>=0&&nc<COLS&&nr>=0&&nr<ROWS)?{col:nc,row:nr}:null; });
+}
+
+function losOk(c1,r1,c2,r2) {
+  const steps = Math.max(hexDist(c1,r1,c2,r2), 1);
+  const a=toCube(c1,r1), b=toCube(c2,r2);
+  for (let i=1; i<steps; i++) {
+    const t=i/steps;
+    let q=Math.round(a.q+(b.q-a.q)*t), rv=Math.round(a.r+(b.r-a.r)*t), s=Math.round(a.s+(b.s-a.s)*t);
+    const dq=Math.abs(q-(a.q+(b.q-a.q)*t)), dr=Math.abs(rv-(a.r+(b.r-a.r)*t)), ds=Math.abs(s-(a.s+(b.s-a.s)*t));
+    if(dq>dr&&dq>ds) q=-rv-s; else if(dr>ds) rv=-q-s;
+    const col=q, row=rv+(q+(q&1))/2;
+    if(isBlocked(col,row)) return false;
+  }
+  return true;
+}
+
+// ═══════════════════════════════════════════════
+//  MAP DATA (Blocked/Cover per scenario)
+// ═══════════════════════════════════════════════
+const SCENARIO_BLOCKED = {
+  'feira_assombrada': new Set(['A01','B01','L01','M01','A02','M02','A12','M12','A13','B13','L13','M13']),
+  'castelo_interior': new Set(['A01','M01','A16','M16']),
+  'taverna':          new Set(['A01','K01','A12','K12'])
+};
+const SCENARIO_COVER = {
+  'feira_assombrada': new Set(['B02','C02','D02','J02','K02','L02','B12','C12','D12','J12','K12','L12','A04','A05','A06','A07','A08','A09','M04','M05','M06','M07','M08','M09']),
+  'castelo_interior': new Set(['B02','C02','K02','L02']),
+  'taverna':          new Set(['B01','C01','H01','J01'])
+};
+
+function isBlocked(c,r) { return (SCENARIO_BLOCKED[currentScenario]||new Set()).has(hexLbl(c,r)); }
+function getCover(c,r) {
+  if (isBlocked(c,r)) return 'full';
+  return (SCENARIO_COVER[currentScenario]||new Set()).has(hexLbl(c,r)) ? 'partial' : 'none';
+}
+
+// ═══════════════════════════════════════════════
+//  SKILLS
+// ═══════════════════════════════════════════════
+const SKILLS = {
+  barbaro: [
+    {name:'Golpe',         icon:'🪓', type:'melee',      range:1,  dmg:'2d6+3'},
+    {name:'Fúria',         icon:'🔥', type:'self',                 dmg:'+2 dano · +4 PV temp.'},
+    {name:'Devastador',    icon:'💥', type:'melee',      range:1,  dmg:'3d6+3', uses:'1/desc'},
+    {name:'Uivo de Guerra',icon:'📢', type:'aoe',        range:4,  dmg:'CD12 SAB ou −2 atk'},
+    {name:'Pele de Ferro', icon:'🛡', type:'passive',              dmg:'+1 CA em Fúria'},
+  ],
+  arqueiro: [
+    {name:'Arco Longo',       icon:'🏹', type:'ranged',     range:11, dmg:'1d6+2'},
+    {name:'Tiro Preciso',     icon:'🎯', type:'ranged',     range:11, dmg:'2d6+2', uses:'1/desc'},
+    {name:'Chuva de Flechas', icon:'🌧', type:'ranged_aoe', range:9,  aoe:2, dmg:'1d6 × 3 alvos'},
+    {name:'Passo do Vento',   icon:'💨', type:'passive',             dmg:'+2 hex · sem atk de op.'},
+    {name:'Olho de Águia',    icon:'👁', type:'passive',             dmg:'Ignora penalidade dist.'},
+  ],
+  mago: [
+    {name:'Raio Arcano',   icon:'⚡', type:'ranged',     range:9,  dmg:'1d8+2'},
+    {name:'Bola de Fogo',  icon:'🔥', type:'ranged_aoe', range:9,  aoe:3, dmg:'3d6 (CD13 DES)'},
+    {name:'Flecha de Gelo',icon:'❄',  type:'ranged',     range:10, dmg:'1d10 · lento 1t'},
+    {name:'Escudo Arcano', icon:'🛡', type:'self',                 dmg:'+3 CA por 2 turnos'},
+    {name:'Toque do Vazio',icon:'👻', type:'melee',      range:1,  dmg:'2d4+2 · ignora CA armadura'},
+  ],
+  guerreiro: [
+    {name:'Golpe Poderoso', icon:'⚔', type:'melee', range:1, dmg:'1d8+4'},
+    {name:'Postura de Defesa',icon:'🛡',type:'self',          dmg:'+2 CA por 2t'},
+    {name:'Segundo Fôlego', icon:'💚', type:'self',           dmg:'Cura 1d10+3'},
+    {name:'Ataque Extra',   icon:'⚔', type:'melee', range:1, dmg:'1d8+2 (bônus)'},
+  ],
+  ladino: [
+    {name:'Ataque Furtivo', icon:'🗡', type:'melee', range:1, dmg:'2d8+3 (flanqueamento)'},
+    {name:'Evasão',         icon:'💨', type:'passive',        dmg:'Metade do dano em área'},
+    {name:'Veneno',         icon:'☠', type:'melee', range:1, dmg:'1d4+1d6 veneno/turno'},
+    {name:'Sombras',        icon:'🌑', type:'self',           dmg:'Invisível 1 turno'},
+  ],
+  clerigo: [
+    {name:'Curar Ferimentos',    icon:'✨', type:'self',  dmg:'1d8+3 PV restaurados'},
+    {name:'Bênção',              icon:'🌟', type:'aoe',   range:3, dmg:'+1d4 atk/def aliados'},
+    {name:'Expulsar Mortos-Vivos',icon:'☀',type:'aoe',   range:4, dmg:'CD13 SAB ou fuga'},
+    {name:'Escudo da Fé',        icon:'🛡', type:'self',  dmg:'+2 CA por 3t'},
+    {name:'Palavra de Cura',     icon:'💚', type:'ranged',range:5, dmg:'2d6+3 cura aliado'},
+  ],
+};
+
+// ═══════════════════════════════════════════════
+//  UNIT DEFINITIONS
+// ═══════════════════════════════════════════════
+function occupiedHexes(ac, ar, size) {
+  if (size==='1x1') return [{col:ac, row:ar}];
+  if (size==='2x2') return [
+    {col:ac,   row:ar  }, {col:ac+1, row:ar  },
+    {col:ac,   row:ar+1}, {col:ac+1, row:ar+1},
+  ].filter(h=>h.col>=0&&h.col<COLS&&h.row>=0&&h.row<ROWS);
+  if (size==='3x2') return [
+    {col:ac,row:ar},{col:ac+1,row:ar},{col:ac+2,row:ar},
+    {col:ac,row:ar+1},{col:ac+1,row:ar+1},{col:ac+2,row:ar+1},
+  ].filter(h=>h.col>=0&&h.col<COLS&&h.row>=0&&h.row<ROWS);
+  return [{col:ac,row:ar}];
+}
+
+function mkUnit(d) {
+  const p = parseHex(d.hex);
+  const u = {...d, col:p.col, row:p.row, hp:d.maxHp, hasMoved:false, hasActed:false, alive:true, _img:null, occupiedHexes:[]};
+  u.occupiedHexes = occupiedHexes(u.col, u.row, u.size||'1x1');
+  return u;
+}
+
+const UDEFS = [
+  {id:'hero_arqueiro', name:'Arqueiro', type:'hero', classe:'arqueiro',
+   hex:'D08', maxHp:22, ac:14, moveSpeed:5, size:'1x1',
+   attrMod:3, attrName:'DES', rangedWeapon:{name:'Arco Longo',range:11},
+   sprite:'../sprites/arqueiro_m.png', spriteCostas:'../sprites/arqueiro_m_costas.png', icon:'🏹'},
+  {id:'hero_barbaro', name:'Bárbaro', type:'hero', classe:'barbaro',
+   hex:'E07', maxHp:32, ac:13, moveSpeed:4, size:'1x1',
+   attrMod:4, attrName:'FOR', rangedWeapon:null,
+   sprite:'../sprites/barbaro_m.png', spriteCostas:'../sprites/barbaro_m_costas.png', icon:'🪓'},
+  {id:'hero_mago', name:'Mago', type:'hero', classe:'mago',
+   hex:'F08', maxHp:16, ac:11, moveSpeed:3, size:'1x1',
+   attrMod:3, attrName:'INT', rangedWeapon:{name:'Raio Arcano',range:9},
+   sprite:'../sprites/mago.png', spriteCostas:'../sprites/mago_m_costas.png', icon:'🔮'},
+  {id:'espa_01', name:'Espantalho I', type:'enemy',
+   hex:'E03', maxHp:14, ac:10, moveSpeed:3, size:'1x1',
+   attrMod:1, attrName:'FOR',
+   sprite:'../sprites/inimigo_espantalho_assombrado.png', icon:'🌾'},
+  {id:'espa_02', name:'Espantalho II', type:'enemy',
+   hex:'G03', maxHp:14, ac:10, moveSpeed:3, size:'1x1',
+   attrMod:1, attrName:'FOR',
+   sprite:'../sprites/inimigo_espantalho_assombrado.png', icon:'🌾'},
+  {id:'barkthresher', name:'Barkthresher', type:'enemy',
+   hex:'F05', maxHp:45, ac:14, moveSpeed:2, size:'2x2',
+   attrMod:3, attrName:'FOR',
+   sprite:'../sprites/inimigo_barkthresher.png', icon:'🌳'},
+  {id:'larva_gigante', name:'Larva Gigante', type:'enemy',
+   hex:'H02', maxHp:60, ac:10, moveSpeed:2, size:'3x2',
+   attrMod:2, attrName:'FOR',
+   sprite:'../sprites/inimigo_larva_gigante.png', icon:'🐛'},
+];
+
+let units = UDEFS.map(mkUnit);
+
+function initHeroFacings() {
+  units.filter(u=>u.type==='hero').forEach(hero => {
+    const enems = units.filter(u=>u.type==='enemy'&&u.alive);
+    if (!enems.length) return;
+    const nearest = enems.reduce((a,b)=>unitDist(hero,a)<=unitDist(hero,b)?a:b);
+    const dc=nearest.col-hero.col, dr=nearest.row-hero.row;
+    if (dc===0&&dr<0) hero.facing='N';
+    else if (dc===0&&dr>0) hero.facing='S';
+    else if (dc>0&&dr<=0) hero.facing='NE';
+    else if (dc>0&&dr>0) hero.facing='SE';
+    else if (dc<0&&dr<=0) hero.facing='NW';
+    else hero.facing='SW';
+  });
+}
+initHeroFacings();
+
+// Preload sprites
+function preloadSprites() {
+  units.forEach(u => {
+    if (!u.sprite) return;
+    const img = new Image();
+    img.onload = () => { u._img = img; render(); };
+    img.src = u.sprite;
+    if (u.type==='hero' && u.spriteCostas) {
+      const imgC = new Image();
+      imgC.onload = () => { u._imgCostas = imgC; render(); };
+      imgC.src = u.spriteCostas;
+    }
+  });
+}
+preloadSprites();
+
+// ═══════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════
+const heroes  = () => units.filter(u=>u.type==='hero'&&u.alive);
+const enemies = () => units.filter(u=>u.type==='enemy'&&u.alive);
+const getUnit  = id => units.find(u=>u.id===id);
+const getUnitAt = (c,r) => units.find(u=>u.alive&&u.occupiedHexes.some(h=>h.col===c&&h.row===r));
+
+function unitDist(u1,u2) {
+  let m=Infinity;
+  for (const a of u1.occupiedHexes) for (const b of u2.occupiedHexes) m=Math.min(m,hexDist(a.col,a.row,b.col,b.row));
+  return m;
+}
+function distFromPt(col,row,unit) { return Math.min(...unit.occupiedHexes.map(h=>hexDist(col,row,h.col,h.row))); }
+
+function canPlace(unit, ac, ar, newHexes) {
+  for (const h of (newHexes||occupiedHexes(ac,ar,unit.size||'1x1'))) {
+    if (h.col<0||h.col>=COLS||h.row<0||h.row>=ROWS) return false;
+    if (isBlocked(h.col,h.row)) return false;
+    const occ = units.find(u=>u.alive&&u.id!==unit.id&&u.occupiedHexes.some(oh=>oh.col===h.col&&oh.row===h.row));
+    if (occ) return false;
+  }
+  return true;
+}
+
+function reachable(unit) {
+  const visited=new Set(), result=[];
+  visited.add(`${unit.col},${unit.row}`);
+  const q = [{col:unit.col, row:unit.row, steps:0}];
+  while (q.length) {
+    const {col,row,steps} = q.shift();
+    if (steps>0) result.push({col,row,steps});
+    if (steps>=unit.moveSpeed) continue;
+    for (const nb of hexNbrs(col,row)) {
+      const key=`${nb.col},${nb.row}`;
+      if (visited.has(key)) continue;
+      visited.add(key);
+      const newOcc = occupiedHexes(nb.col,nb.row,unit.size||'1x1');
+      if (isBlocked(nb.col,nb.row)) continue;
+      if (!canPlace(unit,nb.col,nb.row,newOcc)) continue;
+      q.push({col:nb.col,row:nb.row,steps:steps+1});
+    }
+  }
+  return result;
+}
+
+function atkTargets(unit, fromCol, fromRow) {
+  const foes = unit.type==='hero' ? enemies() : heroes();
+  return foes.map(e => {
+    const dist = distFromPt(fromCol,fromRow,e);
+    const melee = dist<=1;
+    const ranged = unit.rangedWeapon && dist<=unit.rangedWeapon.range && dist>1;
+    if (!melee&&!ranged) return null;
+    const lo = losOk(fromCol,fromRow,e.col,e.row);
+    if (!lo&&!melee) return null;
+    return {id:e.id, dist, type:melee?'melee':'ranged', los:lo};
+  }).filter(Boolean);
+}
+
+function updateFacing(u,tc,tr) {
+  const dc=tc-u.col, dr=tr-u.row;
+  if (dc===0&&dr<0) u.facing='N';
+  else if (dc===0&&dr>0) u.facing='S';
+  else if (dc>0&&dr<=0) u.facing='NE';
+  else if (dc>0&&dr>0) u.facing='SE';
+  else if (dc<0&&dr<=0) u.facing='NW';
+  else u.facing='SW';
+}
+
+function moveUnit(unit,tc,tr) {
+  updateFacing(unit,tc,tr);
+  unit.col=tc; unit.row=tr; unit.hasMoved=true;
+  unit.occupiedHexes = occupiedHexes(tc,tr,unit.size||'1x1');
+}
+
+// ═══════════════════════════════════════════════
+//  COMBAT
+// ═══════════════════════════════════════════════
+const d20r = () => Math.floor(Math.random()*20)+1;
+function rollDice(n) {
+  const m = n.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
+  if (!m) return 4;
+  let t=0;
+  for (let i=0; i<+m[1]; i++) t+=Math.floor(Math.random()*+m[2])+1;
+  return t + (m[3]?+m[3]:0);
+}
+
+function isBackAtk(atk,def) {
+  const FD={N:{dc:0,dr:-1},NE:{dc:1,dr:-1},SE:{dc:1,dr:0},S:{dc:0,dr:1},SW:{dc:-1,dr:0},NW:{dc:-1,dr:-1}};
+  const fd=FD[def.facing||'N']||{dc:0,dr:-1};
+  const dc=atk.col-def.col, dr=atk.row-def.row;
+  return (Math.sign(dc)===-Math.sign(fd.dc)||Math.sign(dr)===-Math.sign(fd.dr))&&Math.abs(dc)<=1&&Math.abs(dr)<=1;
+}
+
+function doAttack(atk,def) {
+  const dist=unitDist(atk,def);
+  const isMelee=dist<=1;
+  const isRanged=atk.rangedWeapon&&dist<=atk.rangedWeapon.range;
+  if (!isMelee&&!isRanged) { addLog(`${atk.name} não alcança ${def.name} (${dist} hex).`,'m'); return; }
+  let bonus=3;
+  const flank=(atk.type==='hero'?heroes():enemies()).filter(a=>a.id!==atk.id&&unitDist(a,def)<=1).length>=1;
+  if (flank) bonus+=2;
+  const back=isBackAtk(atk,def);
+  if (back) bonus+=4;
+  if (!isMelee) {
+    const cov=getCover(def.col,def.row);
+    if (cov==='partial') bonus-=2;
+    if (cov==='full') { addLog(`${def.name} está em cobertura total.`,'m'); return; }
+  }
+  const roll=d20r();
+  const total=roll+bonus;
+  const crit=roll===20, fumb=roll===1;
+  const dmgN=isMelee
+    ?({barbaro:'2d6+3',guerreiro:'1d8+2',mago:'1d4',arqueiro:'1d6+1',clerigo:'1d6+2',ladino:'1d8+3'}[atk.classe||'']||'1d6')
+    :(atk.rangedWeapon?.name==='Raio Arcano'?'1d8+2':'1d6+2');
+  if (fumb) { addLog(`${atk.name} — falha crítica! (d20=1)`,'m'); atk.hasActed=true; return; }
+  if (crit||total>=def.ac) {
+    let dmg=rollDice(dmgN); if (crit) dmg*=2;
+    def.hp=Math.max(0,def.hp-dmg);
+    let msg=`${atk.name}${crit?' ⭐CRÍTICO!':''} → ${def.name}${back?' (costas)':''}${flank?' (flanco)':''}: ${dmg} dano`;
+    if (def.hp<=0) { def.alive=false; def.hp=0; msg+=` — ${def.name} cai!`; checkEnd(); }
+    addLog(msg,'x');
+  } else {
+    addLog(`${atk.name} errou ${def.name} (${roll}+${bonus}=${total} vs CA${def.ac})`,'m');
+  }
+  atk.hasActed=true;
+}
+
+function checkEnd() {
+  if (!enemies().length) { addLog('🏆 VITÓRIA — todos os inimigos derrotados!','x'); phase='victory'; updateHdr(); }
+  if (!heroes().length)  { addLog('💀 DERROTA — todos os heróis caíram.','e'); phase='defeat'; updateHdr(); }
+}
+
+// ═══════════════════════════════════════════════
+//  BATTLE STATE
+// ═══════════════════════════════════════════════
+let turn=1, phase='hero';
+let hovHex=null, showGrid=false, debugGrid=false;
+let selId=null, activeRanges=new Set();
+let _moveCache=[], _meleeCache=[], _rangedCache=[];
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+function updateHdr() {
+  const labels={hero:`Turno ${turn} — Heróis (Modo Tático)`, enemy:`Turno ${turn} — Inimigos`, victory:'🏆 Vitória!', defeat:'💀 Derrota'};
+  document.getElementById('turn-label').textContent = labels[phase]||'';
+  document.getElementById('btn-end-phase').style.display = phase==='hero' ? '' : 'none';
+}
+
+function endHeroPhase() {
+  clearSelection();
+  heroes().forEach(u=>{u.hasMoved=true; u.hasActed=true;});
+  addLog('— Heróis passam a vez. Inimigos agem —','s');
+  phase='enemy'; updateHdr(); render();
+  setTimeout(runEnemies, 600);
+}
+
+async function runEnemies() {
+  // IA narrates enemy turn if key available
+  if (apiKey) {
+    callAI(`É a vez dos inimigos (turno ${turn}). Descreva brevemente as ações dos inimigos e execute-as usando as tags MOVER e ATACAR.`);
+  }
+  for (const e of enemies()) {
+    if (!e.alive) continue;
+    await sleep(500);
+    const hs=heroes();
+    if (!hs.length) break;
+    let near=hs[0];
+    for (const h of hs) if (unitDist(e,h)<unitDist(e,near)) near=h;
+    if (unitDist(e,near)<=1) {
+      doAttack(e,near); checkEnd();
+    } else {
+      const reach=reachable(e);
+      if (reach.length) {
+        let best=reach[0];
+        for (const h of reach) if (distFromPt(h.col,h.row,near)<distFromPt(best.col,best.row,near)) best=h;
+        addLog(`${e.name}: ${hexLbl(e.col,e.row)} → ${hexLbl(best.col,best.row)}.`,'e');
+        moveUnit(e,best.col,best.row);
+        render(); await sleep(250);
+        if (unitDist(e,near)<=1) { doAttack(e,near); checkEnd(); }
+      }
+    }
+    render();
+  }
+  await sleep(400);
+  enemies().forEach(u=>{u.hasMoved=false; u.hasActed=false;});
+  heroes().forEach(u=>{u.hasMoved=false; u.hasActed=false;});
+  turn++; phase='hero'; updateHdr();
+  addLog(`— Turno ${turn} — Heróis agem —`,'s');
+  render();
+}
+
+// ═══════════════════════════════════════════════
+//  SELECTION / RANGE
+// ═══════════════════════════════════════════════
+function getSkillTargets(u,sk) {
+  const foes=enemies();
+  if (sk.type==='passive'||sk.type==='self') return null;
+  return foes.filter(e => {
+    if (!e.alive) return false;
+    const d=unitDist(u,e);
+    if (sk.type==='melee') return d<=1;
+    if (sk.type==='ranged') return d>0&&d<=sk.range&&losOk(u.col,u.row,e.col,e.row);
+    if (sk.type==='ranged_aoe') return distFromPt(u.col,u.row,e)<=sk.range;
+    if (sk.type==='aoe') return d<=(sk.range||2);
+    return false;
+  });
+}
+
+function openActionPopup(u) {
+  const skList=SKILLS[u.classe]||[];
+  document.getElementById('ap-title').textContent=`${u.name} — ${hexLbl(u.col,u.row)}`;
+  let html='';
+  for (let i=0; i<skList.length; i++) {
+    const sk=skList[i];
+    const targets=getSkillTargets(u,sk);
+    const canUse=targets&&targets.length>0&&!u.hasActed;
+    html+=`<div class="ap-skill${canUse?' ap-clickable':''}" ${canUse?`onclick="handleSkillClick('${u.id}',${i})"`:''}">`;
+    html+=`<span class="ap-sname">${sk.icon} ${sk.name}</span>`;
+    if (sk.dmg) html+=` <span class="ap-dmg">${sk.dmg}</span>`;
+    if (sk.range) html+=` <span class="ap-range">↗${sk.range}h</span>`;
+    if (sk.uses) html+=` <span class="ap-uses">[${sk.uses}]</span>`;
+    if (targets===null) {
+      html+=`<span class="ap-passive">${sk.type==='passive'?'⬤ Passivo':'⬤ Uso pessoal'}</span>`;
+    } else if (targets.length) {
+      html+=`<span class="ap-targets">◎ ${targets.map(e=>`<span onclick="event.stopPropagation();rollSkillVsTarget('${u.id}',SKILLS['${u.classe}'][${i}],'${e.id}')" style="cursor:pointer;text-decoration:underline">${e.name}</span>`).join(' · ')}</span>`;
+    } else {
+      html+=`<span class="ap-out">✗ Fora de alcance</span>`;
+    }
+    html+=`</div>`;
+  }
+  document.getElementById('ap-list').innerHTML = html||'<span class="ap-out">Sem habilidades registradas.</span>';
+  document.getElementById('action-popup').style.display='block';
+}
+
+function handleSkillClick(actorId, skillIdx) {
+  const u=getUnit(actorId); if (!u) return;
+  const sk=SKILLS[u.classe]?.[skillIdx]; if (!sk) return;
+  const targets=getSkillTargets(u,sk);
+  const targetId=targets&&targets.length?targets[0].id:null;
+  rollSkillVsTarget(actorId,sk,targetId);
+}
+
+function selectUnit(id) {
+  const u=getUnit(id);
+  if (!u||!u.alive) { clearSelection(); return; }
+  selId=id;
+  const ownKeys=new Set(u.occupiedHexes.map(h=>`${h.col},${h.row}`));
+  _moveCache=u.hasMoved?[]:reachable(u);
+  const ms=new Map();
+  for (const oh of u.occupiedHexes) for (const nb of hexNbrs(oh.col,oh.row)) {
+    const k=`${nb.col},${nb.row}`;
+    if (!ownKeys.has(k)&&!isBlocked(nb.col,nb.row)) ms.set(k,nb);
+  }
+  _meleeCache=[...ms.values()];
+  if (u.rangedWeapon) {
+    const ra=[];
+    for (let c=0;c<COLS;c++) for (let r=0;r<ROWS;r++) {
+      if (!isBlocked(c,r)&&!ownKeys.has(`${c},${r}`)) {
+        const d=distFromPt(c,r,u);
+        if (d>1&&d<=u.rangedWeapon.range) ra.push({col:c,row:r});
+      }
+    }
+    _rangedCache=ra;
+  } else _rangedCache=[];
+  activeRanges=new Set(['move','melee']);
+  if (u.rangedWeapon) activeRanges.add('ranged');
+  if (u.type==='hero') openActionPopup(u);
+  else document.getElementById('action-popup').style.display='none';
+  render();
+}
+
+function clearSelection() {
+  selId=null; activeRanges=new Set(); _moveCache=[]; _meleeCache=[]; _rangedCache=[];
+  document.getElementById('action-popup').style.display='none';
+  render();
+}
+
+function toggleRange(type) {
+  if (activeRanges.has(type)) activeRanges.delete(type); else activeRanges.add(type);
+  render();
+}
+
+// ═══════════════════════════════════════════════
+//  CANVAS RENDERING
+// ═══════════════════════════════════════════════
+const canvas = document.getElementById('battle-canvas');
+const ctx = canvas.getContext('2d');
+const mapImg = document.getElementById('map-img');
+
+function resizeCanvas() {
+  canvas.width=MAP_W; canvas.height=MAP_H;
+  mapImg.style.width=MAP_W+'px'; mapImg.style.height=MAP_H+'px';
+}
+resizeCanvas();
+
+let baseScale=1, zoom=1, panX=0, panY=0;
+let _pinch=null, _drag=null, _justPinched=false;
+
+function layoutMap() {
+  const ar=document.getElementById('map-area');
+  const sx=ar.clientWidth/MAP_W, sy=ar.clientHeight/MAP_H;
+  baseScale=Math.min(sx,sy);
+  applyVP();
+}
+
+function applyVP() {
+  const ar=document.getElementById('map-area');
+  const total=baseScale*zoom;
+  const cx=(ar.clientWidth-MAP_W*total)/2+panX;
+  const cy=(ar.clientHeight-MAP_H*total)/2+panY;
+  document.getElementById('map-vp').style.transform=`translate(${cx}px,${cy}px) scale(${total})`;
+}
+
+function drawHex(c,r) {
+  const{x,y}=hexCtr(c,r);
+  ctx.beginPath();
+  for (let i=0;i<6;i++) {
+    const a=(Math.PI/3)*i;
+    const px=x+HR*Math.cos(a), py=y+VR*Math.sin(a);
+    i?ctx.lineTo(px,py):ctx.moveTo(px,py);
+  }
+  ctx.closePath();
+}
+
+function drawPerimeter(hexList, stroke, fill, lineW=2.5, glow=8) {
+  if (!hexList.length) return;
+  const sk=new Set(hexList.map(h=>`${h.col},${h.row}`));
+  if (fill) { ctx.fillStyle=fill; for (const{col,row}of hexList){drawHex(col,row);ctx.fill();} }
+  ctx.save();
+  ctx.strokeStyle=stroke; ctx.lineWidth=lineW; ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.shadowColor=stroke; ctx.shadowBlur=glow;
+  ctx.beginPath();
+  for (const{col,row}of hexList) {
+    const nb6=hexNbrs6(col,row);
+    const{x,y}=hexCtr(col,row);
+    for (let i=0;i<6;i++) {
+      const nb=nb6[(i+1)%6];
+      if (!nb||!sk.has(`${nb.col},${nb.row}`)) {
+        ctx.moveTo(x+HR*Math.cos((Math.PI/3)*i), y+VR*Math.sin((Math.PI/3)*i));
+        ctx.lineTo(x+HR*Math.cos((Math.PI/3)*(i+1)), y+VR*Math.sin((Math.PI/3)*(i+1)));
+      }
+    }
+  }
+  ctx.stroke(); ctx.restore();
+}
+
+function render() {
+  ctx.clearRect(0,0,MAP_W,MAP_H);
+  if (mapImg.complete&&mapImg.naturalWidth) ctx.drawImage(mapImg,0,0,MAP_W,MAP_H);
+  else { ctx.fillStyle='#1a1610'; ctx.fillRect(0,0,MAP_W,MAP_H); }
+  const hovKey=hovHex?`${hovHex.col},${hovHex.row}`:null;
+
+  // Hover highlight
+  if (hovKey) {
+    const[hc,hr]=hovKey.split(',').map(Number);
+    drawHex(hc,hr); ctx.fillStyle='rgba(255,255,255,.07)'; ctx.fill();
+  }
+
+  // Large unit outlines
+  for (const u of units.filter(u=>u.alive&&(u.size==='2x2'||u.size==='3x2'))) {
+    for (const h of u.occupiedHexes) {
+      drawHex(h.col,h.row);
+      ctx.strokeStyle=u.type==='enemy'?'rgba(200,80,40,.5)':'rgba(80,180,80,.5)';
+      ctx.lineWidth=2; ctx.stroke();
+    }
+  }
+
+  // Grid
+  if (showGrid) {
+    ctx.strokeStyle='rgba(255,255,255,.40)'; ctx.lineWidth=1.5;
+    for (let c=0;c<COLS;c++) for (let r=0;r<ROWS;r++) { drawHex(c,r); ctx.stroke(); }
+    if (debugGrid) {
+      ctx.fillStyle='rgba(255,255,255,.85)'; ctx.font='bold 10px monospace';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      for (let c=0;c<COLS;c++) for (let r=0;r<ROWS;r++) {
+        const{x,y}=hexCtr(c,r); ctx.fillText(hexLbl(c,r),x,y);
+      }
+    }
+  }
+
+  // Range overlays
+  if (selId) {
+    if (activeRanges.has('move')&&_moveCache.length)
+      drawPerimeter(_moveCache,'rgba(70,160,255,1)','rgba(50,120,240,.10)',2.5,10);
+    if (activeRanges.has('melee')&&_meleeCache.length)
+      drawPerimeter(_meleeCache,'rgba(255,60,60,1)','rgba(220,30,30,.08)',2.5,10);
+    if (activeRanges.has('ranged')&&_rangedCache.length)
+      drawPerimeter(_rangedCache,'rgba(255,145,30,1)','rgba(220,110,20,.08)',2,8);
+    const sel=getUnit(selId);
+    if (sel) { ctx.strokeStyle='rgba(255,255,255,.8)'; ctx.lineWidth=2.5; for (const oh of sel.occupiedHexes){drawHex(oh.col,oh.row);ctx.stroke();} }
+  }
+
+  // Units
+  units.forEach(u=>{ if (u.alive) drawUnit(u); });
+}
+
+function drawUnit(u) {
+  const size=u.size||'1x1';
+  let cx,cy,sprH;
+  if (size==='1x1') {
+    const c=hexCtr(u.col,u.row); cx=c.x; cy=c.y; sprH=160;
+  } else {
+    const ctrs=u.occupiedHexes.map(h=>hexCtr(h.col,h.row));
+    cx=ctrs.reduce((s,c)=>s+c.x,0)/ctrs.length;
+    cy=ctrs.reduce((s,c)=>s+c.y,0)/ctrs.length;
+    sprH=size==='2x2'?280:360;
+  }
+  const baseR=size==='1x1'?42:size==='2x2'?66:90;
+  const footY=cy+baseR*0.35;
+
+  // Shadow
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(cx,footY+4,baseR,baseR*.38,0,0,Math.PI*2);
+  ctx.fillStyle=u.type==='hero'?'rgba(50,110,180,.35)':'rgba(160,50,40,.35)';
+  ctx.fill(); ctx.restore();
+
+  // Sprite
+  const useCostas=u.type==='hero'&&!u._showFront&&u._imgCostas&&u._imgCostas.complete&&u._imgCostas.naturalWidth;
+  const srcImg=useCostas?u._imgCostas:u._img;
+  if (srcImg&&srcImg.complete&&srcImg.naturalWidth) {
+    const asp=srcImg.naturalWidth/srcImg.naturalHeight;
+    const sw=sprH*asp;
+    let flipH=false;
+    if (useCostas) {
+      const f=u.facing||'N';
+      if (f==='NE'||f==='SE') flipH=true;
+      else if (f==='N'||f==='S') {
+        const enems=units.filter(e=>e.type==='enemy'&&e.alive);
+        if (enems.length) { const avgDc=enems.reduce((s,e)=>s+(e.col-u.col),0)/enems.length; flipH=avgDc>0; }
+      }
+    }
+    if (flipH) {
+      ctx.save(); ctx.translate(cx,0); ctx.scale(-1,1);
+      ctx.drawImage(srcImg,-sw/2,footY-sprH,sw,sprH);
+      ctx.restore();
+    } else {
+      ctx.drawImage(srcImg,cx-sw/2,footY-sprH,sw,sprH);
+    }
+  } else {
+    ctx.font=`${baseR}px serif`; ctx.textAlign='center'; ctx.textBaseline='bottom';
+    ctx.fillText(u.icon,cx,footY);
+  }
+
+  // HP bar
+  const bw=baseR*2, bh=6, bx=cx-bw/2, by=footY+14;
+  ctx.fillStyle='rgba(0,0,0,.7)'; ctx.fillRect(bx-1,by-1,bw+2,bh+2);
+  const pct=u.hp/u.maxHp;
+  ctx.fillStyle=pct>.5?'#4a8a4a':pct>.25?'#c8a030':'#c03030';
+  ctx.fillRect(bx,by,bw*pct,bh);
+
+  // Name label
+  ctx.font=`bold ${size==='1x1'?11:13}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='top';
+  const lbl=`${u.name} ${u.hp}/${u.maxHp}`;
+  const tw=ctx.measureText(lbl).width;
+  ctx.fillStyle='rgba(0,0,0,.7)'; ctx.fillRect(cx-tw/2-3,by+bh+2,tw+6,16);
+  ctx.fillStyle=u.type==='hero'?'#9ad0f0':'#f09090';
+  ctx.fillText(lbl,cx,by+bh+3);
+
+  // Done overlay
+  if (u.hasMoved&&u.hasActed&&u.type==='hero') { drawHex(u.col,u.row); ctx.fillStyle='rgba(0,0,0,.32)'; ctx.fill(); }
+
+  // Facing arrow
+  const FA={N:-90,NE:-30,SE:30,S:90,SW:150,NW:-150};
+  const ang=((FA[u.facing||'N']||0)*Math.PI)/180;
+  ctx.beginPath();
+  ctx.moveTo(cx+Math.cos(ang)*baseR, footY+4+Math.sin(ang)*baseR*.38);
+  ctx.lineTo(cx+Math.cos(ang)*(baseR+14), footY+4+Math.sin(ang)*(baseR+14)*.38);
+  ctx.strokeStyle=u.type==='hero'?'rgba(100,200,255,.8)':'rgba(255,100,100,.8)';
+  ctx.lineWidth=2.5; ctx.stroke();
+}
+
+// ═══════════════════════════════════════════════
+//  ZOOM + PAN
+// ═══════════════════════════════════════════════
+const mapArea = document.getElementById('map-area');
+
+mapArea.addEventListener('wheel', e=>{
+  e.preventDefault();
+  const ar=mapArea.getBoundingClientRect();
+  const mx=e.clientX-ar.left, my=e.clientY-ar.top;
+  const f=e.deltaY<0?1.15:0.87;
+  const nz=Math.max(.5,Math.min(4,zoom*f));
+  const tot=baseScale*zoom, nTot=baseScale*nz;
+  const natX=(ar.width-MAP_W*tot)/2+panX, natY=(ar.height-MAP_H*tot)/2+panY;
+  panX=(natX-(mx*(nTot-tot)/tot))-((ar.width-MAP_W*nTot)/2);
+  panY=(natY-(my*(nTot-tot)/tot))-((ar.height-MAP_H*nTot)/2);
+  zoom=nz; applyVP();
+},{passive:false});
+
+function ptDist(touches) {
+  const dx=touches[0].clientX-touches[1].clientX;
+  const dy=touches[0].clientY-touches[1].clientY;
+  return Math.sqrt(dx*dx+dy*dy);
+}
+
+mapArea.addEventListener('touchstart', e=>{
+  if (e.touches.length===2) {
+    e.preventDefault(); _justPinched=false;
+    _pinch={dist:ptDist(e.touches),zoom,panX,panY,mx:(e.touches[0].clientX+e.touches[1].clientX)/2,my:(e.touches[0].clientY+e.touches[1].clientY)/2};
+    _drag=null;
+  } else if (e.touches.length===1&&zoom>1.05) {
+    _drag={x:e.touches[0].clientX,y:e.touches[0].clientY};
+  }
+},{passive:false});
+
+mapArea.addEventListener('touchmove', e=>{
+  if (e.touches.length===2&&_pinch) {
+    e.preventDefault();
+    const dist=ptDist(e.touches);
+    const nz=Math.max(.5,Math.min(4,_pinch.zoom*(dist/_pinch.dist)));
+    const ar=mapArea.getBoundingClientRect();
+    const cx=(e.touches[0].clientX+e.touches[1].clientX)/2-ar.left;
+    const cy=(e.touches[0].clientY+e.touches[1].clientY)/2-ar.top;
+    const midX=(_pinch.mx+cx)/2-ar.left;
+    const tot0=baseScale*_pinch.zoom, totN=baseScale*nz;
+    const nat0X=(ar.width-MAP_W*tot0)/2+_pinch.panX;
+    const nat0Y=(ar.height-MAP_H*tot0)/2+_pinch.panY;
+    panX=(nat0X-(midX*(totN-tot0)/tot0))-((ar.width-MAP_W*totN)/2);
+    panY=(nat0Y-((cy-ar.top)*(totN-tot0)/tot0))-((ar.height-MAP_H*totN)/2);
+    zoom=nz; applyVP(); _justPinched=true;
+  } else if (e.touches.length===1&&_drag&&zoom>1.05) {
+    e.preventDefault();
+    panX+=e.touches[0].clientX-_drag.x;
+    panY+=e.touches[0].clientY-_drag.y;
+    _drag={x:e.touches[0].clientX,y:e.touches[0].clientY};
+    applyVP();
+  }
+},{passive:false});
+
+mapArea.addEventListener('touchend', e=>{
+  if (e.touches.length<2) _pinch=null;
+  if (!e.touches.length) { _drag=null; setTimeout(()=>{_justPinched=false;},300); }
+},{passive:true});
+
+// Click to select
+canvas.addEventListener('click', e=>{
+  if (_justPinched) return;
+  const rect=canvas.getBoundingClientRect();
+  const px=(e.clientX-rect.left)*MAP_W/rect.width;
+  const py=(e.clientY-rect.top)*MAP_H/rect.height;
+  const h=pxToHex(px,py);
+  const u=getUnitAt(h.col,h.row);
+  if (u&&u.alive) { selId===u.id ? clearSelection() : selectUnit(u.id); }
+  else clearSelection();
+});
+
+// Hover tooltip
+canvas.addEventListener('mousemove', e=>{
+  const rect=canvas.getBoundingClientRect();
+  const px=(e.clientX-rect.left)*MAP_W/rect.width;
+  const py=(e.clientY-rect.top)*MAP_H/rect.height;
+  const h=pxToHex(px,py);
+  const tip=document.getElementById('tip');
+  if (!hovHex||hovHex.col!==h.col||hovHex.row!==h.row) {
+    hovHex=h;
+    const u=getUnitAt(h.col,h.row);
+    let html=`<b>${hexLbl(h.col,h.row)}</b>`;
+    if (u) html+=` — ${u.name}<br>PV:${u.hp}/${u.maxHp} CA:${u.ac}`;
+    const cov=getCover(h.col,h.row);
+    if (cov!=='none') html+=`<br>Cobertura:${cov==='partial'?'parcial':'total'}`;
+    tip.innerHTML=html; tip.style.display='block';
+    render();
+  }
+  tip.style.left=(e.clientX+14)+'px'; tip.style.top=(e.clientY-8)+'px';
+});
+canvas.addEventListener('mouseleave', ()=>{
+  hovHex=null;
+  document.getElementById('tip').style.display='none';
+  render();
+});
+
+// ═══════════════════════════════════════════════
+//  LOG
+// ═══════════════════════════════════════════════
+let logVisible=false;
+function toggleLog() {
+  logVisible=!logVisible;
+  const panel=document.getElementById('log-panel');
+  panel.style.display=logVisible?'block':'none';
+  document.getElementById('btn-log-toggle').textContent=(logVisible?'▼':'▲')+' Log';
+  if (logVisible) panel.scrollTop=panel.scrollHeight;
+}
+
+function addLog(msg, cls='s') {
+  const panel=document.getElementById('log-panel');
+  const d=document.createElement('div'); d.className=`le ${cls}`; d.textContent=msg;
+  panel.appendChild(d);
+  if (logVisible) panel.scrollTop=panel.scrollHeight;
+  while (panel.children.length>150) panel.removeChild(panel.firstChild);
+}
+
+// ═══════════════════════════════════════════════
+//  GRID TOGGLES
+// ═══════════════════════════════════════════════
+function toggleGrid() {
+  showGrid=!showGrid;
+  document.getElementById('grid-toggle').classList.toggle('active',showGrid);
+  if (!showGrid) debugGrid=false;
+  render();
+}
+function toggleDebug() {
+  if (!showGrid) { showGrid=true; document.getElementById('grid-toggle').classList.add('active'); }
+  debugGrid=!debugGrid; render();
+}
+
+// ═══════════════════════════════════════════════
+//  SCENARIO SYSTEM
+// ═══════════════════════════════════════════════
+function openSceneModal() {
+  const list=document.getElementById('scene-list');
+  list.innerHTML='';
+  for (const [id, sc] of Object.entries(SCENARIOS)) {
+    const div=document.createElement('div');
+    div.className='scene-item'+(currentScenario===id?' active':'');
+    div.innerHTML=`<h3>${sc.name}</h3><p>${sc.desc}</p>`;
+    div.onclick=()=>{ loadScenario(id); closeSceneModal(); };
+    list.appendChild(div);
+  }
+  document.getElementById('scene-modal').classList.add('open');
+}
+function closeSceneModal() { document.getElementById('scene-modal').classList.remove('open'); }
+
+function loadScenario(id) {
+  if (!SCENARIOS[id]) return;
+  currentScenario=id;
+  SC=SCENARIOS[id];
+  MAP_W=SC.gridW; MAP_H=SC.gridH;
+  COLS=SC.COLS; ROWS=SC.ROWS;
+  GX0=SC.GX0; GY0=SC.GY0; CS=SC.CS; RS=SC.RS;
+  HR=SC.HR; VR=SC.VR; OOFF=SC.OOFF;
+  // Update map image
+  const img=document.getElementById('map-img');
+  const newImg=new Image();
+  newImg.onload=()=>{ img.src=SC.map; resizeCanvas(); layoutMap(); render(); };
+  newImg.onerror=()=>{ img.src=''; resizeCanvas(); layoutMap(); render(); };
+  newImg.src=SC.map;
+  // Reset zoom/pan
+  zoom=1; panX=0; panY=0;
+  // Reposition units to valid positions
+  units.forEach(u=>{ u.occupiedHexes=occupiedHexes(u.col,u.row,u.size||'1x1'); });
+  addLog(`Cenário: ${SC.name}`,'ai');
+  render();
+}
+
+// ═══════════════════════════════════════════════
+//  API KEY
+// ═══════════════════════════════════════════════
+let apiKey = localStorage.getItem('rpg_key') || '';
+
+function openKeyModal() {
+  const modal=document.getElementById('key-modal');
+  document.getElementById('key-input').value=apiKey;
+  modal.classList.remove('hidden');
+}
+function closeKeyModal() { document.getElementById('key-modal').classList.add('hidden'); }
+function saveKey() {
+  const v=document.getElementById('key-input').value.trim();
+  apiKey=v;
+  if (v) localStorage.setItem('rpg_key',v);
+  else localStorage.removeItem('rpg_key');
+  closeKeyModal();
+  addLog(v?'🔑 Chave Groq salva. Narrador IA ativo.':'🔑 Chave removida. Modo sem IA.','ai');
+}
+
+// Show key modal on first load if no key
+if (!apiKey) {
+  setTimeout(()=>{ document.getElementById('key-modal').classList.remove('hidden'); }, 800);
+}
+
+// ═══════════════════════════════════════════════
+//  AI NARRATOR
+// ═══════════════════════════════════════════════
+const GROQ_URL   = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
+let _callingAI   = false;
+
+function buildSystemPrompt() {
+  const sc=SCENARIOS[currentScenario];
+  const heroList=heroes().map(u=>`${u.name} (${u.classe}) em ${hexLbl(u.col,u.row)}: ${u.hp}/${u.maxHp} PV, CA ${u.ac}`).join('; ');
+  const enemList=enemies().map(u=>`${u.name} em ${hexLbl(u.col,u.row)}: ${u.hp}/${u.maxHp} PV, CA ${u.ac}`).join('; ');
+  return `Você é o Mestre do Dungeon do Oráculo RPG — um narrador dramático, conciso e imersivo de uma batalha tática em grade hexagonal.
+Cenário atual: ${sc.name}. ${sc.desc}
+Turno: ${turn}. Fase: ${phase==='hero'?'Heróis':'Inimigos'}.
+Heróis: ${heroList||'nenhum'}.
+Inimigos: ${enemList||'nenhum'}.
+Grade: ${COLS} colunas (${CL[0]}–${CL[COLS-1]}) × ${ROWS} linhas (01–${String(ROWS).padStart(2,'0')}). Hexes flat-top, distância em hex.
+
+REGRAS DE RESPOSTA:
+- Máximo 120 palavras de narrativa.
+- Pode usar tags de ação (uma por linha, no final):
+  MOVER:[NomeUnidade|ColRow]  — move unidade para hex (ex: MOVER:[Bárbaro|F06])
+  ATACAR:[Atacante|Alvo]      — resolve ataque
+  CENA:[scenario_id]          — troca cenário (ids: feira_assombrada, castelo_interior, taverna)
+  STAT:[nome|hp:X]            — atualiza HP
+- Não use markdown. Fale em português. Seja dramático e breve.`;
+}
+
+async function callAI(userMsg) {
+  if (!apiKey) { addLog('⚠ Sem chave Groq. Clique em 🔑 para configurar.','s'); return; }
+  if (_callingAI) return;
+  _callingAI=true;
+  addLog('🔮 Narrador pensando…','ai');
+  try {
+    const resp=await fetch(GROQ_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body:JSON.stringify({
+        model:GROQ_MODEL, temperature:0.85, max_tokens:400,
+        messages:[
+          {role:'system',content:buildSystemPrompt()},
+          {role:'user',content:userMsg}
+        ]
+      })
+    });
+    if (!resp.ok) {
+      const err=await resp.text();
+      addLog(`⚠ Erro IA: ${resp.status} — ${err.slice(0,120)}`,'e');
+      _callingAI=false; return;
+    }
+    const data=await resp.json();
+    const text=(data.choices?.[0]?.message?.content||'').trim();
+    parseAIResponse(text);
+  } catch(e) {
+    addLog(`⚠ Erro IA: ${e.message}`,'e');
+  }
+  _callingAI=false;
+}
+
+function parseAIResponse(text) {
+  // Split into narrative and tags
+  const lines=text.split('\n');
+  const narrative=[], tags=[];
+  for (const ln of lines) {
+    const t=ln.trim();
+    if (/^(MOVER|ATACAR|CENA|STAT):/i.test(t)) tags.push(t);
+    else if (t) narrative.push(t);
+  }
+  if (narrative.length) {
+    addLog('📖 '+narrative.join(' '),'ai');
+    if (!logVisible) toggleLog();
+  }
+  // Execute tags
+  for (const tag of tags) {
+    const m=tag.match(/^(\w+):\[(.+)\]$/);
+    if (!m) continue;
+    const [,cmd,params]=m;
+    const parts=params.split('|');
+    if (cmd.toUpperCase()==='MOVER') {
+      const uName=parts[0].trim(), hex=parts[1]?.trim();
+      if (uName&&hex) {
+        const u=findAnyUnitByText(uName);
+        const dest=parseHex(hex);
+        if (u&&dest&&dest.col>=0&&dest.col<COLS&&dest.row>=0&&dest.row<ROWS) {
+          addLog(`→ ${u.name} move para ${hex.toUpperCase()}`,'m');
+          moveUnit(u,dest.col,dest.row); render();
+        }
+      }
+    } else if (cmd.toUpperCase()==='ATACAR') {
+      const atkName=parts[0].trim(), defName=parts[1]?.trim();
+      if (atkName&&defName) {
+        const atk=findAnyUnitByText(atkName), def=findAnyUnitByText(defName);
+        if (atk&&def&&atk.alive&&def.alive) { doAttack(atk,def); checkEnd(); render(); }
+      }
+    } else if (cmd.toUpperCase()==='CENA') {
+      const scId=parts[0].trim();
+      if (SCENARIOS[scId]) loadScenario(scId);
+    } else if (cmd.toUpperCase()==='STAT') {
+      const name=parts[0].trim();
+      const hpM=(parts[1]||'').match(/hp:(\d+)/i);
+      if (hpM) {
+        const u=findAnyUnitByText(name);
+        if (u) { u.hp=Math.max(0,Math.min(u.maxHp,parseInt(hpM[1]))); if (u.hp<=0){u.alive=false;checkEnd();} render(); }
+      }
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  TEXT COMMAND PARSER
+// ═══════════════════════════════════════════════
+function submitCmd() {
+  const el=document.getElementById('cmd-input');
+  const txt=el.value.trim();
+  if (!txt) return;
+  el.value='';
+  parseCommand(txt);
+}
+document.getElementById('cmd-input').addEventListener('keydown', e=>{ if(e.key==='Enter') submitCmd(); });
+
+function findUnitByText(t) {
+  const lo=t.toLowerCase();
+  const all=[...heroes(),...enemies()];
+  for (const u of all) {
+    if (lo.includes(u.name.toLowerCase())) return u;
+    if (u.classe&&lo.includes(u.classe.toLowerCase())) return u;
+  }
+  if (/bárbar|barbar/i.test(lo)) return getUnit('hero_barbaro');
+  if (/arqueiro|archer|arco/i.test(lo)) return getUnit('hero_arqueiro');
+  if (/mago|mage|wizard/i.test(lo)) return getUnit('hero_mago');
+  if (/espantalho.*(1|i\b|um)/i.test(lo)) return getUnit('espa_01');
+  if (/espantalho.*(2|ii\b|dois)/i.test(lo)) return getUnit('espa_02');
+  if (/espantalho/i.test(lo)) { const e=enemies().find(u=>u.id.startsWith('espa')); return e||null; }
+  if (/bark/i.test(lo)) return getUnit('barkthresher');
+  if (/larva/i.test(lo)) return getUnit('larva_gigante');
+  return null;
+}
+
+function findTargetByText(t, actor) {
+  const lo=t.toLowerCase();
+  const foes=actor.type==='hero'?enemies():heroes();
+  for (const u of foes) if (lo.includes(u.name.toLowerCase())) return u;
+  if (/bárbar|barbar/i.test(lo)) return getUnit('hero_barbaro');
+  if (/arqueiro|arco/i.test(lo)) return getUnit('hero_arqueiro');
+  if (/mago/i.test(lo)) return getUnit('hero_mago');
+  if (/espantalho.*(1|i\b|um)/i.test(lo)) return getUnit('espa_01');
+  if (/espantalho.*(2|ii\b|dois)/i.test(lo)) return getUnit('espa_02');
+  if (/espantalho/i.test(lo)) { const e=enemies().find(u=>u.id.startsWith('espa')); return e||null; }
+  if (/bark/i.test(lo)) return getUnit('barkthresher');
+  if (/larva/i.test(lo)) return getUnit('larva_gigante');
+  if (/próximo|perto|closest|nearest/i.test(lo)) {
+    return foes.reduce((b,u)=>b==null||unitDist(actor,u)<unitDist(actor,b)?u:b, null);
+  }
+  return null;
+}
+
+function findAnyUnitByText(t) {
+  const lo=t.toLowerCase();
+  for (const u of units.filter(u=>u.alive)) {
+    if (lo.includes(u.name.toLowerCase())) return u;
+    if (u.classe&&lo.includes(u.classe.toLowerCase())) return u;
+  }
+  if (/bárbar|barbar/i.test(lo)) return getUnit('hero_barbaro');
+  if (/arqueiro|arco/i.test(lo)) return getUnit('hero_arqueiro');
+  if (/mago/i.test(lo)) return getUnit('hero_mago');
+  if (/larva/i.test(lo)) return getUnit('larva_gigante');
+  if (/bark/i.test(lo)) return getUnit('barkthresher');
+  if (/espantalho.*(1|i\b|um)/i.test(lo)) return getUnit('espa_01');
+  if (/espantalho.*(2|ii\b|dois)/i.test(lo)) return getUnit('espa_02');
+  if (/espantalho/i.test(lo)) return units.find(u=>u.id.startsWith('espa')&&u.alive)||null;
+  return null;
+}
+
+function parseCommand(raw) {
+  const lo=raw.toLowerCase();
+
+  // Narrar / AI commands
+  if (/^narrar|^ai:|^ia:|^mestre:|^master:/i.test(lo)||lo==='n') {
+    callAI(raw.replace(/^(narrar|ai:|ia:|mestre:|master:)\s*/i,'').trim()||buildSystemPrompt());
+    return;
+  }
+
+  // End turn
+  if (/fim\s*de\s*turno|encerrar|passar\s*turno|end\s*turn/i.test(lo)) { endHeroPhase(); return; }
+
+  if (phase==='enemy') { addLog('Aguarde — fase dos inimigos.','s'); return; }
+
+  // Change scenario
+  const scM=lo.match(/cenário\s+(\w+)|cena\s+(\w+)/);
+  if (scM) {
+    const sid=scM[1]||scM[2];
+    const found=Object.keys(SCENARIOS).find(k=>k.includes(sid)||SCENARIOS[k].name.toLowerCase().includes(sid));
+    if (found) { loadScenario(found); return; }
+  }
+
+  // Move near target
+  const nearM=lo.match(/perto\s+d[aeo]\s+(.+)|ao\s+lado\s+d[aeo]\s+(.+)|próximo\s+d[aeo]\s+(.+)/i);
+  if (nearM) {
+    const actor=findUnitByText(lo);
+    if (actor&&actor.alive&&actor.type==='hero'&&!actor.hasMoved) {
+      const n=(nearM[1]||nearM[2]||nearM[3]).trim();
+      const nearTarget=findAnyUnitByText(n);
+      if (nearTarget&&nearTarget.id!==actor.id) {
+        const reach=reachable(actor);
+        const adjKeys=new Set(nearTarget.occupiedHexes.flatMap(h=>hexNbrs(h.col,h.row).map(nb=>`${nb.col},${nb.row}`)));
+        let best=null, bd=Infinity;
+        for (const h of reach) { if (adjKeys.has(`${h.col},${h.row}`)&&h.steps<bd){bd=h.steps;best=h;} }
+        if (!best) { for (const h of reach){const d=distFromPt(h.col,h.row,nearTarget);if(d<bd){bd=d;best=h;}} }
+        if (best) {
+          addLog(`${actor.name}: ${hexLbl(actor.col,actor.row)} → ${hexLbl(best.col,best.row)} — perto de ${nearTarget.name}.`,'h');
+          moveUnit(actor,best.col,best.row); render();
+        } else { addLog(`${actor.name} não consegue se aproximar de ${nearTarget.name}.`,'s'); }
+        return;
+      }
+    }
+  }
+
+  const actor=findUnitByText(lo);
+  if (!actor) {
+    // Forward to AI if key set
+    if (apiKey) { callAI(raw); return; }
+    addLog(`Não identifiquei quem age. Ex: "Bárbaro avança" ou "narrar"`,'s'); return;
+  }
+  if (!actor.alive) { addLog(`${actor.name} está fora de combate.`,'s'); return; }
+  if (actor.type==='enemy') { addLog(`Inimigos agem automaticamente.`,'s'); return; }
+  if (actor.hasMoved&&actor.hasActed) { addLog(`${actor.name} já usou toda a ação neste turno.`,'s'); return; }
+
+  const isAtk=/ataca?|golpeia?|desfere?|corta?|machado|espada|flecha|lança?|dispara?|raio|magia|feitiç/i.test(lo);
+  const isMov=/corre?|anda?|avança?|move?|vai\b|chega?|aproxima?|recua?|posiciona?|fica\b|vai até|até\s+\w/i.test(lo);
+
+  const hexM=lo.match(/\b([a-p])\s*0?(1[0-9]|[1-9])\b/);
+  const destHex=hexM?parseHex((hexM[1]+hexM[2]).toUpperCase()):null;
+  const target=findTargetByText(lo,actor);
+
+  // Explicit hex
+  if (destHex&&!isAtk) {
+    if (actor.hasMoved) { addLog(`${actor.name} já se moveu.`,'s'); return; }
+    const reach=reachable(actor);
+    const h=reach.find(r=>r.col===destHex.col&&r.row===destHex.row);
+    if (h) {
+      addLog(`${actor.name} move para ${hexLbl(destHex.col,destHex.row)} (${h.steps} hex).`,'h');
+      moveUnit(actor,destHex.col,destHex.row); render();
+    } else {
+      addLog(`${hexLbl(destHex.col,destHex.row)} fora do alcance de mov (${actor.moveSpeed} hex).`,'s');
+    }
+    return;
+  }
+
+  // Attack only
+  if (isAtk&&target&&!isMov) {
+    if (actor.hasActed) { addLog(`${actor.name} já atacou.`,'s'); return; }
+    const tgts=atkTargets(actor,actor.col,actor.row);
+    const found=tgts.find(t=>t.id===target.id);
+    if (found) { doAttack(actor,target); checkEnd(); render(); }
+    else { addLog(`${actor.name} não alcança ${target.name} daqui. Avance primeiro.`,'s'); }
+    return;
+  }
+
+  // Move + attack
+  if ((isAtk||isMov)&&target) {
+    if (!actor.hasMoved) {
+      const tgts=atkTargets(actor,actor.col,actor.row);
+      if (!tgts.find(t=>t.id===target.id)) {
+        const reach=reachable(actor);
+        let bestDest=null, bestD=Infinity;
+        for (const h of reach) {
+          const d=distFromPt(h.col,h.row,target);
+          const canAtk=d<=1||(actor.rangedWeapon&&d<=actor.rangedWeapon.range);
+          if (canAtk&&d<bestD){bestD=d;bestDest=h;}
+        }
+        if (!bestDest) { for (const h of reach){const d=distFromPt(h.col,h.row,target);if(d<bestD){bestD=d;bestDest=h;}} }
+        if (bestDest) {
+          addLog(`${actor.name}: ${hexLbl(actor.col,actor.row)} → ${hexLbl(bestDest.col,bestDest.row)}.`,'h');
+          moveUnit(actor,bestDest.col,bestDest.row); render();
+        }
+      }
+    }
+    if (isAtk&&!actor.hasActed) {
+      const tgts=atkTargets(actor,actor.col,actor.row);
+      const found=tgts.find(t=>t.id===target.id);
+      if (found) { doAttack(actor,target); checkEnd(); }
+      else { addLog(`${actor.name} avançou mas ${target.name} ainda longe.`,'s'); }
+    }
+    render(); return;
+  }
+
+  // Move toward target
+  if (isMov&&target&&!actor.hasMoved) {
+    const reach=reachable(actor);
+    let best=null, bd=Infinity;
+    for (const h of reach){const d=distFromPt(h.col,h.row,target);if(d<bd){bd=d;best=h;}}
+    if (best) { addLog(`${actor.name}: ${hexLbl(actor.col,actor.row)} → ${hexLbl(best.col,best.row)}.`,'h'); moveUnit(actor,best.col,best.row); render(); }
+    return;
+  }
+
+  // Forward unknown to AI
+  if (apiKey) { callAI(raw); return; }
+  addLog(`Não entendi. Ex: "${actor.name} ataca ${enemies()[0]?.name||'inimigo'}" ou "narrar"`,'s');
+}
+
+// ═══════════════════════════════════════════════
+//  DICE HELPERS
+// ═══════════════════════════════════════════════
+function getPortraitAtaque(name) {
+  const u=units.find(un=>un.name===name||un.id===name);
+  if (u) return {src:u.sprite||null, cor:u.type==='hero'?'#4488cc':'#cc4444', icon:u.icon||'⚔'};
+  return {src:null, cor:'#888', icon:'⚔'};
+}
+function parseNotacao(str) {
+  const m=str.match(/(\d+)d(\d+)([+-]\d+)?/);
+  if (!m) return null;
+  return {dice:parseInt(m[1]), sides:parseInt(m[2]), bonus:m[3]?parseInt(m[3]):0};
+}
+function rollNotacao(str) {
+  const p=parseNotacao(str); if (!p) return {total:0,notation:str,sides:6};
+  let t=p.bonus; for (let i=0;i<p.dice;i++) t+=Math.floor(Math.random()*p.sides)+1;
+  return {total:Math.max(1,t), notation:str, sides:p.sides};
+}
+
+// ═══════════════════════════════════════════════
+//  DICE OVERLAY (Three.js)
+// ═══════════════════════════════════════════════
+const DiceOverlay = (function(){
+  let _rend=null,_scene=null,_cam=null;
+  let _mesh=null,_raf=null,_t0=null,_lastTS=null;
+  let _svx=0,_svy=0,_svz=0,_resultShown=false,_onStop=null;
+  const FE=1.15, SF=1.8, SS=2.35;
+
+  function _buildDOM(){
+    const ov=document.getElementById('teste-overlay');
+    if (!ov||ov.querySelector('.dado-card-jogo')) return ov;
+    const SZ=Math.min(window.innerWidth*0.32,130)|0;
+    ov.innerHTML=`<div class="dado-card-jogo">
+      <div id="dado-titulo-acao" class="dado-titulo-acao"></div>
+      <div id="dado-label-atual" class="dado-label-atual"></div>
+      <div class="dado-versus-row">
+        <div id="dado-portrait-esq" class="dado-portrait-vs"></div>
+        <div class="dado-canvas-wrap">
+          <canvas id="dado-canvas-jogo" width="${SZ}" height="${SZ}"></canvas>
+          <div id="dado-num-jogo" class="dado-num-jogo"></div>
+        </div>
+        <div id="dado-portrait-dir" class="dado-portrait-vs" style="display:none"></div>
+      </div>
+      <div id="dado-resultado-atual" class="dado-resultado-atual">
+        <div id="dado-detalhe-jogo" class="dado-detalhe-jogo"></div>
+        <div id="dado-veredicto-jogo" class="dado-veredicto-jogo"></div>
+      </div>
+      <div id="dado-historico" class="dado-historico"></div>
+    </div>`;
+    return ov;
+  }
+
+  function _initThree(){
+    if (_rend) return true;
+    if (typeof THREE==='undefined') return false;
+    const cv=document.getElementById('dado-canvas-jogo');
+    if (!cv) return false;
+    const SZ=cv.width;
+    _rend=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+    _rend.setPixelRatio(Math.min(devicePixelRatio,2));
+    _rend.setSize(SZ,SZ);
+    _rend.setClearColor(0x000000,0);
+    _scene=new THREE.Scene();
+    _cam=new THREE.PerspectiveCamera(38,1,1,2000);
+    _cam.position.set(0,0,350);
+    _scene.add(new THREE.AmbientLight(0xffffff,0.5));
+    const key=new THREE.DirectionalLight(0xffe8cc,1.15); key.position.set(100,180,120); _scene.add(key);
+    const fill=new THREE.DirectionalLight(0xaad0ff,0.38); fill.position.set(-80,40,60); _scene.add(fill);
+    const rim=new THREE.PointLight(0xff3311,0.55,900); rim.position.set(-150,80,-220); _scene.add(rim);
+    return true;
+  }
+
+  function _geoD10(){
+    const v=[0,95,0,0,-95,0];
+    for (let i=0;i<5;i++){const a=(Math.PI*2*i/5)-Math.PI/2; v.push(74*Math.cos(a),0,74*Math.sin(a));}
+    const idx=[];
+    for (let i=0;i<5;i++){idx.push(0,2+i,2+(i+1)%5); idx.push(1,2+(i+1)%5,2+i);}
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));
+    g.setIndex(idx); g.computeVertexNormals(); return g;
+  }
+
+  function _geo(lados){
+    if (lados===4)  return new THREE.TetrahedronGeometry(72);
+    if (lados===6)  return new THREE.BoxGeometry(105,105,105);
+    if (lados===8)  return new THREE.OctahedronGeometry(72);
+    if (lados===10) return _geoD10();
+    if (lados===12) return new THREE.DodecahedronGeometry(68);
+    return new THREE.IcosahedronGeometry(72,0);
+  }
+
+  function _makeMesh(lados){
+    const g=_geo(lados);
+    const mat=new THREE.MeshStandardMaterial({color:0xbf1a0c,roughness:0.28,metalness:0.08,side:THREE.DoubleSide});
+    const m=new THREE.Mesh(g,mat); m.castShadow=true;
+    m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g,lados<=6?20:30),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.45})));
+    return m;
+  }
+
+  function _bounce(t){
+    if (t<1/2.75) return 7.5625*t*t;
+    if (t<2/2.75){t-=1.5/2.75; return 7.5625*t*t+.75;}
+    if (t<2.5/2.75){t-=2.25/2.75; return 7.5625*t*t+.9375;}
+    t-=2.625/2.75; return 7.5625*t*t+.984375;
+  }
+
+  function _loop(ts){
+    if (!_t0) _t0=ts;
+    const dt=_lastTS?(ts-_lastTS)/1000:0; _lastTS=ts;
+    const t=(ts-_t0)/1000;
+    if (_mesh){
+      _mesh.position.y=140-140*_bounce(Math.min(t/FE,1));
+      const fp=Math.min(t/FE,1);
+      if (fp>0.70&&fp<0.88){const i=(0.88-fp)/0.18; _cam.position.x=(Math.random()-.5)*7*i; _cam.position.y=(Math.random()-.5)*5*i;}
+      else {_cam.position.x*=0.85; _cam.position.y*=0.85;}
+      let sm;
+      if (t<SF) sm=1;
+      else if (t<SS) sm=Math.pow(1-(t-SF)/(SS-SF),2.5);
+      else {sm=0; if (!_resultShown){_resultShown=true;_rend.render(_scene,_cam);if(_onStop)_onStop();}return;}
+      _mesh.rotation.x+=_svx*sm*dt; _mesh.rotation.y+=_svy*sm*dt; _mesh.rotation.z+=_svz*sm*dt;
+    }
+    _rend.render(_scene,_cam); _raf=requestAnimationFrame(_loop);
+  }
+
+  function _launch(lados,onStop){
+    if (!_initThree()){onStop();return;}
+    if (_mesh){_scene.remove(_mesh);_mesh=null;}
+    if (_raf){cancelAnimationFrame(_raf);_raf=null;}
+    _mesh=_makeMesh(lados); _mesh.position.set(0,140,0); _scene.add(_mesh);
+    const b=18;
+    _svx=(Math.random()-.5)*b+(Math.random()>.5?8:-8);
+    _svy=(Math.random()-.5)*b+(Math.random()>.5?8:-8);
+    _svz=(Math.random()-.5)*(b*.7);
+    _t0=null; _lastTS=null; _resultShown=false; _onStop=onStop; _raf=requestAnimationFrame(_loop);
+  }
+
+  function _clean(){
+    if (_raf){cancelAnimationFrame(_raf);_raf=null;}
+    if (_mesh&&_scene){_scene.remove(_mesh);_mesh=null;}
+    if (_rend&&_cam&&_scene){_cam.position.set(0,0,350);_rend.render(_scene,_cam);}
+  }
+
+  function mostrar(rolls, afterCb){
+    const ov=_buildDOM();
+    if (!ov){afterCb(rolls);return;}
+    const cv=document.getElementById('dado-canvas-jogo');
+    if (cv&&(!_rend||_rend.domElement!==cv)) _rend=null;
+    ov.style.display='flex';
+    const titulo=document.getElementById('dado-titulo-acao');
+    const label=document.getElementById('dado-label-atual');
+    const resDiv=document.getElementById('dado-resultado-atual');
+    const numEl=document.getElementById('dado-num-jogo');
+    const detEl=document.getElementById('dado-detalhe-jogo');
+    const vered=document.getElementById('dado-veredicto-jogo');
+    const hist=document.getElementById('dado-historico');
+    titulo.textContent=rolls[0]?.nomeJog||''; hist.innerHTML='';
+
+    function addHist(r){
+      let ic,vc,vt,rs;
+      if (r.tipo==='testar'){
+        if (r.catastrofe){ic='💀';vc='ct';vt='CATÁSTROFE';}
+        else if (r.critico){ic='⭐';vc='c';vt='CRÍTICO';}
+        else if (r.sucesso){ic='✓';vc='s';vt='ACERTO';}
+        else{ic='✕';vc='f';vt='FALHA';}
+        rs=`${r.d20}${r.modStr}=${r.total} CD${r.dc}`;
+      } else {ic='🎲';vc='d';vt=String(r.resultado);rs=r.notacao;}
+      const ln=document.createElement('div'); ln.className='dado-hist-linha';
+      ln.innerHTML=`<span class="dado-hist-icone">${ic}</span><span class="dado-hist-label">${r.label}</span><span class="dado-hist-roll">${rs}</span><span class="dado-hist-vered ${vc}">${vt}</span>`;
+      hist.appendChild(ln); hist.scrollTop=hist.scrollHeight;
+    }
+
+    function next(idx){
+      if (idx>=rolls.length){setTimeout(()=>{ov.style.display='none';_clean();afterCb(rolls);},1200);return;}
+      const r=rolls[idx];
+      if (r.condicionalDe!==undefined&&rolls[r.condicionalDe]&&!rolls[r.condicionalDe].sucesso){
+        const sk=document.createElement('div'); sk.className='dado-hist-linha';
+        sk.innerHTML=`<span class="dado-hist-icone">—</span><span class="dado-hist-label">${r.label}</span><span class="dado-hist-roll" style="opacity:.35">ataque errou</span><span class="dado-hist-vered f">CANCELADO</span>`;
+        hist.appendChild(sk); setTimeout(()=>next(idx+1),700); return;
+      }
+      numEl.classList.remove('visivel'); resDiv.classList.remove('visivel');
+      numEl.textContent=''; detEl.textContent=''; vered.textContent=''; vered.className='dado-veredicto-jogo';
+      label.textContent=r.label;
+      const _esq=document.getElementById('dado-portrait-esq');
+      const _dir=document.getElementById('dado-portrait-dir');
+      if (_esq){
+        const _p=getPortraitAtaque(r.nomeJog||'');
+        _esq.style.cssText+=`;background:${_p.cor}22;border-color:${_p.cor}55`;
+        _esq.innerHTML=_p.src?`<img src="${_p.src}" class="espelhado" onerror="this.style.opacity='.15'"><div class="dado-portrait-nome">${r.nomeJog||''}</div>`:`<span>${_p.icon}</span><div class="dado-portrait-nome">${r.nomeJog||''}</div>`;
+      }
+      if (_dir){
+        if (r.alvo){
+          const _p=getPortraitAtaque(r.alvo);
+          _dir.style.cssText+=`;display:flex;background:${_p.cor}22;border-color:${_p.cor}55`;
+          _dir.innerHTML=_p.src?`<img src="${_p.src}" onerror="this.style.opacity='.15'"><div class="dado-portrait-nome">${r.alvo}</div>`:`<span>${_p.icon}</span><div class="dado-portrait-nome">${r.alvo}</div>`;
+        } else { _dir.style.display='none'; }
+      }
+      const lados=r.tipo==='testar'?20:(r.dados||20);
+      _launch(lados,()=>{
+        if (r.tipo==='testar'){
+          numEl.textContent=String(r.total);
+          const glow=r.critico?'rgba(255,215,0,.9)':r.catastrofe?'rgba(255,40,40,.9)':r.sucesso?'rgba(100,230,100,.9)':'rgba(230,80,80,.9)';
+          numEl.style.textShadow=`0 2px 10px rgba(0,0,0,.95),0 0 24px ${glow}`;
+          detEl.textContent=`${r.d20}${r.modStr} = ${r.total} · CD ${r.dc}`;
+        } else {
+          numEl.textContent=String(r.resultado);
+          numEl.style.textShadow='0 2px 10px rgba(0,0,0,.95),0 0 24px rgba(255,160,40,.85)';
+          detEl.textContent=r.notacao;
+        }
+        numEl.classList.add('visivel'); resDiv.classList.add('visivel');
+        setTimeout(()=>{
+          if (r.tipo==='testar'){
+            if (r.catastrofe){vered.textContent='💀 CATÁSTROFE!';vered.className='dado-veredicto-jogo catastrofe visivel';}
+            else if (r.critico){vered.textContent='⭐ CRÍTICO!';vered.className='dado-veredicto-jogo critico visivel';}
+            else if (r.sucesso){vered.textContent='✦ ACERTO ✦';vered.className='dado-veredicto-jogo sucesso visivel';}
+            else{vered.textContent='✕ FALHA ✕';vered.className='dado-veredicto-jogo falha visivel';}
+          } else { vered.textContent=`🎲 ${r.resultado}`; vered.className='dado-veredicto-jogo critico visivel'; }
+          setTimeout(()=>{addHist(r);setTimeout(()=>next(idx+1),900);},1000);
+        },500);
+      });
+    }
+    next(0);
+  }
+  return {mostrar};
+})();
+
+// ═══════════════════════════════════════════════
+//  ROLL SKILL VS TARGET
+// ═══════════════════════════════════════════════
+function rollSkillVsTarget(actorId, sk, targetId) {
+  const actor=getUnit(actorId);
+  const target=targetId?getUnit(targetId):null;
+  if (!actor) return;
+  const atMod=actor.attrMod||2;
+  const playlist=[];
+  if (sk.type==='self'||sk.type==='passive') { addLog(`${actor.name} usa ${sk.icon} ${sk.name}${sk.dmg?' — '+sk.dmg:''}`,'n'); return; }
+  if (sk.type==='aoe') {
+    const dmgR=rollNotacao(sk.dmg||'1d6');
+    const tgts=enemies().filter(e=>unitDist(actor,e)<=(sk.range||2));
+    tgts.forEach(e=>{e.hp=Math.max(0,e.hp-dmgR.total);if(e.hp<=0){e.alive=false;}});
+    addLog(`${actor.name} usa ${sk.icon} ${sk.name} — ${dmgR.total} dano a ${tgts.length} alvo(s)`,'s');
+    checkEnd(); render(); return;
+  }
+  if (!target) { addLog(`${sk.icon} ${sk.name}: selecione um alvo.`,'n'); return; }
+  const dRoll=Math.floor(Math.random()*20)+1;
+  const total=dRoll+atMod;
+  const critico=dRoll===20, catastrofe=dRoll===1;
+  const sucesso=(total>=target.ac||critico)&&!catastrofe;
+  playlist.push({tipo:'testar',label:`${sk.icon} ${sk.name}`,nomeJog:actor.name,alvo:target.name,d20:dRoll,modStr:atMod>=0?`+${atMod}`:`${atMod}`,total,dc:target.ac,sucesso,critico,catastrofe});
+  if ((sucesso||critico)&&!catastrofe&&sk.dmg){
+    const dmgR=rollNotacao(sk.dmg);
+    const finalDmg=critico?dmgR.total*2:dmgR.total;
+    playlist.push({tipo:'rolar',label:`Dano ${sk.icon}`,nomeJog:actor.name,alvo:target.name,resultado:finalDmg,notacao:critico?`${sk.dmg} (CRÍTICO×2)`:sk.dmg,dados:parseNotacao(sk.dmg)?.sides||6,condicionalDe:0});
+  }
+  document.getElementById('action-popup').style.display='none';
+  selId=null;
+  const isBack=target&&actor.type==='hero'&&isBackAtk(actor,target);
+  if (isBack){actor._showFront=true;render();}
+  DiceOverlay.mostrar(playlist,(results)=>{
+    if (isBack) actor._showFront=false;
+    const atk=results[0];
+    if (atk.catastrofe){
+      addLog(`💀 CATÁSTROFE! ${actor.name} erra e sofre as consequências.`,'e');
+    } else if (atk.sucesso||atk.critico){
+      const dmgRoll=results[1];
+      const dmg=dmgRoll?dmgRoll.resultado:0;
+      target.hp=Math.max(0,target.hp-dmg);
+      addLog(`${atk.critico?'⭐':'✦'} ${actor.name}: ${sk.name}${atk.critico?' (CRÍTICO!)':''} → ${target.name} sofre ${dmg} dano${isBack?' (pelas costas!)':''}`, 's');
+      if (target.hp<=0){target.alive=false;addLog(`☠ ${target.name} foi derrotado!`,'x');checkEnd();}
+    } else {
+      addLog(`✕ ${actor.name}: ${sk.name} errou ${target.name} (${atk.total} vs CA ${target.ac})`,'f');
+    }
+    actor.hasActed=true; render();
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+mapImg.addEventListener('load', ()=>{ layoutMap(); render(); });
+window.addEventListener('resize', ()=>{ layoutMap(); render(); });
+layoutMap();
+if (mapImg.complete) render();
+updateHdr();
+addLog(`⚔ Oráculo 2 — ${SCENARIOS[currentScenario].name}`,'ai');
+addLog('Heróis: Bárbaro (E07) · Arqueiro (D08) · Mago (F08)','h');
+addLog('Comandos: "Bárbaro ataca Espantalho" · "Mago avança F06" · "narrar" · "🗺 Cenário"','s');
+// Auto-show log on start
+toggleLog();
+</script>
+</body>
+</html>
