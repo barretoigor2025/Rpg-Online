@@ -2655,20 +2655,20 @@ let _pinch=null, _drag=null, _justPinched=false;
 
 function layoutMap() {
   const ar=document.getElementById('map-area');
-  const hudH=document.getElementById('bottom-hud').offsetHeight||0;
-  const effectiveH=ar.clientHeight-hudH;
+  // Reserve ~160px for the combat HUD so the map fills the visible area
+  const effectiveH=ar.clientHeight-160;
   const sx=ar.clientWidth/MAP_W, sy=effectiveH/MAP_H;
-  baseScale=Math.min(sx,sy);
+  // Use MAX so map fills the effective area (slight horizontal overflow is clipped and pan-able)
+  baseScale=Math.max(sx,sy);
   applyVP();
 }
 
 function applyVP() {
   const ar=document.getElementById('map-area');
-  const hudH=document.getElementById('bottom-hud').offsetHeight||0;
-  const effectiveH=ar.clientHeight-hudH;
   const total=baseScale*zoom;
   const cx=(ar.clientWidth-MAP_W*total)/2+panX;
-  const cy=(effectiveH-MAP_H*total)/2+panY;
+  // Anchor map at top — no vertical centering gap
+  const cy=panY;
   document.getElementById('map-vp').style.transform=`translate(${cx}px,${cy}px) scale(${total})`;
 }
 
@@ -2861,9 +2861,10 @@ mapArea.addEventListener('wheel', e=>{
   const f=e.deltaY<0?1.15:0.87;
   const nz=Math.max(.5,Math.min(4,zoom*f));
   const tot=baseScale*zoom, nTot=baseScale*nz;
-  const natX=(ar.width-MAP_W*tot)/2+panX, natY=(ar.height-MAP_H*tot)/2+panY;
+  const natX=(ar.width-MAP_W*tot)/2+panX;
   panX=(natX-(mx*(nTot-tot)/tot))-((ar.width-MAP_W*nTot)/2);
-  panY=(natY-(my*(nTot-tot)/tot))-((ar.height-MAP_H*nTot)/2);
+  // cy = panY (top-anchored), so zoom-to-point formula is simpler:
+  panY = my - (my - panY)*(nTot/tot);
   zoom=nz; applyVP();
 },{passive:false});
 
