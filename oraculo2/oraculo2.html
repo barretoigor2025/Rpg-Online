@@ -2491,6 +2491,53 @@ function doSelfSkill(actor, skill) {
 }
 
 function doAttackWithSkill(atk, def, skill) {
+  // ── AoE branch (ranged_aoe: Bola de Fogo, Chuva de Flechas, etc.)
+  if (skill?.type === 'ranged_aoe') {
+    const skillRange = skill.range || 9;
+    const distToTarget = unitDist(atk, def);
+    if (distToTarget > skillRange) {
+      addLog(`${atk.name} não alcança com ${skill.nome||skill.name} (alvo a ${distToTarget} hex, máx ${skillRange}).`, 'm');
+      return;
+    }
+    const spCost = skill?.sp ?? 0;
+    if (spCost > 0) {
+      if ((atk.sp ?? 99) < spCost) {
+        addLog(`${atk.name} não tem ${atk.spType==='mana'?'mana':'estamina'} suficiente! (precisa ${spCost}, tem ${atk.sp??0})`, 'e');
+        return;
+      }
+      atk.sp = Math.max(0, (atk.sp ?? 0) - spCost);
+      addLog(`${atk.name} gasta ${spCost} ${atk.spType==='mana'?'mana':'estamina'} (restam ${atk.sp}).`, 'm');
+    }
+    const aoeRange = skill.aoe || 2;
+    const rawDmg = (skill.dmg || '2d6').match(/(\d+d\d+([+-]\d+)?)/)?.[1] || '2d6';
+    const lados = parseInt((rawDmg.match(/d(\d+)/)||[,6])[1]);
+    const aoeTargets = enemies().filter(e => e.alive && distFromPt(def.col, def.row, e) <= aoeRange);
+    if (!aoeTargets.length) {
+      addLog(`${atk.name} usa ${skill.icon||'🔥'} ${skill.nome||skill.name} — nenhum inimigo na área!`, 'n');
+      atk.hasActed = true; updateActionBar(); render(); return;
+    }
+    const dmgRolls = aoeTargets.map(() => rollDice(rawDmg));
+    const skLabel = `${skill.icon||'🔥'} ${skill.nome||skill.name}`;
+    const playlist = aoeTargets.map((t, i) => ({
+      tipo: 'rolar',
+      nomeJog: atk.name, label: `${skLabel} → ${t.name}`, alvo: t.name,
+      notacao: rawDmg, resultado: dmgRolls[i], dados: lados
+    }));
+    DiceOverlay.mostrar(playlist, () => {
+      atk.hasActed = true;
+      const parts = [];
+      aoeTargets.forEach((t, i) => {
+        t.hp = Math.max(0, t.hp - dmgRolls[i]);
+        let p = `${t.name}: ${dmgRolls[i]} dano`;
+        if (t.hp <= 0) { t.alive = false; t.hp = 0; p += ' (cai!)'; }
+        parts.push(p);
+      });
+      addLog(`💥 ${skLabel} atinge ${aoeTargets.length} alvo(s): ${parts.join(' | ')}`, 'x');
+      checkEnd(); updateActionBar(); render();
+    });
+    return;
+  }
+
   const dist = unitDist(atk, def);
   const isMelee = dist <= 1;
   const isRanged = atk.rangedWeapon && dist <= atk.rangedWeapon.range;
@@ -2525,7 +2572,10 @@ function doAttackWithSkill(atk, def, skill) {
   let dmgN = isMelee
     ? ({barbaro:'2d6+3',guerreiro:'1d8+2',mago:'1d4',arqueiro:'1d6+1',clerigo:'1d6+2',ladino:'1d8+3'}[atk.classe||''] || '1d6')
     : (atk.rangedWeapon?.name==='Raio Arcano' ? '1d8+2' : '1d6+2');
-  if (skill?.dmg && skill.dmg !== '—') dmgN = skill.dmg;
+  if (skill?.dmg && skill.dmg !== '—') {
+    const extracted = skill.dmg.match(/(\d+d\d+([+-]\d+)?)/)?.[1];
+    if (extracted) dmgN = extracted;
+  }
 
   const dmgRolled = sucesso ? rollDice(dmgN) : 0;
   const dmgFinal  = (crit && sucesso) ? dmgRolled * 2 : dmgRolled;
@@ -2582,16 +2632,20 @@ let _pinch=null, _drag=null, _justPinched=false;
 
 function layoutMap() {
   const ar=document.getElementById('map-area');
-  const sx=ar.clientWidth/MAP_W, sy=ar.clientHeight/MAP_H;
+  const hudH=document.getElementById('bottom-hud').offsetHeight||0;
+  const effectiveH=ar.clientHeight-hudH;
+  const sx=ar.clientWidth/MAP_W, sy=effectiveH/MAP_H;
   baseScale=Math.min(sx,sy);
   applyVP();
 }
 
 function applyVP() {
   const ar=document.getElementById('map-area');
+  const hudH=document.getElementById('bottom-hud').offsetHeight||0;
+  const effectiveH=ar.clientHeight-hudH;
   const total=baseScale*zoom;
   const cx=(ar.clientWidth-MAP_W*total)/2+panX;
-  const cy=(ar.clientHeight-MAP_H*total)/2+panY;
+  const cy=(effectiveH-MAP_H*total)/2+panY;
   document.getElementById('map-vp').style.transform=`translate(${cx}px,${cy}px) scale(${total})`;
 }
 
