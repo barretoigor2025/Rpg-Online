@@ -95,50 +95,75 @@ header{
   display:none;flex-direction:column
 }
 #action-bar.visible{display:flex}
-/* Status row: portrait+stats left │ target right */
+/* Status row: hero | terrain | target */
 .ab-status{
-  display:grid;grid-template-columns:1fr auto;
-  align-items:center;gap:0;
-  background:#0c0a07
+  display:grid;grid-template-columns:1fr 96px 1fr;
+  background:#0c0a07;border-bottom:1px solid rgba(200,160,48,.07)
 }
-.ab-hero-side{
-  display:flex;align-items:center;gap:8px;
-  padding:8px 8px 6px 10px
+/* ── Hero column ── */
+.ab-hero-col{
+  display:flex;align-items:stretch;gap:0;
+  border-right:1px solid rgba(200,160,48,.1)
 }
 .ab-portrait{
-  width:46px;height:58px;object-fit:contain;object-position:top center;
-  border-radius:6px;border:1px solid rgba(200,160,48,.25);
-  background:#070503;image-rendering:auto;flex-shrink:0;
-  filter:drop-shadow(0 2px 8px rgba(0,0,0,.9))
+  width:54px;flex-shrink:0;object-fit:cover;object-position:top center;
+  background:#070503;image-rendering:auto;
+  border-right:1px solid rgba(200,160,48,.15)
 }
-.ab-info{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
-.ab-uname{font-size:13px;font-weight:700;color:#c8a030;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ab-hp-row{display:flex;align-items:center;gap:5px}
-.ab-hp-bar{flex:1;height:6px;background:rgba(200,160,48,.1);border-radius:3px;overflow:hidden}
+.ab-info{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0;padding:6px 7px 6px 6px}
+.ab-uname{font-size:12px;font-weight:800;color:#d4b050;text-transform:uppercase;letter-spacing:.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ab-level{font-size:9px;color:#6a5838;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.ab-hp-row{display:flex;align-items:center;gap:4px}
+.ab-hp-icon{font-size:10px;flex-shrink:0}
+.ab-hp-bar{flex:1;height:5px;background:rgba(200,60,60,.15);border-radius:3px;overflow:hidden}
 .ab-hp-fill{height:100%;border-radius:3px;transition:width 1.1s cubic-bezier(.22,.61,.36,1),background 0.5s}
-.ab-hp-txt{font-size:11px;color:#907060;flex-shrink:0;font-weight:600}
-.ab-sp-row{display:flex;align-items:center;gap:5px}
+.ab-hp-txt{font-size:10px;color:#907060;flex-shrink:0;font-weight:700;min-width:28px;text-align:right}
+.ab-sp-row{display:flex;align-items:center;gap:4px}
 .ab-sp-bar{flex:1;height:4px;background:rgba(60,80,200,.12);border-radius:3px;overflow:hidden}
 .ab-sp-fill{height:100%;border-radius:3px;transition:width 1.1s cubic-bezier(.22,.61,.36,1),background 0.4s}
-.ab-sp-txt{font-size:11px;flex-shrink:0;font-weight:600}
-.ab-mov-txt{font-size:11px;color:#6090c0}
-.ab-stats-row{display:flex;gap:10px;font-size:11px;color:#7a6850;margin-top:2px}
+.ab-sp-txt{font-size:9px;flex-shrink:0;font-weight:700;color:#6090e0}
+.ab-stats-row{display:flex;gap:7px;font-size:10px;color:#7a6850;margin-top:1px;flex-wrap:wrap}
 .ab-stats-row span{display:flex;align-items:center;gap:2px}
 .ab-atq-val{color:#c07040;font-weight:700}
 .ab-def-val{color:#5090b0;font-weight:700}
-/* Target panel — right side of status row */
-.ab-target{
-  display:none;flex-direction:column;justify-content:center;
-  padding:8px 10px 6px 8px;min-width:100px;max-width:130px;
-  background:rgba(100,20,15,.12);
+.ab-mov-txt{color:#6090c0;font-weight:700}
+.ab-ability-row{display:flex;align-items:center;gap:3px;margin-top:2px;flex-wrap:wrap}
+.ab-ability-lbl{font-size:8px;color:#5a4830;text-transform:uppercase;letter-spacing:.6px;margin-right:2px}
+.ab-pip{width:8px;height:8px;border-radius:50%;border:1px solid rgba(200,140,40,.5);background:rgba(200,140,40,.08);flex-shrink:0}
+.ab-pip.on{background:rgba(210,140,30,.9);border-color:#d49030;box-shadow:0 0 4px rgba(210,140,30,.5)}
+/* ── Middle: terrain + legend ── */
+.ab-mid-col{
+  display:flex;flex-direction:column;justify-content:center;gap:3px;
+  padding:7px 6px;border-right:1px solid rgba(200,160,48,.1);
+  background:#090705
+}
+.ab-terrain{font-size:9px;color:#8a7850;line-height:1.3}
+.ab-terrain strong{color:#a08848;display:block;font-size:10px}
+.ab-mov-cost{font-size:9px;color:#5a4830;margin-bottom:3px}
+.ab-legend-title{font-size:7px;color:#4a3820;text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px}
+.ab-legend-row{display:flex;align-items:center;gap:4px;font-size:9px;color:#7a6848}
+.leg-pa{width:8px;height:8px;border-radius:50%;background:#4070c0;flex-shrink:0;display:inline-block}
+.leg-path{width:12px;height:2px;background:repeating-linear-gradient(90deg,#4070c0 0,#4070c0 3px,transparent 3px,transparent 6px);flex-shrink:0;display:inline-block}
+.leg-dest{font-size:10px;color:#c8a030;line-height:1}
+/* ── Target column ── */
+.ab-tgt-col{
+  display:flex;align-items:stretch;gap:0;
+  background:rgba(80,10,8,.12)
+}
+.ab-tgt-info{flex:1;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:6px 6px 6px 7px;min-width:0}
+.ab-tgt-header{font-size:7px;color:#6a3830;text-transform:uppercase;letter-spacing:1px;margin-bottom:1px}
+.ab-tgt-name{font-size:11px;font-weight:800;color:#e08060;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase;letter-spacing:.4px}
+.ab-tgt-sub{font-size:9px;color:#704838}
+.ab-tgt-hp-row{display:flex;align-items:center;gap:4px;margin-top:2px}
+.ab-tgt-hpbar{flex:1;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.ab-tgt-hpfill{height:100%;border-radius:2px;transition:width 1.1s cubic-bezier(.22,.61,.36,1)}
+.ab-tgt-hp{font-size:9px;color:#806050;flex-shrink:0;font-weight:700}
+.ab-tgt-stats{display:flex;gap:6px;font-size:10px;color:#806050;margin-top:2px}
+.ab-tgt-portrait{
+  width:54px;flex-shrink:0;object-fit:cover;object-position:top center;
+  background:#070503;
   border-left:1px solid rgba(180,50,35,.2)
 }
-.ab-target.show{display:flex}
-.ab-tgt-name{font-size:11px;font-weight:700;color:#e09080;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ab-tgt-hp{font-size:10px;color:#907060;margin-top:1px}
-.ab-tgt-hpbar{width:100%;height:4px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;margin-top:3px}
-.ab-tgt-hpfill{height:100%;border-radius:2px;transition:width 1.1s cubic-bezier(.22,.61,.36,1)}
-.ab-tgt-stats{display:flex;gap:8px;font-size:10px;color:#806050;margin-top:3px}
 /* Action buttons: 4 equal, tall */
 .ab-btns{
   display:grid;grid-template-columns:repeat(4,1fr);gap:4px;
@@ -737,12 +762,14 @@ header{
   <!-- Action bar: visible when hero selected -->
   <div id="action-bar">
     <div class="ab-status">
-      <!-- Hero side -->
-      <div class="ab-hero-side">
+      <!-- Hero column: portrait + stats -->
+      <div class="ab-hero-col">
         <img class="ab-portrait" id="ab-portrait" src="" alt="">
         <div class="ab-info">
           <div class="ab-uname" id="ab-uname">—</div>
+          <div class="ab-level" id="ab-level">Nível 1</div>
           <div class="ab-hp-row">
+            <span class="ab-hp-icon">❤</span>
             <div class="ab-hp-bar"><div class="ab-hp-fill" id="ab-hp-fill" style="width:100%"></div></div>
             <span class="ab-hp-txt" id="ab-hp-txt">—/—</span>
           </div>
@@ -753,16 +780,32 @@ header{
           <div class="ab-stats-row">
             <span>⚔ <span class="ab-atq-val" id="ab-atq">+0</span></span>
             <span>🛡 <span class="ab-def-val" id="ab-def">10</span></span>
-            <span class="ab-mov-txt" id="ab-mov-txt">🦵 0/0</span>
+            <span>🦵 <span class="ab-mov-txt" id="ab-mov-txt">0/0</span></span>
           </div>
+          <div class="ab-ability-row" id="ab-ability-row"></div>
         </div>
       </div>
-      <!-- Target side -->
-      <div class="ab-target" id="ab-target">
-        <div class="ab-tgt-name" id="ab-tgt-name"></div>
-        <div class="ab-tgt-hp" id="ab-tgt-hp"></div>
-        <div class="ab-tgt-hpbar"><div class="ab-tgt-hpfill" id="ab-tgt-hpfill" style="width:100%"></div></div>
-        <div class="ab-tgt-stats" id="ab-tgt-stats"></div>
+      <!-- Middle column: terrain + movement legend -->
+      <div class="ab-mid-col">
+        <div class="ab-terrain" id="ab-terrain"><strong>Terra batida</strong>Custo: 1</div>
+        <div class="ab-legend-title">Alcance ⬡</div>
+        <div class="ab-legend-row"><span class="leg-pa"></span><span id="ab-pa-txt">? PA</span></div>
+        <div class="ab-legend-row"><span class="leg-path"></span><span>Caminho</span></div>
+        <div class="ab-legend-row"><span class="leg-dest">⬡</span><span>Destino</span></div>
+      </div>
+      <!-- Target column: info + portrait -->
+      <div class="ab-tgt-col" id="ab-target" style="display:none">
+        <div class="ab-tgt-info">
+          <div class="ab-tgt-header">Alvo</div>
+          <div class="ab-tgt-name" id="ab-tgt-name">—</div>
+          <div class="ab-tgt-hp-row">
+            <span class="ab-hp-icon">❤</span>
+            <div class="ab-tgt-hpbar"><div class="ab-tgt-hpfill" id="ab-tgt-hpfill" style="width:100%"></div></div>
+            <span class="ab-tgt-hp" id="ab-tgt-hp">—</span>
+          </div>
+          <div class="ab-tgt-stats" id="ab-tgt-stats"></div>
+        </div>
+        <img class="ab-tgt-portrait" id="ab-tgt-portrait" src="" alt="" onerror="this.style.display='none'">
       </div>
     </div>
     <!-- 4 action buttons -->
@@ -2122,6 +2165,13 @@ function clearSelection() {
 // ── Action bar ──────────────────────────────────
 let _abMode = null; // 'move'|'attack'|'skill'|'talk'|null
 
+function getTerrainAt(col, row) {
+  const key = hexLbl(col, row);
+  if ((SCENARIO_BLOCKED[currentScenario]||new Set()).has(key)) return {nome:'Obstáculo', custo:'—'};
+  if ((SCENARIO_COVER[currentScenario]||new Set()).has(key))   return {nome:'Cobertura',  custo: 2};
+  return {nome:'Terra batida', custo: 1};
+}
+
 function updateActionBar() {
   const u = selId ? units.find(u=>u.id===selId&&u.type==='hero'&&u.alive) : null;
   const bar = document.getElementById('action-bar');
@@ -2129,10 +2179,14 @@ function updateActionBar() {
   if (!u) { bar.classList.remove('visible'); return; }
   bar.classList.add('visible');
 
+  // Portrait + name + level
   const p = document.getElementById('ab-portrait');
-  if (p) p.src = u.sprite||'';
-  document.getElementById('ab-uname').textContent = `${u.icon||''} ${u.name}`;
+  if (p) { p.src = u.sprite||''; p.style.display = u.sprite ? '' : 'none'; }
+  document.getElementById('ab-uname').textContent = u.name;
+  const lvlEl = document.getElementById('ab-level');
+  if (lvlEl) lvlEl.textContent = `${u.icon||''} Nível ${u.nivel||1}`;
 
+  // HP bar
   const pct = Math.max(0,Math.round(u.hp/u.maxHp*100));
   const fill = document.getElementById('ab-hp-fill');
   fill.style.width = pct+'%';
@@ -2149,25 +2203,41 @@ function updateActionBar() {
     spFill.style.width = spPct + '%';
     const isMana = u.spType === 'mana';
     spFill.style.background = isMana
-      ? (spPct>40 ? 'linear-gradient(90deg,#2040c0,#5080f0)' : 'linear-gradient(90deg,#501080,#8030d0)')
-      : (spPct>40 ? 'linear-gradient(90deg,#106840,#20c060)' : 'linear-gradient(90deg,#406010,#80a020)');
+      ? (spPct>40?'linear-gradient(90deg,#2040c0,#5080f0)':'linear-gradient(90deg,#501080,#8030d0)')
+      : (spPct>40?'linear-gradient(90deg,#106840,#20c060)':'linear-gradient(90deg,#406010,#80a020)');
     spTxt.style.color = isMana ? '#6090e0' : '#60b070';
     spTxt.textContent = `${isMana?'🔵':'💪'} ${u.sp}/${u.maxSp}`;
-  } else if (spRow) {
-    spRow.style.display = 'none';
-  }
+  } else if (spRow) { spRow.style.display = 'none'; }
 
-  // ATQ / DEF / MOV stats
+  // ATQ / DEF / MOV
   const atqBonus = (u.attrMod !== undefined ? u.attrMod + 2 : 3);
   const atqEl = document.getElementById('ab-atq');
   if (atqEl) atqEl.textContent = (atqBonus>=0?'+':'')+atqBonus;
   const defEl = document.getElementById('ab-def');
   if (defEl) defEl.textContent = u.ac||10;
-
   const movLeft = u.hasMoved?0:(u.moveSpeed||4);
   const movEl = document.getElementById('ab-mov-txt');
-  movEl.textContent = `🦵 ${movLeft}/${u.moveSpeed||4}`;
-  movEl.style.color = movLeft>0?'#6090c0':'#504030';
+  if (movEl) { movEl.textContent = `${movLeft}/${u.moveSpeed||4}`; movEl.style.color = movLeft>0?'#6090c0':'#504030'; }
+
+  // Ability pips (SP as dots for stamina classes; fúria turns for bárbaro)
+  const abilEl = document.getElementById('ab-ability-row');
+  if (abilEl) {
+    const isBarbaro = u.classe === 'barbaro';
+    const maxPips = u.maxSp || 0;
+    if (maxPips > 0 && maxPips <= 6) {
+      const filledPips = isBarbaro ? (u._furiaTurns||0) : (u.sp||0);
+      const lbl = isBarbaro ? 'FÚRIA' : (u.spType==='mana'?'MANA':'VIGOR');
+      abilEl.innerHTML = `<span class="ab-ability-lbl">${lbl}</span>`
+        + Array.from({length:maxPips},(_,i)=>`<span class="ab-pip${i<filledPips?' on':''}"></span>`).join('');
+    } else { abilEl.innerHTML=''; }
+  }
+
+  // Terrain info for selected hero's position
+  const terr = getTerrainAt(u.col, u.row);
+  const terrEl = document.getElementById('ab-terrain');
+  if (terrEl) terrEl.innerHTML = `<strong>${terr.nome}</strong>Custo: ${terr.custo}`;
+  const paEl = document.getElementById('ab-pa-txt');
+  if (paEl) paEl.textContent = `${movLeft} PA`;
 
   const isEnemyPhase = phase === 'enemy';
   const mvBtn = document.getElementById('ab-move');
@@ -2175,7 +2245,6 @@ function updateActionBar() {
   if (mvBtn){ mvBtn.classList.toggle('ab-move-on',_abMode==='move'); mvBtn.classList.toggle('ab-dis',!!u.hasMoved||isEnemyPhase); }
   if (akBtn){ akBtn.classList.toggle('ab-atk-on',_abMode==='attack'); akBtn.classList.toggle('ab-dis',!!u.hasActed||isEnemyPhase); }
 
-  // Fim de Turno: pulsa quando herói já agiu; desabilitado na fase inimiga
   const etBtn = document.getElementById('ab-endturn');
   if (etBtn) {
     const herosDone = heroes().every(h=>h.hasMoved||h.hasActed);
@@ -2187,18 +2256,20 @@ function updateActionBar() {
 function abShowTarget(e) {
   const el = document.getElementById('ab-target');
   if (!el) return;
-  if (!e) { el.classList.remove('show'); return; }
-  el.classList.add('show');
-  document.getElementById('ab-tgt-name').textContent = `${e.icon||'👾'} ${e.name}`;
-  document.getElementById('ab-tgt-hp').textContent   = `❤️ ${e.hp}/${e.maxHp}`;
-  const pct = Math.max(0,Math.round(e.hp/e.maxHp*100));
+  if (!e) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  document.getElementById('ab-tgt-name').textContent = e.name;
+  const pct = Math.max(0, Math.round(e.hp/e.maxHp*100));
   const hpf = document.getElementById('ab-tgt-hpfill');
-  if (hpf) {
-    hpf.style.width = pct+'%';
-    hpf.style.background = pct>60?'#28a050':pct>30?'#c08020':'#e04040';
-  }
+  if (hpf) { hpf.style.width=pct+'%'; hpf.style.background=pct>60?'#28a050':pct>30?'#c08020':'#e04040'; }
+  document.getElementById('ab-tgt-hp').textContent = `${e.hp}/${e.maxHp}`;
   const st = document.getElementById('ab-tgt-stats');
-  if (st) st.textContent = `⚔ ${e.attrMod>=0?'+':''}${e.attrMod||0}  🛡 CA${e.ac||10}`;
+  if (st) st.innerHTML = `⚔ ${e.attrMod>=0?'+':''}${e.attrMod||0} &nbsp; 🛡 CA${e.ac||10}`;
+  const portrait = document.getElementById('ab-tgt-portrait');
+  if (portrait) {
+    portrait.src = e.sprite || '';
+    portrait.style.display = e.sprite ? '' : 'none';
+  }
 }
 
 function toggleNarrateInput() {
