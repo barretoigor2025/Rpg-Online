@@ -169,12 +169,24 @@ header{
 @keyframes pulse-turn{0%,100%{box-shadow:0 0 0 0 rgba(220,160,40,.3)}50%{box-shadow:0 0 0 4px rgba(220,160,40,.1)}}
 
 /* ── Action modals (move confirm + attack select) ── */
-.action-modal{display:none;position:fixed;inset:0;z-index:490;align-items:center;justify-content:center;background:rgba(0,0,0,.65)}
+.action-modal{display:none;position:fixed;inset:0;z-index:490;align-items:flex-start;justify-content:flex-start;background:rgba(0,0,0,.5)}
 .action-modal.show{display:flex}
+/* Modal de ataque: canto superior esquerdo, abaixo do header */
+#attack-modal{
+  padding-top:max(56px,calc(44px + env(safe-area-inset-top)));
+  padding-left:max(8px,env(safe-area-inset-left));
+  padding-bottom:0;
+  align-items:flex-start;
+  justify-content:flex-start
+}
+#attack-modal .am-card{
+  width:min(calc(100vw - 16px),360px);
+  max-height:calc(100dvh - max(56px,calc(44px + env(safe-area-inset-top))) - max(190px,calc(180px + env(safe-area-inset-bottom))))
+}
 /* Modal de confirmação de movimento: overlay leve para o mapa e o hex destacado ficarem visíveis */
 #move-confirm{background:rgba(0,0,0,.22);align-items:flex-end;padding-bottom:max(12px,env(safe-area-inset-bottom))}
 #move-confirm .am-card{border:2px solid rgba(100,180,255,.6);box-shadow:0 0 24px rgba(60,140,255,.25)}
-.am-card{width:calc(100% - 32px);max-width:460px;background:#0e0c09;border:1px solid rgba(200,160,48,.35);border-radius:14px;padding:20px 18px;max-height:85vh;overflow-y:auto}
+.am-card{width:calc(100% - 32px);max-width:460px;background:#0e0c09;border:1px solid rgba(200,160,48,.35);border-radius:14px;padding:16px 14px;max-height:85vh;overflow-y:auto}
 .am-title{font-size:17px;font-weight:800;color:#c8a030;margin-bottom:4px}
 .am-sub{font-size:12px;color:#706050;margin-bottom:12px}
 .am-roll{font-size:14px;color:#c8a030;min-height:24px;margin:10px 0;text-align:center;font-weight:700;background:rgba(200,160,48,.06);border-radius:8px;padding:6px}
@@ -764,11 +776,13 @@ header{
 <!-- Attack modal -->
 <div id="attack-modal" class="action-modal">
   <div class="am-card">
-    <div class="am-title">⚔ Escolha o Ataque</div>
+    <div class="am-title" id="am-title">⚔ Escolha o Ataque</div>
     <div class="am-sec-title">Habilidade</div>
     <div class="am-sk-grid" id="am-skills"></div>
-    <div class="am-sec-title">Alvo</div>
-    <div class="am-tgt-list" id="am-targets"></div>
+    <div id="am-target-section">
+      <div class="am-sec-title">Alvo</div>
+      <div class="am-tgt-list" id="am-targets"></div>
+    </div>
     <div class="am-preview" id="am-preview">Selecione habilidade e alvo</div>
     <div class="am-roll" id="am-roll"></div>
     <div class="am-btns">
@@ -2187,7 +2201,7 @@ function actionBarMode(mode) {
   } else if (mode === 'skill') {
     _abMode = null;
     activeRanges = new Set();
-    openActionPopup(u);
+    openAttackModal(u); // reusa o modal centralizado com suporte a skills pessoais
   } else if (mode === 'talk') {
     _abMode = null;
     const inp = document.getElementById('cmd-input');
@@ -2232,36 +2246,41 @@ async function executeMoveConfirm() {
   const { actor, destHex, path, mod } = _moveConfirmData;
   closeMoveConfirm();
 
-  const d20 = Math.floor(Math.random() * 20) + 1;
+  const d20 = d20r();
   const total = d20 + mod;
   const cd = 8;
   const modStr = (mod >= 0 ? '+' : '') + mod;
+  const critico = d20 === 20, catastrofe = d20 === 1;
+  const sucesso = critico ? true : catastrofe ? false : total >= cd;
 
-  if (d20 === 1) {
-    addLog(`${actor.name} tropeça! (d20=1, falha crítica) — movimentação perdida.`, 'e');
-    actor.hasMoved = true;
-    actor.hasActed = true; // perde a ação também
-  } else if (total < cd) {
-    const partial = Math.max(1, Math.floor(path.length / 2));
-    addLog(`${actor.name} vacila (d20=${d20}${modStr}=${total} vs CD${cd}) — move apenas ${partial} hex.`, 'm');
-    const partPath = path.slice(0, partial);
-    const dest = partPath[partPath.length - 1];
-    if (dest) await moveUnitAnimated(actor, dest.col, dest.row);
-  } else {
-    const label = d20 === 20 ? ' (CRÍTICO! +1 hex bônus)' : '';
-    const bonusHex = d20 === 20 && path.length < actor.moveSpeed + 1;
-    addLog(`${actor.name} move (d20=${d20}${modStr}=${total})${label}.`, 'h');
-    if (bonusHex && path.length < actor.moveSpeed) {
-      await moveUnitAnimated(actor, destHex.col, destHex.row);
+  const playlist = [{
+    tipo: 'testar',
+    nomeJog: actor.name,
+    label: '🦵 Deslocamento',
+    alvo: '',
+    d20, mod, modStr, total,
+    dc: cd, sucesso, critico, catastrofe
+  }];
+
+  DiceOverlay.mostrar(playlist, async () => {
+    if (catastrofe) {
+      addLog(`${actor.name} tropeça! (d20=1, falha crítica) — perde a ação também.`, 'e');
+      actor.hasMoved = true;
+      actor.hasActed = true;
+    } else if (!sucesso) {
+      const partial = Math.max(1, Math.floor(path.length / 2));
+      addLog(`${actor.name} vacila (d20=${d20}${modStr}=${total} vs CD${cd}) — move apenas ${partial} hex.`, 'm');
+      const dest = path.slice(0, partial).at(-1);
+      if (dest) await moveUnitAnimated(actor, dest.col, dest.row);
     } else {
+      if (critico) addLog(`${actor.name} avança com ímpeto! (CRÍTICO — +1 hex bônus possível)`, 'x');
       await moveUnitAnimated(actor, destHex.col, destHex.row);
     }
-  }
-
-  _abMode = null;
-  activeRanges = new Set(['melee']);
-  if (actor.rangedWeapon) activeRanges.add('ranged');
-  updateActionBar(); render();
+    _abMode = null;
+    activeRanges = new Set(['melee']);
+    if (actor.rangedWeapon) activeRanges.add('ranged');
+    updateActionBar(); render();
+  });
 }
 
 // ═══════════════════════════════════════════════
@@ -2334,9 +2353,12 @@ function openAttackModal(actor) {
     }).join('');
   }
 
-  document.getElementById('am-preview').textContent = 'Selecione habilidade e alvo';
+  document.getElementById('am-preview').textContent = 'Selecione uma habilidade';
   document.getElementById('am-roll').textContent = '';
   document.getElementById('am-confirm').disabled = true;
+  document.getElementById('am-confirm').textContent = '⚔ Atacar!';
+  document.getElementById('am-title').textContent = '⚔ Escolha o Ataque';
+  document.getElementById('am-target-section').style.display = '';
   document.getElementById('attack-modal').classList.add('show');
 }
 
@@ -2346,6 +2368,24 @@ function atkSelectSkill(btn, idx) {
   const skList = SKILLS[_atkActor.classe] || [];
   const activeSkills = skList.filter(sk => sk.type !== 'passive');
   _atkSelSkill = activeSkills.length ? activeSkills[idx] : { nome:'Ataque Básico', icon:'⚔️', type:'melee', dmg:'1d6+2' };
+
+  const isSelf = _atkSelSkill.type === 'self';
+  const targetSection = document.getElementById('am-target-section');
+  const titleEl = document.getElementById('am-title');
+  const confirmBtn = document.getElementById('am-confirm');
+
+  if (isSelf) {
+    targetSection.style.display = 'none';
+    titleEl.textContent = '✨ Usar Habilidade';
+    _atkSelTarget = _atkActor;
+    confirmBtn.textContent = '✨ Usar!';
+  } else {
+    targetSection.style.display = '';
+    titleEl.textContent = '⚔ Escolha o Ataque';
+    if (_atkSelTarget === _atkActor) { _atkSelTarget = null; }
+    confirmBtn.textContent = '⚔ Atacar!';
+    document.querySelectorAll('#am-targets .am-tgt-card').forEach(b => b.classList.remove('sel'));
+  }
   updateAtkPreview();
 }
 
@@ -2359,36 +2399,81 @@ function atkSelectTarget(btn, eid) {
 function updateAtkPreview() {
   const pre = document.getElementById('am-preview');
   const btn = document.getElementById('am-confirm');
-  if (!_atkSelSkill || !_atkSelTarget) {
+  if (!_atkSelSkill) {
+    pre.textContent = 'Selecione uma habilidade';
+    btn.disabled = true;
+    return;
+  }
+  const isSelf = _atkSelSkill.type === 'self';
+  if (!isSelf && !_atkSelTarget) {
     pre.textContent = 'Selecione habilidade e alvo';
     btn.disabled = true;
     return;
   }
-  const atqBonus = (_atkActor.attrMod !== undefined ? _atkActor.attrMod + 2 : 3);
-  const modStr = (atqBonus >= 0 ? '+' : '') + atqBonus;
   const cost = _atkSelSkill.sp ?? 0;
   const canAfford = (_atkActor.sp ?? 99) >= cost;
   const isMana = _atkActor.spType === 'mana';
   const spLabel = cost > 0 ? ` · ${isMana?'🔵':'💪'} ${cost} ${isMana?'mana':'estamina'}` : '';
-  pre.textContent = `${_atkSelSkill.icon||'⚔'} ${_atkSelSkill.nome||_atkSelSkill.name} → ${_atkSelTarget.icon||'👾'} ${_atkSelTarget.name} · d20${modStr} vs CA${_atkSelTarget.ac}${spLabel}`;
+  if (isSelf) {
+    pre.textContent = `${_atkSelSkill.icon||'✨'} ${_atkSelSkill.nome||_atkSelSkill.name} — ${_atkSelSkill.dmg||'efeito próprio'}${spLabel}`;
+  } else {
+    const atqBonus = (_atkActor.attrMod !== undefined ? _atkActor.attrMod + 2 : 3);
+    const modStr = (atqBonus >= 0 ? '+' : '') + atqBonus;
+    pre.textContent = `${_atkSelSkill.icon||'⚔'} ${_atkSelSkill.nome||_atkSelSkill.name} → ${_atkSelTarget.icon||'👾'} ${_atkSelTarget.name} · d20${modStr} vs CA${_atkSelTarget.ac}${spLabel}`;
+  }
   btn.disabled = !canAfford;
   btn.title = canAfford ? '' : `SP insuficiente (precisa ${cost}, tem ${_atkActor.sp??0})`;
 }
 
 function closeAttackModal() {
   document.getElementById('attack-modal').classList.remove('show');
+  document.getElementById('am-target-section').style.display = '';
   _atkActor = null; _atkSelSkill = null; _atkSelTarget = null;
 }
 
 function confirmAttackModal() {
-  if (!_atkActor || !_atkSelTarget) return;
+  if (!_atkActor || !_atkSelSkill) return;
   const actor = _atkActor;
-  const target = _atkSelTarget;
   const skill = _atkSelSkill;
+  const isSelf = skill.type === 'self';
+  if (!isSelf && !_atkSelTarget) return;
+  const target = _atkSelTarget;
   closeAttackModal();
-  doAttackWithSkill(actor, target, skill);
-  checkEnd();
-  updateActionBar(); render();
+  if (isSelf) {
+    doSelfSkill(actor, skill);
+    updateActionBar(); render();
+  } else {
+    doAttackWithSkill(actor, target, skill);
+    // checkEnd/updateActionBar/render chamados dentro do callback do DiceOverlay
+  }
+}
+
+function doSelfSkill(actor, skill) {
+  const spCost = skill.sp ?? 0;
+  if (spCost > 0) {
+    if ((actor.sp ?? 99) < spCost) {
+      addLog(`${actor.name} não tem ${actor.spType==='mana'?'mana':'estamina'} suficiente! (precisa ${spCost}, tem ${actor.sp??0})`, 'e');
+      return;
+    }
+    actor.sp = Math.max(0, (actor.sp ?? 0) - spCost);
+    addLog(`${actor.name} gasta ${spCost} ${actor.spType==='mana'?'mana':'estamina'} (restam ${actor.sp}).`, 'm');
+  }
+  const skName = skill.nome || skill.name || 'Habilidade';
+  const effect = skill.dmg || 'efeito aplicado';
+
+  // Apply common self-skill effects
+  if (skName === 'Segundo Fôlego' || skName === 'Curar Ferimentos') {
+    const healed = rollNotacao(skill.dmg || '1d8+3').total;
+    actor.hp = Math.min(actor.maxHp, actor.hp + healed);
+    addLog(`${actor.name} usa ${skill.icon} ${skName} — recupera ${healed} PV (${actor.hp}/${actor.maxHp}).`, 'n');
+  } else if (skName === 'Fúria') {
+    actor._furiaTurns = 2;
+    actor.hp = Math.min(actor.maxHp, actor.hp + 4);
+    addLog(`${actor.name} entra em ${skill.icon} Fúria! +2 dano, +4 PV temporários por 2 turnos.`, 'x');
+  } else {
+    addLog(`${actor.name} usa ${skill.icon} ${skName} — ${effect}.`, 'n');
+  }
+  actor.hasActed = true;
 }
 
 function doAttackWithSkill(atk, def, skill) {
@@ -2420,6 +2505,7 @@ function doAttackWithSkill(atk, def, skill) {
   const total = roll + bonus;
   const crit = roll === 20, fumb = roll === 1;
   const modStr = (bonus >= 0 ? '+' : '') + bonus;
+  const sucesso = crit ? true : fumb ? false : total >= def.ac;
 
   // Skill override for damage
   let dmgN = isMelee
@@ -2427,20 +2513,41 @@ function doAttackWithSkill(atk, def, skill) {
     : (atk.rangedWeapon?.name==='Raio Arcano' ? '1d8+2' : '1d6+2');
   if (skill?.dmg && skill.dmg !== '—') dmgN = skill.dmg;
 
-  if (fumb) {
-    addLog(`${atk.name} falha crítica! (d20=1) — ação perdida.`, 'e');
-    atk.hasActed = true; return;
-  }
-  if (crit || total >= def.ac) {
-    let dmg = rollDice(dmgN); if (crit) dmg *= 2;
-    def.hp = Math.max(0, def.hp - dmg);
-    let msg = `${atk.name}${crit?' ⭐CRÍTICO!':''} [d20=${roll}${modStr}=${total}] → ${def.name}${back?' (costas)':''}${flank?' (flanco)':''}: ${dmg} dano`;
-    if (def.hp <= 0) { def.alive = false; def.hp = 0; msg += ` — ${def.name} cai!`; }
-    addLog(msg, 'x');
-  } else {
-    addLog(`${atk.name} [d20=${roll}${modStr}=${total}] errou ${def.name} (CA${def.ac})`, 'm');
-  }
-  atk.hasActed = true;
+  const dmgRolled = sucesso ? rollDice(dmgN) : 0;
+  const dmgFinal  = (crit && sucesso) ? dmgRolled * 2 : dmgRolled;
+
+  const skLabel = `${skill?.icon||'⚔'} ${skill?.nome||skill?.name||'Ataque'}`;
+  const playlist = [
+    {
+      tipo: 'testar',
+      nomeJog: atk.name, label: skLabel, alvo: def.name,
+      d20: roll, mod: bonus, modStr, total,
+      dc: def.ac, sucesso, critico: crit, catastrofe: fumb
+    },
+    ...(sucesso ? [{
+      tipo: 'rolar',
+      nomeJog: atk.name, label: `${crit?'⭐ CRÍTICO — ':''} Dano`, alvo: def.name,
+      notacao: dmgN, resultado: dmgFinal,
+      dados: parseInt((dmgN.match(/d(\d+)/)||[,20])[1]),
+      condicionalDe: 0
+    }] : [])
+  ];
+
+  DiceOverlay.mostrar(playlist, () => {
+    atk.hasActed = true;
+    if (fumb) {
+      addLog(`${atk.name} falha crítica! (d20=1) — ação perdida.`, 'e');
+    } else if (sucesso) {
+      def.hp = Math.max(0, def.hp - dmgFinal);
+      let msg = `${atk.name}${crit?' ⭐CRÍTICO!':''} → ${def.name}${back?' (costas)':''}${flank?' (flanco)':''}: ${dmgFinal} dano`;
+      if (def.hp <= 0) { def.alive = false; def.hp = 0; msg += ` — ${def.name} cai!`; }
+      addLog(msg, 'x');
+    } else {
+      addLog(`${atk.name} errou ${def.name} (d20=${roll}${modStr}=${total} vs CA${def.ac})`, 'm');
+    }
+    checkEnd(); updateActionBar(); render();
+  });
+  return; // resultado aplicado no callback do overlay
 }
 
 // ═══════════════════════════════════════════════
@@ -2676,31 +2783,13 @@ function ptDist(touches) {
 }
 
 mapArea.addEventListener('touchstart', e=>{
-  if (e.touches.length===2) {
-    e.preventDefault(); _justPinched=false;
-    _pinch={dist:ptDist(e.touches),zoom,panX,panY,mx:(e.touches[0].clientX+e.touches[1].clientX)/2,my:(e.touches[0].clientY+e.touches[1].clientY)/2};
-    _drag=null;
-  } else if (e.touches.length===1&&zoom>1.05) {
+  if (e.touches.length===1&&zoom>1.05) {
     _drag={x:e.touches[0].clientX,y:e.touches[0].clientY};
   }
 },{passive:false});
 
 mapArea.addEventListener('touchmove', e=>{
-  if (e.touches.length===2&&_pinch) {
-    e.preventDefault();
-    const dist=ptDist(e.touches);
-    const nz=Math.max(.5,Math.min(4,_pinch.zoom*(dist/_pinch.dist)));
-    const ar=mapArea.getBoundingClientRect();
-    const cx=(e.touches[0].clientX+e.touches[1].clientX)/2-ar.left;
-    const cy=(e.touches[0].clientY+e.touches[1].clientY)/2-ar.top;
-    const midX=(_pinch.mx+cx)/2-ar.left;
-    const tot0=baseScale*_pinch.zoom, totN=baseScale*nz;
-    const nat0X=(ar.width-MAP_W*tot0)/2+_pinch.panX;
-    const nat0Y=(ar.height-MAP_H*tot0)/2+_pinch.panY;
-    panX=(nat0X-(midX*(totN-tot0)/tot0))-((ar.width-MAP_W*totN)/2);
-    panY=(nat0Y-((cy-ar.top)*(totN-tot0)/tot0))-((ar.height-MAP_H*totN)/2);
-    zoom=nz; applyVP(); _justPinched=true;
-  } else if (e.touches.length===1&&_drag&&zoom>1.05) {
+  if (e.touches.length===1&&_drag&&zoom>1.05) {
     e.preventDefault();
     panX+=e.touches[0].clientX-_drag.x;
     panY+=e.touches[0].clientY-_drag.y;
@@ -2982,30 +3071,53 @@ async function callAI(userMsg, resolutionMode=false) {
   if (_callingAI) return;
   _callingAI=true;
   if (!resolutionMode) addLog('🔮 Narrador pensando…','ai');
-  try {
-    const resp=await fetch(GROQ_URL, {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-      body:JSON.stringify({
-        model:GROQ_MODEL,
-        temperature: resolutionMode ? 0.75 : 0.85,
-        max_tokens: resolutionMode ? 900 : 400,
-        messages:[
-          {role:'system', content: resolutionMode ? buildResolutionPrompt() : buildSystemPrompt()},
-          {role:'user',   content: resolutionMode ? 'Resolva o turno agora. Narre e emita todas as tags de ação.' : userMsg}
-        ]
-      })
-    });
-    if (!resp.ok) {
-      const err=await resp.text();
-      addLog(`⚠ Erro IA: ${resp.status} — ${err.slice(0,120)}`,'e');
+
+  const MAX_RETRIES = 3;
+  const RETRY_DELAYS = [8000, 16000, 32000]; // backoff: 8s, 16s, 32s
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const resp=await fetch(GROQ_URL, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+        body:JSON.stringify({
+          model:GROQ_MODEL,
+          temperature: resolutionMode ? 0.75 : 0.85,
+          max_tokens: resolutionMode ? 900 : 400,
+          messages:[
+            {role:'system', content: resolutionMode ? buildResolutionPrompt() : buildSystemPrompt()},
+            {role:'user',   content: resolutionMode ? 'Resolva o turno agora. Narre e emita todas as tags de ação.' : userMsg}
+          ]
+        })
+      });
+
+      if (resp.status === 429 && attempt < MAX_RETRIES) {
+        const delay = RETRY_DELAYS[attempt];
+        const secs = delay / 1000;
+        addLog(`⏳ Rate limit Groq — tentando novamente em ${secs}s… (${attempt+1}/${MAX_RETRIES})`, 's');
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+
+      if (!resp.ok) {
+        const err=await resp.text();
+        addLog(`⚠ Erro IA: ${resp.status} — ${err.slice(0,120)}`,'e');
+        _callingAI=false; return;
+      }
+      const data=await resp.json();
+      const text=(data.choices?.[0]?.message?.content||'').trim();
+      parseAIResponse(text);
       _callingAI=false; return;
+
+    } catch(e) {
+      if (attempt < MAX_RETRIES) {
+        const delay = RETRY_DELAYS[attempt];
+        addLog(`⏳ Falha de rede — tentando em ${delay/1000}s…`, 's');
+        await new Promise(r => setTimeout(r, delay));
+      } else {
+        addLog(`⚠ Erro IA: ${e.message}`,'e');
+      }
     }
-    const data=await resp.json();
-    const text=(data.choices?.[0]?.message?.content||'').trim();
-    parseAIResponse(text);
-  } catch(e) {
-    addLog(`⚠ Erro IA: ${e.message}`,'e');
   }
   _callingAI=false;
 }
@@ -3962,27 +4074,44 @@ function introComecarJogo() {
   const ov = document.getElementById('intro-overlay');
   ov.classList.add('fadeout');
   setTimeout(()=>{ ov.style.display='none'; }, 650);
-  if (apiKey) {
-    const char = JSON.parse(localStorage.getItem('rpg_char')||'{}');
-    const nomeHeroi = char.nome || 'o aventureiro';
-    const clsNome = (CLASSES[char.classe]||{}).nome || char.classe || 'aventureiro';
-    setTimeout(()=>{
+
+  // Spawn inimigos iniciais com quantidade escalada pelo número de heróis
+  setTimeout(()=>{
+    const heroCount = heroes().length || 1;
+    // Pool de hexes no flanco norte da feira (longe dos heróis em row 7-9)
+    const POOL = ['E04','G04','H05','C04','F03','I04','J03','D05','K04'];
+    // Regra de início: 1 jogador → 1 ou 2; 2 → 2 ou 3; 3 → 3 ou 4; 4+ → 3–5
+    let n;
+    if      (heroCount <= 1) n = Math.random() < 0.45 ? 1 : 2;
+    else if (heroCount === 2) n = Math.random() < 0.5  ? 2 : 3;
+    else if (heroCount === 3) n = Math.random() < 0.5  ? 3 : 4;
+    else                      n = 3 + Math.floor(Math.random() * 3);
+
+    const nomes = ['I','II','III','IV','V'];
+    const hexes = [...POOL].sort(()=>Math.random()-.5).slice(0, n);
+    hexes.forEach((hex, i) => spawnUnit(`Espantalho ${nomes[i]}`, 'espantalho_assombrado', hex, 14, 11, '🌾'));
+    initHeroFacings();
+    render();
+
+    if (apiKey) {
+      const char = JSON.parse(localStorage.getItem('rpg_char')||'{}');
+      const nomeHeroi = char.nome || 'o aventureiro';
+      const clsNome = (CLASSES[char.classe]||{}).nome || char.classe || 'aventureiro';
       callAI(
 `Início da campanha "A Fera do Forte Negro".
 O herói é ${nomeHeroi}, um(a) ${clsNome}, na Festa de São Phanourius no mercado de Mhoried.
+Há ${n} espantalho${n>1?'s':''} assombrado${n>1?'s':''} no mapa (${n===1?'apenas um, desprendido das sombras':n<=2?'surgindo das barracas':'invadindo de vários ângulos'}).
 
-Narre em 2 partes:
-1. Cena de abertura (40 palavras): o mercado festivo animado, a Arbor Aeterna ao fundo, a Duquesa Catherine Laskaris passeando com escolta — tudo parece perfeito.
-2. O ataque (40 palavras): uma criança grita, espantalhos assombrados irrompem das barracas, pânico. Use SPAWNAR para colocar 3 espantalhos no mapa (hexes E04, G04, H05). Termine com o herói de mãos na arma, aguardando a decisão do jogador.
-
-SPAWNAR:[Espantalho I|espantalho_assombrado|E04|14|11|🌾]
-SPAWNAR:[Espantalho II|espantalho_assombrado|G04|14|11|🌾]
-SPAWNAR:[Espantalho III|espantalho_assombrado|H05|14|11|🌾]`
+Narre em 2 partes (80 palavras total):
+1. Cena de abertura: o mercado festivo animado, a Arbor Aeterna ao fundo, a Duquesa Catherine Laskaris passeando com escolta — tudo parece perfeito.
+2. O ataque: uma criança grita, espantalhos assombrados irrompem${n===1?' — um ser de palha e sombra avança':' das barracas, pânico'}. Os espantalhos já estão no mapa. Termine com o herói de mãos na arma, aguardando decisão.`
       );
-    }, 800);
-  } else {
-    addLog('📖 A Festa de São Phanourius enche Mhoried de música. De repente uma criança grita — espantalhos assombrados irrompem das barracas!','ai');
-  }
+    } else {
+      addLog('📖 A Festa de São Phanourius enche Mhoried de música e risos. A Duquesa Catherine passeia sob a Arbor Aeterna, escoltada por guardas discretos.','ai');
+      addLog(`De repente uma criança grita — ${n===1?'um espantalho assombrado avança das sombras':n<=2?'espantalhos assombrados irrompem das barracas':'espantalhos assombrados invadem de todos os lados'}! O pânico toma conta do mercado. Sua mão vai instintivamente à arma.`,'ai');
+      addLog('⚔ Clique em Declarar para declarar suas ações!','s');
+    }
+  }, 800);
 }
 
 // ── Particles on landing ─────────────────────────
