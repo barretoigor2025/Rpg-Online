@@ -2783,31 +2783,13 @@ function ptDist(touches) {
 }
 
 mapArea.addEventListener('touchstart', e=>{
-  if (e.touches.length===2) {
-    e.preventDefault(); _justPinched=false;
-    _pinch={dist:ptDist(e.touches),zoom,panX,panY,mx:(e.touches[0].clientX+e.touches[1].clientX)/2,my:(e.touches[0].clientY+e.touches[1].clientY)/2};
-    _drag=null;
-  } else if (e.touches.length===1&&zoom>1.05) {
+  if (e.touches.length===1&&zoom>1.05) {
     _drag={x:e.touches[0].clientX,y:e.touches[0].clientY};
   }
 },{passive:false});
 
 mapArea.addEventListener('touchmove', e=>{
-  if (e.touches.length===2&&_pinch) {
-    e.preventDefault();
-    const dist=ptDist(e.touches);
-    const nz=Math.max(.5,Math.min(4,_pinch.zoom*(dist/_pinch.dist)));
-    const ar=mapArea.getBoundingClientRect();
-    const cx=(e.touches[0].clientX+e.touches[1].clientX)/2-ar.left;
-    const cy=(e.touches[0].clientY+e.touches[1].clientY)/2-ar.top;
-    const midX=(_pinch.mx+cx)/2-ar.left;
-    const tot0=baseScale*_pinch.zoom, totN=baseScale*nz;
-    const nat0X=(ar.width-MAP_W*tot0)/2+_pinch.panX;
-    const nat0Y=(ar.height-MAP_H*tot0)/2+_pinch.panY;
-    panX=(nat0X-(midX*(totN-tot0)/tot0))-((ar.width-MAP_W*totN)/2);
-    panY=(nat0Y-((cy-ar.top)*(totN-tot0)/tot0))-((ar.height-MAP_H*totN)/2);
-    zoom=nz; applyVP(); _justPinched=true;
-  } else if (e.touches.length===1&&_drag&&zoom>1.05) {
+  if (e.touches.length===1&&_drag&&zoom>1.05) {
     e.preventDefault();
     panX+=e.touches[0].clientX-_drag.x;
     panY+=e.touches[0].clientY-_drag.y;
