@@ -177,18 +177,41 @@ header{
 @keyframes pulse-turn{0%,100%{box-shadow:0 0 0 0 rgba(220,160,40,.3)}50%{box-shadow:0 0 0 4px rgba(220,160,40,.1)}}
 
 /* ── Action modals (move confirm + attack select) ── */
-.action-modal{display:none;position:fixed;inset:0;z-index:490;background:rgba(0,0,0,.7);
-  align-items:flex-start;justify-content:center;
-  padding-top:max(58px,calc(50px + env(safe-area-inset-top)))}
-.action-modal.show{display:flex}
-/* Attack modal: centrado horizontalmente, ancorado no topo da área de mapa */
-#attack-modal .am-card{
-  max-height:calc(100dvh - max(58px,calc(50px + env(safe-area-inset-top))) - max(175px,calc(170px + env(safe-area-inset-bottom))))
+/* ── Attack modal: card flutuante compacto, topo-esquerda ── */
+#attack-modal{
+  display:none;position:fixed;
+  top:max(52px,calc(46px + env(safe-area-inset-top)));
+  left:max(8px,env(safe-area-inset-left));
+  z-index:490;width:min(258px,calc(100vw - 16px));
+  background:#0e0c09;border:1px solid rgba(200,160,48,.38);border-radius:12px;
+  padding:11px 10px 10px;
+  box-shadow:0 6px 32px rgba(0,0,0,.9),0 0 0 1px rgba(200,160,48,.06);
+  overflow-y:auto;
+  max-height:calc(100dvh - max(52px,calc(46px + env(safe-area-inset-top))) - 148px);
 }
-/* Modal de confirmação de movimento: overlay leve para o mapa e o hex destacado ficarem visíveis */
-#move-confirm{background:rgba(0,0,0,.22);align-items:flex-end;padding-top:0;padding-bottom:max(12px,env(safe-area-inset-bottom))}
+#attack-modal.show{display:block}
+#attack-modal .am-card{background:none;border:none;border-radius:0;padding:0;max-height:none;overflow-y:visible;width:100%;max-width:none}
+#attack-modal .am-title{font-size:14px;margin-bottom:2px}
+#attack-modal .am-sec-title{margin:8px 0 5px;font-size:8px}
+#attack-modal .am-sk-grid{grid-template-columns:1fr 1fr;gap:5px}
+#attack-modal .am-sk-card{padding:7px 8px 6px;border-radius:8px}
+#attack-modal .am-sk-icon{font-size:18px}
+#attack-modal .am-sk-name{font-size:11px}
+#attack-modal .am-sk-dmg{font-size:9px}
+#attack-modal .am-tgt-card{padding:7px 9px;border-radius:8px}
+#attack-modal .am-tgt-icon{font-size:18px}
+#attack-modal .am-tgt-name{font-size:12px}
+#attack-modal .am-preview{font-size:10px;padding:5px 7px;margin:7px 0}
+#attack-modal .am-roll{display:none}
+#attack-modal .am-btns{margin-top:9px;gap:6px}
+#attack-modal .am-yes{padding:10px;font-size:12px;border-radius:8px}
+#attack-modal .am-no{padding:10px 14px;font-size:12px;border-radius:8px}
+/* Move confirm: overlay leve, ancuado em baixo */
+.action-modal{display:none;position:fixed;inset:0;z-index:490;background:rgba(0,0,0,.22);
+  align-items:flex-end;justify-content:center;padding-bottom:max(12px,env(safe-area-inset-bottom))}
+.action-modal.show{display:flex}
 #move-confirm .am-card{border:2px solid rgba(100,180,255,.6);box-shadow:0 0 24px rgba(60,140,255,.25)}
-.am-card{width:calc(100% - 32px);max-width:460px;background:#0e0c09;border:1px solid rgba(200,160,48,.35);border-radius:14px;padding:16px 14px;max-height:82vh;overflow-y:auto}
+.am-card{width:calc(100% - 32px);max-width:400px;background:#0e0c09;border:1px solid rgba(200,160,48,.35);border-radius:14px;padding:14px 12px;max-height:70vh;overflow-y:auto}
 .am-title{font-size:17px;font-weight:800;color:#c8a030;margin-bottom:4px}
 .am-sub{font-size:12px;color:#706050;margin-bottom:12px}
 .am-roll{font-size:14px;color:#c8a030;min-height:24px;margin:10px 0;text-align:center;font-weight:700;background:rgba(200,160,48,.06);border-radius:8px;padding:6px}
@@ -782,7 +805,7 @@ header{
 </div>
 
 <!-- Attack modal -->
-<div id="attack-modal" class="action-modal">
+<div id="attack-modal">
   <div class="am-card">
     <div class="am-title" id="am-title">⚔ Escolha o Ataque</div>
     <div class="am-sec-title">Habilidade</div>
